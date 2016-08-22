@@ -70,6 +70,7 @@ def ping_host(hostname, verbose):
     # TODO windows parameters not tested.
 
     ping_str = "-n 1" if  platform.system().lower() == "windows" else "-c 1 -w2 -q"
+    print('hostname %s pingstr %s' % (hostname, ping_str))
 
     # Ping
     response = os.system("ping " + ping_str + " " + hostname + " > /dev/null 2>&1")
@@ -129,7 +130,9 @@ def access_hosts(rows, verbose):
 
     rtn_list = []
     for row in rows:
-        print('call access_host host=%s u=%s p=%s, ns=%s' % (row['IPAddress'], row['Principal'], row['Credential'],
+        print('call access_host host=%s u=%s p=%s, ns=%s' % (row['IPAddress'],
+                                                             row['Principal'],
+                                                             row['Credential'],
                     row['InteropNamespace']))
         access_host(row['IPAddress'], row['Principal'], row['Credential'],
                     row['InteropNamespace'], args.verbose)

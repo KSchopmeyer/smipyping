@@ -67,6 +67,12 @@ def explore_server(server_url, principal, credential, args):
                                                               server.version,
                                                               server.interop_ns))
         print("All namespaces: %s" % server.namespaces)
+    else:
+        # force access to test server connection
+        _ = server.interop_ns
+        _ = server.interop_ns
+        _ = server.brand
+        _ = server.get_selected_profiles('SNIA', 'SMI-S')
 
     return server
 
@@ -84,11 +90,11 @@ def smi_version(server, args):
         org = org_vm.tovalues(inst['RegisteredOrganization'])
         name = inst['RegisteredName']
         vers = inst['RegisteredVersion']
-        print("  %s %s Profile %s" % (org, name, vers))
+        ####print("  %s %s Profile %s" % (org, name, vers))
         versions.append(vers)
     return versions
 
-def explore_server_profiles(server, args):
+def explore_server_profiles(server, args, short_explore=True):
 
     def print_profile_info(org_vm, inst):
         """Print the registered org, name, version for the profile defined by
@@ -104,10 +110,11 @@ def explore_server_profiles(server, args):
     org_vm = ValueMapping.for_property(server, server.interop_ns,
                                        'CIM_RegisteredProfile',
                                        'RegisteredOrganization')
-    for inst in server.profiles:
-        print_profile_info(org_vm, inst)
+    #for inst in server.profiles:
+    #    print_profile_info(org_vm, inst)
 
-    return server
+    if short_explore:
+        return server
 
     indication_profiles = server.get_selected_profiles('DMTF', 'Indications')
 
@@ -148,10 +155,11 @@ def explore_server_profiles(server, args):
         try:
             ci_paths = server.get_central_instances(inst.path)
         except Exception as exc:
-            print("Error: %s" % str(exc))
+            print("Exception: %s" % str(exc))
             ci_paths = []
         for ip in ci_paths:
             logger.info("  %s", str(ip))
+    return server
 
 def main():
 
@@ -174,8 +182,8 @@ Examples:
     pos_arggroup = argparser.add_argument_group(
         'Positional arguments')
     pos_arggroup.add_argument(
-        'WBEM Server ', metavar='Server', nargs='?',
-        help='Host_id of wbem server to explore schema:address:')
+        'wbemserver', metavar='server', nargs='?',
+        help='ip addresss of wbem servers to explore schema:address:')
 
     general_arggroup = argparser.add_argument_group(
         'General options')
@@ -190,13 +198,32 @@ Examples:
         help='Display detailed connection information')
 
     args = argparser.parse_args()
-    user_data = CsvUserData(args.csvfile)
-    host_ids = user_data.get_hostid_list()
-    filtered_host_ids = host_ids
 
+    if args.verbose:
+        print('args %s' % args)
+        
+    user_data = CsvUserData(args.csvfile)
+    hosts = user_data.get_hostid_list()
+
+    filtered_hosts = []
+    print('args %s' % args.wbemserver)
+    
+    # TODO make this list comprehension
+    if args.wbemserver is not None:
+        for host in hosts:
+            if host == args.wbemserver:
+                filtered_hosts.append(host)
+        if len(filtered_hosts) == 0:
+            print('Ip address %s not in data base' % args.wbemserver)
+            sys.exit(1)
+    else:
+        print('set filterd hosts')           
+        filtered_hosts = hosts
+    print('filtered_hosts %s' % filtered_hosts)
+    sys.exit()
     servers = []
-    for host_id in filtered_host_ids:
-        entry = user_data.get_dict_entry(host_id)
+    for host_addr in filtered_hosts:
+        entry = user_data.get_dict_for_host(host_addr)
         if not entry:
             raise ValueError('Error getting from user data')
 
@@ -204,7 +231,8 @@ Examples:
         credential = entry['Credential']
         principal = entry['Principal']
 
-        print('url=%s credential=%s, principal=%s'% (url, principal, credential))
+        #print('Open url=%s credential=%s, principal=%s'% (url, principal, credential))
+        print('Open url=%s Company=%s'% (url, entry['CompanyName']))
         server = None
         try:
             server = explore_server(url, principal, credential, args)
@@ -242,9 +270,6 @@ Examples:
             servers.append([url, server, 'GenErr', entry])
             traceback.format_exc()
 
-        #servers.append([url, server, err, entry])
-        #traceback.format_exc()
-
     # print results
     print('%-20.20s %-11.11s %-15.15s %-8.8s %-12.12s %-6.6s' % \
           ('Url', 'Brand', 'Company', 'Version', 'Interop_ns', 'Status'))
@@ -253,25 +278,29 @@ Examples:
         url = server_tuple[0]
         server = server_tuple[1]
         entry = server_tuple[3]
+        status = server_tuple[2]
         brand = ''
         version = ''
         interop_ns = ''
-        if server is not None:
+        if server is not None and status == 'OK':
             brand = server.brand
             version = server.version
             interop_ns = server.interop_ns
 
         print(
-            '%-20.20s %-11.11s %-15.15s %-10.10s %-12.12s %-6.6s' % \
+            '%-20.20s%-20.20s %-15.15s %-10.10s %-12.12s %-6.6s' % \
             (url,
              brand, entry['CompanyName'], version, interop_ns, server_tuple[2]))
 
+    # repeat to get smi info.
+    print('\n\n%-20.20s %-15.15s %-15.15s %s' % (
+          'Url', 'Brand', 'Company', 'SMI Profiles'))
     for server_tuple in servers:
         if server_tuple[2] == 'OK':
             entry = server_tuple[3]
             versions = smi_version(server_tuple[1], args)
             if versions is not None:
-                print('-20.20%s %-15.15s %-15.15s %s' % \
+                print('%-20.20s %-15.15s %-15.15s %s' % \
                       (s[0],entry['CompanyName'], entry['Product'], \
                        ", ". join(versions)))
 

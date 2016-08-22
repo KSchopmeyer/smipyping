@@ -119,6 +119,14 @@ class UserData(object):
         else:
             raise ValueError("Invalid id %s" % entry_id)
 
+    def get_dict_for_host(self, host):
+        """ For a host address, get the dictionary entry"""
+
+        for entry_id, value in self.userdict.iteritems():
+            if value['IPAddress'] == host:
+                return value
+        raise ValueError('IP %s not in list' % host)
+
     def filter_user_data(self, ip_filter=None, company_name_filter=None):
         if ip_filter:
             fd = dict((k, v) for k, v in self.userdict.items() if ip_filter == k)
@@ -132,8 +140,11 @@ class UserData(object):
         """
 
         output_list = []
-        for _id in self.userdict:
-            output_list.append(_id['IPAddress'])
+        #print('userdict %s' % self.userdict)
+        ## TODO clean up for python 3
+        for _id, value in self.userdict.items():
+            #print('_id %s, value %s' % (_id, value))
+            output_list.append(value['IPAddress'])
         return output_list
 
     def display_tbl_hdr(self):
@@ -269,7 +280,7 @@ The commands are:
 
     def find(self):
         parser = _argparse.ArgumentParser(
-            description='List fields in file')
+            description='Find a particular host')
         # prefixing the argument with -- means it's optional
         parser.add_argument('server',
                             help='Filename to display')

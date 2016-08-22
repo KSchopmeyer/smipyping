@@ -51,7 +51,7 @@ def check_port_syn(dst_ip, dst_port, verbose):
     resp = sr1(p, timeout=2) # Sending packet
     if str(type(resp)) == "<type 'NoneType'>":
         if verbose:
-            print('check_port:%s Closed. response="none"' % dst_ip)
+            print('%s Closed. response="none"' % dst_ip)
     elif resp.haslayer(TCP):
         if resp.getlayer(TCP).flags == SYNACK:
             send_rst = sr(IP(dst=dst_ip)/TCP(sport=src_port, dport=dst_port,
@@ -61,10 +61,10 @@ def check_port_syn(dst_ip, dst_port, verbose):
                 print('check_port:%s Open' % dst_ip)
         elif resp.getlayer(TCP).flags == RSTACK:
             if verbose:
-                print('check_port:%s Closed. response="RSTACK"' % dst_ip)
+                print('%s Closed. response="RSTACK"' % dst_ip)
     else:
         if verbose:
-            print('check_port:%s is Down' % dst_ip)
+            print('%s is Down' % dst_ip)
     result_key = '%s:%s' % (dst_ip, dst_port)
     if port_open:
         results.append(result_key)
@@ -122,20 +122,16 @@ def scan_subnets_threaded(subnets, start_ip, end_ip, port, verbose):
     tests = bld_test_list(subnets, start_ip, end_ip, port, verbose)
     open_hosts = []
     threads_ = []
-    #print('tests %s' % tests)
-    #return open_hosts
+
     for test in tests:
         process = threading.Thread(target=check_port_syn, args=(test[0],
                                    test[1], verbose))
         threads_.append(process)
 
-    print('start processing %s urls' % len(threads_))
     for process in threads_:
         process.start()
-    print('start join')
     for process in threads_:
         process.join()
-    print('end join')
     for result in results:
         open_hosts.append(result)
     return open_hosts
@@ -286,7 +282,7 @@ Examples:
             rtn = scan_subnets_threaded(args.subnet, args.startip,
                                         args.endip, args.port, args.verbose)
         else:
-            rtn = scan_subnets_threaded(args.subnet, args.startip,
+            rtn = scan_subnets(args.subnet, args.startip,
                                         args.endip, args.port, args.verbose)            
         if rtn is not None:
             open_hosts.extend(sorted(rtn))
