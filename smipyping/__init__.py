@@ -20,7 +20,7 @@
 
 """
 The external API ofthis client library is defined by the symbols that
-are exported from the ``pyping`` Python package and its sub-modules via their
+are exported from the ``smipyping`` Python package and its sub-modules via their
 ``__all__`` variables.
 
 Public symbols that are not listed in the ``__all__`` variables are still
@@ -30,17 +30,17 @@ Consumers of this package that use other symbols than those from the external
 API are at the risk of suffering from incompatible changes in future versions
 of this package.
 
-The external API is completely available in the ``pyping`` namespace. That
+The external API is completely available in the ``smipyping`` namespace. That
 is the only namespace that needs to be imported by users of the API. The
 sub-modules do not need to be imported. It is recommended to use the symbols
 in the ``pywbem`` namespace and not those of the sub-modules.
 
 With a few exceptions for tooling reasons, this documentation describes the
-symbols of the ``pyping`` namespace.
+symbols of the ``smipyping`` namespace.
 
 The WBEM client library API consists of the following elements:
 
-* :ref:`Package version` - Provides access to the version of the ``pyping``
+* :ref:`Package version` - Provides access to the version of the ``smipyping``
   package.
 * :ref:`WBEM operations` - Class :class:`WBEMConnection` is the main class of
   the WBEM client library and its methods issue WBEM operations to a WBEM
@@ -62,10 +62,10 @@ Package version
 The package version can be accessed by programs using the following variable.
 
 Note: For tooling reasons, the variable is shown in the namespace
-``pyping._version``. However, it is also available in the ``pyping`` namespace
-and should be used from there.
+``smipyping._version``. However, it is also available in the ``smipyping``
+namespace and should be used from there.
 
-.. autodata:: pyping._version.__version__
+.. autodata:: smipyping._version.__version__
 
 """
 
@@ -86,6 +86,6 @@ from ._version import __version__
 _python_m = sys.version_info[0]
 _python_n = sys.version_info[1]
 if _python_m == 2 and _python_n < 6:
-    raise RuntimeError('On Python 2, Pyping requires Python 2.6 or higher')
+    raise RuntimeError('On Python 2, smipyping requires Python 2.6 or higher')
 elif _python_m == 3 and _python_n < 4:
-    raise RuntimeError('On Python 3, Pyping requires Python 3.4 or higher')
+    raise RuntimeError('On Python 3, smipyping requires Python 3.4 or higher')

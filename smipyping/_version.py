@@ -22,7 +22,7 @@
 Version of the pyping package.
 """
 
-#: Version of the ``pyping`` package, as a string.
+#: Version of the ``smipyping`` package, as a string.
 #:
 #: Possible formats for the version string are:
 #:

@@ -15,15 +15,15 @@
 #
 
 """
-The :mod:`pywbem.config` module sets configuration variables for PyWBEM.
+The :mod:`smipyping.config` module sets configuration variables for smipyping.
 
-These configuration variables are used by PyWBEM only after its modules
+These configuration variables are used bysmipyping only after its modules
 have been loaded, so they can be modified by the user directly after
-importing :mod:`pywbem`. For example:
+importing :mod:`smipyping`. For example:
 
 ::
 
-    import pywbem
+    import smipyping
     pywbem.config.ENFORCE_INTEGER_RANGE = False
 
 Note that the source file of the :mod:`pywbem.config` module should not be
