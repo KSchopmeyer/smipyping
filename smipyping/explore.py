@@ -90,7 +90,8 @@ def smi_version(server, args):
         org = org_vm.tovalues(inst['RegisteredOrganization'])
         name = inst['RegisteredName']
         vers = inst['RegisteredVersion']
-        ####print("  %s %s Profile %s" % (org, name, vers))
+        if args.verbose
+            print("  %s %s Profile %s" % (org, name, vers))
         versions.append(vers)
     return versions
 
@@ -201,13 +202,12 @@ Examples:
 
     if args.verbose:
         print('args %s' % args)
-        
+
     user_data = CsvUserData(args.csvfile)
     hosts = user_data.get_hostid_list()
 
     filtered_hosts = []
-    print('args %s' % args.wbemserver)
-    
+
     # TODO make this list comprehension
     if args.wbemserver is not None:
         for host in hosts:
@@ -217,10 +217,9 @@ Examples:
             print('Ip address %s not in data base' % args.wbemserver)
             sys.exit(1)
     else:
-        print('set filterd hosts')           
         filtered_hosts = hosts
-    print('filtered_hosts %s' % filtered_hosts)
-    sys.exit()
+
+
     servers = []
     for host_addr in filtered_hosts:
         entry = user_data.get_dict_for_host(host_addr)
@@ -288,9 +287,9 @@ Examples:
             interop_ns = server.interop_ns
 
         print(
-            '%-20.20s%-20.20s %-15.15s %-10.10s %-12.12s %-6.6s' % \
-            (url,
-             brand, entry['CompanyName'], version, interop_ns, server_tuple[2]))
+            '%-20.20s %-11.11s %-15.15s %-8.8s %-12.12s %-6.6s' % \
+            (url, brand, entry['CompanyName'], version, interop_ns,
+             server_tuple[2]))
 
     # repeat to get smi info.
     print('\n\n%-20.20s %-15.15s %-15.15s %s' % (
