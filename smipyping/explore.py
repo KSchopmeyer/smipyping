@@ -90,7 +90,7 @@ def smi_version(server, args):
         org = org_vm.tovalues(inst['RegisteredOrganization'])
         name = inst['RegisteredName']
         vers = inst['RegisteredVersion']
-        if args.verbose
+        if args.verbose:
             print("  %s %s Profile %s" % (org, name, vers))
         versions.append(vers)
     return versions
