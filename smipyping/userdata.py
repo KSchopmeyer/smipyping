@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-#
-#
+##
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
@@ -25,46 +24,11 @@ import csv
 # required for main
 import argparse as _argparse
 import sys
+from textwrap import wrap
+from terminaltables import SingleTable
+
+
 from _cliutils import SmartFormatter as _SmartFormatter
-
-class UserDataEntry(object):
-    """Manage individual properties in a UserData entry"""
-
-    def __init__(self, entry):
-        self.entry = entry
-
-    @property
-    def id(self):
-        return self.entry['Id']
-    @property
-    def ip_address(self):
-        """Access to the ip_address property"""
-        return self.entry['IPAddress']
-    @property
-    def company_name(self):
-        return self.entry['CompanyName']
-    @property
-    def product(self):
-        return self.entry['Product']
-    @property
-    def port(self):
-        return self.entry['Port']
-    @property
-    def protocol(self):
-        return self.entry['Protocol']
-    @property
-    def version(self):
-        return self.entry['CimomVersion']
-    @property
-    def interop_ns(self):
-        return self.entry['InteropNamespace']
-    @property
-    def principal(self):
-        return self.entry['Principal']
-    @property
-    def credential(self):
-        return self.entry['Credential']
-
 
 class UserData(object):
     """Abstract top level class for the User Base.  This base contains
@@ -85,6 +49,25 @@ class UserData(object):
         self.expected_fields = self.expected_field_names.split(',')
         self.args = None
         self.verbose = True
+        # Defines each table entry for the data base and outputs.
+        # The Name is the database name for the property
+        # The value tuple is display name and max width for the entry
+        # TODO define means to create expected_name_fields
+        # TODO this should be class level.
+        self.table_format_dict = {'Id' : ('Id', 2),
+                                  'CompanyName' : ('Company', 13),        
+                                  'Namespace' : ('Namespace', 12),
+                                  'SMIVersion' : ('SMIVersion', 12),
+                                  'Product' : ('Product', 15),
+                                  'Principal' : ('Principal', 12),
+                                  'Credential' : ('Credential', 12),
+                                  'CimomVersion' : ('Version', 15),
+                                  'IPAddress' : ('IP', 12),
+                                  'InteropNamespace' : ('Interop', 8),
+                                  'Protocol' : ('Prot', 5),                                  
+                                  'Port' : ('Port', 4),
+                                  'Disable' : ('Disabled', 4),
+                                  }
 
     def __str__(self):
         print('count=%s' % len(self.userdict))
@@ -92,6 +75,10 @@ class UserData(object):
     def get_expected_fields(self):
         """Return list of the base field names"""
         return self.expected_fields
+
+    def get_format_dict(self, name):
+        """ return tuple of display name, length from dictionary for name"""
+        return self.table_format_dict[name]
 
     # this one does not work because multiple ips in table
     # will need to return multiple
@@ -106,8 +93,8 @@ class UserData(object):
             port = value["port"]
             this_host_id = '%s:%s' % (ip_address, port)
             if host_id in this_host_id:
-                return UserDataEntry(value)
-        
+                return value
+
         return None
 
     def get_dict_entry(self, entry_id):
@@ -129,7 +116,8 @@ class UserData(object):
 
     def filter_user_data(self, ip_filter=None, company_name_filter=None):
         if ip_filter:
-            fd = dict((k, v) for k, v in self.userdict.items() if ip_filter == k)
+            fd = dict((k, v) for k, v in self.userdict.items() \
+                if ip_filter == k)
             return fd
         #TODO fix this
 
@@ -147,33 +135,48 @@ class UserData(object):
             output_list.append(value['IPAddress'])
         return output_list
 
-    def display_tbl_hdr(self):
-        print ('%-2.2s %-12.12s %-16.16s %-18.18s %-4.4s %-6.6s %-10.10s' %
-               ('Id', 'IP', 'Company', 'Product', 'Port', 'Protocol', 'Version'))
+    def tbl_hdr(self, entry_list):
+        """ Return a list of all the column headers from the entry_list"""
+        hdr = []
+        for name in entry_list:
+            value = self.get_format_dict(name)
+            hdr.append(value[0])
+        return hdr
 
-    def display_entry(self, entry_id):
-        """ Display the field entries for a single ip_address:port.
-            The address is ip_address:port
-        """
+    def tbl_entry(self, entry_id, entry_list):
+        """ Return a list of entries for the entry_list"""
 
         entry = self.get_dict_entry(entry_id)
-        if entry is not None:
-            print('%-2.2s %-12.12s %-16.16s %-18.18s %-4.4s %-6.6s %-4.14s'
-                  % (entry["Id"],
-                     entry['IPAddress'],
-                     entry['CompanyName'],
-                     entry['Product'],
-                     entry['Port'],
-                     entry['Protocol'],
-                     entry['CimomVersion']))
-        else:
-            print('None')
+        line = []
+        for name in entry_list:
+            cell_str = entry[name]
+            value = self.get_format_dict(name)
+            max_width = value[1]
+            if max_width < len(cell_str):
+                cell_str = '\n'.join(wrap(cell_str, max_width))
+            line.append(cell_str)
+        return line
 
     def display_all(self):
         """Display all entries in the base"""
+        col_list = ['Id', 'IPAddress', 'CompanyName', 'Product',
+                    'Port', 'Protocol', 'CimomVersion']
+
+        table_data = []
+
+        table_data.append(self.tbl_hdr(col_list))
 
         for entry_id in self.userdict:
-            self.display_entry(entry_id)
+            table_data.append(self.tbl_entry(entry_id, col_list))
+
+        title = 'User data overviews'
+
+        table_instance = SingleTable(table_data, title)
+        table_instance. inner_column_border = False
+        table_instance.outer_border = False
+
+        print(table_instance.table)
+        print()
 
     def write_new(self, file_name):
         """Write the current user base to the named file"""
@@ -242,6 +245,9 @@ The commands are:
         getattr(self, args.command)()
 
     def display(self):
+        """ Function to get the arguments for the display and display the
+            Table data
+        """
 
         disp_parser = _argparse.ArgumentParser(
             description='Display user data repository')
@@ -262,7 +268,6 @@ The commands are:
         user_data = CsvUserData(args.file)
 
         print('\n')
-        user_data.display_tbl_hdr()
         user_data.display_all()
 
     def fields(self):
