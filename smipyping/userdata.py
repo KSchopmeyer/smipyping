@@ -45,7 +45,7 @@ class UserData(object):
         # TODO this should be class level
         self.expected_field_names = 'Id,CompanyName,Namespace,SMIVersion,' \
                 'Product,Principal,Credential,CimomVersion,IPAddress,' \
-                'InteropNamespace,Protocol,Port'
+                'InteropNamespace,Protocol,Port,Disable'
         self.expected_fields = self.expected_field_names.split(',')
         self.args = None
         self.verbose = True
@@ -166,7 +166,7 @@ class UserData(object):
 
         table_data.append(self.tbl_hdr(col_list))
 
-        for entry_id in self.userdict:
+        for entry_id in sorted(self.userdict.iterkeys()):
             table_data.append(self.tbl_entry(entry_id, col_list))
 
         title = 'User data overviews'
