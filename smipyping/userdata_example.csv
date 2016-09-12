@@ -49,3 +49,4 @@ Id,CompanyName,Namespace,SMIVersion,Product,Principal,Credential,CimomVersion,IP
 48,PMC-Sierra,root/pmc/maxraid/smi_14,1.4,maxRaid 8250,smilab6,f00sb4ll,Pegasus 2.10,10.1.134.172,root/PG_InterOp,https,5989
 50,Pure Storage,purestorage,1.6.1,FA-420,pureuser,pureuser,2.44.1,10.1.132.185,interop,https,5989
 51,SNIA,interop,0.0,SNIA Dummy Provider Entry,smilab,F00sb4ll,0.0,10.1.70.1,interop,http,5988
+52,Tintri,TODO,0,VMStore,smilab,F00sb4ll,0,10.1.132.86,interop,https,5989
