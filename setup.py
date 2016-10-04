@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
 """
-TODO add description here
+Setup for smipyping tool. Uses standard setuptool definitions.
 """
+
 from __future__ import print_function, absolute_import
 from os import path
 from setuptools import setup, find_packages
@@ -50,7 +51,11 @@ setup(
     ],
 
     # Run-time dependencies. These will be installed by pip
-    install_requires=['pywbem', 'six', 'tabulate', 'scapy'],
+    install_requires=[
+        'pywbem',
+        'six',
+        'tabulate',
+        'scapy'],
 
     # package data files
     package_data={
@@ -58,5 +63,7 @@ setup(
             'NEWS.md',
             'LICENSE.txt',
         ]},
+
+    scripts=['testscript']
     )
 

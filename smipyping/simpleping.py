@@ -1,7 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""TODO"""
+"""
+    Provides the components for a simple utility to test a single
+    wbem server against fixed information.  This includes
+    the cmd line parser, and funcitons to test the connection.Returns
+    exit code of 0 if the server is found and the defined class exists. 
+
+    Otherwise returns exit code 1.
+
+    This module is the components of the tool. It is assembled in a separate
+    script
+"""
 
 from __future__ import print_function, absolute_import
 
@@ -129,14 +139,11 @@ def test_server(conn, opts):
         print('Reply:\n\n%s\n' % last_reply)
     return rtn_code
 
-
-def main():
+def create_parser(prog):
     """
-    Parse command line arguments, connect to the WBEM server and open the
-    interactive shell.
+    Create the parser to parse cmd line arguments
     """
 
-    prog = "simpleping"  # Name of the script file invoking this module
     usage = '%(prog)s [options] server'
     desc = 'Provide an interactive shell for issuing operations against' \
            ' a WBEM server.'
@@ -249,17 +256,24 @@ Examples:
         '-h', '--help', action='help',
         help='Show this help message and exit')
 
-    opts = argparser.parse_args()
+    return argparser
+
+def main():
+
+    prog = "simpleping"  # Name of the script file invoking this module
+
+    arg_parser = create_parser(prog)
+
+    opts = arg_parser.parse_args()
 
     if not opts.server:
         argparser.error('No WBEM server specified')
 
-    conn = connect(opts.server, opts, argparser)
+    conn = connect(opts.server, opts, arg_parser)
 
     rtn_code = test_server(conn, opts)
 
     sys.exit(rtn_code)
-
 
 if __name__ == '__main__':
     sys.exit(main())

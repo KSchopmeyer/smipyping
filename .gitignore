@@ -6,7 +6,7 @@
 *.log
 *.tmp
 tmp.*
-smipyping.egg_info
+/tmp_*/
 MANIFEST
 pylint_done
 .coverage
@@ -14,10 +14,8 @@ pylint_done
 /build_doc/
 testsuite/runtests.log
 testsuite/testtmp/
-*.egg
-*.egg-info/
+/*egg-info
 setuptools-*.zip
-/tmp_*/
-/dist/smipyping*.tar.gz
-/dist/smipyping*.whl
+
+/dist/
 
