@@ -64,6 +64,6 @@ setup(
             'LICENSE.txt',
         ]},
 
-    scripts=['testscript']
+    scripts=['simpleping']
     )
 

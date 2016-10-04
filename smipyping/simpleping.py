@@ -5,7 +5,7 @@
     Provides the components for a simple utility to test a single
     wbem server against fixed information.  This includes
     the cmd line parser, and funcitons to test the connection.Returns
-    exit code of 0 if the server is found and the defined class exists. 
+    exit code of 0 if the server is found and the defined class exists.
 
     Otherwise returns exit code 1.
 
@@ -15,8 +15,7 @@
 
 from __future__ import print_function, absolute_import
 
-import sys
-import traceback
+import sys as _sys
 import logging
 import argparse as _argparse
 import re
@@ -24,8 +23,7 @@ from textwrap import fill
 
 from pywbem import WBEMConnection, Error, \
                    ConnectionError, TimeoutError, CIMError
-#from pywbem.cim_http import get_default_ca_cert_paths
-from _cliutils import SmartFormatter as _SmartFormatter
+from ._cliutils import SmartFormatter as _SmartFormatter
 
 TEST_CLASS = 'CIM_ComputerSystem'
 
@@ -93,7 +91,7 @@ def connect(server, opts, argparser_):
             argparser_.error('timeout option(%s) out of range' % opts.timeout)
 
     conn = WBEMConnection(url, creds, default_namespace=opts.namespace,
-                          no_verification= not opts.verify_cert,
+                          no_verification=not opts.verify_cert,
                           timeout=opts.timeout)
 
     conn.debug = opts.debug
@@ -101,13 +99,13 @@ def connect(server, opts, argparser_):
     if opts.verbose:
         print(get_connection_info(conn))
 
-
     return conn
 
 
 def test_server(conn, opts):
-    """ Issue the test operation. Returns with system exit code.
-        """
+    """
+    Issue the test operation. Returns with system exit code.
+    """
     try:
         insts = conn.EnumerateInstances(TEST_CLASS)
 
@@ -119,11 +117,11 @@ def test_server(conn, opts):
     except CIMError as ce:
         rtn_code = 1
         if opts.verbose:
-            print('Operation Failed: CIMError '% ce)
+            print('Operation Failed: CIMError %s '% ce)
     except TimeoutError as to:
         rtn_code = 4
         if opts.verbose:
-            print('Operation Failed: CTimeout '% to)        
+            print('Operation Failed: CTimeout %s '% to)
     except Error as er:
         if opts.verbose:
             print('PyWBEM Error %s' % er)
@@ -137,6 +135,7 @@ def test_server(conn, opts):
         print('Request:\n\n%s\n' % last_request)
         last_reply = conn.last_reply or conn.last_raw_reply
         print('Reply:\n\n%s\n' % last_reply)
+
     return rtn_code
 
 def create_parser(prog):
@@ -224,9 +223,9 @@ Examples:
              'matched against a certificate received from the WBEM\n' \
              'server. Set the --no-verify-cert option to bypass\n' \
              'client verification of the WBEM server certificate.\n')
-             #'Default: Searches for matching certificates in the\n' \
-             #'following system directories:\n'
-        #+ ("\n".join("%s" % p for p in get_default_ca_cert_paths())))
+             # 'Default: Searches for matching certificates in the\n' \
+             # 'following system directories:\n'
+             # + ("\n".join("%s" % p for p in get_default_ca_cert_paths())))
 
     security_arggroup.add_argument(
         '--certfile', dest='cert_file', metavar='certfile',
@@ -258,22 +257,34 @@ Examples:
 
     return argparser
 
+def parse_cmdline(argparser_):
+    opts = argparser_.parse_args()
+    
+    if not opts.server:
+        argparser_.error('No WBEM server specified')
+        return None
+    return opts
+    
+
 def main():
+    """ Main function executes the test.
+        TODO. Remove this completely to use the script code
+    """
 
     prog = "simpleping"  # Name of the script file invoking this module
 
-    arg_parser = create_parser(prog)
+    argparser_ = create_parser(prog)
+    
+    opts = argparser_.parse_args()
 
-    opts = arg_parser.parse_args()
+    opts = parse_cmdline(argparser_)
 
-    if not opts.server:
-        argparser.error('No WBEM server specified')
-
-    conn = connect(opts.server, opts, arg_parser)
+    conn = connect(opts.server, opts, argparser_)
 
     rtn_code = test_server(conn, opts)
 
-    sys.exit(rtn_code)
+    return rtn_code
+
 
 if __name__ == '__main__':
-    sys.exit(main())
+    _sys.exit(main())

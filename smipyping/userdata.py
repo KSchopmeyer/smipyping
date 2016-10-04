@@ -15,7 +15,7 @@ from textwrap import wrap
 from terminaltables import SingleTable
 
 
-from _cliutils import SmartFormatter as _SmartFormatter
+from ._cliutils import SmartFormatter as _SmartFormatter
 
 class UserData(object):
     """Abstract top level class for the User Base.  This base contains

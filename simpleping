@@ -1,0 +1,44 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+    Provided the command line script for the simple ping function.
+
+    This script:
+        Parses the cmd line input
+        Executes a connect to the server defined by the cmd line
+        Executes a fixed test against that server.
+        returns either exit code 0 if successful or exit code 1 if failed
+"""
+from __future__ import absolute_import
+
+import sys as _sys
+from smipyping import create_parser, connect, test_server, parse_cmdline
+
+def main():
+    """ Main function uses simpleping.py to execute. This provides
+        the parsing, connection and calls the test-server function
+
+        Returns with either exit code = 0 if OK or exit_code = 1 if error
+    """
+
+    prog = "simpleping"  # Name of the script file invoking this module
+
+    arg_parser = create_parser(prog)
+
+    opts = parse_cmdline(arg_parser)
+
+    conn = connect(opts.server, opts, arg_parser)
+
+    rtn_code = test_server(conn, opts)
+
+    if rtn_code != 0:
+        print('Error Response, Exit code %s' % rtn_code)
+
+    if opts.verbose:
+        print('Return code = %s' % rtn_code)
+
+    return rtn_code
+
+if __name__ == '__main__':
+    _sys.exit(main())
