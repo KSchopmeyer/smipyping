@@ -19,7 +19,7 @@ with open(path.join(here, 'README.md')) as f:
 
 setup(
     name='smipyping',
-    version='1.0',
+    version='0.5',
     description='smipyping - SMI Lab Test Tools',
     long_description=long_description,
     url='https://git@bitbucket.org:kschopmeyer/smipyping.git',

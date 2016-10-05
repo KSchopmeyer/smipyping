@@ -258,6 +258,8 @@ Examples:
     return argparser
 
 def parse_cmdline(argparser_):
+    """ Parse the command line.  This test for any required args"""
+    
     opts = argparser_.parse_args()
     
     if not opts.server:
@@ -265,26 +267,26 @@ def parse_cmdline(argparser_):
         return None
     return opts
     
+# TODO remove all of the following
+#def main():
+    #""" Main function executes the test.
+        #TODO. Remove this completely to use the script code
+    #"""
 
-def main():
-    """ Main function executes the test.
-        TODO. Remove this completely to use the script code
-    """
+    #prog = "simpleping"  # Name of the script file invoking this module
 
-    prog = "simpleping"  # Name of the script file invoking this module
-
-    argparser_ = create_parser(prog)
+    #argparser_ = create_parser(prog)
     
-    opts = argparser_.parse_args()
+    #opts = argparser_.parse_args()
 
-    opts = parse_cmdline(argparser_)
+    #opts = parse_cmdline(argparser_)
 
-    conn = connect(opts.server, opts, argparser_)
+    #conn = connect(opts.server, opts, argparser_)
 
-    rtn_code = test_server(conn, opts)
+    #rtn_code = test_server(conn, opts)
 
-    return rtn_code
+    #return rtn_code
 
 
-if __name__ == '__main__':
-    _sys.exit(main())
+#if __name__ == '__main__':
+    #_sys.exit(main())
