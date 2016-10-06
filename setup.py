@@ -54,7 +54,7 @@ setup(
     install_requires=[
         'pywbem',
         'six',
-        'tabulate',
+        'terminaltables',
         'scapy'],
 
     # package data files
