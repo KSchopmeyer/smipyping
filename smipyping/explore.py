@@ -10,6 +10,7 @@ import traceback
 import logging
 import argparse as _argparse
 from collections import namedtuple
+from terminaltables import SingleTable
 
 from pywbem import WBEMConnection, WBEMServer, ValueMapping, Error, \
                    ConnectionError, TimeoutError
@@ -142,16 +143,16 @@ def explore_server_profiles(server, args, short_explore=True):
             logger.info("  %s", str(ip))
     return server
 
-def main():
-    prog = "explore"  # Name of the script file invoking this module
+def create_parser(prog):
+    """Create the cmd line parser for the explore functions"""
+    
     usage = '%(prog)s [options] server'
     desc = 'Sweep possible WBEMServer ports across a range of IP addresses.'
     epilog = """
 Examples:
-  %s 10.1.134 --startip=1 --endip=254
-        The above example will scan the subnet 10.1.134 from 1 to 254
+  %s 10.1.134.25
   %s 10.1.134
-  %s 10.1.132 10.1.134 -p 5989 -p 5988
+  %s TODO entry_id list or nothing or all.
 
 """ % (prog, prog, prog)
 
@@ -163,7 +164,7 @@ Examples:
         'Positional arguments')
     pos_arggroup.add_argument(
         'wbemserver', metavar='server', nargs='?',
-        help='ip addresss of wbem servers to explore schema:address:')
+        help='Optional ip addresss of wbem servers to explore schema:address:')
 
     general_arggroup = argparser.add_argument_group(
         'General options')
@@ -176,6 +177,13 @@ Examples:
     general_arggroup.add_argument(
         '--debug', '-d', action='store_true',
         help='Display detailed connection information')
+
+    return argparser
+
+def main():
+    prog = "explore"  # Name of the script file invoking this module
+
+    argparser = create_parser(prog)
 
     args = argparser.parse_args()
 
@@ -222,7 +230,8 @@ Examples:
     for host_addr in filtered_hosts:
         entry = user_data.get_dict_for_host(host_addr)
         if not entry:
-            raise ValueError('Error getting from user data')
+            raise ValueError('Error with host %s getting from userdata' %
+                             host_addr)
 
         url = '%s://%s' % (entry['Protocol'], entry['IPAddress'])
         credential = entry['Credential']
@@ -239,32 +248,37 @@ Examples:
 
         except FunctionTimeoutError as fte:
 
-            logger.error('Timeout decorator exception:%s company %s'% (url, entry['CompanyName']))
+            logger.error('Timeout decorator exception:%s company %s'%
+                         (url, entry['CompanyName']))
             err = 'FunctTo'
             servers.append([url, server, '  FunctTo', entry])
             traceback.format_exc()
 
         except ConnectionError as ce:
-            logger.error('ConnectionError exception:%s company %s'% (url, entry['CompanyName']))
+            logger.error('ConnectionError exception:%s company %s'%
+                         (url, entry['CompanyName']))
             err = 'ConnErr'
             servers.append([url, server, 'ConnErr', entry])
             traceback.format_exc()
 
         except TimeoutError as to:
-            logger.error('Timeout Error exception:%s company %s'% (url, entry['CompanyName']))
+            logger.error('Timeout Error exception:%s company %s'%
+                         (url, entry['CompanyName']))
 
             err = 'Timeout'
             servers.append([url, server, 'Timeout', entry])
             traceback.format_exc()
 
         except Error as er:
-            logger.error('PyWBEM Error exception:%s company %s'% (url, entry['CompanyName']))
+            logger.error('PyWBEM Error exception:%s company %s'%
+                         (url, entry['CompanyName']))
             err = 'PyWBMEr'
             servers.append([url, server, 'PyWBMErr', entry])
             traceback.format_exc()
 
         except Exception as ex:
-            logger.error('General Error exception:%s company %s'% (url, entry['CompanyName']))
+            logger.error('General Error exception:%s company %s'%
+                         (url, entry['CompanyName']))
 
             err = 'GenErr'
             servers.append([url, server, 'GenErr', entry])

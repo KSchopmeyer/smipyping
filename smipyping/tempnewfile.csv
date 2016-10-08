@@ -47,6 +47,6 @@ Id,CompanyName,Namespace,SMIVersion,Product,Principal,Credential,CimomVersion,IP
 46,NetApp/LSI,root/lsiarray13,1.2/1.3,7900 Array,smilab6,Foosb4ll,Pegasus,10.1.134.106,interop,http,5988,FALSE
 47,Nimble Storage,interop,,CS Array,smilab6,F00sb4ll,,10.1.134.212,interop,https,5989,FALSE
 48,PMC-Sierra,root/pmc/maxraid/smi_14,1.4,maxRaid 8250,smilab6,f00sb4ll,Pegasus 2.10,10.1.134.172,root/PG_InterOp,https,5989,FALSE
-50,Pure Storage,purestorage,1.6.1,FA-420,pureuser,pureuser,2.44.1,10.1.132.185,interop,https,5989,FALSE
-51,SNIA,interop,0,SNIA Dummy Provider Entry,smilab,F00sb4ll,0,10.1.70.1,interop,http,5988,True
-52,Tintri,TODO,0,VMStore,smilab,F00sb4ll,0,10.1.132.86,interop,https,5989,False
+50,Pure Storage,purestorage,1.6.1,FA-420,pureuser,pureuser,2.44.1,10.1.132.185,interop,https,5989,True
+51,SNIA,interop,0,SNIA Dummy Provider Entry,smilab,F00sb4ll,0,10.1.70.1,interop,http,5988,FALSE
+52,Tintri,TODO,0,VMStore,smilab,F00sb4ll,0,10.1.132.86,interop,https,5989,FALSE
