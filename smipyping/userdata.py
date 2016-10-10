@@ -8,11 +8,13 @@
 from __future__ import print_function, absolute_import
 
 import os
+import sys as _sys
 import csv
+import argparse as _argparse
+
+import six
 
 # required for main
-import argparse as _argparse
-import sys as _sys
 from textwrap import wrap
 from terminaltables import SingleTable
 import ConfigParser
@@ -151,14 +153,22 @@ class UserData(object):
         for name in entry_list:
             cell_str = entry[name]
             value = self.get_format_dict(name)
-            max_width = value[1]
-            if max_width < len(cell_str):
-                cell_str = '\n'.join(wrap(cell_str, max_width))
-            line.append(cell_str)
+            if isinstance(value, six.string_types):
+                max_width = value[1]
+                if max_width < len(cell_str):
+                    cell_str = '\n'.join(wrap(cell_str, max_width))
+                line.append(cell_str)
+            else:
+                line.append('%s' % entry[name])
         return line
 
     def disabled_entry(self, entry):
-        return entry['Disable'].lower() == 'True'.lower()
+        disable = entry['Disable']
+        if isinstance(disable, six.string_types):
+            return disable == 'true'
+        else:
+            return disable
+        
 
     def display_disabled(self):
         """Display diabled entries"""

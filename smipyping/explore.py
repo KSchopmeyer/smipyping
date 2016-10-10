@@ -5,9 +5,11 @@
 """
 
 from __future__ import print_function, absolute_import
+import os
 import sys
 import traceback
 import logging
+import datetime
 import argparse as _argparse
 from collections import namedtuple
 from terminaltables import SingleTable
@@ -26,7 +28,7 @@ class smiWBEMServer(WBEMServer):
 # named tuple for the info about opened servers.
 server_info_tuple = namedtuple('server_info_tuple',
                                ['url', 'server', 'entry', 'status'])
-logger = None
+LOGGER = None
 # @functiontimeout(45)
 def explore_server(server_url, principal, credential, args):
     """ Explors a cim server for characteristics defined by
@@ -60,7 +62,7 @@ def smi_version(server, args):
     on the server
     """
 
-    global logger
+    global LOGGER
     org_vm = ValueMapping.for_property(server, server.interop_ns,
                                        'CIM_RegisteredProfile',
                                        'RegisteredOrganization')
@@ -76,7 +78,7 @@ def smi_version(server, args):
 
 def explore_server_profiles(server, args, short_explore=True):
 
-    global logger
+    global LOGGER
 
     def print_profile_info(org_vm, inst):
         """Print the registered org, name, version for the profile defined by
@@ -88,7 +90,7 @@ def explore_server_profiles(server, args, short_explore=True):
         if args.verbose:
             print("  %s %s Profile %s" % (org, name, vers))
 
-    #logger.info("Advertised management profiles:")
+    #LOGGER.info("Advertised management profiles:")
     org_vm = ValueMapping.for_property(server, server.interop_ns,
                                        'CIM_RegisteredProfile',
                                        'RegisteredOrganization')
@@ -100,13 +102,13 @@ def explore_server_profiles(server, args, short_explore=True):
 
     indication_profiles = server.get_selected_profiles('DMTF', 'Indications')
 
-    logger.info('Profiles for DMTF:Indications')
+    LOGGER.info('Profiles for DMTF:Indications')
     for inst in indication_profiles:
         print_profile_info(org_vm, inst)
 
     server_profiles = server.get_selected_profiles('SNIA')
 
-    logger.info('SNIA Profiles:')
+    LOGGER.info('SNIA Profiles:')
     for inst in server_profiles:
         print_profile_info(org_vm, inst)
 
@@ -115,23 +117,23 @@ def explore_server_profiles(server, args, short_explore=True):
         org = org_vm.tovalues(inst['RegisteredOrganization'])
         name = inst['RegisteredName']
         vers = inst['RegisteredVersion']
-        logger.info("Central instances for profile %s:%s:%s (component):",
+        LOGGER.info("Central instances for profile %s:%s:%s (component):",
                     org, name, vers)
         try:
             ci_paths = server.get_central_instances(
                 inst.path,
                 "CIM_IndicationService", "CIM_System", ["CIM_HostedService"])
         except Exception as exc:
-            logger.error("Error: Central Instances%s", str(exc))
+            LOGGER.error("Error: Central Instances%s", str(exc))
             ci_paths = []
         for ip in ci_paths:
-            logger.error("  %s", str(ip))
+            LOGGER.error("  %s", str(ip))
 
     for inst in server_profiles:
         org = org_vm.tovalues(inst['RegisteredOrganization'])
         name = inst['RegisteredName']
         vers = inst['RegisteredVersion']
-        logger.info("Central instances for profile %s:%s:%s(autonomous):",
+        LOGGER.info("Central instances for profile %s:%s:%s(autonomous):",
                     org, name, vers)
 
         try:
@@ -140,12 +142,12 @@ def explore_server_profiles(server, args, short_explore=True):
             print("Exception: %s" % str(exc))
             ci_paths = []
         for ip in ci_paths:
-            logger.info("  %s", str(ip))
+            LOGGER.info("  %s", str(ip))
     return server
 
 def create_parser(prog):
     """Create the cmd line parser for the explore functions"""
-    
+
     usage = '%(prog)s [options] server'
     desc = 'Sweep possible WBEMServer ports across a range of IP addresses.'
     epilog = """
@@ -164,7 +166,8 @@ Examples:
         'Positional arguments')
     pos_arggroup.add_argument(
         'wbemserver', metavar='server', nargs='?',
-        help='Optional ip addresss of wbem servers to explore schema:address:')
+        help='Optional host name or ip address of wbem servers to explore '
+             'schema:address:')
 
     general_arggroup = argparser.add_argument_group(
         'General options')
@@ -180,8 +183,36 @@ Examples:
 
     return argparser
 
+def create_logger(prog, logfile):
+    """ Build logger instance"""
+
+
+    # logging.basicConfig(stream=sys.stderr, level=logging.INFO,
+                    # format='%(asctime)s %(levelname)s %(message)s)')
+                       
+    logger = logging.getLogger(prog)
+    hdlr = logging.FileHandler(logfile)
+    # formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    hdlr.setFormatter(formatter)
+    logger.addHandler(hdlr)
+    logger.setLevel(logging.INFO)
+
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+    return logger
+
 def main():
-    prog = "explore"  # Name of the script file invoking this module
+    """ Main call during test. Creates logger, executes explore and
+        table generate
+    """
+    #prog = "explore"  # Name of the script file invoking this module
+    prog = os.path.basename(sys.argv[0])
+    logfile = '%s.log' % prog
 
     argparser = create_parser(prog)
 
@@ -190,31 +221,17 @@ def main():
     if args.verbose:
         print('args %s' % args)
 
-        #logging.basicConfig(stream=sys.stderr, level=logging.INFO,
-                        #format='%(asctime)s %(levelname)s %(message)s)')
 
-    global logger
-    logger = logging.getLogger('Explore')
-    hdlr = logging.FileHandler('explore.log')
-    ##formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    global LOGGER
+    LOGGER = create_logger(prog, logfile)
 
-    hdlr.setFormatter(formatter)
-    logger.addHandler(hdlr)
-    logger.setLevel(logging.INFO)
-
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
-    ch.setFormatter(formatter)     
-    logger.addHandler(ch)
-    
     filtered_hosts = []
 
-    #####print('args %s' % args.wbemserver)
-    
+    # print('args %s' % args.wbemserver)
+
     user_data = CsvUserData(args.csvfile)
     hosts = user_data.get_hostid_list()
-      
+
     # TODO make this list comprehension
     if args.wbemserver is not None:
         for host in hosts:
@@ -237,57 +254,66 @@ def main():
         credential = entry['Credential']
         principal = entry['Principal']
 
-        logger.info('Open %s Company=%s'% (url, entry['CompanyName']))
-        
+        LOGGER.info('Open %s Product=%s Company=%s' % (url, entry['Product'],
+                                                       entry['CompanyName']))
+        start_time = datetime.datetime.now()
         server = None
         try:
             server = explore_server(url, principal, credential, args)
             # TODO change to named tuple.
             s = [url, server, 'OK', entry]
             servers.append(s)
+            dt = datetime.datetime.now() - start_time            
+            LOGGER.info(
+                'OK %s Product %s Company%s time %s' % (url, entry['Product'],
+                                                        entry['CompanyName'],
+                                                        dt))
 
         except FunctionTimeoutError as fte:
 
-            logger.error('Timeout decorator exception:%s company %s'%
-                         (url, entry['CompanyName']))
+            LOGGER.error('Timeout decorator exception:%s Product=%s Company=%s'
+                         ' %s' %
+                         (url, entry['Product'], entry['CompanyName'], fte))
             err = 'FunctTo'
-            servers.append([url, server, '  FunctTo', entry])
+            servers.append([url, server, err, entry])
             traceback.format_exc()
 
         except ConnectionError as ce:
-            logger.error('ConnectionError exception:%s company %s'%
-                         (url, entry['CompanyName']))
+            LOGGER.error('ConnectionError exception:%s Product=%s Company=%s'
+                         ' %s' %
+                         (url, entry['Product'], entry['CompanyName'], ce))
             err = 'ConnErr'
-            servers.append([url, server, 'ConnErr', entry])
+            servers.append([url, server, err, entry])
             traceback.format_exc()
 
         except TimeoutError as to:
-            logger.error('Timeout Error exception:%s company %s'%
-                         (url, entry['CompanyName']))
+            LOGGER.error('Timeout Error exception:%s Product=%s Company=%s %s' %
+                         (url, entry['Product'], entry['CompanyName'], to))
 
             err = 'Timeout'
-            servers.append([url, server, 'Timeout', entry])
+            servers.append([url, server, err, entry])
             traceback.format_exc()
 
         except Error as er:
-            logger.error('PyWBEM Error exception:%s company %s'%
-                         (url, entry['CompanyName']))
+            LOGGER.error('PyWBEM Error exception:%s Product=%s Company=%s %s' %
+                         (url, entry['Product'], entry['CompanyName'], er))
             err = 'PyWBMEr'
-            servers.append([url, server, 'PyWBMErr', entry])
+            servers.append([url, server, err, entry])
             traceback.format_exc()
 
         except Exception as ex:
-            logger.error('General Error exception:%s company %s'%
-                         (url, entry['CompanyName']))
+            LOGGER.error('General Error exception:%s Product=%s  Company=%s'
+                         ' %s' %
+                         (url, entry['Product'], entry['CompanyName'], ex))
 
             err = 'GenErr'
-            servers.append([url, server, 'GenErr', entry])
+            servers.append([url, server, err, entry])
             traceback.format_exc()
 
     # print results
-    print_format = '%-20.20s %-11.11s %-15.15s %-8.8s %-12.12s %-6.6s'
-    print(print_format % \
-          ('Url', 'Brand', 'Company', 'Version', 'Interop_ns', 'Status'))
+    print_format = '%-2.2s %-20.20s %-11.11s %-15.15s %-8.8s %-12.12s %-6.6s'
+    print(print_format %
+          ('Id', 'Url', 'Brand', 'Company', 'Version', 'Interop_ns', 'Status'))
     print('==================================================================')
     for server_tuple in servers:
         url = server_tuple[0]
@@ -303,8 +329,8 @@ def main():
             interop_ns = server.interop_ns
 
         print(
-            '%-20.20s %-11.11s %-15.15s %-8.8s %-12.12s %-6.6s' % \
-            (url, brand, entry['CompanyName'], version, interop_ns,
+            '%-2.2s %-20.20s %-11.11s %-15.15s %-8.8s %-12.12s %-6.6s' %
+            (entry['Id'],url, brand, entry['CompanyName'], version, interop_ns,
              server_tuple[2]))
 
     # repeat to get smi info.
@@ -320,8 +346,8 @@ def main():
                 print('Exception in smi_versions %s' % server_tuple)
                 continue
             if versions is not None:
-                print('%-20.20s %-15.15s %-15.15s %s' % \
-                      (s[0],entry['CompanyName'], entry['Product'], \
+                print('%-20.20s %-15.15s %-15.15s %s' %
+                      (s[0], entry['CompanyName'], entry['Product'],
                        ", ". join(versions)))
 
     return 0
