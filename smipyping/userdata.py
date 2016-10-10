@@ -11,18 +11,21 @@ import os
 import sys as _sys
 import csv
 import argparse as _argparse
+import ConfigParser
+from collections import OrderedDict
+from textwrap import wrap
+from terminaltables import SingleTable
 
 import six
 
 # required for main
-from textwrap import wrap
-from terminaltables import SingleTable
-import ConfigParser
 
 from smipyping._cliutils import SmartFormatter as _SmartFormatter
 #from ._cliutils import SmartFormatter as _SmartFormatter
 
 def get_config(config_file):
+    """ Get config file """
+    #TODO put in separate module
     config = ConfigParser.SafeConfigParser()
 
     config_file = 'smipyping.cfg'
@@ -34,49 +37,45 @@ class UserData(object):
     information on the users, host systems, etc. in the environment
     """
 
-    def __init__(self):
+    def __init__(self, filename, args):
         """Initialize the abstract UserData that controls all other
         user bases. This defines the common defintion of all users bases
         including field names, and common methods.
         """
         self.userdict = {}
-        self.filename = None
+        self.filename = filename
         # TODO this should be class level
-        self.expected_field_names = 'Id,CompanyName,Namespace,SMIVersion,' \
-                'Product,Principal,Credential,CimomVersion,IPAddress,' \
-                'InteropNamespace,Protocol,Port,Disable'
-        self.expected_fields = self.expected_field_names.split(',')
         self.args = None
         self.verbose = True
         # Defines each table entry for the data base and outputs.
         # The Name is the database name for the property
         # The value tuple is display name and max width for the entry
-        # TODO define means to create expected_name_fields
         # TODO this should be class level.
-        self.table_format_dict = {'Id': ('Id', 2),
-                                  'CompanyName': ('Company', 13),
-                                  'Namespace': ('Namespace', 12),
-                                  'SMIVersion': ('SMIVersion', 12),
-                                  'Product': ('Product', 15),
-                                  'Principal': ('Principal', 12),
-                                  'Credential': ('Credential', 12),
-                                  'CimomVersion': ('Version', 15),
-                                  'IPAddress': ('IP', 12),
-                                  'InteropNamespace': ('Interop', 8),
-                                  'Protocol': ('Prot', 5),
-                                  'Port': ('Port', 4),
-                                  'Disable': ('Disabled', 4),
-                                 }
+        self.table_format_dict = OrderedDict([
+            ('Id', ('Id', 2)),
+            ('CompanyName', ('Company', 13)),
+            ('Namespace', ('Namespace', 12)),
+            ('SMIVersion', ('SMIVersion', 12)),
+            ('Product', ('Product', 15)),
+            ('Principal', ('Principal', 12)),
+            ('Credential', ('Credential', 12)),
+            ('CimomVersion', ('Version', 15)),
+            ('IPAddress', ('IP', 12)),
+            ('InteropNamespace', ('Interop', 8)),
+            ('Protocol', ('Prot', 5)),
+            ('Port', ('Port', 4)),
+            ('Disable', ('Disabled', 4)),
+            ])
 
     def __str__(self):
         print('count=%s' % len(self.userdict))
 
     def get_expected_fields(self):
-        """Return list of the base field names"""
-        return self.expected_fields
+        """Return a list of the base table file names in the order defined"""
+        return list(self.table_format_dict)
 
     def get_format_dict(self, name):
-        """ return tuple of display name, length from dictionary for name"""
+        """ Return tuple of display name and length for name"""
         return self.table_format_dict[name]
 
     # this one does not work because multiple ips in table
@@ -147,13 +146,15 @@ class UserData(object):
     def tbl_entry(self, entry_id, entry_list):
         """ Return a list of entries for the entry_list"""
 
+        # TODO can we make this a std cvt function.
+
         entry = self.get_dict_entry(entry_id)
 
         line = []
         for name in entry_list:
             cell_str = entry[name]
             value = self.get_format_dict(name)
-            if isinstance(value, six.string_types):
+            if isinstance(name, six.string_types):
                 max_width = value[1]
                 if max_width < len(cell_str):
                     cell_str = '\n'.join(wrap(cell_str, max_width))
@@ -168,11 +169,11 @@ class UserData(object):
             return disable == 'true'
         else:
             return disable
-        
+
 
     def display_disabled(self):
         """Display diabled entries"""
-        
+
         col_list = ['Id', 'IPAddress', 'CompanyName', 'Product',
                     'Port', 'Protocol', 'Disable']
 
@@ -187,7 +188,7 @@ class UserData(object):
 
         #table_list = [self.userdict[id] for id in sorted(self.userdict.iterkeys())]
 
-        #table_data = 
+        #table_data =
 
         self.print_table('Disabled hosts', table_data)
 
@@ -243,7 +244,7 @@ class CsvUserData(UserData):
     """ Comma Separated Values form of the User base"""
 
     def __init__(self, filename, args=None):
-        super(CsvUserData, self).__init__()
+        super(CsvUserData, self).__init__(filename, args)
         self.filename = filename
         reader = csv.DictReader(open(self.filename))
 
@@ -263,7 +264,7 @@ class CsvUserData(UserData):
         self.userdict = result
         self.args = args
 
-class main(object):
+class process_cli(object):
 
     def __init__(self):
         argparser = _argparse.ArgumentParser(
@@ -315,11 +316,13 @@ The commands are:
 
         user_data = CsvUserData(args.file)
 
+        ## print('keys %s'  % list(user_data.table_format_dict))
+
         print('\n')
         user_data.display_all()
 
     def disable(self):
-        """ Function todisable a particular entry
+        """ Function to mark a particular userdata entry disabled
         """
 
         disable_parser = _argparse.ArgumentParser(
@@ -357,9 +360,9 @@ The commands are:
         # TODO add test to see if already in correct state
 
         if host_entry is not None:
-            
+
             current_state = host_entry['Disable']
-            
+
             host_entry['Disable'] = False if args.enable is True else True
             user_data.write_updated()
         else:
@@ -417,7 +420,7 @@ The commands are:
         if host_entry is not None:
             print('host_entry %s' % host_entry)
             host_entry['Disable'] = True
-            user_data.write_new('tempnewfile.csv')
+            user_data.write_file('tempnewfile.csv')
         else:
             print('host_entry for %s not found' % host_entry)
 
@@ -469,6 +472,10 @@ The commands are:
             print('%s not found' % args.server)
         else:
             print('%s found\n%s' % (args.server, entry))
+
+def main():
+    process_cli()
+
 
 if __name__ == '__main__' and __package__ is None:
     main()
