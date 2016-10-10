@@ -355,8 +355,7 @@ def main():
             if host == args.wbemserver:
                 filtered_hosts.append(host)
         if len(filtered_hosts) == 0:
-            print('Ip address %s not in data base' % args.wbemserver)
-            sys.exit(1)
+            raise ValueError('Ip address %s not in data base' % args.wbemserver)
     else:
         filtered_hosts = hosts
 
@@ -366,7 +365,10 @@ def main():
     print_server_info(servers)
 
     # repeat to get smi info.
-    heading = '\n\n%-20.20s %-15.15s %-15.15s %s\n%s' % \
+
+    print_fmtr = '%-20.20s %-15.15s %-15.15s %s'
+    hdr_fmtr = '\n\n' + print_fmtr + '\n%s'
+    heading = hdr_fmtr % \
         ('Url', 'Product', 'Company', 'SMI Profiles', ('=' * 66))
     for server_tuple in servers:
         if server_tuple.status == 'OK':
@@ -378,7 +380,7 @@ def main():
                 continue
             if versions is not None:
                 print(heading)
-                print('%-20.20s %-15.15s %-15.15s %s' %
+                print(print_fmtr %
                       (server_tuple.url, entry['Product'], entry['CompanyName'],
                        ", ". join(versions)))
 

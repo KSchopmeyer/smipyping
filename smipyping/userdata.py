@@ -18,8 +18,6 @@ from terminaltables import SingleTable
 
 import six
 
-# required for main
-
 from smipyping._cliutils import SmartFormatter as _SmartFormatter
 #from ._cliutils import SmartFormatter as _SmartFormatter
 
@@ -47,9 +45,9 @@ class UserData(object):
         # TODO this should be class level
         self.args = None
         self.verbose = True
-        # Defines each table entry for the data base and outputs.
+        # Defines each record for the data base and outputs.
         # The Name is the database name for the property
-        # The value tuple is display name and max width for the entry
+        # The value tuple is display name and max width for the record
         # TODO this should be class level.
         self.table_format_dict = OrderedDict([
             ('Id', ('Id', 2)),
@@ -81,7 +79,7 @@ class UserData(object):
     # this one does not work because multiple ips in table
     # will need to return multiple
     def get_user_data_host(self, host_id):
-        """If an entry for `host_data` exists return that entry. Else
+        """If an record for `host_data` exists return that record. Else
             return None
             host_id = ipaddress:port
         """
@@ -95,21 +93,21 @@ class UserData(object):
 
         return None
 
-    def get_dict_entry(self, entry_id):
-        """If an entry for `host_data` exists return that entry. Else
+    def get_dict_record(self, record_id):
+        """If an entry for `host_data` exists return that record. Else
             return None
         """
-        if entry_id in self.userdict:
-            return self.userdict[entry_id]
+        if record_id in self.userdict:
+            return self.userdict[record_id]
         else:
             return None
 
     def get_dict_for_host(self, host):
-        """ For a host address, get the dictionary entry. Return None
+        """ For a host address, get the dictionary record . Return None
             if not found. Does not work because of multiple IPs
         """
 
-        for entry_id, value in self.userdict.iteritems():
+        for record_id, value in self.userdict.iteritems():
             if value['IPAddress'] == host:
                 return value
 
@@ -135,24 +133,24 @@ class UserData(object):
             output_list.append(value['IPAddress'])
         return output_list
 
-    def tbl_hdr(self, entry_list):
-        """ Return a list of all the column headers from the entry_list"""
+    def tbl_hdr(self, record_list):
+        """ Return a list of all the column headers from the record_list"""
         hdr = []
-        for name in entry_list:
+        for name in record_list:
             value = self.get_format_dict(name)
             hdr.append(value[0])
         return hdr
 
-    def tbl_entry(self, entry_id, entry_list):
-        """ Return a list of entries for the entry_list"""
+    def tbl_record(self, record_id, record_list):
+        """ Return a list of entries for the record_list"""
 
         # TODO can we make this a std cvt function.
 
-        entry = self.get_dict_entry(entry_id)
+        record = self.get_dict_record(record_id)
 
         line = []
-        for name in entry_list:
-            cell_str = entry[name]
+        for name in record_list:
+            cell_str = record[name]
             value = self.get_format_dict(name)
             if isinstance(name, six.string_types):
                 max_width = value[1]
@@ -160,11 +158,11 @@ class UserData(object):
                     cell_str = '\n'.join(wrap(cell_str, max_width))
                 line.append(cell_str)
             else:
-                line.append('%s' % entry[name])
+                line.append('%s' % record[name])
         return line
 
-    def disabled_entry(self, entry):
-        disable = entry['Disable']
+    def disabled_record(self, record):
+        disable = record['Disable']
         if isinstance(disable, six.string_types):
             return disable == 'true'
         else:
@@ -179,12 +177,13 @@ class UserData(object):
 
         table_data = []
 
+
         table_data.append(self.tbl_hdr(col_list))
 
         #TODO can we do this with list comprehension
-        for entry_id in sorted(self.userdict.iterkeys()):
-            if self.disabled_entry(self.userdict[entry_id]):
-                table_data.append(self.tbl_entry(entry_id, col_list))
+        for record_id in sorted(self.userdict.iterkeys()):
+            if self.disabled_record(self.userdict[record_id]):
+                table_data.append(self.tbl_record(record_id, col_list))
 
         #table_list = [self.userdict[id] for id in sorted(self.userdict.iterkeys())]
 
@@ -204,16 +203,26 @@ class UserData(object):
         print(table_instance.table)
         print()
 
-    def display_cols(self, col_list):
-        """ Display the columns of data defined by the col_list"""
+    def display_cols(self, column_list):
+        """
+        Display the columns of data defined by the col_list. This gets the
+        data from the user data based on the col_list and prepares a table
+        based on those user_data colums
+
+        Parameters:
+          column_list: list of strings defining the user_data columns to be
+            displayed.
+
+        """
         table_data = []
 
-        table_data.append(self.tbl_hdr(col_list))
+        # terminaltables creates the table headers from
+        table_data.append(self.tbl_hdr(column_list))
 
-        for entry_id in sorted(self.userdict.iterkeys()):
-            table_data.append(self.tbl_entry(entry_id, col_list))
+        for record_id in sorted(self.userdict.iterkeys()):
+            table_data.append(self.tbl_record(record_id, column_list))
 
-        self.print_table('User data overviews', table_data)
+        self.print_table('User Data Overview', table_data)
 
     def display_all(self):
         """Display all entries in the base"""
@@ -274,7 +283,7 @@ class process_cli(object):
             usage="""userdata.py <command> [<args>]
 The commands are:
    display     Display entries in the user data repository
-   disable     Disable an entry in the table
+   disable     Disable an record  in the table
    fields      list the fields in the user data repostiory
    test        temp function to do whatever testing we build in
    hosts
@@ -322,15 +331,15 @@ The commands are:
         user_data.display_all()
 
     def disable(self):
-        """ Function to mark a particular userdata entry disabled
+        """ Function to mark a particular userdata record  disabled
         """
 
         disable_parser = _argparse.ArgumentParser(
-            description='Disable entry in the repository')
+            description='Disable record  in the repository')
         # prefixing the argument with -- means it's optional
         disable_parser.add_argument(
             'Id',
-            help='Set or reset the disable flag for the defined entry')
+            help='Set or reset the disable flag for the defined record ')
 
         # prefixing the argument with -- means it's optional
         disable_parser.add_argument(
@@ -347,7 +356,7 @@ The commands are:
             '-e', '--enable',
             action='store_true', default=False,
             help='Set the disable flag to enable the '
-                 'entry rather than disable it')
+                 'record  rather than disable it')
 
         # now that we're inside a subcommand, ignore the first
         # TWO argvs, ie the command and the subcommand
@@ -355,15 +364,15 @@ The commands are:
 
         user_data = CsvUserData(args.file)
 
-        host_entry = user_data.get_dict_entry(args.Id)
+        host_record = user_data.get_dict_record(args.Id)
 
         # TODO add test to see if already in correct state
 
-        if host_entry is not None:
+        if host_record  is not None:
 
-            current_state = host_entry['Disable']
+            current_state = host_record['Disable']
 
-            host_entry['Disable'] = False if args.enable is True else True
+            host_record['Disable'] = False if args.enable is True else True
             user_data.write_updated()
         else:
             print('Id %s invalid or not in table' % args.Id)
@@ -416,13 +425,13 @@ The commands are:
 
         user_data = CsvUserData(opts.file)
 
-        host_entry = user_data.get_dict_for_host(opts.server)
-        if host_entry is not None:
-            print('host_entry %s' % host_entry)
-            host_entry['Disable'] = True
+        host_record = user_data.get_dict_for_host(opts.server)
+        if host_record  is not None:
+            print('host_record  %s' % host_record)
+            host_record['Disable'] = True
             user_data.write_file('tempnewfile.csv')
         else:
-            print('host_entry for %s not found' % host_entry)
+            print('host_record  for %s not found' % host_record)
 
     def fields(self):
         parser = _argparse.ArgumentParser(
@@ -447,12 +456,12 @@ The commands are:
                             help='Filename to display')
         args = parser.parse_args(_sys.argv[2:])
         user_data = CsvUserData(args.file)
-        entry = user_data.get_dict_entry(args.server)
-        # TODO separate get entry from display entry.
-        if entry is None:
+        record = user_data.get_dict_record(args.server)
+        # TODO separate get record  from display record .
+        if record  is None:
             print('%s not found' % args.server)
         else:
-            print('%s found\n%s' % (args.server, entry))
+            print('%s found\n%s' % (args.server, record))
 
     def hosts(self):
         parser = _argparse.ArgumentParser(
@@ -466,12 +475,12 @@ The commands are:
         args = parser.parse_args(_sys.argv[2:])
         user_data = CsvUserData(args.file)
         # TODO get host ids from table
-        entry = user_data.get_dict_entry(args.server)
-        # TODO separate get entry from display entry.
-        if entry is None:
+        record = user_data.get_dict_record(args.server)
+        # TODO separate get record  from display record .
+        if record  is None:
             print('%s not found' % args.server)
         else:
-            print('%s found\n%s' % (args.server, entry))
+            print('%s found\n%s' % (args.server, record))
 
 def main():
     process_cli()
