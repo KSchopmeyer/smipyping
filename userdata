@@ -1,0 +1,28 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+    Provides script interface to manage user data. This is temporary
+    
+
+    This script:
+        Has a number of subcommands to manage the userdata.
+"""
+from __future__ import absolute_import
+
+import sys as _sys
+from smipyping import create_parser, connect, test_server, parse_cmdline
+
+def main():
+    """ Main function uses userdata.py to execute. This provides
+        the parsing, connection and calls the test-server function
+
+        Returns with either exit code = 0 if OK or exit_code = 1 if error
+    """
+
+    prog = 'userdata'  # Name of the script file invoking this module
+
+    process_userdata_cli('userdata')
+
+if __name__ == '__main__':
+    _sys.exit(main())

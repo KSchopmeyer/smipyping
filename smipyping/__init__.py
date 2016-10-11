@@ -1,22 +1,3 @@
-#
-# (C) Copyright 2016 Karl Schopmeyer
-#
-# This library is free software; you can redistribute it and/or
-# modify it under the terms of the GNU Lesser General Public
-# License as published by the Free Software Foundation; either
-# version 2.1 of the License, or (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-# Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public
-# License along with this program; if not, write to the Free Software
-# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-#
-# Author: Karl Schopmeyer <k.schopmeyer@swbell.net>
-#
 
 """
 The external API ofthis client library is defined by the symbols that
@@ -79,13 +60,17 @@ import sys
 
 # TODO add other modules
 from .config import *
-from .userdata import * 
+from .userdata import *
+from .simpleping import *
+# TODO should not need this
+from ._cliutils import *
+
 
 from ._version import __version__
 
 _python_m = sys.version_info[0]
 _python_n = sys.version_info[1]
-if _python_m == 2 and _python_n < 6:
-    raise RuntimeError('On Python 2, smipyping requires Python 2.6 or higher')
+if _python_m == 2 and _python_n < 7:
+    raise RuntimeError('On Python 2, smipyping requires Python 2.7 or higher')
 elif _python_m == 3 and _python_n < 4:
     raise RuntimeError('On Python 3, smipyping requires Python 3.4 or higher')
