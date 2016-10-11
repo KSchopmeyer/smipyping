@@ -273,11 +273,11 @@ class CsvUserData(UserData):
         self.userdict = result
         self.args = args
 
-class process_cli(object):
+class process_userdata_cli(object):
 
-    def __init__(self):
+    def __init__(self, prog):
         argparser = _argparse.ArgumentParser(
-            prog='userdata',
+            prog=prog,
             description='Manage user data',
             formatter_class=_SmartFormatter,
             usage="""userdata.py <command> [<args>]
@@ -285,7 +285,6 @@ The commands are:
    display     Display entries in the user data repository
    disable     Disable an record  in the table
    fields      list the fields in the user data repostiory
-   test        temp function to do whatever testing we build in
    hosts
    listdisabled
 """)
@@ -392,46 +391,46 @@ The commands are:
         user_data = CsvUserData(args.file)
         user_data.display_disabled()
 
-    def test(self):
-        """ Function to test other subfunctions.
-        """
+    #def test(self):
+        #""" Function to test other subfunctions.
+        #"""
 
-        disp_parser = _argparse.ArgumentParser(
-            description='test something')
+        #disp_parser = _argparse.ArgumentParser(
+            #description='test something')
 
-        disp_parser.add_argument(
-            'server', metavar='server', nargs='?')
+        #disp_parser.add_argument(
+            #'server', metavar='server', nargs='?')
 
-        disp_parser.add_argument(
-            '-o', '--outputfile',
-            help='output file')
+        #disp_parser.add_argument(
+            #'-o', '--outputfile',
+            #help='output file')
 
-        # prefixing the argument with -- means it's optional
-        disp_parser.add_argument('-f', '--file',
-                                 default='userdata_example.csv',
-                                 help='Filename to display')
+        ## prefixing the argument with -- means it's optional
+        #disp_parser.add_argument('-f', '--file',
+                                 #default='userdata_example.csv',
+                                 #help='Filename to display')
 
-        # now that we're inside a subcommand, ignore the first
-        # TWO argvs, ie the command and the subcommand
-        opts = disp_parser.parse_args(_sys.argv[2:])
+        ## now that we're inside a subcommand, ignore the first
+        ## TWO argvs, ie the command and the subcommand
+        #opts = disp_parser.parse_args(_sys.argv[2:])
 
-        print('opts = %s' % opts)
+        #print('opts = %s' % opts)
 
-        print('outputfile %s' % opts.outputfile)
+        #print('outputfile %s' % opts.outputfile)
 
-        if opts.outputfile is None:
-            disp_parser.error('No output file specified')
-        print('test, output=%s' % opts.outputfile)
+        #if opts.outputfile is None:
+            #disp_parser.error('No output file specified')
+        #print('test, output=%s' % opts.outputfile)
 
-        user_data = CsvUserData(opts.file)
+        #user_data = CsvUserData(opts.file)
 
-        host_record = user_data.get_dict_for_host(opts.server)
-        if host_record  is not None:
-            print('host_record  %s' % host_record)
-            host_record['Disable'] = True
-            user_data.write_file('tempnewfile.csv')
-        else:
-            print('host_record  for %s not found' % host_record)
+        #host_record = user_data.get_dict_for_host(opts.server)
+        #if host_record  is not None:
+            #print('host_record  %s' % host_record)
+            #host_record['Disable'] = True
+            #user_data.write_file('tempnewfile.csv')
+        #else:
+            #print('host_record  for %s not found' % host_record)
 
     def fields(self):
         parser = _argparse.ArgumentParser(
@@ -483,7 +482,7 @@ The commands are:
             print('%s found\n%s' % (args.server, record))
 
 def main():
-    process_cli()
+    process_userdata_cli('userdata.py')
 
 
 if __name__ == '__main__' and __package__ is None:

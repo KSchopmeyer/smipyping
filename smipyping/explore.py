@@ -13,7 +13,6 @@ import datetime
 import argparse as _argparse
 from collections import namedtuple
 from terminaltables import SingleTable
-from collections import namedtuple
 
 from pywbem import WBEMConnection, WBEMServer, ValueMapping, Error, \
                    ConnectionError, TimeoutError
@@ -26,26 +25,51 @@ from functiontimeout import FunctionTimeoutError, functiontimeout
 class SMIWBEMServer(WBEMServer):
     """ Define the SMIWBEMServer subclass to the WBEMServer that incorporates
         Specific smi server characteristics.
-    """    
+    """
     def __init__(self, conn):
         super(WBEMServer, self).__init__(conn)
-        pass
-
 
 # named tuple for the info about opened servers.
-server_info_tuple = namedtuple('server_info_tuple',
-                               ['url', 'server', 'entry', 'status'])
+ServerInfoTuple = namedtuple('ServerInfoTuple',
+                             ['url', 'server', 'entry', 'status'])
 LOGGER = None
+
+def print_smi_profile_info(servers):
+    """
+    Generates a table of smi profile information listing the smi profiles
+
+    Parameters:
+
+      servers: list of ServerInfoTuple entries
+    """
+
+    print_fmtr = '%-20.20s %-15.15s %-15.15s %s'
+    hdr_fmtr = '\n\n' + print_fmtr + '\n%s'
+    heading = hdr_fmtr % \
+        ('Url', 'Product', 'Company', 'SMI Profiles', ('=' * 66))
+    for server_tuple in servers:
+        if server_tuple.status == 'OK':
+            entry = server_tuple.entry
+            try:
+                versions = smi_version(server_tuple.server)
+            except Exception as ex:
+                print('Exception %s in smi_versions %s' % (ex, server_tuple))
+                continue
+            if versions is not None:
+                print(heading)
+                print(print_fmtr %
+                      (server_tuple.url, entry['Product'], entry['CompanyName'],
+                       ", ". join(versions)))
 
 def print_server_info(servers):
     """ Display a table of info from the server scan
     """
-    
+
     print_format = '%-2.2s %-18.18s %-11.11s %-15.15s %-8.8s %-12.12s %-6.6s'
     hdr_format = print_format + '\n%s'
     print(hdr_format %
-        ('Id', 'Url', 'Brand', 'Company', 'Version', 'Interop_ns', 'Status',
-         ('=' * 75)))
+          ('Id', 'Url', 'Brand', 'Company', 'Version', 'Interop_ns', 'Status',
+           ('=' * 75)))
 
     for server_tuple in servers:
         url = server_tuple.url
@@ -61,9 +85,8 @@ def print_server_info(servers):
             interop_ns = server.interop_ns
 
         print(
-            print_format %
-            (entry['Id'],url, brand, entry['CompanyName'], version, interop_ns,
-             server_tuple.status))
+            print_format % (entry['Id'], url, brand, entry['CompanyName'],
+                            version, interop_ns, server_tuple.status))
 
 def explore_servers(user_data, host_list, args):
     """
@@ -80,7 +103,7 @@ def explore_servers(user_data, host_list, args):
 
     Returns:
 
-        List of namedtuple server_info_tuple
+        List of namedtuple ServerInfoTuple
     """
     servers = []
     for host_addr in host_list:
@@ -99,10 +122,10 @@ def explore_servers(user_data, host_list, args):
         server = None
         try:
             server = explore_server(url, principal, credential, args)
-            s = server_info_tuple(url=url, server=server, status='OK', entry=entry)
+            s = ServerInfoTuple(url=url, server=server, status='OK', entry=entry)
 
             servers.append(s)
-            dt = datetime.datetime.now() - start_time            
+            dt = datetime.datetime.now() - start_time
             LOGGER.info(
                 'OK %s Product %s Company%s time %s' % (url, entry['Product'],
                                                         entry['CompanyName'],
@@ -114,7 +137,7 @@ def explore_servers(user_data, host_list, args):
                          ' %s' %
                          (url, entry['Product'], entry['CompanyName'], fte))
             err = 'FunctTo'
-            servers.append(server_info_tuple(url, server, err, entry))
+            servers.append(ServerInfoTuple(url, server, err, entry))
             traceback.format_exc()
 
         except ConnectionError as ce:
@@ -122,7 +145,7 @@ def explore_servers(user_data, host_list, args):
                          ' %s' %
                          (url, entry['Product'], entry['CompanyName'], ce))
             err = 'ConnErr'
-            servers.append(server_info_tuple(url, server, err, entry))
+            servers.append(ServerInfoTuple(url, server, err, entry))
             traceback.format_exc()
 
         except TimeoutError as to:
@@ -130,14 +153,14 @@ def explore_servers(user_data, host_list, args):
                          (url, entry['Product'], entry['CompanyName'], to))
 
             err = 'Timeout'
-            servers.append(server_info_tuple(url, server, err, entry))
+            servers.append(ServerInfoTuple(url, server, err, entry))
             traceback.format_exc()
 
         except Error as er:
             LOGGER.error('PyWBEM Error exception:%s Product=%s Company=%s %s' %
                          (url, entry['Product'], entry['CompanyName'], er))
             err = 'PyWBMEr'
-            servers.append(server_info_tuple(url, server, err, entry))
+            servers.append(ServerInfoTuple(url, server, err, entry))
             traceback.format_exc()
 
         except Exception as ex:
@@ -146,13 +169,13 @@ def explore_servers(user_data, host_list, args):
                          (url, entry['Product'], entry['CompanyName'], ex))
 
             err = 'GenErr'
-            servers.append(server_info_tuple(url, server, err, entry))
+            servers.append(ServerInfoTuple(url, server, err, entry))
             traceback.format_exc()
     return servers
 
 # @functiontimeout(45)
 def explore_server(server_url, principal, credential, args):
-    """ Explors a cim server for characteristics defined by
+    """ Explores a cim server for characteristics defined by
         the server class including namespaces, brand, version, etc. info.
     """
 
@@ -177,13 +200,13 @@ def explore_server(server_url, principal, credential, args):
 
     return server
 
-def smi_version(server, args):
+def smi_version(server):
     """
     Get the smi version used by this server from the SNIA profile information
     on the server
     """
 
-    global LOGGER
+    #global LOGGER
     org_vm = ValueMapping.for_property(server, server.interop_ns,
                                        'CIM_RegisteredProfile',
                                        'RegisteredOrganization')
@@ -199,7 +222,7 @@ def smi_version(server, args):
 
 def explore_server_profiles(server, args, short_explore=True):
 
-    global LOGGER
+    #global LOGGER
 
     def print_profile_info(org_vm, inst):
         """Print the registered org, name, version for the profile defined by
@@ -309,7 +332,7 @@ def create_logger(prog, logfile):
 
     # logging.basicConfig(stream=sys.stderr, level=logging.INFO,
                     # format='%(asctime)s %(levelname)s %(message)s)')
-                       
+
     logger = logging.getLogger(prog)
     hdlr = logging.FileHandler(logfile)
     # formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
@@ -326,11 +349,13 @@ def create_logger(prog, logfile):
     logger.addHandler(ch)
     return logger
 
+def process_explore_cli(prog)
+
 def main():
     """ Main call during test. Creates logger, executes explore and
         table generate
     """
-    #prog = "explore"  # Name of the script file invoking this module
+    
     prog = os.path.basename(sys.argv[0])
     logfile = '%s.log' % prog
 
@@ -346,7 +371,7 @@ def main():
 
     user_data = CsvUserData(args.csvfile)
     hosts = user_data.get_hostid_list()
-    
+
     filtered_hosts = []
 
     # TODO make this list comprehension
@@ -366,23 +391,9 @@ def main():
 
     # repeat to get smi info.
 
-    print_fmtr = '%-20.20s %-15.15s %-15.15s %s'
-    hdr_fmtr = '\n\n' + print_fmtr + '\n%s'
-    heading = hdr_fmtr % \
-        ('Url', 'Product', 'Company', 'SMI Profiles', ('=' * 66))
-    for server_tuple in servers:
-        if server_tuple.status == 'OK':
-            entry = server_tuple.entry
-            try:
-                versions = smi_version(server_tuple[1], args)
-            except Exception as ex:
-                print('Exception in smi_versions %s' % server_tuple)
-                continue
-            if versions is not None:
-                print(heading)
-                print(print_fmtr %
-                      (server_tuple.url, entry['Product'], entry['CompanyName'],
-                       ", ". join(versions)))
+    print_smi_profile_info(servers)
+
+
 
     return 0
 

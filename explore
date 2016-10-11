@@ -1,0 +1,54 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+    Provides script interface to manage user data. This is temporary
+    
+
+    This script:
+        Has a number of subcommands to manage the userdata.
+"""
+from __future__ import absolute_import
+
+import sys as _sys
+from smipyping import create_parser, connect, test_server, parse_cmdline
+
+def main(prog)
+    logfile = '%s.log' % prog
+
+    argparser = create_parser(prog)
+
+    args = argparser.parse_args()
+
+    if args.verbose:
+        print('args %s' % args)
+
+    global LOGGER
+    LOGGER = create_logger(prog, logfile)
+
+    user_data = CsvUserData(args.csvfile)
+    hosts = user_data.get_hostid_list()
+
+    filtered_hosts = []
+
+    # TODO make this list comprehension
+    if args.wbemserver is not None:
+        for host in hosts:
+            if host == args.wbemserver:
+                filtered_hosts.append(host)
+        if len(filtered_hosts) == 0:
+            raise ValueError('Ip address %s not in data base' % args.wbemserver)
+    else:
+        filtered_hosts = hosts
+
+    servers = explore_servers(user_data, filtered_hosts, args)
+
+    # print results
+    print_server_info(servers)
+
+    # repeat to get smi info.
+
+    print_smi_profile_info(servers)
+
+if __name__ == '__main__':
+    _sys.exit(main())
