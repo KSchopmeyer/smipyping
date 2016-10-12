@@ -6,7 +6,7 @@
 
 from __future__ import print_function, absolute_import
 import os
-import sys
+import sys as _sys
 import traceback
 import logging
 import datetime
@@ -16,10 +16,10 @@ from terminaltables import SingleTable
 
 from pywbem import WBEMConnection, WBEMServer, ValueMapping, Error, \
                    ConnectionError, TimeoutError
-from _cliutils import SmartFormatter as _SmartFormatter
-from _cliutils import check_negative_int
-from userdata import CsvUserData
-from functiontimeout import FunctionTimeoutError, functiontimeout
+from ._cliutils import SmartFormatter as _SmartFormatter
+from ._cliutils import check_negative_int
+from .userdata import CsvUserData
+from .functiontimeout import FunctionTimeoutError, functiontimeout
 
 
 class SMIWBEMServer(WBEMServer):
@@ -289,7 +289,7 @@ def explore_server_profiles(server, args, short_explore=True):
             LOGGER.info("  %s", str(ip))
     return server
 
-def create_parser(prog):
+def create_explore_parser(prog):
     """Create the cmd line parser for the explore functions"""
 
     usage = '%(prog)s [options] server'
@@ -327,7 +327,7 @@ Examples:
 
     return argparser
 
-def create_logger(prog, logfile):
+def create_explore_logger(prog, logfile):
     """ Build logger instance"""
 
     # logging.basicConfig(stream=sys.stderr, level=logging.INFO,
@@ -349,17 +349,15 @@ def create_logger(prog, logfile):
     logger.addHandler(ch)
     return logger
 
-def process_explore_cli(prog)
 
-def main():
+def main(prog):
     """ Main call during test. Creates logger, executes explore and
         table generate
     """
-    
-    prog = os.path.basename(sys.argv[0])
+
     logfile = '%s.log' % prog
 
-    argparser = create_parser(prog)
+    argparser = create_explore_parser(prog)
 
     args = argparser.parse_args()
 
@@ -367,7 +365,7 @@ def main():
         print('args %s' % args)
 
     global LOGGER
-    LOGGER = create_logger(prog, logfile)
+    LOGGER = create_explore_logger(prog, logfile)
 
     user_data = CsvUserData(args.csvfile)
     hosts = user_data.get_hostid_list()
@@ -393,9 +391,8 @@ def main():
 
     print_smi_profile_info(servers)
 
-
-
     return 0
 
 if __name__ == '__main__':
-    sys.exit(main())
+    prog_name = os.path.basename(_sys.argv[0])
+    _sys.exit(main(prog_name))

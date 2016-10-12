@@ -1,0 +1,37 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+    Provides script interface to manage user data. This is temporary
+
+
+    This script:
+        Has a number of subcommands to manage the userdata.
+"""
+from __future__ import absolute_import
+
+import sys
+import os
+from smipyping import create_sweep_argparser, parse_sweep_args, \
+                      sweep_servers, CsvUserData
+
+def main(prog_name):
+    """
+        Port sweep demo program
+    """
+    argparser = create_sweep_argparser(prog_name)
+    args = parse_sweep_args(argparser)
+
+    # TODO clean up user_data
+    user_data = None
+    if args.csvfile is not None:
+        user_data = CsvUserData(args.csvfile)
+    user_data = None if args.csvfile is None else CsvUserData(args.csvfile)
+
+    # TODO remove args as requirement
+    sweep_servers(args, args.subnet, args.startip, args.endip, args.port,
+                  args.threaded, user_data, args.verbose)
+
+if __name__ == '__main__':
+    prog_name = os.path.basename(sys.argv[0])
+    sys.exit(main(prog_name))

@@ -64,6 +64,6 @@ setup(
             'LICENSE.txt',
         ]},
 
-    scripts=['simpleping', 'userdata', 'explore']
+    scripts=['simpleping', 'userdata', 'explore', 'serversweep']
     )
 

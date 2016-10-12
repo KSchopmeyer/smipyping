@@ -3,7 +3,7 @@
 
 """
     Provides script interface to manage user data. This is temporary
-    
+
 
     This script:
         Has a number of subcommands to manage the userdata.
@@ -11,12 +11,18 @@
 from __future__ import absolute_import
 
 import sys as _sys
-from smipyping import create_parser, connect, test_server, parse_cmdline
+import os
+from smipyping import create_explore_parser, CsvUserData, \
+                      create_explore_logger, \
+                      explore_servers, print_server_info, \
+                      print_smi_profile_info
 
-def main(prog)
+LOGGER = None
+
+def main(prog):
     logfile = '%s.log' % prog
 
-    argparser = create_parser(prog)
+    argparser = create_explore_parser(prog)
 
     args = argparser.parse_args()
 
@@ -24,7 +30,7 @@ def main(prog)
         print('args %s' % args)
 
     global LOGGER
-    LOGGER = create_logger(prog, logfile)
+    LOGGER = create_explore_logger(prog, logfile)
 
     user_data = CsvUserData(args.csvfile)
     hosts = user_data.get_hostid_list()
@@ -50,5 +56,8 @@ def main(prog)
 
     print_smi_profile_info(servers)
 
+    return 0
+
 if __name__ == '__main__':
-    _sys.exit(main())
+    prog_name = os.path.basename(_sys.argv[0])
+    _sys.exit(main(prog_name))

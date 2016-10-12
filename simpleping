@@ -13,7 +13,8 @@
 from __future__ import absolute_import
 
 import sys as _sys
-from smipyping import create_parser, connect, test_server, parse_cmdline
+from smipyping import create_simpleping_parser, connect, test_server, \
+                      parse_simpleping_cmdline
 
 def main():
     """ Main function uses simpleping.py to execute. This provides
@@ -24,9 +25,9 @@ def main():
 
     prog = "simpleping"  # Name of the script file invoking this module
 
-    arg_parser = create_parser(prog)
+    arg_parser = create_simpleping_parser(prog)
 
-    opts = parse_cmdline(arg_parser)
+    opts = parse_simpleping_cmdline(arg_parser)
 
     conn = connect(opts.server, opts, arg_parser)
 

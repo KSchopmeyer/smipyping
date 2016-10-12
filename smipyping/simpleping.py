@@ -138,14 +138,16 @@ def test_server(conn, opts):
 
     return rtn_code
 
-def create_parser(prog):
+def create_simpleping_parser(prog):
     """
     Create the parser to parse cmd line arguments
     """
 
     usage = '%(prog)s [options] server'
-    desc = 'Provide an interactive shell for issuing operations against' \
-           ' a WBEM server.'
+    desc = 'Provide an interactive shell for doing a simple CIM ping against ' \
+           'a WBEM server defined by the input parameters. This script only. '\
+           ' connects to the server and test for the existence of a single ' \
+           ' class. If the test fails it exists with non-zero exit code'
     epilog = """
 Examples:
   %s https://localhost:15345 -n interop -u sheldon -p penny
@@ -257,36 +259,12 @@ Examples:
 
     return argparser
 
-def parse_cmdline(argparser_):
+def parse_simpleping_cmdline(argparser_):
     """ Parse the command line.  This test for any required args"""
-    
+
     opts = argparser_.parse_args()
-    
+
     if not opts.server:
         argparser_.error('No WBEM server specified')
         return None
     return opts
-    
-# TODO remove all of the following
-#def main():
-    #""" Main function executes the test.
-        #TODO. Remove this completely to use the script code
-    #"""
-
-    #prog = "simpleping"  # Name of the script file invoking this module
-
-    #argparser_ = create_parser(prog)
-    
-    #opts = argparser_.parse_args()
-
-    #opts = parse_cmdline(argparser_)
-
-    #conn = connect(opts.server, opts, argparser_)
-
-    #rtn_code = test_server(conn, opts)
-
-    #return rtn_code
-
-
-#if __name__ == '__main__':
-    #_sys.exit(main())
