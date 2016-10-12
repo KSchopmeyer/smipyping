@@ -11,18 +11,19 @@
 from __future__ import absolute_import
 
 import sys as _sys
-from smipyping import create_parser, connect, test_server, parse_cmdline
+import os
+from smipyping import process_userdata_cli
 
-def main():
+def main(prog):
     """ Main function uses userdata.py to execute. This provides
         the parsing, connection and calls the test-server function
 
         Returns with either exit code = 0 if OK or exit_code = 1 if error
     """
 
-    prog = 'userdata'  # Name of the script file invoking this module
 
-    process_userdata_cli('userdata')
+    process_userdata_cli(prog)
 
 if __name__ == '__main__':
-    _sys.exit(main())
+    prog_name = os.path.basename(_sys.argv[0])
+    _sys.exit(main(prog_name))

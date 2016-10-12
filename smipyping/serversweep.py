@@ -14,9 +14,9 @@ import threading
 
 from scapy.all import *
 
-from _cliutils import SmartFormatter as _SmartFormatter
-from _cliutils import check_negative_int
-from userdata import CsvUserData
+from ._cliutils import SmartFormatter as _SmartFormatter
+from ._cliutils import check_negative_int
+from .userdata import CsvUserData
 
 DEFAULT_TEST_PORT = 5989
 
@@ -110,7 +110,8 @@ def scan_subnets_threaded(subnets, start_ip, end_ip, port, verbose):
 
     for test in tests:
         process = threading.Thread(target=check_port_syn, args=(test[0],
-                                   test[1], verbose))
+                                                                test[1],
+                                                                verbose))
         threads_.append(process)
 
     for process in threads_:
@@ -181,12 +182,12 @@ def print_open_hosts_report(args, open_hosts, total_time, user_data):
                 % (args.subnet, args.port, range_txt, execution_time))
     print("=" * 50)
 
-def main():
+def create_sweep_argparser(prog_name):
     """
-        Port sweep demo program
+    TODO
     """
-
-    prog = "sweep"  # Name of the script file invoking this module
+    
+    prog = prog_name  # Name of the script file invoking this module
     usage = '%(prog)s [options] server'
     desc = 'Sweep possible WBEMServer ports across a range of IP addresses '\
            'and ports to find existing open WBEM servers.'
@@ -232,11 +233,21 @@ Examples:
         help='Use csv input file')
     general_arggroup.add_argument(
         '--threaded', '-t', action='store_true', default=False,
-        help='If set output detail displays as test proceeds')        
+        help='If set output detail displays as test proceeds')
     general_arggroup.add_argument(
         '--verbose', '-v', action='store_true', default=False,
         help='If set output detail displays as test proceeds')
 
+    return argparser
+
+def parse_sweep_args(argparser):
+    """
+    Process the cmdline arguments including any default substitution.
+
+    This is based on the argparser defined by the create... function.
+
+    Either returns the args or executes argparser.error
+    """
     args = argparser.parse_args()
 
     if not args.subnet:
@@ -244,6 +255,7 @@ Examples:
 
     # set default port if none provided.
     if args.port is None:
+        # TODO make this config variable
         args.port = [DEFAULT_TEST_PORT]
 
     if args.verbose:
@@ -254,23 +266,43 @@ Examples:
         print('csvfile=%s' % args.csvfile)
         print('verbose=%s' % args.verbose)
         print('threaded=%s' % args.threaded)
-    user_data = None
-    if args.csvfile is not None:
-        user_data = CsvUserData(args.csvfile)
 
+    return args
+
+# TODO remove args
+def sweep_servers(args, subnets, startip, endip, ports, threaded, user_data,
+                  verbose):
+    """
+    Execute the scan on the subnets defined by the input parameters.
+
+    Parameters:
+      subnets: list of subnets
+
+      startip: start ip for the scan on each subnet
+
+      endip: Last ip to include in scan
+
+      ports: list of ports to scan
+
+      verbose: detailed display if True
+
+      Returns:
+          List of host results as a tuple
+    """
     start_time = time.time() # Scan start time
 
     try:
         open_hosts = []
 
-        if args.threaded:
-            rtn = scan_subnets_threaded(args.subnet, args.startip,
-                                        args.endip, args.port, args.verbose)
+        if threaded:
+            scan_results = scan_subnets_threaded(subnets, startip,
+                                                 endip, ports, threaded,
+                                                 verbose)
         else:
-            rtn = scan_subnets(args.subnet, args.startip,
-                                        args.endip, args.port, args.verbose)            
-        if rtn is not None:
-            open_hosts.extend(sorted(rtn))
+            scan_results = scan_subnets(subnets, startip,
+                                        endip, ports, verbose)
+        if scan_results is not None:
+            open_hosts.extend(sorted(scan_results))
 
     except KeyboardInterrupt:
         # Used in case the  user press "Ctrl+C", it will show the
@@ -282,7 +314,25 @@ Examples:
 
     print_open_hosts_report(args, open_hosts, total_time, user_data)
 
-if __name__ == '__main__':
-    main()
+#def main(prog_name):
+    #"""
+        #Port sweep demo program
+    #"""
+    #argparser = create_sweep_argparser(prog_name)
+    #args = parse_sweep_args(argparser)
+
+    ## TODO clean up user_data
+    #user_data = None
+    #if args.csvfile is not None:
+        #user_data = CsvUserData(args.csvfile)
+    #user_data = None if args.csvfile is None else CsvUserData(args.csvfile)
+
+    ## TODO remove args as requirement
+    #sweep_servers(args, args.subnet, args.startip, args.endip, args.port,
+                  #args.threaded, user_data, args.verbose)
+
+#if __name__ == '__main__':
+    #prog_name = os.path.basename(sys.argv[0])
+    #sys.exit(main(prog_name))
 
 
