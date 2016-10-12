@@ -188,9 +188,7 @@ Examples:
     server_arggroup.add_argument(
         '-n', '--namespace', dest='namespace', metavar='namespace',
         default='interop',
-        help='R|Default namespace in the WBEM server for operation\n' \
-             'requests when namespace option not supplied with\n' \
-             'operation request.\n'
+        help='R|Namespace in the WBEM server for the test request.\n' \
              'Default: %(default)s')
     server_arggroup.add_argument(
         '-t', '--timeout', dest='timeout', metavar='timeout', type=int,
