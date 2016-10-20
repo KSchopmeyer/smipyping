@@ -1,5 +1,5 @@
 # ------------------------------------------------------------------------------
-# Makefile for pyping
+# Makefile for smipyping
 #
 # Supported platforms:
 #   Windows
@@ -26,9 +26,9 @@ else
 endif
 
 # Name of this Python package
-package_name := pyping
+package_name := smipyping
 
-# Package version as specified in pywbem/_version.py
+# Package version as specified in smipyping/_version.py
 package_specified_version := $(shell sh -c "grep -E '^ *__version__ *= ' pywbem/_version.py |sed -r 's/__version__ *= *\x27(.*)\x27.*/\1/'")
 
 # Normalized package version (as normalized by setup.py during building)
@@ -58,13 +58,6 @@ win64_dist_file := $(dist_dir)/$(package_name)-$(package_version).win-amd64.exe
 
 dist_files := $(bdist_file) $(sdist_file) $(win64_dist_file)
 
-# Lex/Yacc table files, generated from and by mof_compiler.py
-moftab_files := $(package_name)/mofparsetab.py $(package_name)/moflextab.py
-
-# Dependents for Lex/Yacc table files
-moftab_dependent_files := \
-    $(package_name)/mof_compiler.py \
-
 # Directory for generated API documentation
 doc_build_dir := build_doc
 
@@ -81,8 +74,8 @@ doc_opts := -v -d $(doc_build_dir)/doctrees -c $(doc_conf_dir) -D latex_paper_si
 
 # File names of automatically generated utility help message text output
 doc_utility_help_files := \
-    $(doc_conf_dir)/wbemcli.help.txt \
-    $(doc_conf_dir)/mof_compiler.help.txt \
+    $(doc_conf_dir)/simpleping.help.txt \
+    $(doc_conf_dir)/serversweep.help.txt \
 
 # Dependents for Sphinx documentation build
 doc_dependent_files := \
@@ -90,17 +83,11 @@ doc_dependent_files := \
     $(wildcard $(doc_conf_dir)/*.rst) \
     $(wildcard $(doc_conf_dir)/notebooks/*.ipynb) \
     $(package_name)/__init__.py \
-    $(package_name)/cim_constants.py \
-    $(package_name)/cim_obj.py \
-    $(package_name)/cim_operations.py \
-    $(package_name)/cim_types.py \
-    $(package_name)/cim_http.py \
-    $(package_name)/mof_compiler.py \
-    $(package_name)/exceptions.py \
-    $(package_name)/_listener.py \
-    $(package_name)/_recorder.py \
-    $(package_name)/_server.py \
-    $(package_name)/config.py \
+    $(package_name)/_cliutils.py \
+    $(package_name)/userdata.py \
+    $(package_name)/explore.py \
+    $(package_name)/simpleping.py \
+    $(package_name)/serversweep.py \
 
 # PyLint config file
 pylint_rc_file := pylintrc
@@ -109,8 +96,7 @@ pylint_rc_file := pylintrc
 pylint_py_files := \
     setup.py \
     $(wildcard $(package_name)/*.py)) \
-    $(wildcard testsuite/test*.py) \
-    testsuite/validate.py \
+    $(wildcard tests/test*.py)
 
 # Test log
 test_log_file := test_$(python_version_fn).log
@@ -159,7 +145,6 @@ help:
 
 .PHONY: develop
 develop:
-	python setup.py develop_os
 	python setup.py develop
 	@echo '$@ done.'
 
@@ -239,8 +224,8 @@ test: $(test_log_file)
 
 .PHONY: clobber
 clobber: clean
-	rm -f pylint.log epydoc.log test_*.log $(moftab_files)
-	rm -Rf $(doc_build_dir) .tox
+	rm -f pylint.log test_*.log
+	#rm -Rf $(doc_build_dir) .tox
 	@echo 'Done: Removed everything to get to a fresh state.'
 	@echo '$@ done.'
 
@@ -250,8 +235,8 @@ clean:
 	find . -name "*.pyc" -delete
 	sh -c "find . -name \"__pycache__\" |xargs -r rm -Rf"
 	sh -c "ls -d tmp_* |xargs -r rm -Rf"
-	rm -f MANIFEST parser.out .coverage $(package_name)/parser.out $(test_tmp_file)
-	rm -Rf build tmp_install testtmp testsuite/testtmp .cache $(package_name).egg-info .eggs
+	rm -f MANIFEST .coverage $(test_tmp_file)
+	rm -Rf build tmp_install testtmp tests/testtmp .cache $(package_name).egg-info .eggs
 	@echo 'Done: Cleaned out all temporary files.'
 	@echo '$@ done.'
 
@@ -277,7 +262,7 @@ MANIFEST.in: makefile
 # Distribution archives.
 # Note: Deleting MANIFEST causes distutils (setup.py) to read MANIFEST.in and to
 # regenerate MANIFEST. Otherwise, changes in MANIFEST.in will not be used.
-$(bdist_file) $(sdist_file): setup.py MANIFEST.in $(dist_dependent_files) $(moftab_files)
+$(bdist_file) $(sdist_file): setup.py MANIFEST.in $(dist_dependent_files) 
 ifneq ($(PLATFORM),Windows)
 	rm -rf MANIFEST $(package_name).egg-info .eggs
 	python setup.py sdist -d $(dist_dir) bdist_wheel -d $(dist_dir) --universal
@@ -287,21 +272,15 @@ else
 	@false
 endif
 
-$(win64_dist_file): setup.py MANIFEST.in $(dist_dependent_files) $(moftab_files)
+$(win64_dist_file): setup.py MANIFEST.in $(dist_dependent_files)
 ifeq ($(PLATFORM),Windows)
 	rm -rf MANIFEST $(package_name).egg-info .eggs
-	python setup.py bdist_wininst -d $(dist_dir) -o -t "PyWBEM v$(package_version)"
+	python setup.py bdist_wininst -d $(dist_dir) -o -t "smipyping v$(package_version)"
 	@echo 'Done: Created Windows installable: $@'
 else
 	@echo 'Error: Creating Windows installable requires to run on Windows'
 	@false
 endif
-
-# Note: The mof*tab files need to be removed in order to rebuild them (make rules vs. ply rules)
-$(moftab_files): $(moftab_dependent_files) build_moftab.py
-	rm -f $(package_name)/mofparsetab.py* $(package_name)/moflextab.py*
-	python -c "from pywbem import mof_compiler; mof_compiler._build(verbose=True)"
-	@echo 'Done: Created LEX/YACC table modules: $@'
 
 # TODO: Once pylint has no more errors, remove the dash "-"
 pylint.log: makefile $(pylint_rc_file) $(pylint_py_files)
@@ -320,11 +299,11 @@ $(test_log_file): makefile $(package_name)/*.py testsuite/*.py coveragerc
 	mv -f $(test_tmp_file) $(test_log_file)
 	@echo 'Done: Created test log file: $@'
 
-$(doc_conf_dir)/wbemcli.help.txt: wbemcli
-	./wbemcli --help >$@
-	@echo 'Done: Created wbemcli script help message file: $@'
+$(doc_conf_dir)/serversweep.help.txt: serversweep $(package_name)/serversweep.py
+	./serversweep --help >$@
+	@echo 'Done: Created serversweep script help message file: $@'
 
-$(doc_conf_dir)/mof_compiler.help.txt: mof_compiler $(package_name)/mof_compiler.py
-	./mof_compiler --help >$@
+$(doc_conf_dir)/simpleping.help.txt: simpleping $(package_name)/simpleping.py
+	./simpleping --help >$@
 	@echo 'Done: Created mof_compiler script help message file: $@'
 
