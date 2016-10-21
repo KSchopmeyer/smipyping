@@ -19,10 +19,10 @@
 # These are explicitly safe for 'import *'
 
 """
-Version of the pyping package.
+Version of the smipyping package.
 """
 
-#: Version of the ``smipyping`` package, as a string.
+#: Version of the smipyping package, as a :term:`string`.
 #:
 #: Possible formats for the version string are:
 #:
@@ -31,4 +31,5 @@ Version of the pyping package.
 #: * "M.N.U.rcX": Release candidate X of future M.N.U release (not released to
 #:   PyPI)
 #: * "M.N.U": The final M.N.U release
-__version__ = '0.5.0.dev0'
+__version__ = '0.6.0.dev0'
+

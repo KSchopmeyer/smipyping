@@ -1,13 +1,15 @@
 # ------------------------------------------------------------------------------
 # Makefile for smipyping
 #
-# Supported platforms:
-#   Windows
+# Supported platforms for this makefile:
 #   Linux
+#   OS-X
+#   Windows (with CygWin, MinGW, etc.)
 #
-# Basic prerequisites for running this makefile:
-#   bash, sh
-#   rm, find, xargs, grep, sed, tar
+# Prerequisite commands for this makefile:
+#   make
+#   bash, sh, rm, mv, mkdir, echo
+#   find, xargs, grep, sed, tar
 #   python (Some active Python version, virtualenv is supported)
 #   pip (in the active Python environment)
 #
@@ -29,7 +31,7 @@ endif
 package_name := smipyping
 
 # Package version as specified in smipyping/_version.py
-package_specified_version := $(shell sh -c "grep -E '^ *__version__ *= ' pywbem/_version.py |sed -r 's/__version__ *= *\x27(.*)\x27.*/\1/'")
+package_specified_version := $(shell sh -c "grep -E '^ *__version__ *= ' smipyping/_version.py |sed -r 's/__version__ *= *\x27(.*)\x27.*/\1/'")
 
 # Normalized package version (as normalized by setup.py during building)
 package_version := $(shell sh -c "echo $(package_specified_version) |sed 's/[.-]\?\(rc[0-9]\+\)$$/\1/' |sed 's/[.]\?dev[0-9]\*$$/\.dev0/'")
@@ -37,26 +39,19 @@ package_version := $(shell sh -c "echo $(package_specified_version) |sed 's/[.-]
 # Final version of this package (M.N.U)
 package_final_version := $(shell sh -c "echo $(package_version) |sed 's/rc[0-9]\+$$//' |sed 's/\.dev0$$//'")
 
-# Final version of this package (M.N)
-package_final_mn_version := $(shell sh -c "echo $(package_final_version) |sed 's/\([0-9]\+\.[0-9]\+\).\+$$/\1/'")
-
-# Python major version
-python_major_version := $(shell python -c "import sys; sys.stdout.write('%s'%sys.version_info[0])")
-
-# Python version for use in file names
-python_version_fn := $(shell python -c "import sys; sys.stdout.write('%s%s'%(sys.version_info[0],sys.version_info[1]))")
+# Python versions
+python_version := $(shell python -c "import sys; sys.stdout.write('%s.%s.%s'%sys.version_info[0:3])")
+python_mn_version := $(shell python -c "import sys; sys.stdout.write('%s%s'%sys.version_info[0:2])")
 
 # Directory for the generated distribution files
-dist_dir := dist/$(package_name)-$(package_final_mn_version)
+dist_dir := dist
 
-# Distribution archives (as built by setup.py)
+# Distribution archives
 bdist_file := $(dist_dir)/$(package_name)-$(package_version)-py2.py3-none-any.whl
 sdist_file := $(dist_dir)/$(package_name)-$(package_version).tar.gz
 
-# Windows installable (as built by setup.py)
-win64_dist_file := $(dist_dir)/$(package_name)-$(package_version).win-amd64.exe
+dist_files := $(bdist_file) $(sdist_file)
 
-dist_files := $(bdist_file) $(sdist_file) $(win64_dist_file)
 
 # Directory for generated API documentation
 doc_build_dir := build_doc
@@ -76,6 +71,8 @@ doc_opts := -v -d $(doc_build_dir)/doctrees -c $(doc_conf_dir) -D latex_paper_si
 doc_utility_help_files := \
     $(doc_conf_dir)/simpleping.help.txt \
     $(doc_conf_dir)/serversweep.help.txt \
+    $(doc_conf_dir)/explore.help.txt \
+    $(doc_conf_dir)/userdata.help.txt \
 
 # Dependents for Sphinx documentation build
 doc_dependent_files := \
@@ -98,9 +95,19 @@ pylint_py_files := \
     $(wildcard $(package_name)/*.py)) \
     $(wildcard tests/test*.py)
 
+# Flake8 config file
+flake8_rc_file := .flake8
+
+# Flake8 source files to check
+flake8_py_files := \
+    setup.py \
+    os_setup.py \
+    $(filter-out $(moftab_files), $(wildcard $(package_name)/*.py)) \
+    $(wildcard testsuite/*.py)
+
 # Test log
-test_log_file := test_$(python_version_fn).log
-test_tmp_file := test_$(python_version_fn).tmp.log
+test_log_file := test_$(python_mn_version).log
+test_tmp_file := test_$(python_mn_version).tmp.log
 
 # Files to be put into distribution archive.
 # Keep in sync with dist_dependent_files.
@@ -129,15 +136,14 @@ dist_dependent_files := \
 help:
 	@echo 'makefile for $(package_name)'
 	@echo 'Package version will be: $(package_version)'
-	@echo 'Uses the currently active Python environment: Python $(python_version_fn)'
+	@echo 'Uses the currently active Python environment: Python $(python_version)'
 	@echo 'Valid targets are (they do just what is stated, i.e. no automatic prereq targets):'
 	@echo '  develop    - Prepare the development environment by installing prerequisites'
-	@echo '  build      - Build the distribution files in: $(dist_dir) (requires Linux or OSX)'
-	@echo '  buildwin   - Build the Windows installable in: $(dist_dir) (requires Windows 64-bit)'
+	@echo '  build      - Build the distribution files in: $(dist_dir)'
 	@echo '  builddoc   - Build documentation in: $(doc_build_dir)'
-	@echo '  check      - Run PyLint on sources and save results in: pylint.log'
+	@echo '  check      - Run PyLint&Flake8 on sources and save results in: pylint.log&flake8.log'
 	@echo '  test       - Run unit tests and save results in: $(test_log_file)'
-	@echo '  all        - Do all of the above (except buildwin when not on Windows)'
+	@echo '  all        - Do all of the above'
 	@echo '  install    - Install distribution archive to active Python environment'
 	@echo '  upload     - build + upload the distribution files to PyPI'
 	@echo '  clean      - Remove any temporary files'
@@ -206,7 +212,11 @@ doccoverage:
 	@echo '$@ done.'
 
 .PHONY: check
-check: pylint.log
+check: pylint.log flake8.log
+	@echo '$@ done.'
+
+.PHONY: flake8
+flake8: flake8.log
 	@echo '$@ done.'
 
 .PHONY: install
@@ -224,8 +234,8 @@ test: $(test_log_file)
 
 .PHONY: clobber
 clobber: clean
-	rm -f pylint.log test_*.log
-	#rm -Rf $(doc_build_dir) .tox
+	rm -f pylint.log flake8.log test_*.log  $(dist_files)
+	rm -Rf $(doc_build_dir) .tox
 	@echo 'Done: Removed everything to get to a fresh state.'
 	@echo '$@ done.'
 
@@ -262,40 +272,47 @@ MANIFEST.in: makefile
 # Distribution archives.
 # Note: Deleting MANIFEST causes distutils (setup.py) to read MANIFEST.in and to
 # regenerate MANIFEST. Otherwise, changes in MANIFEST.in will not be used.
-$(bdist_file) $(sdist_file): setup.py MANIFEST.in $(dist_dependent_files) 
-ifneq ($(PLATFORM),Windows)
+$(bdist_file) $(sdist_file): setup.py MANIFEST.in $(dist_dependent_files)
 	rm -rf MANIFEST $(package_name).egg-info .eggs
 	python setup.py sdist -d $(dist_dir) bdist_wheel -d $(dist_dir) --universal
 	@echo 'Done: Created distribution files: $@'
-else
-	@echo 'Error: Creating distribution archives requires to run on Linux or OSX'
-	@false
-endif
 
-$(win64_dist_file): setup.py MANIFEST.in $(dist_dependent_files)
-ifeq ($(PLATFORM),Windows)
-	rm -rf MANIFEST $(package_name).egg-info .eggs
-	python setup.py bdist_wininst -d $(dist_dir) -o -t "smipyping v$(package_version)"
-	@echo 'Done: Created Windows installable: $@'
-else
-	@echo 'Error: Creating Windows installable requires to run on Windows'
-	@false
-endif
 
 # TODO: Once pylint has no more errors, remove the dash "-"
+# PyLint status codes:
+# * 0 if everything went fine
+# * 1 if fatal messages issued
+# * 2 if error messages issued
+# * 4 if warning messages issued
+# * 8 if refactor messages issued
+# * 16 if convention messages issued
+# * 32 on usage error
+# Status 1 to 16 will be bit-ORed.
+# The make command checks for statuses: 1,2,32
 pylint.log: makefile $(pylint_rc_file) $(pylint_py_files)
-ifeq ($(python_major_version), 2)
+ifeq ($(python_mn_version),27)
 	rm -f pylint.log
-	-bash -c "set -o pipefail; PYTHONPATH=. pylint --rcfile=$(pylint_rc_file) --output-format=text $(pylint_py_files) 2>&1 |tee pylint.tmp.log"
+	-bash -c 'set -o pipefail; PYTHONPATH=. pylint --rcfile=$(pylint_rc_file) --output-format=text $(pylint_py_files) 2>&1 |tee pylint.tmp.log; rc=$$?; if (($$rc >= 32 || $$rc & 0x03)); then exit $$rc; fi'
 	mv -f pylint.tmp.log pylint.log
 	@echo 'Done: Created Pylint log file: $@'
 else
-	@echo 'Info: Pylint requires Python 2; skipping this step on Python $(python_major_version)'
+	@echo 'Info: Pylint requires Python 2.7; skipping this step on Python $(python_version)'
+endif
+
+# TODO: Once flake8 has no more errors, remove the dash "-"
+flake8.log: makefile $(flake8_rc_file) $(flake8_py_files)
+ifeq ($(python_mn_version),26)
+	@echo 'Info: Flake8 requires Python 2.7 or Python 3; skipping this step on Python $(python_version)'
+else
+	rm -f flake8.log
+	-bash -c "set -o pipefail; PYTHONPATH=. flake8 --statistics --config=$(flake8_rc_file) $(flake8_py_files) 2>&1 |tee flake8.tmp.log"
+	mv -f flake8.tmp.log flake8.log
+	@echo 'Done: Created flake8 log file: $@'
 endif
 
 $(test_log_file): makefile $(package_name)/*.py testsuite/*.py coveragerc
 	rm -f $(test_log_file)
-	bash -c "set -o pipefail; PYTHONWARNINGS=default PYTHONPATH=. py.test --cov $(package_name) --cov-config coveragerc --ignore=attic --ignore=releases -s 2>&1 |tee $(test_tmp_file)"
+	bash -c "set -o pipefail; PYTHONWARNINGS=default PYTHONPATH=. py.test --cov $(package_name) --cov-config coveragerc --ignore=attic --ignore=releases --ignore=testsuite/testclient -s 2>&1 |tee $(test_tmp_file)"
 	mv -f $(test_tmp_file) $(test_log_file)
 	@echo 'Done: Created test log file: $@'
 
@@ -305,5 +322,5 @@ $(doc_conf_dir)/serversweep.help.txt: serversweep $(package_name)/serversweep.py
 
 $(doc_conf_dir)/simpleping.help.txt: simpleping $(package_name)/simpleping.py
 	./simpleping --help >$@
-	@echo 'Done: Created mof_compiler script help message file: $@'
+	@echo 'Done: Created simpleping script help message file: $@'
 
