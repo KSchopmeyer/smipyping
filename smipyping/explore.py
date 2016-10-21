@@ -5,6 +5,7 @@
 """
 
 from __future__ import print_function, absolute_import
+
 import os
 import sys as _sys
 import traceback
@@ -12,12 +13,12 @@ import logging
 import datetime
 import argparse as _argparse
 from collections import namedtuple
-from terminaltables import SingleTable
+# TODO from terminaltables import SingleTable
 
 from pywbem import WBEMConnection, WBEMServer, ValueMapping, Error, \
                    ConnectionError, TimeoutError
 from ._cliutils import SmartFormatter as _SmartFormatter
-from ._cliutils import check_negative_int
+# TODO from ._cliutils import check_negative_int
 from .userdata import CsvUserData
 from .functiontimeout import FunctionTimeoutError, functiontimeout
 
@@ -27,7 +28,7 @@ class SMIWBEMServer(WBEMServer):
         Specific smi server characteristics.
     """
     def __init__(self, conn):
-        super(WBEMServer, self).__init__(conn)
+        super(SMIWBEMServer, self).__init__(conn)
 
 # named tuple for the info about opened servers.
 ServerInfoTuple = namedtuple('ServerInfoTuple',

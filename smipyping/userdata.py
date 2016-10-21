@@ -15,20 +15,22 @@ import ConfigParser
 from collections import OrderedDict
 from textwrap import wrap
 from terminaltables import SingleTable
-
 import six
 
 from smipyping._cliutils import SmartFormatter as _SmartFormatter
 #from ._cliutils import SmartFormatter as _SmartFormatter
 
+
 def get_config(config_file):
-    """ Get config file """
-    #TODO put in separate module
+    """ Get config file."""
+
+    # TODO put in separate module
     config = ConfigParser.SafeConfigParser()
 
     config_file = 'smipyping.cfg'
     config.read(config_file)
     config.get('smppyping', 'userdatafile')
+
 
 class UserData(object):
     """Abstract top level class for the User Base.  This base contains
@@ -76,31 +78,37 @@ class UserData(object):
         """ Return tuple of display name and length for name"""
         return self.table_format_dict[name]
 
-    # this one does not work because multiple ips in table
-    # will need to return multiple
+    # TODO we have multiple of these. See get dict_for_host,get_hostid_list
     def get_user_data_host(self, host_id):
         """If an record for `host_data` exists return that record. Else
-            return None
-            host_id = ipaddress:port
+            return None. Host data is a tuple of ipaddress, port. Note that
+            there may be multiple ipaddress, port entries for a single
+            ipaddress, port in the database
+            Returns list of userdata keys
         """
         # TODO clean up for PY 3
+        return_list = []
         for key, value in self.userdict.iteritems():
             ip_address = value["IPAddress"]
-            port = value["port"]
-            this_host_id = '%s:%s' % (ip_address, port)
-            if host_id in this_host_id:
-                return value
+            port = value["Port"]
+            # TODO port from database is a string. Should be int internal.
+            if ip_address == host_id[0] and int(port) == host_id[1]:
+                return_list.append(key)
 
-        return None
+        return return_list
 
-    def get_dict_record(self, record_id):
-        """If an entry for `host_data` exists return that record. Else
-            return None
+    def get_dict_record(self, requested_id):
+        """If an entry for `record_data` exists return that record. Else
+            return None.
+            Record IDs are string
         """
-        if record_id in self.userdict:
-            return self.userdict[record_id]
-        else:
-            return None
+        if not isinstance(requested_id, six.integer_types):
+            requested_id = int(requested_id)
+
+        for id in self.userdict:
+            if int(id) == requested_id:
+                return self.userdict[id]
+        return None        
 
     def get_dict_for_host(self, host):
         """ For a host address, get the dictionary record . Return None
@@ -126,8 +134,7 @@ class UserData(object):
         """
 
         output_list = []
-        #print('userdict %s' % self.userdict)
-        ## TODO clean up for python 3
+        # TODO clean up for python 3
         for _id, value in self.userdict.items():
             #print('_id %s, value %s' % (_id, value))
             output_list.append(value['IPAddress'])
@@ -168,7 +175,6 @@ class UserData(object):
         else:
             return disable
 
-
     def display_disabled(self):
         """Display diabled entries"""
 
@@ -180,7 +186,7 @@ class UserData(object):
 
         table_data.append(self.tbl_hdr(col_list))
 
-        #TODO can we do this with list comprehension
+        # TODO can we do this with list comprehension
         for record_id in sorted(self.userdict.iterkeys()):
             if self.disabled_record(self.userdict[record_id]):
                 table_data.append(self.tbl_record(record_id, col_list))
@@ -234,7 +240,7 @@ class UserData(object):
     def write_updated(self):
         """ Backup the existing file and write the new one."""
         backfile = '%s.bak' % self.filename
-        # TODO does this cover directories and clean up for possible exceptions.
+        # TODO does this cover directories/clean up for possible exceptions.
         if os.path.isfile(backfile):
             os.remove(backfile)
         os.rename(self.filename, backfile)
@@ -244,10 +250,11 @@ class UserData(object):
         """Write the current user base to the named file"""
 
         with open(file_name, 'wb') as f:
-            writer = csv.DictWriter(f, fieldnames=self.expected_fields)
+            writer = csv.DictWriter(f, fieldnames=self.get_expected_fields())
             writer.writeheader()
             for key, value in sorted(self.userdict.iteritems()):
                 writer.writerow(value)
+
 
 class CsvUserData(UserData):
     """ Comma Separated Values form of the User base"""
@@ -264,7 +271,7 @@ class CsvUserData(UserData):
             key = row['Id']
             if key in result:
                 # duplicate row handling
-                print('ERROR. Duplicate Id in table: %s\nrow=%s' % \
+                print('ERROR. Duplicate Id in table: %s\nrow=%s' %
                       (key, row))
                 raise ValueError('Input Error. duplicate Id')
             else:
@@ -273,7 +280,15 @@ class CsvUserData(UserData):
         self.userdict = result
         self.args = args
 
-class process_userdata_cli(object):
+
+class ProcessUserdataCli(object):
+    """
+    This class is part of the cli for userdata. It creates the argparse list
+    and parses input in two separate functions.
+    TODO: This should probably be in the cli itself but we are trying to
+    create test tools for the cli so put here.
+    Also split into separate functions to allow testing each.
+    """
 
     def __init__(self, prog):
         argparser = _argparse.ArgumentParser(
@@ -285,11 +300,11 @@ The commands are:
    display     Display entries in the user data repository
    disable     Disable an record  in the table
    fields      list the fields in the user data repostiory
-   hosts
+   record
    listdisabled
 """)
-        #a = RunUserData()
-        #subcommands = a.__dict__.keys()
+        # a = RunUserData()
+        # subcommands = a.__dict__.keys()
         argparser.add_argument(
             'command', metavar='cmd', help='Subcommand to run')
 
@@ -324,14 +339,13 @@ The commands are:
 
         user_data = CsvUserData(args.file)
 
-        ## print('keys %s'  % list(user_data.table_format_dict))
+        # print('keys %s'  % list(user_data.table_format_dict))
 
         print('\n')
         user_data.display_all()
 
     def disable(self):
-        """ Function to mark a particular userdata record  disabled
-        """
+        """ Function to mark a particular userdata record disabled. """
 
         disable_parser = _argparse.ArgumentParser(
             description='Disable record  in the repository')
@@ -391,48 +405,11 @@ The commands are:
         user_data = CsvUserData(args.file)
         user_data.display_disabled()
 
-    #def test(self):
-        #""" Function to test other subfunctions.
-        #"""
-
-        #disp_parser = _argparse.ArgumentParser(
-            #description='test something')
-
-        #disp_parser.add_argument(
-            #'server', metavar='server', nargs='?')
-
-        #disp_parser.add_argument(
-            #'-o', '--outputfile',
-            #help='output file')
-
-        ## prefixing the argument with -- means it's optional
-        #disp_parser.add_argument('-f', '--file',
-                                 #default='userdata_example.csv',
-                                 #help='Filename to display')
-
-        ## now that we're inside a subcommand, ignore the first
-        ## TWO argvs, ie the command and the subcommand
-        #opts = disp_parser.parse_args(_sys.argv[2:])
-
-        #print('opts = %s' % opts)
-
-        #print('outputfile %s' % opts.outputfile)
-
-        #if opts.outputfile is None:
-            #disp_parser.error('No output file specified')
-        #print('test, output=%s' % opts.outputfile)
-
-        #user_data = CsvUserData(opts.file)
-
-        #host_record = user_data.get_dict_for_host(opts.server)
-        #if host_record  is not None:
-            #print('host_record  %s' % host_record)
-            #host_record['Disable'] = True
-            #user_data.write_file('tempnewfile.csv')
-        #else:
-            #print('host_record  for %s not found' % host_record)
-
     def fields(self):
+        """
+        Display the fields in the userdata file
+        """
+
         parser = _argparse.ArgumentParser(
             description='List fields in file')
         # prefixing the argument with -- means it's optional
@@ -442,12 +419,12 @@ The commands are:
                             help='Filename to display')
         args = parser.parse_args(_sys.argv[2:])
         user_data = CsvUserData(args.file)
-        print('%s' % user_data.expected_field_names)
+        print('%s' % user_data.get_expected_fields())
 
     def find(self):
         parser = _argparse.ArgumentParser(
             description='Find a particular host')
-        # prefixing the argument with -- means it's optional
+            # prefixing the argument with -- means it's optional
         parser.add_argument('server',
                             help='Server IP address to find')
         parser.add_argument('-f', '--file',
@@ -457,35 +434,34 @@ The commands are:
         user_data = CsvUserData(args.file)
         record = user_data.get_dict_record(args.server)
         # TODO separate get record  from display record .
-        if record  is None:
+        if record is None:
             print('%s not found' % args.server)
         else:
             print('%s found\n%s' % (args.server, record))
 
-    def hosts(self):
+    def record(self):
+        """
+        Parse an input cli for hosts
+        """
         parser = _argparse.ArgumentParser(
-            description='List fields in file')
+            description='List info on single record_id')
         # prefixing the argument with -- means it's optional
-        parser.add_argument('server',
-                            help='Filename to display')
+        parser.add_argument('record_id', type=int,
+                            help='Record Id from the database. Integers')
         parser.add_argument('-f', '--file',
                             default='userdata_example.csv',
                             help='Filename to display')
         args = parser.parse_args(_sys.argv[2:])
         user_data = CsvUserData(args.file)
+        record_id = "%2.2s" % args.record_id
+        print('record %s' % record_id)
         # TODO get host ids from table
-        record = user_data.get_dict_record(args.server)
+        record = user_data.get_dict_record(record_id)
         # TODO separate get record  from display record .
-        if record  is None:
-            print('%s not found' % args.server)
+        if record is None:
+            print('%s not found' % record_id)
         else:
-            print('%s found\n%s' % (args.server, record))
+            print('%s found\n%s' % (record_id, record))
 
-def main():
-    process_userdata_cli('userdata.py')
-
-
-if __name__ == '__main__' and __package__ is None:
-    main()
 
 
