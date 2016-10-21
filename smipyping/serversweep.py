@@ -296,8 +296,7 @@ def sweep_servers(args, subnets, startip, endip, ports, threaded, user_data,
 
         if threaded:
             scan_results = scan_subnets_threaded(subnets, startip,
-                                                 endip, ports, threaded,
-                                                 verbose)
+                                                 endip, ports, verbose)
         else:
             scan_results = scan_subnets(subnets, startip,
                                         endip, ports, verbose)
