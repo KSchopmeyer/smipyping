@@ -26,14 +26,6 @@ The WBEM client library API consists of the following elements:
 * :ref:`WBEM operations` - Class :class:`WBEMConnection` is the main class of
   the WBEM client library and its methods issue WBEM operations to a WBEM
   server.
-* :ref:`CIM objects` - Python classes for representing CIM objects (instances,
-  classes, properties, etc.) that are used by the WBEM operations as input or
-  output.
-* :ref:`CIM data types` - Python classes for representing values of CIM data
-  types.
-* :ref:`CIM status codes` - CIM status codes returned by failing WBEM
-  operations.
-* :ref:`Exceptions` - Exceptions specific to pywbem that may be raised.
 
 .. _`Package version`:
 
@@ -64,7 +56,7 @@ from .userdata import *
 from .simpleping import *
 # TODO should not need this
 from ._cliutils import *
-from .explore import *
+# TODOTODO from .explore import *
 from .serversweep import *
 
 

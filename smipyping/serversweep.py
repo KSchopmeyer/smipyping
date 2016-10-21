@@ -7,7 +7,7 @@
 from __future__ import print_function, absolute_import
 import socket
 import sys
-import os
+#import os
 import time
 import argparse as _argparse
 import threading
@@ -17,10 +17,11 @@ from scapy.all import *
 from ._cliutils import SmartFormatter as _SmartFormatter
 from ._cliutils import check_negative_int
 from .userdata import CsvUserData
+from .config import DEFAULT_SWEEP_PORT
 
-DEFAULT_TEST_PORT = 5989
+# Results list, a list of tuples of ip_address, port
+RESULTS = []
 
-results = []
 def check_port_syn(dst_ip, dst_port, verbose):
     """Check a single address consiting of host_ip and port using the
         SYN and ack.  This is one way to test for open https ports
@@ -50,9 +51,9 @@ def check_port_syn(dst_ip, dst_port, verbose):
     else:
         if verbose:
             print('%s is Down' % dst_ip)
-    result_key = '%s:%s' % (dst_ip, dst_port)
+    result_key = [dst_ip, dst_port]
     if port_open:
-        results.append(result_key)
+        RESULTS.append(result_key)
     sys.stdout.flush()
     return port_open
 
@@ -82,7 +83,7 @@ def scan_subnets(subnets, start_ip, end_ip, port, verbose):
 
     for ip in range(start_ip, end_ip + 1):
         test_ip = subnets + '.' + str(ip)
-        test_host_id = '%s:%s' % (test_ip, port)
+        test_host_id = [test_ip, port]
 
         result = check_port_syn(test_ip, port, verbose) # Test one ip:port
 
@@ -103,6 +104,10 @@ def scan_subnets(subnets, start_ip, end_ip, port, verbose):
     return open_hosts
 
 def scan_subnets_threaded(subnets, start_ip, end_ip, port, verbose):
+    """Scan the IP address defined by the input and return a list of open
+       IP addresses. This function creates multiple processes and executes
+       each call in a process for speed.
+    """
 
     tests = bld_test_list(subnets, start_ip, end_ip, port, verbose)
     open_hosts = []
@@ -118,7 +123,7 @@ def scan_subnets_threaded(subnets, start_ip, end_ip, port, verbose):
         process.start()
     for process in threads_:
         process.join()
-    for result in results:
+    for result in RESULTS:
         open_hosts.append(result)
     return open_hosts
 
@@ -144,12 +149,16 @@ def bld_test_list(subnets, start_ip, end_ip, port, verbose):
         for port_ in ports:
             for ip in range(start_ip, end_ip + 1):
                 test_ip = '%s.%s' % (subnet, ip)
-                #test_host_id = '%s:%s' % (test_ip, port_)
                 test_list.append((test_ip, port_))
 
     return test_list
 
 def print_open_hosts_report(args, open_hosts, total_time, user_data):
+    """
+    Output report of the entries found. If userdata is found, include the
+    userdata info including CompanyName, Product, etc.
+    """
+
     print('\n')
     print("=" * 50)
     execution_time = ''
@@ -164,17 +173,30 @@ def print_open_hosts_report(args, open_hosts, total_time, user_data):
         print('Open WBEMServers:subnet(s)=%s port(s)=%s range %s, %s count %s' \
                 % (args.subnet, args.port, range_txt, execution_time, \
                    len(open_hosts)))
-
+        #open_hosts.sort(key=lambda ip: map(int, ip.split('.')))
+        # TODO this probably requires ordered dict rather than dictionary to
+        # keep order
         for host_data in open_hosts:
             if user_data is not None:
-                entry = user_data.get_dict_entry(host_data)
-                if entry is not None:
-                    print('%s %-20s %-18s %-18s' % (host_data,
-                                                    entry['CompanyName'],
-                                                    entry['Product'],
-                                                    entry['SMIVersion']))
+                record_list = user_data.get_user_data_host(host_data)
+                if record_list:
+                    # TODO this should be a list since there may be multiples
+                    # for single ip address
+                    entry = user_data.get_dict_record(record_list[0])
+                    if entry is not None:
+                        print('%s:%s %-20s %-18s %-18s' % (host_data[0],
+                                                           host_data[1],
+                                                           entry['CompanyName'],
+                                                           entry['Product'],
+                                                           entry['SMIVersion']))
+                    else:
+                        print('Invalid entry %s %s:%s %s' % (
+                            record_list[0], host_data[0], host_data[1],
+                            "Not in user data"))
                 else:
-                    print('%s %s' % (host_data, "Not in user data"))
+                    print('%s:%s %s' % (host_data[0], host_data[1],
+                          "Not in user data"))
+
             else:
                 print('%s' % (host_data))
     else:
@@ -186,7 +208,7 @@ def create_sweep_argparser(prog_name):
     """
     TODO
     """
-    
+
     prog = prog_name  # Name of the script file invoking this module
     usage = '%(prog)s [options] server'
     desc = 'Sweep possible WBEMServer ports across a range of IP addresses '\
@@ -255,8 +277,8 @@ def parse_sweep_args(argparser):
 
     # set default port if none provided.
     if args.port is None:
-        # TODO make this config variable
-        args.port = [DEFAULT_TEST_PORT]
+        # This is from a variable in config.py
+        args.port = [DEFAULT_SWEEP_PORT]
 
     if args.verbose:
         print('subnet=%s' % args.subnet)
@@ -287,7 +309,7 @@ def sweep_servers(args, subnets, startip, endip, ports, threaded, user_data,
       verbose: detailed display if True
 
       Returns:
-          List of host results as a tuple
+          List of host results as a tuple of (ip, port)
     """
     start_time = time.time() # Scan start time
 
@@ -312,26 +334,5 @@ def sweep_servers(args, subnets, startip, endip, ports, threaded, user_data,
     total_time = time.time() - start_time
 
     print_open_hosts_report(args, open_hosts, total_time, user_data)
-
-#def main(prog_name):
-    #"""
-        #Port sweep demo program
-    #"""
-    #argparser = create_sweep_argparser(prog_name)
-    #args = parse_sweep_args(argparser)
-
-    ## TODO clean up user_data
-    #user_data = None
-    #if args.csvfile is not None:
-        #user_data = CsvUserData(args.csvfile)
-    #user_data = None if args.csvfile is None else CsvUserData(args.csvfile)
-
-    ## TODO remove args as requirement
-    #sweep_servers(args, args.subnet, args.startip, args.endip, args.port,
-                  #args.threaded, user_data, args.verbose)
-
-#if __name__ == '__main__':
-    #prog_name = os.path.basename(sys.argv[0])
-    #sys.exit(main(prog_name))
 
 

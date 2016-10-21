@@ -43,3 +43,7 @@ __all__ = ['ENFORCE_INTEGER_RANGE']
 #:   works.
 ENFORCE_INTEGER_RANGE = True
 
+#: The default port used by the serversweep function in case no parameter is
+#: provided. This is the DMTF defined https port.
+DEFAULT_SWEEP_PORT = 5989
+
