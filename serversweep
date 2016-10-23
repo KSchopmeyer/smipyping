@@ -28,9 +28,9 @@ def main(prog_name):
         user_data = CsvUserData(args.csvfile)
     user_data = None if args.csvfile is None else CsvUserData(args.csvfile)
 
-    # TODO remove args as requirement
-    sweep_servers(args, args.subnet, args.startip, args.endip, args.port,
-                  args.threaded, user_data, args.verbose)
+    # Sweep the servers and display result
+    sweep_servers(args.subnet, args.startip, args.endip, args.port,
+                  args.no_threads, user_data, args.verbose)
 
 if __name__ == '__main__':
     prog_name = os.path.basename(sys.argv[0])
