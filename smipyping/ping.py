@@ -8,6 +8,7 @@ __all__=['ping_host']
 
 def ping_host(hostname, timeout):
     """ Simple ping of a defined hostname.
+    Calls system ping in a subprocess.
     This works in user mode whereas ICMP pings in Python only work in
     admin mode.
 
@@ -28,10 +29,16 @@ def ping_host(hostname, timeout):
         command = "ping " + hostname + " -n 1 -w " + str(timeout * 1000)
     else:
         command = "ping -i " + str(timeout) + " -c 1 " + hostname
-    proccess = subprocess.Popen(command, stdout=subprocess.PIPE)
-    matches = re.match('.*time=([0-9]+)ms.*', proccess.stdout.read(), re.DOTALL)
-    if matches:
-        return matches.group(1)
-    else:
-        return False
+
+    #  TODO the following failed with Python 2.7
+    # proccess = subprocess.Popen(command, stdout=subprocess.PIPE)
+    # matches = re.match('.*time=([0-9]+)ms.*', proccess.stdout.read(), re.DOTALL)
+    #if matches:
+    #    return matches.group(1)
+    #else:
+    #    return False
+    need_sh = False if  platform.system().lower()=="windows" else True
+
+    # Ping
+    return subprocess.call(args, shell=need_sh) == 0
 
