@@ -223,7 +223,7 @@ flake8: flake8.log
 install: $(sdist_file)
 	mkdir tmp_install
 	tar -x -C tmp_install -f $(sdist_file)
-	sh -c "cd tmp_install/$(package_name)-$(package_version) && python setup.py install_os && python setup.py install"
+	sh -c "cd tmp_install/$(package_name)-$(package_version) && python setup.py install"
 	rm -Rf tmp_install
 	@echo 'Done: Installed pywbem into current Python environment.'
 	@echo '$@ done.'
