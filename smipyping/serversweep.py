@@ -12,6 +12,10 @@ import time
 import argparse as _argparse
 import threading
 
+# required to turn off warning message from scapy
+import logging
+l=logging.getLogger("scapy.runtime")
+l.setLevel(49)
 from scapy.all import *
 
 from ._cliutils import SmartFormatter as _SmartFormatter
