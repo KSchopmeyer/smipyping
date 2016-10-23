@@ -51,6 +51,7 @@ from __future__ import absolute_import
 import sys
 
 # TODO add other modules
+from .ping import *
 from .config import *
 from .userdata import *
 from .simpleping import *
