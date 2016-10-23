@@ -40,5 +40,5 @@ def ping_host(hostname, timeout):
     need_sh = False if  platform.system().lower()=="windows" else True
 
     # Ping
-    return subprocess.call(args, shell=need_sh) == 0
+    return subprocess.call(command, shell=need_sh) == 0
 
