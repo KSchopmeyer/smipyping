@@ -17,8 +17,6 @@ from smipyping import create_explore_parser, CsvUserData, \
                       explore_servers, print_server_info, \
                       print_smi_profile_info
 
-LOGGER = None
-
 def main(prog):
     logfile = '%s.log' % prog
 
@@ -29,8 +27,7 @@ def main(prog):
     if args.verbose:
         print('args %s' % args)
 
-    global LOGGER
-    LOGGER = create_explore_logger(prog, logfile)
+    logger = create_explore_logger(prog, logfile)
 
     user_data = CsvUserData(args.csvfile)
     hosts = user_data.get_hostid_list()
@@ -47,14 +44,14 @@ def main(prog):
     else:
         filtered_hosts = hosts
 
-    servers = explore_servers(user_data, filtered_hosts, args)
+    servers = explore_servers(user_data, filtered_hosts, args, logger)
 
     # print results
-    print_server_info(servers)
+    print_server_info(servers, user_data)
 
     # repeat to get smi info.
 
-    print_smi_profile_info(servers)
+    print_smi_profile_info(servers, user_data)
 
     return 0
 

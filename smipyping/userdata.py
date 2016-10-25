@@ -13,13 +13,10 @@ import csv
 import argparse as _argparse
 import ConfigParser
 from collections import OrderedDict
-from textwrap import wrap
-from terminaltables import SingleTable
 import six
 
 from smipyping._cliutils import SmartFormatter as _SmartFormatter
-#from ._cliutils import SmartFormatter as _SmartFormatter
-
+from smipyping._terminaltable import print_terminal_table, fold_cell
 
 def get_config(config_file):
     """ Get config file."""
@@ -181,13 +178,14 @@ class UserData(object):
 
         line = []
         for name in field_list:
-            cell_str = record[name]
+            #cell_str = record[name]
             value = self.get_format_dict(name)
             if isinstance(name, six.string_types):
-                max_width = value[1]
-                if max_width < len(cell_str):
-                    cell_str = '\n'.join(wrap(cell_str, max_width))
-                line.append(cell_str)
+                #max_width = value[1]
+                line.append(fold_cell(record[name], value[1]))
+                #if max_width < len(cell_str):
+                #    cell_str = '\n'.join(wrap(cell_str, max_width))
+                #line.append(cell_str)
             else:
                 line.append('%s' % record[name])
         return line
@@ -214,24 +212,7 @@ class UserData(object):
             if self.disabled_record(self.userdict[record_id]):
                 table_data.append(self.tbl_record(record_id, col_list))
 
-        #table_list = [self.userdict[id] for id in sorted(self.userdict.iterkeys())]
-
-        #table_data =
-
-        self.print_table('Disabled hosts', table_data)
-
-    def print_table(self, title, table_data):
-        """ Print table data as an ascii table. The input is a dictionary
-            of table data in the format used by terminaltable package
-        """
-
-        table_instance = SingleTable(table_data, title)
-        table_instance. inner_column_border = False
-        table_instance.outer_border = False
-
-        print(table_instance.table)
-        print()
-
+        print_terminal_table('Disabled hosts', table_data)
 
     def display_cols(self, column_list):
         """
@@ -252,7 +233,7 @@ class UserData(object):
         for record_id in sorted(self.userdict.iterkeys()):
             table_data.append(self.tbl_record(record_id, column_list))
 
-        self.print_table('User Data Overview', table_data)
+        print_terminal_table('User Data Overview', table_data)
 
     def display_all(self):
         """Display all entries in the base"""

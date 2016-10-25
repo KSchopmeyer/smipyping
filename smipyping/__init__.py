@@ -50,16 +50,14 @@ from __future__ import absolute_import
 
 import sys
 
-# TODO add other modules
 from .ping import *
 from .config import *
 from .userdata import *
 from .simpleping import *
 # TODO should not need this
 from ._cliutils import *
-# TODOTODO from .explore import *
+from .explore import *
 from .serversweep import *
-
 
 from ._version import __version__
 
