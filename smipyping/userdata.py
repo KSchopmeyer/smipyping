@@ -80,7 +80,7 @@ class UserData(object):
 
     def __contains__(self, record_id):
         """Determine if record_id is in userdata dictionary"""
-        return record_id in self.record_id
+        return record_id in self.userdict
 
     def __getitem__(self, record_id):
         """Return the record for the defined record_id from the userdata."""

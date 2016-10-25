@@ -80,9 +80,7 @@ def parse_cmdline(argparser_):
 
     args = argparser_.parse_args()
 
-    if not args.csvfile:
-        argparser_.error('No csvfile specified')
-        return None
+
 
     if args.verbose:
         print('csvfile=%s' % args.csvfile)
@@ -92,30 +90,11 @@ def parse_cmdline(argparser_):
         print('ignore_disabled=%s' % args.ignore_disabled)
         print('no_threads=%s' % args.no_threads)
 
+    if not args.csvfile:
+        argparser_.error('No csvfile specified')
+        return None
+
     return args
-
-#def test_this_svr(ip_address, ns, user, creds, timeout=None, debug=None, \
-                #verbose=None, ping=False):
-    
-    #if ping:
-        #if not ping_host(ip_address, ping_timeout):
-            #return()
-            #rtn_code = 6
-            #rtn_code_type = 'Ping failed'
-            #continue
-
-    #rtn_code = 0
-    #if rtn_code == 0:
-        #conn = connect_server(server,
-                              #arg_parser,
-                              #ns,
-                              #user,
-                              #creds,
-                              #timeout,
-                              #verify_cert=False,
-                              #debug=opts.debug, verbose=opts.verbose)
-
-        #return(test_server(conn, debug=debug, verbose=verbose))
 
 
 def main(prog):
@@ -133,6 +112,8 @@ def main(prog):
     ping_timeout = 2      # 2 second ping timeout
     op_timeout = 20       # 20 second operation timeout
 
+    
+
     for record_id in user_data:
         # TODO map this to use __getItem__
         record = user_data.get_dict_record(record_id)
@@ -148,23 +129,27 @@ def main(prog):
             print('Ignore disabled %s %s %s' % (record_id,
                                                 record['IPAddress'],
                                                 company))
+            rtn_code = 0
+            rtn_txt = "ignore because disabled"
+            rtn_code_type = "Disabled"
             continue
+        else:
 
-        url = server_to_url(server, arg_parser)
+            url = server_to_url(server, arg_parser)
 
-        conn = connect_server(url,
-                              record["Namespace"],
-                              user=record["Principal"],
-                              password=record["Credential"],
-                              timeout=op_timeout,
-                              verify_cert=False,
-                              debug=opts.debug, verbose=opts.debug)
+            conn = connect_server(url,
+                                  record["Namespace"],
+                                  user=record["Principal"],
+                                  password=record["Credential"],
+                                  timeout=op_timeout,
+                                  verify_cert=False,
+                                  debug=opts.debug, verbose=opts.debug)
 
-        rtn_code, rtn_code_type, rtn_txt, time = test_server(conn,
-                                                      record['IPAddress'],
-                                                      debug=opts.debug,
-                                                      verbose=opts.verbose,
-                                                      ping=opts.ping)
+            rtn_code, rtn_code_type, rtn_txt, time = test_server(conn,
+                                                          record['IPAddress'],
+                                                          debug=opts.debug,
+                                                          verbose=opts.verbose,
+                                                          ping=opts.ping)
 
         if rtn_code != 0:
             print('%s(%s:%s) ERROR, code=%s:%s; %s %s' %  \
@@ -175,6 +160,8 @@ def main(prog):
                 print('%s(%s:%s) Return code = %s %s' % (server, record_id, 
                                                       company,
                                                       rtn_code, rtn_code_type))
+
+        
 
 
 if __name__ == '__main__':

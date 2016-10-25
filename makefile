@@ -103,7 +103,7 @@ flake8_py_files := \
     setup.py \
     os_setup.py \
     $(filter-out $(moftab_files), $(wildcard $(package_name)/*.py)) \
-    $(wildcard testsuite/*.py)
+    $(wildcard tests/*.py)
 
 # Test log
 test_log_file := test_$(python_mn_version).log
@@ -310,9 +310,9 @@ else
 	@echo 'Done: Created flake8 log file: $@'
 endif
 
-$(test_log_file): makefile $(package_name)/*.py testsuite/*.py coveragerc
+$(test_log_file): makefile $(package_name)/*.py tests/*.py coveragerc
 	rm -f $(test_log_file)
-	bash -c "set -o pipefail; PYTHONWARNINGS=default PYTHONPATH=. py.test --cov $(package_name) --cov-config coveragerc --ignore=attic --ignore=releases --ignore=testsuite/testclient -s 2>&1 |tee $(test_tmp_file)"
+	bash -c "set -o pipefail; PYTHONWARNINGS=default PYTHONPATH=. py.test --cov $(package_name) --cov-config coveragerc --ignore=attic --ignore=releases -s 2>&1 |tee $(test_tmp_file)"
 	mv -f $(test_tmp_file) $(test_log_file)
 	@echo 'Done: Created test log file: $@'
 
@@ -322,5 +322,9 @@ $(doc_conf_dir)/serversweep.help.txt: serversweep $(package_name)/serversweep.py
 
 $(doc_conf_dir)/simpleping.help.txt: simpleping $(package_name)/simpleping.py
 	./simpleping --help >$@
+	@echo 'Done: Created simpleping script help message file: $@'
+
+$(doc_conf_dir)/simplepingall.help.txt: simplepingall $(package_name)/simpleping.py
+	./simplepingall --help >$@
 	@echo 'Done: Created simpleping script help message file: $@'
 

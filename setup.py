@@ -62,7 +62,19 @@ setup(
         'pywbem',
         'six',
         'terminaltables',
-        'scapy'],
+        'scapy',
+        'pytest'],
+        
+    # smipyping prereqs for 'develop' command.
+    # TOD enable this. pywbem does in os_setup.py
+    develop_requires=[
+        "pytest>=2.4",
+        "pytest-cov",
+        "Sphinx>=1.3",
+        "GitPython>=2.0.6",
+        "sphinx-git",
+        "httpretty"],
+        #"lxml",
 
     # package data files
     package_data={
@@ -71,7 +83,12 @@ setup(
             'LICENSE.txt',
         ]},
 
-    scripts=['simpleping', 'userdata', 'explore', 'serversweep', 'pingall']
+    scripts=[
+        'simpleping',
+        'userdata',
+        'explore',
+        'serversweep',
+        'simplepingall']
     )
 
 #def main()
