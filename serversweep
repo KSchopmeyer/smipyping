@@ -33,5 +33,4 @@ def main(prog_name):
                   args.no_threads, user_data, args.verbose)
 
 if __name__ == '__main__':
-    prog_name = os.path.basename(sys.argv[0])
-    sys.exit(main(prog_name))
+    sys.exit(main(os.path.basename(sys.argv[0])))

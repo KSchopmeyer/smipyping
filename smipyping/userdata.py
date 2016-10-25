@@ -78,12 +78,34 @@ class UserData(object):
         """ Return tuple of display name and length for name"""
         return self.table_format_dict[name]
 
+    def __contains__(self, record_id):
+        """Determine if record_id is in userdata dictionary"""
+        return record_id in self.record_id
+
+    def __getitem__(self, record_id):
+        """Return the record for the defined record_id from the userdata."""
+        return self.userdict[record_id].value
+
+    def __delitem__(self, record_id):
+        del self.userdict[record_id]
+
+    def __len__(self):
+        """Return number of users"""
+        return len(self.userdict)
+
+    def __iter__(self):
+        """ iterator for userdata."""
+        return six.iterkeys(self.userdict)
+
     # TODO we have multiple of these. See get dict_for_host,get_hostid_list
     def get_user_data_host(self, host_id):
         """If an record for `host_data` exists return that record. Else
-            return None. Host data is a tuple of ipaddress, port. Note that
-            there may be multiple ipaddress, port entries for a single
-            ipaddress, port in the database
+            return None.
+
+            Host data is a tuple of ipaddress and port.
+
+            Note that   there may be multiple ipaddress, port entries for a
+            single ipaddress, port in the database
             Returns list of userdata keys
         """
         # TODO clean up for PY 3
@@ -97,6 +119,7 @@ class UserData(object):
 
         return return_list
 
+    # TODO remap this one to use get_item directly.
     def get_dict_record(self, requested_id):
         """If an entry for `record_data` exists return that record. Else
             return None.
@@ -105,14 +128,14 @@ class UserData(object):
         if not isinstance(requested_id, six.integer_types):
             requested_id = int(requested_id)
 
-        for id in self.userdict:
-            if int(id) == requested_id:
-                return self.userdict[id]
-        return None        
+        for record_id in self.userdict:
+            if int(record_id) == requested_id:
+                return self.userdict[record_id]
+        return None
 
     def get_dict_for_host(self, host):
         """ For a host address, get the dictionary record . Return None
-            if not found. Does not work because of multiple IPs
+            if not found. Does not work completely because of multiple IPs
         """
 
         for record_id, value in self.userdict.iteritems():
@@ -127,10 +150,10 @@ class UserData(object):
                 if ip_filter == k)
             return fd
         #TODO fix this
-
     def get_hostid_list(self, ip_filter=None, company_name_filter=None):
         """Get all WBEM Server ids in the user base. Returns list of
            IP addresses:port entries.
+           TODO: Does not include port right now.
         """
 
         output_list = []
@@ -148,15 +171,15 @@ class UserData(object):
             hdr.append(value[0])
         return hdr
 
-    def tbl_record(self, record_id, record_list):
-        """ Return a list of entries for the record_list"""
+    def tbl_record(self, record_id, field_list):
+        """ Return the fields defined in field_list for the record_id."""
 
         # TODO can we make this a std cvt function.
 
         record = self.get_dict_record(record_id)
 
         line = []
-        for name in record_list:
+        for name in field_list:
             cell_str = record[name]
             value = self.get_format_dict(name)
             if isinstance(name, six.string_types):
@@ -169,7 +192,7 @@ class UserData(object):
         return line
 
     def disabled_record(self, record):
-        disable = record['Disable']
+        disable = record['Disable'].lower()
         if isinstance(disable, six.string_types):
             return disable == 'true'
         else:
@@ -182,7 +205,6 @@ class UserData(object):
                     'Port', 'Protocol', 'Disable']
 
         table_data = []
-
 
         table_data.append(self.tbl_hdr(col_list))
 
@@ -208,6 +230,7 @@ class UserData(object):
 
         print(table_instance.table)
         print()
+
 
     def display_cols(self, column_list):
         """
@@ -260,6 +283,8 @@ class CsvUserData(UserData):
     """ Comma Separated Values form of the User base"""
 
     def __init__(self, filename, args=None):
+        """ Read the input file"""
+
         super(CsvUserData, self).__init__(filename, args)
         self.filename = filename
         reader = csv.DictReader(open(self.filename))

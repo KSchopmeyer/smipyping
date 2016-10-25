@@ -40,7 +40,7 @@ Id,CompanyName,Namespace,SMIVersion,Product,Principal,Credential,CimomVersion,IP
 39,NetApp,root/ontap,1.6,FAS3210 v8.2-7Mode,smilab11,f00sb4ll,Pegasus,10.1.132.115,interop,https,5989,False
 40,NetApp,root/ontap,1.6,FAS2040-v7.3.7,smilab11,f00sb4ll,1.6,10.1.132.115,interop,http,5989,False
 41,NetApp,root/ontap,1.6,FAS3240 v8.2-Cmode,smilab11,f00sb4ll,1.6,10.1.132.115,interop,http,5988,False
-42,NetApp,root/ontap,1.6,FAS 2020,administrator,netapp1!,OpenPegasus 2.12,10.1.132.104,interop,https,5989,False
+42,NetApp,root/ontap,1.6,FAS 2020,administrator,netapp1!,OpenPegasus 2.12,10.1.132.104,interop,https,5989,True
 43,NetApp,root/ontap,1.6,FAS 3140,administrator,netapp1!,OpenPegasus 2.12,10.1.132.110,interop,http,5988,True
 44,NetApp,root/ontap,1.6,FAS 3140,administrator,netapp1!,OpenPegasus 2.12,10.1.132.110,interop,https,5989,False
 45,NetApp/LSI,root/lsiarray13,1.4,E2600 v08.10.07.00,smilab,F00sb4ll,Pegasus,10.1.132.246,interop,https,5989,False

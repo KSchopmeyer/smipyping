@@ -1,5 +1,6 @@
 
 from __future__ import absolute_import
+import os
 import platform
 import subprocess
 import re
@@ -26,7 +27,7 @@ def ping_host(hostname, timeout):
     """
     
     if platform.system() == "Windows":
-        command = "ping " + hostname + " -n 1 -w " + str(timeout * 1000)
+        command = "ping " + hostname + " -q -n 1 -w " + str(timeout * 1000)
     else:
         command = "ping -i " + str(timeout) + " -c 1 " + hostname
 
@@ -39,6 +40,7 @@ def ping_host(hostname, timeout):
     #    return False
     need_sh = False if  platform.system().lower()=="windows" else True
 
-    # Ping
-    return subprocess.call(command, shell=need_sh) == 0
+    # execute the ping command and discard text response
+    FNULL = open(os.devnull, 'w')
+    return subprocess.call(command, shell=need_sh, stdout=FNULL, stderr=subprocess.STDOUT) == 0
 

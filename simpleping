@@ -2,44 +2,79 @@
 # -*- coding: utf-8 -*-
 
 """
-    Provided the command line script for the simple ping function.
+    Provids a command line script for the simple ping function.
+
+    The simple ping function tests the server for a known class.
 
     This script:
-        Parses the cmd line input
+
+        If the -p option is set, pings the server to confirm that the
+            IP address exists.
+
         Executes a connect to the server defined by the cmd line
-        Executes a fixed test against that server.
-        returns either exit code 0 if successful or exit code 1 if failed
+
+        Executes a fixed test against that server (existence of one class).
+
+        Returns either exit code 0 if successful or exit code corresponding
+        to the error type:
+
+          1. CIMError
+
+          2. PyWBEM Error
+
+          3. General Error
+
+          4. Timeout Error
+
+          5. ConnectionError
+
+          6. Ping error (only return if ping is executed)
 """
 from __future__ import absolute_import
 
-import sys as _sys
-from smipyping import create_simpleping_parser, connect, test_server, \
-                      parse_simpleping_cmdline
+import sys
+import os
+from smipyping import create_simpleping_parser, connect_server, test_server, \
+                      parse_simpleping_cmdline, server_to_url
 
-def main():
-    """ Main function uses simpleping.py to execute. This provides
-        the parsing, connection and calls the test-server function
 
-        Returns with either exit code = 0 if OK or exit_code = 1 if error
+def main(prog):
     """
+    Main function uses simpleping.py to execute.
+    This provides the parsing, connection and calls the test-server function.
 
-    prog = "simpleping"  # Name of the script file invoking this module
+    Returns with either exit code = 0 if OK or exit_code = 1 if error
+    """
 
     arg_parser = create_simpleping_parser(prog)
 
     opts = parse_simpleping_cmdline(arg_parser)
 
-    conn = connect(opts.server, opts, arg_parser)
+    url = server_to_url(opts.server, arg_parser)
 
-    rtn_code = test_server(conn, opts)
+    ip_address = url.split('/')[2]
+
+    if opts.timeout is not None:
+        if opts.timeout < 0 or opts.timeout > 300:
+            arg_parser.error('timeout option(%s) out of range' % opts.timeout)
+
+    conn = connect_server(url, opts.namespace,
+                          user=opts.user, password=opts.password,
+                          timeout=opts.timeout, verify_cert=opts.verify_cert,
+                          debug=opts.debug, verbose=opts.verbose)
+
+    rtn_code, return_code_type, txt, time = test_server(conn, ip_address,
+                                                        debug=opts.debug,
+                                                        verbose=opts.verbose)
 
     if rtn_code != 0:
-        print('Error Response, Exit code %s' % rtn_code)
-
-    if opts.verbose:
-        print('Return code = %s' % rtn_code)
+        print('%s Error Response, Exit code %s %s' % (opts.server, rtn_code,
+                                                      return_code_type))
+    else:
+        if opts.verbose:
+            print('%s Return code = %s' % (opts.server, rtn_code))
 
     return rtn_code
 
 if __name__ == '__main__':
-    _sys.exit(main())
+    sys.exit(main(os.path.basename(sys.argv[0])))

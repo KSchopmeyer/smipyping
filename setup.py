@@ -71,7 +71,7 @@ setup(
             'LICENSE.txt',
         ]},
 
-    scripts=['simpleping', 'userdata', 'explore', 'serversweep']
+    scripts=['simpleping', 'userdata', 'explore', 'serversweep', 'pingall']
     )
 
 #def main()
