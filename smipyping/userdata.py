@@ -80,6 +80,7 @@ class UserData(object):
 
     def __contains__(self, record_id):
         """Determine if record_id is in userdata dictionary"""
+        # TODO assumes string record_id
         return record_id in self.userdict
 
     def __getitem__(self, record_id):
