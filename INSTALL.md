@@ -8,58 +8,77 @@ git clone https://kschopmeyer@bitbucket.org/kschopmeyer/smipyping.git
 
 There are two ways to do this:
 
+1. Clone Install - clone the repository into your local system and then install
+   from that clone.
+
+2. pip install from the git repository. NOTE: For some reason this is not
+   working right now.
+
 Clone install
 -------------
 
-In this installation you first clone the repository and then install
-from that clone.
+In this installation you first clone the git repository and then install
+the actual running smipyping from that clone.
 
-1. clone the repository. Note that you only have to clone once. From
+0. Go to directory where you want to clone smipyping.
+
+1. Clone the repository. Note that you only have to clone once. From
 then on you can merge in new changes.
 
-git clone https://kschopmeyer@bitbucket.org/kschopmeyer/smipyping.git
+    >git clone https://kschopmeyer@bitbucket.org/kschopmeyer/smipyping.git
 
 you will now have a directory smipyping that is the complete development
-environmemt including all prerequisits, etc.
+environment including all prerequisits, etc.
 
   cd smipyping
-  make install
-  
-actually I think it should be sudo make install.
+  sudo make install
 
-This should install the package.
+NOTE: to make this work I did su - and then went back to the smipyping dir.
 
-To update the installation when I add more code:
+This should install the smipyping package
 
-1. go to smipyping
+Updating Clone install with new smipyping code
+----------------------------------------------
+
+To update the installation when the package is updated, you simple refresh
+the local clone from the repository
+
+1. go to smipyping directory that was installed with the clone command earlier
+
 2. update with
-      git fetch
-      git pull origin
-3. reinstall
-   make install
+
+      >git fetch
+      >git pull origin
+      
+You should see tell you if there is anything new in master with the fetch
+command.  The git pull will merge new code into the current base.
+    
+3. reinstall the package as before with make:
+      sudo >make install 
+
 
 pip install
 -----------
 
-Python packages can also be directly installed from git.  That can
+NOTE: Having problems with this right now. Says it installs but the installion
+is incomplete when finished.
+
+Python packages can also be directly installed from git with pip.  That can
 be done with the command:
 
 sudo pip install -e git+https://kschopmeyer@bitbucket.org/kschopmeyer/smipyping.git#egg=smipyping
 
-This should be the equivalent of the clone, make install
+This should be the equivalent of the clone, make install when I figure out
+the problem.
 
 
 Test of the installation
 ------------------------
-TODO: This is all wrong
-To test that PyWBEM is sucessfully installed, start up a Python interpreter and
-try to import the pywbem module:
+To test if it is working you can execute one of the scripts:
 
-    python -c "import smipyping"
+    >simpleping --help
 
-If you do not see any error messages after the import command, PyWBEM has been
-sucessfully installed and its Python dependencies are available.
-
-If you have installed in development mode, you can run the test suite:
+Note that from within the repository directory you can also execute the
+unit tests with:
 
     make test
