@@ -12,21 +12,8 @@ define the details of the server.
 
 Installation
 ------------
-Right now you must clone the git package to install it.
 
-From the repository execute:
-   python setup.py install
-   
-to install the package for python
-
-
-1. create working directory
-
-2. git clone bitbucket.org:kschopmeyer/smipyping.git
-
-3. go to the smipyping directory
-
-4. python setup.py install 
+See INSTALL.md
 
 Usage
 -----
@@ -48,6 +35,19 @@ Example:
     simpleping httpd://10.1.132.75 -u blah -p blah -n somenamespace -v
 
 This will test the server at 10.1.132.75 with user name blah and password blah
+
+- simplepingall - Script that executes simpleping against every entry
+in the userbase.
+
+- serversweep - does a sweep against the ipaddresses/ports defined on
+input to find open ports and if the flag is set to use the userbase determines
+if any servers that do have the defined ports open are in the data base.
+
+- explore - Deep explore against servers defined in the user base.
+
+Today the user base is a simple csv file that is in the root directory
+of the smipyping installation.  We do have a problem in that I assume
+it is in the same directory that you are using to execute.
 
 
 

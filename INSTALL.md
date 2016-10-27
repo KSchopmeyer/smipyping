@@ -1,13 +1,53 @@
 Installation of smipyping
 =============================
 
-The smipyping Client can be installed quite easily by running its standard Python
-setup script (`setup.py`) with the `install` command, or by using `pip install`
-(which also invokes the setup script).
+smpipping is not in PyPi today so it must be installed from the
+git repository at:
 
-The setup script has support for installing its
-prerequisites. This includes installing Python packages and OS-level packages,
-and it includes the usual install mode and development mode.
+git clone https://kschopmeyer@bitbucket.org/kschopmeyer/smipyping.git
+
+There are two ways to do this:
+
+Clone install
+-------------
+
+In this installation you first clone the repository and then install
+from that clone.
+
+1. clone the repository. Note that you only have to clone once. From
+then on you can merge in new changes.
+
+git clone https://kschopmeyer@bitbucket.org/kschopmeyer/smipyping.git
+
+you will now have a directory smipyping that is the complete development
+environmemt including all prerequisits, etc.
+
+  cd smipyping
+  make install
+  
+actually I think it should be sudo make install.
+
+This should install the package.
+
+To update the installation when I add more code:
+
+1. go to smipyping
+2. update with
+      git fetch
+      git pull origin
+3. reinstall
+   make install
+
+pip install
+-----------
+
+Python packages can also be directly installed from git.  That can
+be done with the command:
+
+sudo pip install -e git+https://kschopmeyer@bitbucket.org/kschopmeyer/smipyping.git#egg=smipyping
+
+This should be the equivalent of the clone, make install
+
 
 
 Examples
