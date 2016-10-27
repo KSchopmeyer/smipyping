@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-    Provids a command line script for the simple ping function.
+    Provides a command line script for the simple ping function.
 
     The simple ping function tests the server for a known class.
 
@@ -35,7 +35,7 @@ from __future__ import absolute_import
 import sys
 import os
 from smipyping import create_simpleping_parser, connect_server, test_server, \
-                      parse_simpleping_cmdline, server_to_url
+    parse_simpleping_cmdline, server_to_url
 
 
 def main(prog):

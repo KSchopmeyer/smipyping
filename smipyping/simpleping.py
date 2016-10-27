@@ -166,10 +166,20 @@ def create_simpleping_parser(prog):
     """
 
     usage = '%(prog)s [options] server'
-    desc = 'Provide an interactive shell for doing a simple CIM ping against ' \
-           'a WBEM server defined by the input parameters. This script only. '\
-           ' connects to the server and test for the existence of a single ' \
-           ' class. If the test fails it exists with non-zero exit code'
+    desc = 'Interactive shell for doing a simple CIM ping\n ' \
+           'against a WBEM server defined by the input parameters. This\n'\
+           'script only connects to the server and test for the existence\n' \
+           'of a singleclass. If the  test fails it exists with non-zero\n' \
+           'exit code\n' \
+           'Return:\n' \
+           'Success: return code 0\n' \
+           'Failure: return code 1 - 6 and outputs string with error text\n' \
+           '1. CIMError\n' \
+           '2. PyWBEM Error\n' \
+           '3. General Error\n' \
+           '4. Timeout Error\n' \
+           '5. ConnectionError\n' \
+           '6. Ping error (only return if ping is executed)\n'
     epilog = """
 Examples:
   %s https://localhost:15345 -n interop -u sheldon -p penny
