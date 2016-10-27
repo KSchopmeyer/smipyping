@@ -10,6 +10,21 @@ able to test the current status of WBEM servers both superically and by
 analyzing the details of the server code using the SNIA smi profiles to
 define the details of the server.
 
+InstallationRequirements
+------------------------
+
+1. Python 2.7. While the package will run with python 2.6, tools like pip
+are not part of the packaging making it significant work to install and
+support.
+
+2. pywbem - Installed as part of the smipyping installation
+
+3. A number of other packages.
+
+We do NOT support python 3 right now primarily because one required package
+(scapy) does not support python 3. Plans are to remove this requirement and
+then smipyping will support python 3.
+
 Installation
 ------------
 
