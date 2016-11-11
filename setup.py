@@ -74,7 +74,6 @@ setup(
         "GitPython>=2.0.6",
         "sphinx-git",
         "httpretty"],
-        #"lxml",
 
     # package data files
     package_data={

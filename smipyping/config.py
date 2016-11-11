@@ -33,7 +33,8 @@ the variables.
 
 # This module is meant to be safe for 'import *'.
 
-__all__ = ['ENFORCE_INTEGER_RANGE']
+__all__ = ['ENFORCE_INTEGER_RANGE', 'DEFAULT_SWEEP_PORT', 'USERDATA_FILE',
+           'PING_TEST_CLASS']
 
 #: Enforce the value range in CIM integer types (e.g. :class:`~pywbem.Uint8`).
 #:
@@ -46,4 +47,11 @@ ENFORCE_INTEGER_RANGE = True
 #: The default port used by the serversweep function in case no parameter is
 #: provided. This is the DMTF defined https port.
 DEFAULT_SWEEP_PORT = 5989
+
+#: File name for user data
+USERDATA_FILE = 'userdata_example.csv'
+
+#: The class that is used in ping tests.
+PING_TEST_CLASS = 'CIM_ComputerSystem'
+
 

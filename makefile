@@ -80,7 +80,6 @@ doc_dependent_files := \
     $(wildcard $(doc_conf_dir)/*.rst) \
     $(wildcard $(doc_conf_dir)/notebooks/*.ipynb) \
     $(package_name)/__init__.py \
-    $(package_name)/_cliutils.py \
     $(package_name)/userdata.py \
     $(package_name)/explore.py \
     $(package_name)/simpleping.py \
@@ -93,7 +92,7 @@ pylint_rc_file := pylintrc
 pylint_py_files := \
     setup.py \
     $(wildcard $(package_name)/*.py)) \
-    $(wildcard tests/test*.py)
+    $(wildcard tests/*.py)
 
 # Flake8 config file
 flake8_rc_file := .flake8
@@ -156,10 +155,6 @@ develop:
 
 .PHONY: build
 build: $(bdist_file) $(sdist_file)
-	@echo '$@ done.'
-
-.PHONY: buildwin
-buildwin: $(win64_dist_file)
 	@echo '$@ done.'
 
 .PHONY: builddoc
@@ -305,14 +300,14 @@ ifeq ($(python_mn_version),26)
 	@echo 'Info: Flake8 requires Python 2.7 or Python 3; skipping this step on Python $(python_version)'
 else
 	rm -f flake8.log
-	-bash -c "set -o pipefail; PYTHONPATH=. flake8 --statistics --config=$(flake8_rc_file) $(flake8_py_files) 2>&1 |tee flake8.tmp.log"
+	bash -c "set -o pipefail; PYTHONPATH=. flake8 --statistics --config=$(flake8_rc_file) $(flake8_py_files) 2>&1 |tee flake8.tmp.log"
 	mv -f flake8.tmp.log flake8.log
 	@echo 'Done: Created flake8 log file: $@'
 endif
 
 $(test_log_file): makefile $(package_name)/*.py tests/*.py coveragerc
 	rm -f $(test_log_file)
-	bash -c "set -o pipefail; PYTHONWARNINGS=default PYTHONPATH=. py.test --cov $(package_name) --cov-config coveragerc --ignore=attic --ignore=releases -s 2>&1 |tee $(test_tmp_file)"
+	bash -c "set -o pipefail; PYTHONWARNINGS=default PYTHONPATH=. py.test --cov $(package_name) --cov-config coveragerc --ignore=attic --ignore=releases --ignore=tests/testclient -s 2>&1 |tee $(test_tmp_file)"
 	mv -f $(test_tmp_file) $(test_log_file)
 	@echo 'Done: Created test log file: $@'
 

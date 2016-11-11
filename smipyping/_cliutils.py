@@ -1,30 +1,48 @@
-
-"""
-Internal module with utility stuff for command line programs.
-"""
+"""Internal module with utility functions to support argparse."""
 
 from __future__ import print_function, absolute_import
 
 import argparse
 
+
+def check__int_range(value, min_, max_):
+    """
+    Test the input value for type int within defined range.
+
+    Parameters
+        input string, min integer value, max integer value
+    Returns
+        integer value
+
+    Exception: not integer or out of range
+    """
+    ivalue = int(value)
+    if ivalue < min_ or ivalue > max_:
+        raise argparse.ArgumentTypeError('%s: invalid range for integer.'
+                                         ' min=%s, max=%s' %
+                                         (value, min_, max_))
+    return ivalue
+
+
 def check_negative_int(value):
-    """ Test the input value for type int and ge 0 generate exception if
-        it fails these tests.
+    """
+    Test the input value for type int and ge 0.
+
+    Generate exception if it fails these tests.
 
     Parameters
         input string
     Returns
         integer value
-    ivalue = int(value)
-    if ivalue < 0:
-        raise argparse.ArgumentTypeError('%s expected positive integer' % value)
-    return ivalue
+
+    Exception: negative integer value or not an integer
     """
     ivalue = int(value)
     if ivalue < 0:
-        raise argparse.ArgumentTypeError('%s: invalid positive int value' % \
+        raise argparse.ArgumentTypeError('%s: invalid positive int value' %
                                          value)
     return ivalue
+
 
 class SmartFormatter(argparse.HelpFormatter):
     """Formatter class for `argparse`, that respects newlines in help strings.
@@ -51,4 +69,3 @@ class SmartFormatter(argparse.HelpFormatter):
         if text.startswith('R|'):
             return text[2:].splitlines()
         return argparse.HelpFormatter._split_lines(self, text, width)
-

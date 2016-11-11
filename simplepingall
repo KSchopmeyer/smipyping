@@ -80,8 +80,6 @@ def parse_cmdline(argparser_):
 
     args = argparser_.parse_args()
 
-
-
     if args.verbose:
         print('csvfile=%s' % args.csvfile)
         print('verbose=%s' % args.verbose)
@@ -111,8 +109,6 @@ def main(prog):
 
     ping_timeout = 2      # 2 second ping timeout
     op_timeout = 20       # 20 second operation timeout
-
-    
 
     for record_id in user_data:
         # TODO map this to use __getItem__

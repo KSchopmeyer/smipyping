@@ -6,8 +6,6 @@
 
 from __future__ import absolute_import, print_function
 import unittest
-#import pytest
-#import pyping
 
 from smipyping import CsvUserData
 
@@ -25,19 +23,19 @@ class CsvUserDataTest(unittest.TestCase):
 
     def test_contains(self):
         user_data = CsvUserData('userdata_example.csv')
-        #if '42' in user_data:
-            #print('test_ contains: OK')
-        #else:
-            #print('test_ contains: Not OK')
+        if '42' in user_data:
+            print('test_ contains: OK')
+        else:
+            print('test_ contains: Not OK')
 
         self.assertIn("42", user_data)
 
     def test_not_contains(self):
         user_data = CsvUserData('userdata_example.csv')
-        #if '942' in user_data:
-            #print('test_not_contains: OK')
-        #else:
-            #print('test__not_contains: Not OK')
+        if '942' in user_data:
+            print('test_not_contains: Not OK')
+        else:
+            print('test__not_contains: OK')
 
         self.assertNotIn("942", user_data)
 
@@ -45,10 +43,12 @@ class CsvUserDataTest(unittest.TestCase):
         user_data = CsvUserData('userdata_example.csv')
         host_id = ['10.1.132.110', 5989]
         result_list = user_data.get_user_data_host(host_id)
+        print('result_list %s' % result_list)
         if not result_list:
-            print('test_get_user_data_host: OK')
-        else:
             print('test_get_user_data_host: Not OK')
+        else:
+            print('test_get_user_data_host: OK')
+
 
 if __name__ == '__main__':
     unittest.main()

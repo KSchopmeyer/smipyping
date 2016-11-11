@@ -18,6 +18,8 @@ import six
 from smipyping._cliutils import SmartFormatter as _SmartFormatter
 from smipyping._terminaltable import print_terminal_table, fold_cell
 
+__all__ = ['UserData',  'CsvUserData']
+
 def get_config(config_file):
     """ Get config file."""
 
@@ -275,7 +277,7 @@ class CsvUserData(UserData):
         # each set ofentries
         result = {}
         for row in reader:
-            key = row['Id']
+            key = int(row['Id'])
             if key in result:
                 # duplicate row handling
                 print('ERROR. Duplicate Id in table: %s\nrow=%s' %
