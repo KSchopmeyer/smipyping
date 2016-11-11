@@ -100,8 +100,7 @@ flake8_rc_file := .flake8
 # Flake8 source files to check
 flake8_py_files := \
     setup.py \
-    os_setup.py \
-    $(filter-out $(moftab_files), $(wildcard $(package_name)/*.py)) \
+    $(wildcard $(package_name)/*.py) \
     $(wildcard tests/*.py)
 
 # Test log
@@ -220,7 +219,7 @@ install: $(sdist_file)
 	tar -x -C tmp_install -f $(sdist_file)
 	sh -c "cd tmp_install/$(package_name)-$(package_version) && python setup.py install"
 	rm -Rf tmp_install
-	@echo 'Done: Installed pywbem into current Python environment.'
+	@echo 'Done: Installed smipyping into current Python environment.'
 	@echo '$@ done.'
 
 .PHONY: test
@@ -252,7 +251,7 @@ all: develop check build builddoc test
 .PHONY: upload
 upload:  $(dist_files)
 	twine upload $(dist_files)
-	@echo 'Done: Uploaded pywbem version to PyPI: $(package_version)'
+	@echo 'Done: Uploaded smipyping version to PyPI: $(package_version)'
 	@echo '$@ done.'
 
 # Note: distutils depends on the right files specified in MANIFEST.in, even when

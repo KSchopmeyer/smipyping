@@ -71,9 +71,12 @@ setup(
         "pytest>=2.4",
         "pytest-cov",
         "Sphinx>=1.3",
-        "GitPython>=2.0.6",
-        "sphinx-git",
-        "httpretty"],
+        # Pinning GitPython to 2.0.8 max, due to its use of unittest.case
+        # which is not available on Python 2.6.
+        # TODO: Track resolution of GitPython issue #540:
+        #       https://github.com/gitpython-developers/GitPython/issues/540
+        "GitPython==2.0.8",
+        "sphinx-git"],
 
     # package data files
     package_data={
