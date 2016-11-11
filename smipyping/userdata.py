@@ -84,7 +84,7 @@ class UserData(object):
 
     def __getitem__(self, record_id):
         """Return the record for the defined record_id from the userdata."""
-        return self.userdict[record_id].value
+        return self.userdict[record_id]
 
     def __delitem__(self, record_id):
         del self.userdict[record_id]

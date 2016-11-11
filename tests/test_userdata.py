@@ -23,21 +23,35 @@ class CsvUserDataTest(unittest.TestCase):
 
     def test_contains(self):
         user_data = CsvUserData('userdata_example.csv')
-        if '42' in user_data:
+        if 42 in user_data:
             print('test_ contains: OK')
         else:
             print('test_ contains: Not OK')
 
-        self.assertIn("42", user_data)
+        self.assertIn(42, user_data)
+
+    def test_get_data_record(self):
+        user_data = CsvUserData('userdata_example.csv')
+        self.assertIn(42, user_data)
+        record = user_data.get_dict_record(42)
+        self.assertIn('Product', record)
+
+
+    def test_get_data(self):
+        user_data = CsvUserData('userdata_example.csv')
+        self.assertIn(42, user_data)
+        record = user_data[42]
+        self.assertIn('Product', record)
+
 
     def test_not_contains(self):
         user_data = CsvUserData('userdata_example.csv')
-        if '942' in user_data:
+        if 942 in user_data:
             print('test_not_contains: Not OK')
         else:
             print('test__not_contains: OK')
 
-        self.assertNotIn("942", user_data)
+        self.assertNotIn(942, user_data)
 
     def test_get_user_data_host(self):
         user_data = CsvUserData('userdata_example.csv')
@@ -48,6 +62,7 @@ class CsvUserDataTest(unittest.TestCase):
             print('test_get_user_data_host: Not OK')
         else:
             print('test_get_user_data_host: OK')
+        self.assertTrue(result_list is not None)
 
 
 if __name__ == '__main__':

@@ -37,6 +37,7 @@ from .userdata import CsvUserData
 
 from. config import USERDATA_FILE, PING_TEST_CLASS
 
+
 class SmiCustomFormatter(_SmartFormatter,
                          _argparse.RawDescriptionHelpFormatter):
     """
@@ -57,9 +58,12 @@ class SmiCustomFormatter(_SmartFormatter,
 
     pass
 
+
 class SimplePing(object):
-    """Simple ping class. Contains all functionality to handle simpleping"""
+    """Simple ping class. Contains all functionality to handle simpleping."""
+
     def __init__(self, prog):
+        """Initialize instance attributes"""
         self.conn = None
         self.prog = prog
         self.debug = False,
@@ -67,12 +71,14 @@ class SimplePing(object):
         self.ping = False
         self.argparser = None
         self.namespace = None
-        self.namespace = None
         self.user = None
-        self.credential = None
+        self.password = None
         self.url = None
         self.timeout = None
         self.server = None
+
+    def __str__(self):
+        return 'server %s url %s' % (self.server, self.url)
 
     def get_connection_info(self, conn):
         """Return a string with the connection info."""
@@ -106,7 +112,7 @@ class SimplePing(object):
         """
         Confirm that the server url is correct or fix it.
 
-        Returns url including scheme and saves it in the class
+        Returns url including scheme and saves it in the class object
 
         Exception: argparser Error if url scheme is invalid
         """
@@ -118,17 +124,15 @@ class SimplePing(object):
 
         elif re.match(r"^[a-zA-Z0-9]+://", server) is not None:
             self.argparser.error('Invalid scheme on server argument.'
-                             ' Use "http" or "https"')
+                                 ' Use "http" or "https"')
 
         else:
             url = '%s://%s' % ('https', server)
-
         self.url = url
         return url
 
 
-    def connect_server(self, url, user=None, password=None,
-                       timeout=None, verify_cert=False):
+    def connect_server(self, url, verify_cert=False):
         """
         Build connection parameters and issue WBEMConnection to the WBEMServer.
 
@@ -139,7 +143,7 @@ class SimplePing(object):
         creds = None
 
         if self.user is not None or self.password is not None:
-            creds = (user, password)
+            creds = (self.user, self.password)
 
         conn = WBEMConnection(url, creds, default_namespace=self.namespace,
                               no_verification=not verify_cert,
@@ -168,7 +172,7 @@ class SimplePing(object):
         try:
             insts = conn.EnumerateInstances(PING_TEST_CLASS)
 
-            if verbose:
+            if self.verbose:
                 print('Success host=%s. Returned %s instance(s)' % (conn.url,
                                                                     len(insts)))
             rtn_code = (0, "Success", "")
@@ -278,6 +282,7 @@ Examples:\n
             help='Ping for server before trying to connect.')
         server_arggroup.add_argument(
             '-i', '--user-id', dest='user_id', metavar='UserDataId',
+            type=int,
             help='R|If this argument is set, the value is a user id to use\n'
                  'instead of an server url as the source for the test. In\n'
                  'this case, namespace, user, and password arguments are\n'
@@ -338,7 +343,7 @@ Examples:\n
             help='Show this help message and exit')
 
         self.argparser = argparser
-
+        return argparser  # used for unittests
 
     def parse_cmdline(self):
         """
@@ -355,15 +360,14 @@ Examples:\n
             print('cli arguments')
             print('\n'.join("%s: %s" % item for item in attrs.items()))
             print('')
-            
+
         # save cli options for use in subsequent functions.
         self.verbose = opts.verbose
         self.debug = opts.debug
         self.ping = opts.ping
         self.namespace = opts.namespace if opts.namespace else 'None'
         self.timeout = opts.timeout
-        
-        
+
         if not opts.server:
             if opts.user_id is None:
                 self.argparser.error('No WBEM server specified')
@@ -372,30 +376,36 @@ Examples:\n
                         opts.namespace is not None):
                     self.argparser.error('-u, -n, or -p not used with'
                                          '-i option')
+        else:
+            self.server_to_url(opts.server)
+            self.namespace = opts.namespace
+            self.user = opts.user
+            self.password = opts.password
+
         if opts.user_id:
             user_data = CsvUserData(USERDATA_FILE)
             if opts.user_id in user_data:
-                user_record = user_data(opts.user_id)
-                print('Using ip=%s, user=%s, pw=%s namespace=%s' %
-                      (user_record['IPAddress'], user_record['Principal'],
-                      user_record['Credential'],
-                      user_record['Namespace']))
-            self.namespace = user_record['Namespace']
-            self.user = user_record['Principal']
-            self.server = user_record['IPAddress']
-        else:
-            self.namespace = opts.namespace
-            self.user = opts.user
-            self.credential = opts.password
-            self.server = opts.server           
-            
-                    
+                user_record = user_data[opts.user_id]
+                self.server = '%s://%s' % (user_record['Protocol'],
+                                        user_record['IPAddress'])
+                self.url = self.server
+                # TODO do not need both server and url
+                if self.verbose:
+                    print(
+                        'User id %s; Using url=%s, user=%s, pw=%s namespace=%s'
+                         %
+                        (opts.user_id, self.url,
+                         user_record['Principal'],
+                         user_record['Credential'],
+                         user_record['Namespace']))
+                self.namespace = user_record['Namespace']
+                self.user = user_record['Principal']
+            else:
+               self.argparser.error('Id %s not in user data base' %
+                                    opts.user_id)
 
         if opts.timeout is not None:
             if opts.timeout < 0 or opts.timeout > 300:
                 self.argparser.error('timeout option(%s) out of range' %
                                      opts.timeout)
-
-
-
         return opts

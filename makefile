@@ -91,7 +91,7 @@ pylint_rc_file := pylintrc
 # PyLint source files to check
 pylint_py_files := \
     setup.py \
-    $(wildcard $(package_name)/*.py)) \
+    $(wildcard $(package_name)/*.py) \
     $(wildcard tests/*.py)
 
 # Flake8 config file
@@ -207,6 +207,10 @@ doccoverage:
 
 .PHONY: check
 check: pylint.log flake8.log
+	@echo '$@ done.'
+
+.PHONY: pylint
+pylint: pylint.log
 	@echo '$@ done.'
 
 .PHONY: flake8

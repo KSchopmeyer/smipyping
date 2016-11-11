@@ -51,13 +51,9 @@ def main(prog):
 
     opts = simpleping.parse_cmdline()
 
-    url = simpleping.server_to_url(opts.server)
+    ip_address = simpleping.url.split('/')[2]
 
-    ip_address = url.split('/')[2]
-
-    conn = simpleping.connect_server(url, opts.namespace,
-                                     user=opts.user, password=opts.password,
-                                     timeout=opts.timeout,
+    conn = simpleping.connect_server(simpleping.url,
                                      verify_cert=opts.verify_cert)
 
     rtn_code, return_code_type, txt, time = simpleping.test_server(
@@ -65,7 +61,8 @@ def main(prog):
         ip_address)
 
     if rtn_code != 0:
-        print('%s Error Response, Exit code %s %s' % (opts.server, rtn_code,
+        print('%s Error Response, Exit code %s %s' % (simpleping.server,
+                                                      rtn_code,
                                                       return_code_type))
     else:
         if opts.verbose:
