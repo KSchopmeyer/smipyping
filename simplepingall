@@ -1,36 +1,39 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 """
-    Provided the command line script to execute the simple ping against all
-    servers in the user database.
+Command line script to execute the simple ping against all
+servers in the user database.
 
-    This script executes the following for each server in the database:
+Simple ping executes a defined operation against the server, normally
+a get class on a particular class. As an option this can be proceeded
+by a ping to determine if anything exists at the defined address.
 
-        If the -p option is set, pings the server to confirm that the
-            IP address exists.
+This script executes the following for each server in the database:
 
-        Executes a connect to the server defined by the cmd line
+    If the -p option is set, pings the server to confirm that the
+        IP address exists.
 
-        Executes a fixed test against that server (existence of one class).
+    Executes a connect to the server defined by the cmd line
+
+    Executes a fixed test against that server (existence of one class).
 """
 from __future__ import absolute_import
 
 import sys
 import os
+import six
 import argparse as _argparse
-from smipyping import connect_server, test_server, CsvUserData, ping_host, \
-                      server_to_url
+from smipyping import SimplePing, CsvUserData, USERDATA_FILE, \
+    SIMPLEPING_OPERATION_DEFAULT_TIMEOUT, TestResult, display_argparser_args
 from smipyping import SmartFormatter as _SmartFormatter
+
 
 def create_argparser(prog_name):
     """
-        Create the argument paser to execute the simpleping test against
-        all servers in the user database
+    Create the argument parser to execute the simpleping test.
 
-        Returns the created parser.
+    Returns the created parser.
     """
-
     prog = prog_name  # Name of the script file invoking this module
     usage = '%(prog)s [options] subnet [subnet] ...'
     desc = 'Sweep possible WBEMServer ports across a range of IP subnets '\
@@ -47,10 +50,8 @@ def create_argparser(prog_name):
     general_arggroup = argparser.add_argument_group(
         'General options')
     general_arggroup.add_argument(
-        '--csvfile', '-c', default='userdata_example.csv',
-        help='Use csv input file')
-    general_arggroup.add_argument(
-        '--no_threads', action='store_true', default=False,
+        '--no_threads', action='store_true',
+        default=False,
         help='If set, defaults to non-threaded implementation. The'
              ' non-threaded implementation takes much longer to execute.')
     general_arggroup.add_argument(
@@ -63,8 +64,12 @@ def create_argparser(prog_name):
         '--ignore_disabled', '-i', action='store_true', default=False,
         help='If set ignores all records marked disabled')
     general_arggroup.add_argument(
-        '--ping', '-p', action='store_true', default=False,
+        '--ping', '-P', action='store_true', default=False,
         help='Ping for server as first test.')
+    general_arggroup.add_argument(
+        '--timeout', '-t', type=int,
+        default=SIMPLEPING_OPERATION_DEFAULT_TIMEOUT,
+        help='Operation timeout for the WBEM test operation.')
 
     return argparser
 
@@ -77,87 +82,124 @@ def parse_cmdline(argparser_):
 
     Either returns the args or executes argparser.error
     """
-
     args = argparser_.parse_args()
 
     if args.verbose:
-        print('csvfile=%s' % args.csvfile)
-        print('verbose=%s' % args.verbose)
-        print('debug=%s' % args.debug)
-        print('ping=%s' % args.ping)
-        print('ignore_disabled=%s' % args.ignore_disabled)
-        print('no_threads=%s' % args.no_threads)
-
-    if not args.csvfile:
-        argparser_.error('No csvfile specified')
-        return None
+        display_argparser_args(args)
 
     return args
 
+RESULTS = []
 
-def main(prog):
-    """ Main function uses simpleping.py to execute. This provides
-        the parsing, connection and calls the test-server function
 
-        Returns with either exit code = 0 if OK or exit_code = 1 if error
+def test_threaded():
     """
-    arg_parser = create_argparser(prog)
+    Test all users in parallel.
 
-    opts = parse_cmdline(arg_parser)
+    Executes test on all users each in a separate process.
+    """
+    print('ERROR. NOT IMPLEMENTED')
 
-    user_data = CsvUserData(opts.csvfile)
 
-    ping_timeout = 2      # 2 second ping timeout
-    op_timeout = 20       # 20 second operation timeout
-
-    for record_id in user_data:
-        # TODO map this to use __getItem__
-        record = user_data.get_dict_record(record_id)
-        company = record['CompanyName']
-        scheme = record["Protocol"]
-        server = '%s://%s' % (scheme, record['IPAddress'])
-
+def test_not_threaded(opts, prog, user_data):
+    """Test all users serially."""
+    for record_id, user_record in user_data.iteritems:
+        simpleping = setup_simpleping(prog, user_data, record_id, opts)
+        company = user_record['CompanyName']
+        results_list = []
         if opts.verbose:
-            print('server %s record_id=%s company=%s ' % (server, record_id,
-                                                          company))
+            print('url=%s record_id=%s company=%s ' % (simpleping.url,
+                                                       record_id,
+                                                       company))
 
-        if opts.ignore_disabled and user_data.disabled_record(record):
+        if opts.ignore_disabled and user_data.disabled_record(user_record):
             print('Ignore disabled %s %s %s' % (record_id,
-                                                record['IPAddress'],
+                                                simpleping.url,
                                                 company))
-            rtn_code = 0
-            rtn_txt = "ignore because disabled"
-            rtn_code_type = "Disabled"
-            continue
+            result_type = 'Disabled'
+            result_code = simpleping.get_result_code(result_type)
+            test_results = TestResult(code=result_code,
+                                      type=result_type,
+                                      exception="ignore disabled",
+                                      execution_time=0)
         else:
+            # TODO put data into cimpleping instance for url, etc.
+            test_results = simpleping.test_server(verify_cert=False)
 
-            url = server_to_url(server, arg_parser)
-
-            conn = connect_server(url,
-                                  record["Namespace"],
-                                  user=record["Principal"],
-                                  password=record["Credential"],
-                                  timeout=op_timeout,
-                                  verify_cert=False,
-                                  debug=opts.debug, verbose=opts.debug)
-
-            rtn_code, rtn_code_type, rtn_txt, time = test_server(conn,
-                                                          record['IPAddress'],
-                                                          debug=opts.debug,
-                                                          verbose=opts.verbose,
-                                                          ping=opts.ping)
-
-        if rtn_code != 0:
-            print('%s(%s:%s) ERROR, code=%s:%s; %s %s' %  \
-                  (server, record_id, company, rtn_code_type, rtn_code, rtn_txt, 
-                   time))
+        results_list.append(test_results)
+        if test_results.code != 0:
+            print('%s(%s:%s) ERROR, code=%s:%s; %s %s' %
+                  (simpleping.url, record_id, company,
+                   test_results.code,
+                   test_results.type,
+                   test_results.exception, test_results.execution_time))
         else:
             if opts.verbose:
-                print('%s(%s:%s) Return code = %s %s' % (server, record_id, 
-                                                      company,
-                                                      rtn_code, rtn_code_type))
+                print(
+                    '%s(%s:%s) Return code=%s %s %s, %s' %
+                    (simpleping.url,
+                     record_id,
+                     company,
+                     test_results.code,
+                     test_results.type,
+                     test_results.exception,
+                     test_results.execution_time))
+    return results_list
 
-        
+
+def print_results(results):
+    """
+    Print results of test from list.
+
+    Print a table of results for each TestResult tuple in the results
+    list.
+    """
+    table = []
+    table.append('code', 'type', 'exception', 'time')
+    for result in results:
+        table.append(result.code, result.type, result.exception,
+                     result.execution_time)
+
+
+def setup_simpleping(prog, user_data, record_id, opts):
+    """
+    Set values from user_data and opts into a new simpleping instance.
+
+    Sets several values from the user_data record into the simpleping
+    object to prepare for test.
+    """
+    simpleping = SimplePing(prog)
+
+    # TODO should we mod this to have record and not record id
+    simpleping.set_from_userrecord(record_id, user_data)
+    user_record = user_data[record_id]
+
+    simpleping.timeout = opts.timeout
+    simpleping.debug = opts.debug
+    simpleping.verbose = opts.verbose
+
+    simpleping.set_url_from_userrec(user_record)
+    return simpleping
+
+
+def main(prog):
+    """
+    Main function uses simpleping.py to execute.
+
+    This provides the parsing, connection and calls the test-server function
+
+    Returns with either exit code = 0 if OK or exit_code = 1 if error
+    """
+    arg_parser = create_argparser(prog)
+    opts = parse_cmdline(arg_parser)
+    user_data = CsvUserData(USERDATA_FILE)
+
+    if opts.no_threads:
+        results = test_not_threaded(opts, prog, user_data)
+    else:
+        results = test_threaded(opts, prog, user_data)
+
+    print_results(results)
 
 
 if __name__ == '__main__':

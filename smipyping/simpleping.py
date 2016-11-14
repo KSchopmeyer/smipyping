@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 """
 Provides the components for a utility to test a WBEM server.
 
@@ -26,6 +23,8 @@ import argparse as _argparse
 import re
 from textwrap import fill
 import datetime
+from urlparse import urlparse
+from collections import namedtuple
 
 from pywbem import WBEMConnection, ConnectionError, Error, TimeoutError, \
     CIMError
@@ -35,7 +34,14 @@ from .ping import ping_host
 
 from .userdata import CsvUserData
 
-from. config import USERDATA_FILE, PING_TEST_CLASS
+from. config import USERDATA_FILE, PING_TEST_CLASS, PING_TIMEOUT
+
+__all__ = ['SimplePing', 'TestResult']
+
+TestResult = namedtuple('TestResult', ['code',
+                                       'type',
+                                       'exception',
+                                       'execution_time'])
 
 
 class SmiCustomFormatter(_SmartFormatter,
@@ -63,8 +69,7 @@ class SimplePing(object):
     """Simple ping class. Contains all functionality to handle simpleping."""
 
     def __init__(self, prog):
-        """Initialize instance attributes"""
-        self.conn = None
+        """Initialize instance attributes."""
         self.prog = prog
         self.debug = False,
         self.verbose = False,
@@ -75,10 +80,26 @@ class SimplePing(object):
         self.password = None
         self.url = None
         self.timeout = None
-        self.server = None
+
+        self.error_code = {
+            'Success': 0,
+            'CIMError': 1,
+            'PyWBEM Error': 2,
+            'General Error': 3,
+            'TimeoutError': 4,
+            'ConnectionError': 5,
+            'Ping Fail': 6,
+            'Disabled': 0}
 
     def __str__(self):
-        return 'server %s url %s' % (self.server, self.url)
+        """Return url."""
+        return 'url %s prog %s ' % (self.url, self.prog)
+
+    def __repr__(self):
+        """Return some attributes."""
+        return 'prog %s debug %s verbose %s ping %s namespace %s' % \
+               (self.prog, self.debug, self.verbose, self.ping,
+                self.namespace)
 
     def get_connection_info(self, conn):
         """Return a string with the connection info."""
@@ -131,6 +152,45 @@ class SimplePing(object):
         self.url = url
         return url
 
+    def get_result_code(self, result_type):
+        """Get the result code corresponding to the result_type."""
+        return self.error_code[result_type]
+
+    def test_server(self, verify_cert=False):
+        """
+        Execute the simpleping tests against the defined server.
+
+        This method executes all of the required tests against the server
+        and returns the namedtuple TestResults
+        """
+        start_time = datetime.datetime.now()
+
+        # execute the ping test if required
+        if self.ping:
+            result, exception = self.ping_server(self.url)
+
+        # connect to the server and execute the cim operation test
+        conn = self.connect_server(self.url, verify_cert=verify_cert)
+
+        result, exception = self.execute_cim_test(conn)
+
+        result_code = self.get_result_code(result)
+        if self.verbose:
+            print('result=%s, exception=%s' % (result, exception))
+
+        # Return namedtuple with results
+        return TestResult(
+            code=result_code,
+            type=result,
+            exception=exception,
+            execution_time=str(datetime.datetime.now() - start_time))
+
+    def ping_server(self):
+        """Get the netloc from the url and ping the server."""
+        netloc = urlparse(self.url).netloc
+        ip_address = netloc.split(':')
+        if not ping_host(ip_address[0], PING_TIMEOUT):
+            return('Ping Fail')
 
     def connect_server(self, url, verify_cert=False):
         """
@@ -156,47 +216,31 @@ class SimplePing(object):
 
         return conn
 
-    def test_server(self, conn, ip_address,):
+    def execute_cim_test(self, conn):
         """
         Issue the test operation. Returns with system exit code.
 
         Returns a tuple of code and reason text.  The code is ne 0 if there was
         an error.
         """
-        start_time = datetime.datetime.now()
-        ping_timeout = 2
-        if self.ping:
-            if not ping_host(ip_address, ping_timeout):
-                end_time = datetime.datetime.now() - start_time
-                return(6, 'Ping Failed', "", end_time)
         try:
             insts = conn.EnumerateInstances(PING_TEST_CLASS)
 
             if self.verbose:
-                print('Success host=%s. Returned %s instance(s)' % (conn.url,
-                                                                    len(insts)))
-            rtn_code = (0, "Success", "")
+                print('Success host=%s. Returned %s instance(s)' %
+                      (conn.url, len(insts)))
+            rtn_code = ("Success", "")
 
         except CIMError as ce:
-            rtn_code = (1, "CIMError", ce)
-            if self.verbose:
-                print('Operation Failed: CIMError %s ' % ce)
-
+            rtn_code = ("CIMError", ce)
         except ConnectionError as co:
-            rtn_code = (5, "ConnectionError", co)
-            if self.verbose:
-                print('Operation Failed: ConnectionError %s ' % co)
+            rtn_code = ("ConnectionError", co)
         except TimeoutError as to:
-            rtn_code = (4, "TimeoutError", to)
-            if self.verbose:
-                print('Operation Failed: TimeoutError %s ' % to)
+            rtn_code = ("TimeoutError", to)
         except Error as er:
-            if self.verbose:
-                print('PyWBEM Error %s' % er)
-            rtn_code = (2, "PyWBEM Error", er)
+            rtn_code = ("PyWBEM Error", er)
         except Exception as ex:
-            print('General Error %s' % ex)
-            rtn_code = (3, "General Error", ex)
+            rtn_code = ("General Error", ex)
 
         if self.debug:
             last_request = conn.last_request or conn.last_raw_request
@@ -204,10 +248,7 @@ class SimplePing(object):
             last_reply = conn.last_reply or conn.last_raw_reply
             print('Reply:\n\n%s\n' % last_reply)
 
-        end_time = datetime.datetime.now() - start_time
-        # TODO this fails if we make it a tuple. not all args cvtd
-        #      in the print function
-        rtn_tuple = [rtn_code[0], rtn_code[1], rtn_code[2], str(end_time)]
+        rtn_tuple = [rtn_code[0], rtn_code[1]]
         # print('rtn_tuple %s' % rtn_tuple)
         return rtn_tuple
 
@@ -278,12 +319,10 @@ Examples:\n
                  'in seconds(integer between 0 and 300).\n'
                  'Default: 20 seconds')
         server_arggroup.add_argument(
-            '--ping', action='store_true', default=False,
-            help='Ping for server before trying to connect.')
-        server_arggroup.add_argument(
-            '-i', '--user-id', dest='user_id', metavar='UserDataId',
+            '-T', '--target_user-id', dest='target_user_id',
+            metavar='TargetUserId',
             type=int,
-            help='R|If this argument is set, the value is a user id to use\n'
+            help='R|If this argument is set, the value is a user id\n'
                  'instead of an server url as the source for the test. In\n'
                  'this case, namespace, user, and password arguments are\n'
                  'derived from the user data rather than cli input')
@@ -302,12 +341,12 @@ Examples:\n
         security_arggroup.add_argument(
             '-V', '--verify-cert', dest='verify_cert',
             action='store_true',
-            help='Client will verify certificate returned by the WBEM'
-                 ' server (see cacerts). This forces the client-side'
-                 ' verification of the server identity, Normally it would'
-                 ' be important to verify the server certificate but in the smi'
-                 ' test environment where certificates are largely unknown'
-                 ' the default is to not verify.')
+            help='R|Client will verify certificate returned by the WBEM\n'
+                 'server (see cacerts). This forces the client-side\n'
+                 'verification of the server identity, Normally it would\n'
+                 'smi be important to verify the server certificate but in\n'
+                 'the test environment where certificates are largely\n'
+                 'unknown the default is to not verify.')
         security_arggroup.add_argument(
             '--cacerts', dest='ca_certs', metavar='cacerts',
             help='R|File or directory containing certificates that will be\n'
@@ -330,6 +369,10 @@ Examples:\n
 
         general_arggroup = argparser.add_argument_group(
             'General options')
+        general_arggroup.add_argument(
+            '--ping', '-P', action='store_true', default=False,
+            help='R|Ping for server as first test. This often shortens the\n'
+                 'total response time.')
         general_arggroup.add_argument(
             '-v', '--verbose', dest='verbose',
             action='store_true', default=False,
@@ -355,11 +398,7 @@ Examples:\n
         """
         opts = self.argparser.parse_args()
 
-        if opts.verbose:
-            attrs = vars(opts)
-            print('cli arguments')
-            print('\n'.join("%s: %s" % item for item in attrs.items()))
-            print('')
+        # if opts.verbose: display_argparser_args(opts)
 
         # save cli options for use in subsequent functions.
         self.verbose = opts.verbose
@@ -369,7 +408,7 @@ Examples:\n
         self.timeout = opts.timeout
 
         if not opts.server:
-            if opts.user_id is None:
+            if opts.target_user_id is None:
                 self.argparser.error('No WBEM server specified')
             else:
                 if (opts.user is not None or opts.password is not None or
@@ -382,30 +421,41 @@ Examples:\n
             self.user = opts.user
             self.password = opts.password
 
-        if opts.user_id:
+        if opts.target_user_id:
             user_data = CsvUserData(USERDATA_FILE)
-            if opts.user_id in user_data:
-                user_record = user_data[opts.user_id]
-                self.server = '%s://%s' % (user_record['Protocol'],
-                                        user_record['IPAddress'])
-                self.url = self.server
-                # TODO do not need both server and url
-                if self.verbose:
-                    print(
-                        'User id %s; Using url=%s, user=%s, pw=%s namespace=%s'
-                         %
-                        (opts.user_id, self.url,
-                         user_record['Principal'],
-                         user_record['Credential'],
-                         user_record['Namespace']))
-                self.namespace = user_record['Namespace']
-                self.user = user_record['Principal']
-            else:
-               self.argparser.error('Id %s not in user data base' %
-                                    opts.user_id)
+            if opts.target_user_id in user_data:
+                self.set_from_userrecord(opts.target_user_id, user_data)
+        else:
+            self.argparser.error('Id %s not in user data base' %
+                                 opts.target_user_id)
 
         if opts.timeout is not None:
             if opts.timeout < 0 or opts.timeout > 300:
                 self.argparser.error('timeout option(%s) out of range' %
                                      opts.timeout)
         return opts
+
+    def set_url_from_userrec(self, user_record):
+        """Set the url from data in the user record."""
+        self.url = '%s://%s' % (user_record['Protocol'],
+                                user_record['IPAddress'])
+
+    def set_from_userrecord(self, user_id, user_data):
+        """
+        Set the required fields from the user record.
+
+        Get the connection information from the user record and save in
+        the SimplePing instance
+        """
+        user_record = user_data[user_id]
+        self.set_url_from_userrec(user_record)
+
+        if self.verbose:
+            print(
+                'User id %s; Using url=%s, user=%s, pw=%s namespace=%s' %
+                (user_id, self.url,
+                 user_record['Principal'],
+                 user_record['Credential'],
+                 user_record['Namespace']))
+        self.namespace = user_record['Namespace']
+        self.user = user_record['Principal']

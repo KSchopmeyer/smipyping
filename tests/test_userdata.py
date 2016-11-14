@@ -1,27 +1,33 @@
 #!/usr/bin/env python
 
 """
-    Test the CSVUserData class.
+Test the CSVUserData class.
 """
 
 from __future__ import absolute_import, print_function
 import unittest
+import six
 
 from smipyping import CsvUserData
 
-#unimplemented = pytest.mark.skipif(True, reason="test not implemented")
+# unimplemented = pytest.mark.skipif(True, reason="test not implemented")
+
 
 class CsvUserDataTest(unittest.TestCase):
+    """Class for simple tests of CSVUserData class."""
 
     def test_get_data(self):
+        """Test getting the CsvUserData object."""
         user_data = CsvUserData('userdata_example.csv')
         self.assertTrue(len(user_data) != 0)
 
     def test_display_data(self):
+        """Test display."""
         user_data = CsvUserData('userdata_example.csv')
         user_data.display_all()
 
     def test_contains(self):
+        """Test contains functionality."""
         user_data = CsvUserData('userdata_example.csv')
         if 42 in user_data:
             print('test_ contains: OK')
@@ -29,20 +35,24 @@ class CsvUserDataTest(unittest.TestCase):
             print('test_ contains: Not OK')
 
         self.assertIn(42, user_data)
+        self.assertIn(1, user_data)
 
     def test_get_data_record(self):
+        """Test get one record"""
         user_data = CsvUserData('userdata_example.csv')
         self.assertIn(42, user_data)
-        record = user_data.get_dict_record(42)
-        self.assertIn('Product', record)
+        user_record = user_data.get_dict_record(42)
+        self.assertIn('Product', user_record)
 
-
-    def test_get_data(self):
+    def test_iter_items(self):
+        """Test iteritems functionality"""
         user_data = CsvUserData('userdata_example.csv')
-        self.assertIn(42, user_data)
-        record = user_data[42]
-        self.assertIn('Product', record)
-
+        counter = 0
+        for user_id, user_record in six.iteritems(user_data):
+            counter += 1
+            self.assertIn('Product', user_record)
+            self.assertIn('SMIVersion', user_record)
+        self.assertEqual(counter, 51)
 
     def test_not_contains(self):
         user_data = CsvUserData('userdata_example.csv')

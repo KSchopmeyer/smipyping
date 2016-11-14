@@ -19,15 +19,10 @@ This script:
     to the error type:
 
       1. CIMError
-
       2. PyWBEM Error
-
       3. General Error
-
       4. Timeout Error
-
       5. ConnectionError
-
       6. Ping error (only return if ping is executed)
 """
 from __future__ import absolute_import
@@ -39,38 +34,32 @@ from smipyping import SimplePing
 
 def main(prog):
     """
-    Main function uses simpleping.py to execute.
+    Main function executes simple test of server using simpleping.
 
     This provides the parsing, connection and calls the test-server function.
 
     Returns with either exit code = 0 if OK or exit_code = 1 if error
     """
-
     simpleping = SimplePing(prog)
-    arg_parser = simpleping.create_parser()
+    simpleping.create_parser()
 
     opts = simpleping.parse_cmdline()
 
-    ip_address = simpleping.url.split('/')[2]
+    test_result = simpleping.test_server(verify_cert=opts.verify_cert)
 
-    conn = simpleping.connect_server(simpleping.url,
-                                     verify_cert=opts.verify_cert)
-
-    rtn_code, return_code_type, txt, time = simpleping.test_server(
-        conn,
-        ip_address)
-
-    if rtn_code != 0:
-        print('%s Error Response, Exit code %s %s' % (simpleping.server,
-                                                      rtn_code,
-                                                      return_code_type))
+    if test_result.code != 0:
+        print('%s Error Response, Exit code %s %s' % (simpleping.url,
+                                                      test_result.code,
+                                                      test_result.type))
     else:
         if opts.verbose:
-            print('%s Return code = %s in %s sec' % (opts.server, rtn_code,
-                                                     time))
+            print('%s Return code = %s:%s in %s sec' % (simpleping.url,
+                                                     test_result.type,
+                                                     test_result.code,
+                                                     test_result.execution_time))
         print('')     # print an empty line if successful
 
-    return rtn_code
+    return test_result.code
 
 if __name__ == '__main__':
     sys.exit(main(os.path.basename(sys.argv[0])))

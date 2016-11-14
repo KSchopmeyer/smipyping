@@ -1,18 +1,3 @@
-#
-# This library is free software; you can redistribute it and/or
-# modify it under the terms of the GNU Lesser General Public
-# License as published by the Free Software Foundation; either
-# version 2.1 of the License, or (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-# Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public
-# License along with this program; if not, write to the Free Software
-# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-#
 
 """
 The :mod:`smipyping.config` module sets configuration variables for smipyping.
@@ -34,7 +19,7 @@ the variables.
 # This module is meant to be safe for 'import *'.
 
 __all__ = ['ENFORCE_INTEGER_RANGE', 'DEFAULT_SWEEP_PORT', 'USERDATA_FILE',
-           'PING_TEST_CLASS']
+           'PING_TEST_CLASS', 'SIMPLEPING_OPERATION_DEFAULT_TIMEOUT']
 
 #: Enforce the value range in CIM integer types (e.g. :class:`~pywbem.Uint8`).
 #:
@@ -53,5 +38,10 @@ USERDATA_FILE = 'userdata_example.csv'
 
 #: The class that is used in ping tests.
 PING_TEST_CLASS = 'CIM_ComputerSystem'
+
+PING_TIMEOUT = 2
+
+#: Timeout in seconds for the WBEM operation
+SIMPLEPING_OPERATION_DEFAULT_TIMEOUT = 20
 
 
