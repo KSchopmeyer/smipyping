@@ -1,0 +1,35 @@
+usage: serversweep [options] subnet [subnet] ...
+
+Sweep possible WBEMServer ports across a range of IP subnets and ports to find
+existing open WBEM servers.
+
+optional arguments:
+  -h, --help            show this help message and exit
+
+Positional arguments:
+  subnet                IP subnets to scan (ex. 10.1.132). Multiple subnets
+                        allowed
+
+Scan related options:
+  Specify parameters of the subnet scan
+
+  --startip [Start], -s [Start]
+                        Start scanning from this IP
+  --endip [End], -e [End]
+                        Scan to this IP
+  --port [PORT], -p [PORT]
+                        Port(s) to test. This argument may be repeated to test
+                        multiple ports
+
+General options:
+  --csvfile CSVFILE, -c CSVFILE
+                        Use csv input file
+  --no_threads          If set, defaults to non-threaded implementation. The
+                        non-threaded implementation takes much longer to
+                        execute.
+  --verbose, -v         If set output detail displays as test proceeds
+
+Examples: serversweep 10.1.134 --startip=1 --endip=254 The above example will
+scan the subnets 10.1.134 from 1 to 254 serversweep 10.1.134 Scan a complete
+subnet, 10.1.134 for the default port (5989) serversweep 10.1.132 10.1.134 -p
+5989 -p 5988 Scan 10.1.132 and 10.1.134 for ports 5988 and 5989

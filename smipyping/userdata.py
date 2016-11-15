@@ -74,7 +74,7 @@ class UserData(object):
             ('InteropNamespace', ('Interop', 8, str)),
             ('Protocol', ('Prot', 5, str)),
             ('Port', ('Port', 4, int)),
-            ('ScanEnabled', ('Enabled', 6, bool)),
+            ('ScanEnabled', ('Enabled', 6, str)),
             ])
 
     def __str__(self):
@@ -104,7 +104,7 @@ class UserData(object):
         Returns key and value
         """
         for key, val in self.userdict.iteritems():
-            yield (key, val.value)
+            yield (key, val)
 
     def __getitem__(self, record_id):
         """Return the record for the defined record_id from the userdata."""
@@ -220,13 +220,16 @@ class UserData(object):
                 line.append('%s' % record[name])
         return line
 
-    def disabled_record(self, record):
+    def disabled_record(self, target_record):
         """If record disabled, return true, else return false."""
-        enabled = record['ScanEnabled'].lower()
-        if isinstance(enabled, six.string_types):
-            return enabled == 'false'
+        val = target_record['ScanEnabled'].lower()
+        if val == 'enabled':
+            return False
+        elif val == 'disabled':
+            return True
         else:
-            return not enabled
+            ValueError('ScanEnabled field must contain "Enabled" or "Disabled'
+                    ' string. %s is invalid.' % val)
 
     def display_disabled(self):
         """Display diabled entries."""
