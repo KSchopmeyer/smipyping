@@ -17,7 +17,7 @@ InstallationRequirements
 are not part of the packaging making it significant work to install and
 support.
 
-2. pywbem - Installed as part of the smipyping installation
+2. smipyping - Installed as part of the smipyping installation
 
 3. A number of other packages.
 

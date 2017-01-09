@@ -54,10 +54,10 @@ from .ping import *
 from .config import *
 from .userdata import *
 from .simpleping import *
-# TODO should not need this
-from ._cliutils import *
 from .explore import *
 from .serversweep import *
+# TODO should not need this
+from ._cliutils import *
 
 from ._version import __version__
 

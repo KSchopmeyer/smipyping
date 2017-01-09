@@ -1,16 +1,19 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 """
-    Provides the components for a simple utility to test a single
-    wbem server against fixed information.  This includes
-    the cmd line parser, and funcitons to test the connection.Returns
-    exit code of 0 if the server is found and the defined class exists.
+Provides the components for a utility to test a WBEM server.
 
-    Otherwise returns exit code 1.
+This tests a wbem server against a class defined in the configuration. If
+that class is found, it returns success. Otherwise it returns a fail code.
 
-    This module is the components of the tool. It is assembled in a separate
-    script
+This includes the cmd line parser, and funcitons to test the connection.
+Returns exit code of 0 if the server is found and the defined class exists.
+
+Otherwise returns exit code 1.
+
+In addition, it returns an empty string if successful or a string with
+error code if in error.
+
+This module is the components of the tool. It is assembled in a separate
+script
 """
 
 from __future__ import print_function, absolute_import
@@ -20,285 +23,439 @@ import argparse as _argparse
 import re
 from textwrap import fill
 import datetime
+from urlparse import urlparse
+from collections import namedtuple
 
 from pywbem import WBEMConnection, ConnectionError, Error, TimeoutError, \
-                   CIMError
+    CIMError
 from ._cliutils import SmartFormatter as _SmartFormatter
 
 from .ping import ping_host
 
-TEST_CLASS = 'CIM_ComputerSystem'
+from .userdata import CsvUserData
+
+from. config import USERDATA_FILE, PING_TEST_CLASS, PING_TIMEOUT
+
+__all__ = ['SimplePing', 'TestResult']
+
+TestResult = namedtuple('TestResult', ['code',
+                                       'type',
+                                       'exception',
+                                       'execution_time'])
 
 
-def get_connection_info(conn):
-    """Return a string with the connection info."""
+class SmiCustomFormatter(_SmartFormatter,
+                         _argparse.RawDescriptionHelpFormatter):
+    """
+    Define a custom Formatter to allow formatting help and epilog.
 
-    info = 'Connection: %s,' % conn.url
+    argparse formatter specifically allows multipleinheritance for the
+    formatter customization and actually recommends this in a discussion
+    in one of the issues.
 
-    if conn.creds is not None:
-        info += ' userid=%s,' % conn.creds[0]
-    else:
-        info += ' no creds,'
+    http://bugs.python.org/issue13023
 
-    info += ' cacerts=%s,' % ('sys-default' if conn.ca_certs is None \
-                                            else conn.ca_certs)
+    Also recommended in a StackOverflow discussion:
 
-    info += ' verifycert=%s,' % ('off' if conn.no_verification else 'on')
+    http://stackoverflow.com/questions/18462610/argumentparser-epilog-and-description-formatting-in-conjunction-with-argumentdef
 
-    info += ' default-namespace=%s' % conn.default_namespace
-    if conn.x509 is not None:
-        info += ', client-cert=%s' % conn.x509['cert_file']
+
+    """
+
+    pass
+
+
+class SimplePing(object):
+    """Simple ping class. Contains all functionality to handle simpleping."""
+
+    def __init__(self, prog):
+        """Initialize instance attributes."""
+        self.prog = prog
+        self.debug = False,
+        self.verbose = False,
+        self.ping = False
+        self.argparser = None
+        self.namespace = None
+        self.user = None
+        self.password = None
+        self.url = None
+        self.timeout = None
+
+        self.error_code = {
+            'Success': 0,
+            'CIMError': 1,
+            'PyWBEM Error': 2,
+            'General Error': 3,
+            'TimeoutError': 4,
+            'ConnectionError': 5,
+            'Ping Fail': 6,
+            'Disabled': 0}
+
+    def __str__(self):
+        """Return url."""
+        return 'url %s prog %s ' % (self.url, self.prog)
+
+    def __repr__(self):
+        """Return some attributes."""
+        return 'prog %s debug %s verbose %s ping %s namespace %s' % \
+               (self.prog, self.debug, self.verbose, self.ping,
+                self.namespace)
+
+    def get_connection_info(self, conn):
+        """Return a string with the connection info."""
+        info = 'Connection: %s,' % conn.url
+
+        if conn.creds is not None:
+            info += ' userid=%s,' % conn.creds[0]
+        else:
+            info += ' no creds,'
+
+        info += ' cacerts=%s,' % ('sys-default' if conn.ca_certs is None
+                                  else conn.ca_certs)
+
+        info += ' verifycert=%s,' % ('off' if conn.no_verification else 'on')
+
+        info += ' default-namespace=%s' % conn.default_namespace
+        if conn.x509 is not None:
+            info += ', client-cert=%s' % conn.x509['cert_file']
+            try:
+                kf = conn.x509['key_file']
+            except KeyError:
+                kf = "none"
+            info += ":%s" % kf
+
+        if conn.timeout is not None:
+            info += ', timeout=%s' % conn.timeout
+
+        return fill(info, 78, subsequent_indent='    ')
+
+    def server_to_url(self, server):
+        """
+        Confirm that the server url is correct or fix it.
+
+        Returns url including scheme and saves it in the class object
+
+        Exception: argparser Error if url scheme is invalid
+        """
+        if server[0] == '/':
+            url = server
+
+        elif re.match(r"^https{0,1}://", server) is not None:
+            url = server
+
+        elif re.match(r"^[a-zA-Z0-9]+://", server) is not None:
+            self.argparser.error('Invalid scheme on server argument.'
+                                 ' Use "http" or "https"')
+
+        else:
+            url = '%s://%s' % ('https', server)
+        self.url = url
+        return url
+
+    def get_result_code(self, result_type):
+        """Get the result code corresponding to the result_type."""
+        return self.error_code[result_type]
+
+    def test_server(self, verify_cert=False):
+        """
+        Execute the simpleping tests against the defined server.
+
+        This method executes all of the required tests against the server
+        and returns the namedtuple TestResults
+        """
+        start_time = datetime.datetime.now()
+
+        # execute the ping test if required
+        if self.ping:
+            result, exception = self.ping_server(self.url)
+
+        # connect to the server and execute the cim operation test
+        conn = self.connect_server(self.url, verify_cert=verify_cert)
+
+        result, exception = self.execute_cim_test(conn)
+
+        result_code = self.get_result_code(result)
+        if self.verbose:
+            print('result=%s, exception=%s' % (result, exception))
+
+        # Return namedtuple with results
+        return TestResult(
+            code=result_code,
+            type=result,
+            exception=exception,
+            execution_time=str(datetime.datetime.now() - start_time))
+
+    def ping_server(self):
+        """Get the netloc from the url and ping the server."""
+        netloc = urlparse(self.url).netloc
+        ip_address = netloc.split(':')
+        if not ping_host(ip_address[0], PING_TIMEOUT):
+            return('Ping Fail')
+
+    def connect_server(self, url, verify_cert=False):
+        """
+        Build connection parameters and issue WBEMConnection to the WBEMServer.
+
+        The server is defined by the input options.
+
+        Returns completed connection or exception of connection fails
+        """
+        creds = None
+
+        if self.user is not None or self.password is not None:
+            creds = (self.user, self.password)
+
+        conn = WBEMConnection(url, creds, default_namespace=self.namespace,
+                              no_verification=not verify_cert,
+                              timeout=self.timeout)
+
+        conn.debug = self.debug
+
+        if self.verbose:
+            print(self.get_connection_info(conn))
+
+        return conn
+
+    def execute_cim_test(self, conn):
+        """
+        Issue the test operation. Returns with system exit code.
+
+        Returns a tuple of code and reason text.  The code is ne 0 if there was
+        an error.
+        """
         try:
-            kf = conn.x509['key_file']
-        except KeyError:
-            kf = "none"
-        info += ":%s" % kf
+            insts = conn.EnumerateInstances(PING_TEST_CLASS)
 
-    if conn.timeout is not None:
-        info += ', timeout=%s' % conn.timeout
+            if self.verbose:
+                print('Success host=%s. Returned %s instance(s)' %
+                      (conn.url, len(insts)))
+            rtn_code = ("Success", "")
 
-    return fill(info, 78, subsequent_indent='    ')
+        except CIMError as ce:
+            rtn_code = ("CIMError", ce)
+        except ConnectionError as co:
+            rtn_code = ("ConnectionError", co)
+        except TimeoutError as to:
+            rtn_code = ("TimeoutError", to)
+        except Error as er:
+            rtn_code = ("PyWBEM Error", er)
+        except Exception as ex:
+            rtn_code = ("General Error", ex)
 
-def server_to_url(server, argparser_):
-    """Confirm that the server url is correct or fix it.  Error if it
-       is really invalid
+        if self.debug:
+            last_request = conn.last_request or conn.last_raw_request
+            print('Request:\n\n%s\n' % last_request)
+            last_reply = conn.last_reply or conn.last_raw_reply
+            print('Reply:\n\n%s\n' % last_reply)
+
+        rtn_tuple = [rtn_code[0], rtn_code[1]]
+        # print('rtn_tuple %s' % rtn_tuple)
+        return rtn_tuple
+
+    def create_parser(self):
+        """Create the parser to parse cmd line arguments."""
+        usage = '%(prog)s [options] server'
+        desc = """
+Interactive shell for doing a simple CIM ping against a WBEM server defined by
+the input parameters. This script connects to the server and test for the
+existence of a single class. If the  test fails it exists with non-zero exit
+code. It includes an option to ping the server before connecting.
+
+Return:
+    Success: return code 0 with empty string
+    Failure: return code 1 - 6 and outputs string with error text:
+        1. CIMError
+        2. PyWBEM Error
+        3. General Error
+        4. Timeout Error
+        5. ConnectionError
+        6. Ping error (only return if ping is executed)
     """
-
-    if server[0] == '/':
-        url = server
-
-    elif re.match(r"^https{0,1}://", server) is not None:
-        url = server
-
-    elif re.match(r"^[a-zA-Z0-9]+://", server) is not None:
-        argparser_.error('Invalid scheme on server argument.' \
-                        ' Use "http" or "https"')
-
-    else:
-        url = '%s://%s' % ('https', server)
-
-    return url
-
-def connect_server(url, namespace, user=None, password=None,
-                   timeout=None, verify_cert=False, debug=None, verbose=None):
-    """
-    Build connection parameters and issue WBEMConnection to the
-    WBEMServer defined by the input options.
-
-    returns completed connection
-    """
-
-    creds = None
-
-    if user is not None or password is not None:
-        creds = (user, password)
-
-    conn = WBEMConnection(url, creds, default_namespace=namespace,
-                          no_verification=not verify_cert,
-                          timeout=timeout)
-
-    conn.debug = debug
-
-    if verbose:
-        print(get_connection_info(conn))
-
-    return conn
-
-
-def test_server(conn, ip_address, debug=False, verbose=False, ping=False):
-    """
-    Issue the test operation. Returns with system exit code.
-
-    Returns a tuple of code and reason text.  The code is ne 0 if there was
-    an error.
-    """
-    start_time = datetime.datetime.now()
-    ping_timeout = 2
-    if ping:
-        if not ping_host(ip_address, ping_timeout):
-            end_time = datetime.datetime.now() - start_time
-            return(6, 'Ping Failed', "", end_time)
-    try:
-        insts = conn.EnumerateInstances(TEST_CLASS)
-
-        if verbose:
-            print('Success host=%s. Returned %s instance(s)' % (conn.url,
-                                                                len(insts)))
-        rtn_code = (0, "Success", "")
-
-    except CIMError as ce:
-        rtn_code = (1, "CIMError", ce)
-        if verbose:
-            print('Operation Failed: CIMError %s ' % ce)
-
-    except ConnectionError as co:
-        rtn_code = (5, "ConnectionError", co)
-        if verbose:
-            print('Operation Failed: ConnectionError %s ' % co)
-    except TimeoutError as to:
-        rtn_code = (4, "TimeoutError", to)
-        if verbose:
-            print('Operation Failed: TimeoutError %s ' % to)
-    except Error as er:
-        if verbose:
-            print('PyWBEM Error %s' % er)
-        rtn_code = (2, "PyWBEM Error", er)
-    except Exception as ex:
-        print('General Error %s' % ex)
-        rtn_code = (3, "General Error", ex)
-
-    if debug:
-        last_request = conn.last_request or conn.last_raw_request
-        print('Request:\n\n%s\n' % last_request)
-        last_reply = conn.last_reply or conn.last_raw_reply
-        print('Reply:\n\n%s\n' % last_reply)
-
-    end_time = datetime.datetime.now() - start_time
-    # TODO for some reason this fails if we make it a tuple. not all args cvtd
-    #      in the print function
-    rtn_tuple = [rtn_code[0], rtn_code[1], rtn_code[2], str(end_time)]
-    # print('rtn_tuple %s' % rtn_tuple)
-    return rtn_tuple
-
-def create_simpleping_parser(prog):
-    """
-    Create the parser to parse cmd line arguments
-    """
-
-    usage = '%(prog)s [options] server'
-    desc = 'Interactive shell for doing a simple CIM ping\n ' \
-           'against a WBEM server defined by the input parameters. This\n'\
-           'script only connects to the server and test for the existence\n' \
-           'of a singleclass. If the  test fails it exists with non-zero\n' \
-           'exit code\n' \
-           'Return:\n' \
-           'Success: return code 0\n' \
-           'Failure: return code 1 - 6 and outputs string with error text\n' \
-           '1. CIMError\n' \
-           '2. PyWBEM Error\n' \
-           '3. General Error\n' \
-           '4. Timeout Error\n' \
-           '5. ConnectionError\n' \
-           '6. Ping error (only return if ping is executed)\n'
-    epilog = """
-Examples:
+        epilog = """
+Examples:\n
   %s https://localhost:15345 -n interop -u sheldon -p penny
           - (https localhost, port=15345, namespace=i user=sheldon
          password=penny)
 
   %s http://[2001:db8::1234-eth0] -(http port 5988 ipv6, zone id eth0)
-""" % (prog, prog)
+    """ % (self.prog, self.prog)
 
-    argparser = _argparse.ArgumentParser(
-        prog=prog, usage=usage, description=desc, epilog=epilog,
-        add_help=False, formatter_class=_SmartFormatter)
+        argparser = _argparse.ArgumentParser(
+            prog=self.prog, usage=usage, description=desc, epilog=epilog,
+            add_help=False, formatter_class=SmiCustomFormatter)
 
-    pos_arggroup = argparser.add_argument_group(
-        'Positional arguments')
-    pos_arggroup.add_argument(
-        'server', metavar='server', nargs='?',
-        help='R|Host name or url of the WBEM server in this format:\n'
-             '    [{scheme}://]{host}[:{port}]\n'
-             '- scheme: Defines the protocol to use;\n'
-             '    - "https" for HTTPs protocol\n'
-             '    - "http" for HTTP protocol.\n'
-             '  Default: "https".\n'
-             '- host: Defines host name as follows:\n'
-             '     - short or fully qualified DNS hostname,\n'
-             '     - literal IPV4 address(dotted)\n'
-             '     - literal IPV6 address (RFC 3986) with zone\n'
-             '       identifier extensions(RFC 6874)\n'
-             '       supporting "-" or %%25 for the delimiter.\n'
-             '- port: Defines the WBEM server port to be used\n'
-             '  Defaults:\n'
-             '     - HTTP  - 5988\n'
-             '     - HTTPS - 5989\n')
+        pos_arggroup = argparser.add_argument_group(
+            'Positional arguments')
+        pos_arggroup.add_argument(
+            'server', metavar='server', nargs='?',
+            help='R|Host name or url of the WBEM server in this format:\n'
+                 '    [{scheme}://]{host}[:{port}]\n'
+                 '- scheme: Defines the protocol to use;\n'
+                 '    - "https" for HTTPs protocol\n'
+                 '    - "http" for HTTP protocol.\n'
+                 '  Default: "https".\n'
+                 '- host: Defines host name as follows:\n'
+                 '     - short or fully qualified DNS hostname,\n'
+                 '     - literal IPV4 address(dotted)\n'
+                 '     - literal IPV6 address (RFC 3986) with zone\n'
+                 '       identifier extensions(RFC 6874)\n'
+                 '       supporting "-" or %%25 for the delimiter.\n'
+                 '- port: Defines the WBEM server port to be used\n'
+                 '  Defaults:\n'
+                 '     - HTTP  - 5988\n'
+                 '     - HTTPS - 5989\n')
 
-    server_arggroup = argparser.add_argument_group(
-        'Server related options',
-        'Specify the WBEM server namespace and timeout')
-    server_arggroup.add_argument(
-        '-n', '--namespace', dest='namespace', metavar='namespace',
-        default='interop',
-        help='R|Namespace in the WBEM server for the test request.\n'
-             'Default: %(default)s')
-    server_arggroup.add_argument(
-        '-t', '--timeout', dest='timeout', metavar='timeout', type=int,
-        default=20,
-        help='R|Timeout of the completion of WBEM Server operation\n'
-             'in seconds(integer between 0 and 300).\n'
-             'Default: 20 seconds')
+        server_arggroup = argparser.add_argument_group(
+            'Server related options',
+            'Specify the WBEM server namespace and timeout')
+        server_arggroup.add_argument(
+            '-n', '--namespace', dest='namespace', metavar='namespace',
+            help='R|Namespace in the WBEM server for the test request.\n'
+                 'Default: %(default)s')
+        server_arggroup.add_argument(
+            '-t', '--timeout', dest='timeout', metavar='timeout', type=int,
+            default=20,
+            help='R|Timeout of the completion of WBEM Server operation\n'
+                 'in seconds(integer between 0 and 300).\n'
+                 'Default: 20 seconds')
+        server_arggroup.add_argument(
+            '-T', '--target_user-id', dest='target_user_id',
+            metavar='TargetUserId',
+            type=int,
+            help='R|If this argument is set, the value is a user id\n'
+                 'instead of an server url as the source for the test. In\n'
+                 'this case, namespace, user, and password arguments are\n'
+                 'derived from the user data rather than cli input')
 
-    security_arggroup = argparser.add_argument_group(
-        'Connection security related options',
-        'Specify user name and password or certificates and keys')
-    security_arggroup.add_argument(
-        '-u', '--user', dest='user', metavar='user',
-        help='R|User name for authenticating with the WBEM server.\n'
-             'Default: No user name.')
-    security_arggroup.add_argument(
-        '-p', '--password', dest='password', metavar='password',
-        help='R|Password for authenticating with the WBEM server.\n'
-             'Default: Will be prompted for, if user name\nspecified.')
-    security_arggroup.add_argument(
-        '-V', '--verify-cert', dest='verify_cert',
-        action='store_true',
-        help='Client will verify certificate returned by the WBEM'
-             ' server (see cacerts). This forces the client-side'
-             ' verification of the server identity, Normally it would'
-             ' be important to verify the server certificate but in the smi'
-             ' test environment where certificates are largely unknown'
-             ' the default is to not verify.')
-    security_arggroup.add_argument(
-        '--cacerts', dest='ca_certs', metavar='cacerts',
-        help='R|File or directory containing certificates that will be\n'
-             'matched against a certificate received from the WBEM\n'
-             'server. Set the --no-verify-cert option to bypass\n'
-             'client verification of the WBEM server certificate.\n')
-             # 'Default: Searches for matching certificates in the\n' \
-             # 'following system directories:\n'
-             # + ("\n".join("%s" % p for p in get_default_ca_cert_paths())))
+        security_arggroup = argparser.add_argument_group(
+            'Connection security related options',
+            'Specify user name and password or certificates and keys')
+        security_arggroup.add_argument(
+            '-u', '--user', dest='user', metavar='user',
+            help='R|User name for authenticating with the WBEM server.\n'
+                 'Default: No user name.')
+        security_arggroup.add_argument(
+            '-p', '--password', dest='password', metavar='password',
+            help='R|Password for authenticating with the WBEM server.\n'
+                 'Default: Will be prompted for, if user name\nspecified.')
+        security_arggroup.add_argument(
+            '-V', '--verify-cert', dest='verify_cert',
+            action='store_true',
+            help='R|Client will verify certificate returned by the WBEM\n'
+                 'server (see cacerts). This forces the client-side\n'
+                 'verification of the server identity, Normally it would\n'
+                 'smi be important to verify the server certificate but in\n'
+                 'the test environment where certificates are largely\n'
+                 'unknown the default is to not verify.')
+        security_arggroup.add_argument(
+            '--cacerts', dest='ca_certs', metavar='cacerts',
+            help='R|File or directory containing certificates that will be\n'
+                 'matched against a certificate received from the WBEM\n'
+                 'server. Set the --no-verify-cert option to bypass\n'
+                 'client verification of the WBEM server certificate.\n')
+        security_arggroup.add_argument(
+            '--certfile', dest='cert_file', metavar='certfile',
+            help='R|Client certificate file for authenticating with the\n'
+                 'WBEM server. If option specified the client attempts\n'
+                 'to execute mutual authentication.\n'
+                 'Default: Simple authentication.')
+        security_arggroup.add_argument(
+            '--keyfile', dest='key_file', metavar='keyfile',
+            help='R|Client private key file for authenticating with the\n'
+                 'WBEM server. Not required if private key is part of the\n'
+                 'certfile option. Not allowed if no certfile option.\n'
+                 'Default: No client key file. Client private key should\n'
+                 'then be part  of the certfile')
 
-    security_arggroup.add_argument(
-        '--certfile', dest='cert_file', metavar='certfile',
-        help='R|Client certificate file for authenticating with the\n'
-             'WBEM server. If option specified the client attempts\n'
-             'to execute mutual authentication.\n'
-             'Default: Simple authentication.')
-    security_arggroup.add_argument(
-        '--keyfile', dest='key_file', metavar='keyfile',
-        help='R|Client private key file for authenticating with the\n'
-             'WBEM server. Not required if private key is part of the\n'
-             'certfile option. Not allowed if no certfile option.\n'
-             'Default: No client key file. Client private key should\n'
-             'then be part  of the certfile')
+        general_arggroup = argparser.add_argument_group(
+            'General options')
+        general_arggroup.add_argument(
+            '--ping', '-P', action='store_true', default=False,
+            help='R|Ping for server as first test. This often shortens the\n'
+                 'total response time.')
+        general_arggroup.add_argument(
+            '-v', '--verbose', dest='verbose',
+            action='store_true', default=False,
+            help='Print more messages while processing')
+        general_arggroup.add_argument(
+            '-d', '--debug', dest='debug',
+            action='store_true', default=False,
+            help='Display XML for request and response')
+        general_arggroup.add_argument(
+            '-h', '--help', action='help',
+            help='Show this help message and exit')
 
-    general_arggroup = argparser.add_argument_group(
-        'General options')
-    general_arggroup.add_argument(
-        '-v', '--verbose', dest='verbose',
-        action='store_true', default=False,
-        help='Print more messages while processing')
-    general_arggroup.add_argument(
-        '--ping', action='store_true', default=False,
-        help='Ping for server as first test.')
-    general_arggroup.add_argument(
-        '-d', '--debug', dest='debug',
-        action='store_true', default=False,
-        help='Display XML for request and response')
-    general_arggroup.add_argument(
-        '-h', '--help', action='help',
-        help='Show this help message and exit')
+        self.argparser = argparser
+        return argparser  # used for unittests
 
-    return argparser
+    def parse_cmdline(self):
+        """
+        Parse the command line.
 
+        This function  tests for any required arguments.
 
-def parse_simpleping_cmdline(argparser_):
-    """ Parse the command line.  This test for any required args"""
+        It returns the parsed options or generates an exception.
+        """
+        opts = self.argparser.parse_args()
 
-    opts = argparser_.parse_args()
+        # if opts.verbose: display_argparser_args(opts)
 
-    if not opts.server:
-        argparser_.error('No WBEM server specified')
-        return None
-    return opts
+        # save cli options for use in subsequent functions.
+        self.verbose = opts.verbose
+        self.debug = opts.debug
+        self.ping = opts.ping
+        self.namespace = opts.namespace if opts.namespace else 'None'
+        self.timeout = opts.timeout
+
+        if not opts.server:
+            if opts.target_user_id is None:
+                self.argparser.error('No WBEM server specified')
+            else:
+                if (opts.user is not None or opts.password is not None or
+                        opts.namespace is not None):
+                    self.argparser.error('-u, -n, or -p not used with'
+                                         '-i option')
+        else:
+            self.server_to_url(opts.server)
+            self.namespace = opts.namespace
+            self.user = opts.user
+            self.password = opts.password
+
+        if opts.target_user_id:
+            user_data = CsvUserData(USERDATA_FILE)
+            if opts.target_user_id in user_data:
+                self.set_from_userrecord(opts.target_user_id, user_data)
+        else:
+            self.argparser.error('Id %s not in user data base' %
+                                 opts.target_user_id)
+
+        if opts.timeout is not None:
+            if opts.timeout < 0 or opts.timeout > 300:
+                self.argparser.error('timeout option(%s) out of range' %
+                                     opts.timeout)
+        return opts
+
+    def set_url_from_userrec(self, user_record):
+        """Set the url from data in the user record."""
+        self.url = '%s://%s' % (user_record['Protocol'],
+                                user_record['IPAddress'])
+
+    def set_from_userrecord(self, user_id, user_data):
+        """
+        Set the required fields from the user record.
+
+        Get the connection information from the user record and save in
+        the SimplePing instance
+        """
+        user_record = user_data[user_id]
+        self.set_url_from_userrec(user_record)
+
+        if self.verbose:
+            print(
+                'User id %s; Using url=%s, user=%s, pw=%s namespace=%s' %
+                (user_id, self.url,
+                 user_record['Principal'],
+                 user_record['Credential'],
+                 user_record['Namespace']))
+        self.namespace = user_record['Namespace']
+        self.user = user_record['Principal']

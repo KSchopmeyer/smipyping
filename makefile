@@ -80,7 +80,6 @@ doc_dependent_files := \
     $(wildcard $(doc_conf_dir)/*.rst) \
     $(wildcard $(doc_conf_dir)/notebooks/*.ipynb) \
     $(package_name)/__init__.py \
-    $(package_name)/_cliutils.py \
     $(package_name)/userdata.py \
     $(package_name)/explore.py \
     $(package_name)/simpleping.py \
@@ -92,8 +91,8 @@ pylint_rc_file := pylintrc
 # PyLint source files to check
 pylint_py_files := \
     setup.py \
-    $(wildcard $(package_name)/*.py)) \
-    $(wildcard tests/test*.py)
+    $(wildcard $(package_name)/*.py) \
+    $(wildcard tests/*.py)
 
 # Flake8 config file
 flake8_rc_file := .flake8
@@ -101,8 +100,7 @@ flake8_rc_file := .flake8
 # Flake8 source files to check
 flake8_py_files := \
     setup.py \
-    os_setup.py \
-    $(filter-out $(moftab_files), $(wildcard $(package_name)/*.py)) \
+    $(wildcard $(package_name)/*.py) \
     $(wildcard tests/*.py)
 
 # Test log
@@ -158,10 +156,6 @@ develop:
 build: $(bdist_file) $(sdist_file)
 	@echo '$@ done.'
 
-.PHONY: buildwin
-buildwin: $(win64_dist_file)
-	@echo '$@ done.'
-
 .PHONY: builddoc
 builddoc: html
 	@echo '$@ done.'
@@ -215,6 +209,10 @@ doccoverage:
 check: pylint.log flake8.log
 	@echo '$@ done.'
 
+.PHONY: pylint
+pylint: pylint.log
+	@echo '$@ done.'
+
 .PHONY: flake8
 flake8: flake8.log
 	@echo '$@ done.'
@@ -225,7 +223,7 @@ install: $(sdist_file)
 	tar -x -C tmp_install -f $(sdist_file)
 	sh -c "cd tmp_install/$(package_name)-$(package_version) && python setup.py install"
 	rm -Rf tmp_install
-	@echo 'Done: Installed pywbem into current Python environment.'
+	@echo 'Done: Installed smipyping into current Python environment.'
 	@echo '$@ done.'
 
 .PHONY: test
@@ -257,7 +255,7 @@ all: develop check build builddoc test
 .PHONY: upload
 upload:  $(dist_files)
 	twine upload $(dist_files)
-	@echo 'Done: Uploaded pywbem version to PyPI: $(package_version)'
+	@echo 'Done: Uploaded smipyping version to PyPI: $(package_version)'
 	@echo '$@ done.'
 
 # Note: distutils depends on the right files specified in MANIFEST.in, even when
@@ -312,7 +310,7 @@ endif
 
 $(test_log_file): makefile $(package_name)/*.py tests/*.py coveragerc
 	rm -f $(test_log_file)
-	bash -c "set -o pipefail; PYTHONWARNINGS=default PYTHONPATH=. py.test --cov $(package_name) --cov-config coveragerc --ignore=attic --ignore=releases -s 2>&1 |tee $(test_tmp_file)"
+	bash -c "set -o pipefail; PYTHONWARNINGS=default PYTHONPATH=. py.test --cov $(package_name) --cov-config coveragerc --ignore=attic --ignore=releases --ignore=tests/testclient -s 2>&1 |tee $(test_tmp_file)"
 	mv -f $(test_tmp_file) $(test_log_file)
 	@echo 'Done: Created test log file: $@'
 

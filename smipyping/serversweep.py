@@ -1,16 +1,15 @@
 
 """
-    server sweep functions.
+Server sweep functions.
 
-    These functions allow sweeping a set of subnets for specific open
-    ports.
+These functions allow sweeping a set of subnets for specific open
+ports.
 
-    WARNING: Because the sweep uses SYN to test for an open https port this
-    code must be executed in privileged mode. That is a python requirement.
+WARNING: Because the sweep uses SYN to test for an open https port this
+code must be executed in privileged mode. That is a python requirement.
 
-    While  other tests can detect open http ports, we must detect an open
-    https port so the choices of test are limited.
-
+While  other tests can detect open http ports, we must detect an open
+https port so the choices of test are limited.
 """
 
 from __future__ import print_function, absolute_import
@@ -29,28 +28,30 @@ from scapy.all import *
 from ._cliutils import SmartFormatter as _SmartFormatter
 from ._cliutils import check_negative_int
 from .config import DEFAULT_SWEEP_PORT
+from ._utilities import display_argparser_args
 
 # Results list, a list of tuples of ip_address, port
 RESULTS = []
 
+
 def check_port_syn(dst_ip, dst_port, verbose):
-    """Check a single address with SYN for open port.
-
-       Uses scapy function to execute SYN on dst_ip and port.
-       This is one way to test for open https ports.
-
-       Using SYN allows us to test for open port but in Python requires that
-       the code execute in admin mode.
     """
+    Check a single address with SYN for open port.
 
+    Uses scapy function to execute SYN on dst_ip and port.
+    This is one way to test for open https ports.
+
+    Using SYN allows us to test for open port but in Python requires that
+    the code execute in admin mode.
+    """
     SYNACK = 0x12
     RSTACK = 0x14
 
-    conf.verb = 0 # Disable verbose in sr(), sr1() methods
+    conf.verb = 0  # Disable verbose in sr(), sr1() methods
     port_open = False
     src_port = RandShort()
     p = IP(dst=dst_ip)/TCP(sport=src_port, dport=dst_port, flags='S')
-    resp = sr1(p, timeout=2) # Sending packet
+    resp = sr1(p, timeout=2)  # Sending packet
     if str(type(resp)) == "<type 'NoneType'>":
         if verbose:
             print('%s Closed. response="none"' % dst_ip)
@@ -75,11 +76,14 @@ def check_port_syn(dst_ip, dst_port, verbose):
 
 
 def scan_subnets(subnets, start_ip, end_ip, port, verbose):
-    """ Scan a subnet and return list of hosts found with port open.
+    """
+    Nonthreaded scan of IP addresses for open ports.
 
-        Subnet can be either a specific subnet or a list of subnets
-        Ports can be either single port or list of ports
-        Returns Dictionary of hosts that have defined port open.
+    Scan a subnet and return list of hosts found with port open.
+
+    Subnet can be either a specific subnet or a list of subnets
+    Ports can be either single port or list of ports
+    Returns Dictionary of hosts that have defined port open.
     """
     open_hosts = []
 
@@ -102,9 +106,9 @@ def scan_subnets(subnets, start_ip, end_ip, port, verbose):
         test_ip = subnets + '.' + str(ip)
         test_host_id = [test_ip, port]
 
-        result = check_port_syn(test_ip, port, verbose) # Test one ip:port
+        result = check_port_syn(test_ip, port, verbose)  # Test one ip:port
 
-        #print('test %s %s result %s' % (test_ip, port, result))
+        # print('test %s %s result %s' % (test_ip, port, result))
 
         if verbose:
             response_txt = 'Exists' if result else 'None'
@@ -116,18 +120,21 @@ def scan_subnets(subnets, start_ip, end_ip, port, verbose):
             if not test_ip == end_ip:
                 sys.stdout.write('\b' * (len(addr_) + 4))
 
-        if result: # Port exists
-            open_hosts.append(test_host_id) # Append to list
+        if result:  # Port exists
+            open_hosts.append(test_host_id)  # Append to list
 
     return open_hosts
 
-def scan_subnets_threaded(subnets, start_ip, end_ip, port, verbose):
-    """Scan the IP address defined by the input and return a list of open
-       IP addresses. This function creates multiple processes and executes
-       each call in a process for speed.
-    """
 
-    tests = bld_test_list(subnets, start_ip, end_ip, port)
+def scan_subnets_threaded(subnets, start_ip, end_ip, port, verbose):
+    """
+    Threaded scan of IP Addresses for open ports.
+
+    Scan the IP address defined by the input and return a list of open
+    IP addresses. This function creates multiple processes and executes
+    each call in a process for speed.
+    """
+    tests = build_test_list(subnets, start_ip, end_ip, port)
     open_hosts = []
     threads_ = []
 
@@ -146,11 +153,29 @@ def scan_subnets_threaded(subnets, start_ip, end_ip, port, verbose):
     return open_hosts
 
 
-def bld_test_list(subnets, start_ip, end_ip, port):
-    """ Scan a subnet and return list of hosts found with port open
-        subnet can be either a specific subnet or a list of subnets
-        Ports can be either single port or list of ports
-        Returns Dictionary of hosts that have defined port open.
+def build_test_list(subnets, start_ip, end_ip, ports):
+    """
+    Create list of IP addresses and ports to scan.
+
+    Create dictionary of IP address: port for all ports in the ranges
+    defined by the input parameters and return that dictionary
+
+    Parameters:
+
+      subnets:
+        single subnet or list of subnets to scan
+
+      start_ip:
+        Start IP address for scan
+
+      end_ip:
+        End IP address for scan.
+
+      ports:
+        single port or list of ports to scan
+
+    Returns:
+      Dictionary of hosts that have defined ports open.
     """
     test_list = []
 
@@ -159,10 +184,10 @@ def bld_test_list(subnets, start_ip, end_ip, port):
     else:
         subnetlist = [subnets]
 
-    if isinstance(port, list):
-        ports = port
+    if isinstance(ports, list):
+        ports = ports
     else:
-        ports = [port]
+        ports = [ports]
 
     for subnet in subnetlist:
         for port_ in ports:
@@ -172,6 +197,7 @@ def bld_test_list(subnets, start_ip, end_ip, port):
 
     return test_list
 
+
 def print_open_hosts_report(open_hosts, total_time, user_data, subnets, ports,
                             startip, endip):
     """
@@ -180,7 +206,6 @@ def print_open_hosts_report(open_hosts, total_time, user_data, subnets, ports,
     If userdata is found, include the userdata info including CompanyName,
     Product, etc.
     """
-
     print('\n')
     print("=" * 50)
     execution_time = ''
@@ -226,6 +251,7 @@ def print_open_hosts_report(open_hosts, total_time, user_data, subnets, ports,
               (subnets, ports, range_txt, execution_time))
     print("=" * 50)
 
+
 def sweep_servers(subnets, startip, endip, ports, no_threads, user_data,
                   verbose):
     """
@@ -249,7 +275,6 @@ def sweep_servers(subnets, startip, endip, ports, no_threads, user_data,
           List of hosts results as a tuple of (ip, port) for hosts with
           open ports in the defined range of subnets and ports input
     """
-
     start_time = time.time()   # Scan start time
 
     try:
@@ -278,11 +303,10 @@ def sweep_servers(subnets, startip, endip, ports, no_threads, user_data,
 
 def create_sweep_argparser(prog_name):
     """
-        Create the argument parser for server sweep cmd line.
+    Create the argument parser for server sweep cmd line.
 
-        Returns the created parser.
+    Returns the created parser.
     """
-
     prog = prog_name  # Name of the script file invoking this module
     usage = '%(prog)s [options] subnet [subnet] ...'
     desc = 'Sweep possible WBEMServer ports across a range of IP subnets '\
@@ -359,17 +383,6 @@ def parse_sweep_args(argparser):
         args.port = [DEFAULT_SWEEP_PORT]
 
     if args.verbose:
-        print('subnet=%s' % args.subnet)
-        print('startip=%s' % args.startip)
-        print('endip=%s' % args.endip)
-        print('port=%s' % args.port)
-        print('csvfile=%s' % args.csvfile)
-        print('verbose=%s' % args.verbose)
-        print('no_threads=%s' % args.no_threads)
+        display_argparser_args(args)
 
     return args
-
-
-
-
-

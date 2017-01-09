@@ -12,7 +12,7 @@ from __future__ import absolute_import
 
 import sys as _sys
 import os
-from smipyping import ProcessUserdataCli
+from smipyping import ProcessUserDataCli
 
 def main(prog):
     """ Main function uses userdata.py to execute. This provides
@@ -20,9 +20,7 @@ def main(prog):
 
         Returns with either exit code = 0 if OK or exit_code = 1 if error
     """
-
-
-    ProcessUserdataCli(prog)
+    ProcessUserDataCli(prog)
 
 if __name__ == '__main__':
     prog_name = os.path.basename(_sys.argv[0])
