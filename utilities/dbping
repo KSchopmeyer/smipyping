@@ -1,0 +1,297 @@
+#!/usr/bin/perl
+#
+#
+use DBI;
+use Getopt::Std;
+use Net::Ping::External qw(ping);
+
+### Non-blocking I/O
+$| = 1;
+
+### Valid commandline options
+getopts('dDEnNhvt:');
+
+if($opt_h) {
+	&PrintHelp;
+	exit(0);
+}
+
+$DateTime = &GetDateTime;
+
+### Check/set where java binary is
+if(!exists $ENV{'JAVA'}) {
+    $ENV{'JAVA'} = '/usr/bin/java';
+}
+$javaping = "$ENV{'JAVA'} " . "-jar " . "wbemping/bin/wbemping.jar ";
+
+### Open connection to SMIStatus database
+my $dbh = &DBConnect;
+
+### Read all providers from database
+&GetProviders; # %Provider
+
+### Read companies from database
+&GetCompanies; # %Companies
+
+%PingResults = ();
+
+### If the -t option is provided, then test those target ids
+if($opt_t) {
+	$opt_t =~ s/^\s*(.*?)\s*$/$1/;
+	@Keys = ($opt_t);
+} else {
+	@Keys = sort {lc($Companies{$Provider{$a}{'CompanyID'}}{'CompanyName'}) cmp lc($Companies{$Provider{$b}{'CompanyID'}}{'CompanyName'})} (keys %Provider);
+}
+
+### Cycle through all enabled providers
+foreach $TargetID (@Keys) {
+    if(!$opt_t && $Provider{$TargetID}{'ScanEnabled'} ne "Enabled") {
+        next;
+    } else {
+		### Make sure provider is on the network
+        $proto = $Provider{$TargetID}{'Protocol'};
+        $ip = $Provider{$TargetID}{'IPAddress'};
+        $user = $Provider{$TargetID}{'Principal'};
+        $password = $Provider{$TargetID}{'Credential'};
+
+		### ICMP ping the provider machine first
+		### If ping fails, skip provider ping and go on to the next provider
+		if(!ping(host => "$ip")) {
+			$PingResults{$TargetID}{'TimeStamp'} = $DateTime;
+			$PingResults{$TargetID}{'Status'}    = "Failed ICMP Ping";
+			if($opt_v) {
+				print "$Companies{$Provider{$TargetID}{'CompanyID'}}{'CompanyName'},$Provider{$TargetID}{'Product'},$proto://$ip/$ns,$user,$password,$PingResults{$TargetID}{'Status'}\n";
+			}
+			next;
+		}
+
+
+		$Results = '';
+		@NameSpaces = ('interop', 'root/interop', 'pg_interop', 'root/pg_interop');
+		$PingResults{$TargetID}{'TimeStamp'} = $DateTime;
+		foreach $NS (@NameSpaces) {
+			$ns = $NS;
+			$commandline = "$javaping" . "$proto://$ip/$NS " . "$user " . "$password";
+			$Results = `$commandline`;
+			chomp($Results);
+			$Results =~ s/^\s+//;
+			$Results =~ s/\s+$//;
+			if($Results eq 'Running!') {
+				$PingResults{$TargetID}{'Status'} = "OK";
+				last;
+			} elsif($Results =~ "WBEMException:") {
+				$Results =~ s/^*WBEMException:\s+//;
+				$Results =~ s/^Server responded with:\s+//;
+				$PingResults{$TargetID}{'Status'} = "$Results";
+				next;
+			} elsif($Results =~ "Namespace $NS is invalid" ||
+			        $Results =~ "CIM_ERR_INVALID_NAMESPACE" ||
+			        $Results =~ "namespace does not exist"  ||
+			        $Results =~ "No namespace named $NS found") {
+				$PingResults{$TargetID}{'Status'} = "$Results";
+				next;
+			} else {
+				$PingResults{$TargetID}{'Status'} = "$Results";
+			}
+
+		}
+		if($opt_v) {
+			#print "$commandline == $PingResults{$TargetID}{'Status'}\n";
+			print "$Companies{$Provider{$TargetID}{'CompanyID'}}{'CompanyName'},$Provider{$TargetID}{'Product'},$proto://$ip/$ns,$user,$password,$PingResults{$TargetID}{'Status'}\n"
+		};
+	}
+}
+
+### Don't update database if -n option is provided
+exit(0) if($opt_n);
+
+### Get Last Scan time stamp
+my $sth = $dbh->prepare("SELECT LastScan FROM LastScan WHERE ScanID = 1");
+$sth->execute();
+my $results = $sth->fetchrow_hashref();
+$LastScan = $$results{'LastScan'};
+
+### Replace Last Scan value with this one
+my $sth = $dbh->prepare("UPDATE LastScan SET LastScan = '$DateTime' WHERE ScanID = 1");
+$sth->execute();
+
+### Grab results of previous scan for each target
+foreach $TargetID (keys %PingResults) {
+    my $sth = $dbh->prepare("SELECT * FROM Pings WHERE Timestamp = '$LastScan' AND TargetID = '$TargetID'");
+    $sth->execute();
+    my $results = $sth->fetchrow_hashref();
+    $Status = $$results{'Status'};
+
+	#if($opt_v) {
+	#	print "$TargetID, $PingResults{$TargetID}{Status}', $PingResults{$TargetID}{TimeStamp}\n";
+	#}
+
+    ### Add new scan results to database
+    my $sth = $dbh->prepare("INSERT INTO Pings(TargetID,Status,Timestamp) VALUES (
+        '$TargetID',
+        '$PingResults{$TargetID}{Status}',
+        '$PingResults{$TargetID}{TimeStamp}')
+    ");
+    $sth->execute();
+
+    ### If current status is different than last status, and notify is enabled, email someone about it
+    if($Status ne $PingResults{$TargetID}{'Status'} && $Provider{$TargetID}{'Notify'} eq "Enabled") {
+        @Addresses = split(/,/, $Provider{$TargetID}{'NotifyUsers'});
+        $Email = "";
+        ### Get email addresses to notify based on TargetID
+        foreach $Address (@Addresses) {
+            my $sth = $dbh->prepare("SELECT * FROM Users WHERE UserID = '$Address'");
+            $sth->execute();
+            my $results = $sth->fetchrow_hashref();
+            if($Email eq "") {
+                $Email = "$$results{'Email'}";
+            } else {
+                $Email .= ",$$results{'Email'}";
+            }
+        }
+
+        $Subject = "SMI Lab Provider Status Change";
+        $Message = <<EOD;
+This email is being sent to inform you that the status of the following provider has changed.
+
+    Company:    $Companies{$Provider{$TargetID}{'CompanyID'}}{'CompanyName'}
+    System:     $Provider{$TargetID}{'Product'}
+    IP Address: $Provider{$TargetID}{'IPAddress'}
+
+    Last Status at $LastScan was $Status
+    Current Status at $DATETIME is $PingResults{$TargetID}{'Status'}
+
+Please contact the SNIA Technology Center engineer either by email at tcengineer\@snia.org
+or by phone at 719-963-0889 if assistance is needed.
+
+Regards,
+
+John Malia
+SNIA Technology Center Engineer
+
+EOD
+
+        if(!$opt_E) {
+            ### Add notification to database and email notification
+            my $sth = $dbh->prepare("INSERT INTO Notifications(NotifyTime,UserID,TargetID,Message) VALUES (
+                '$DateTime',
+                '$Provider{$TargetID}{NotifyUsers}',
+                '$TargetID',
+                '$PingResults{$TargetID}{Status}')
+            ");
+            $sth->execute();
+
+			### By default, email is sent to "NotifyUsers", -N sends email only to tcengineer@snia.org
+            if(!$opt_N) {
+                &Notify($Email, $Subject, $Message);
+            } else {
+                &Notify('tcengineer@snia.org', $Subject, $Message);
+            }
+        }
+    }
+}
+
+
+###
+### Functions
+###
+
+### Email Provider Status
+sub Notify {
+    my ($Address, $Subject, $Message) = @_;
+
+    if(open(SENDMAIL, "|/usr/lib/sendmail -f 'tcengineer@snia.org' -t")) {
+        print SENDMAIL <<EOD;
+From: tcengineer\@snia.org
+To: $Address
+Bcc: tcengineer\@snia.org
+Subject: $Subject
+
+$Message
+
+EOD
+    }
+}
+
+### Connect to Database
+sub DBConnect {
+    my $user      = "root";
+    my $pw        = "a2siem";
+    my $host_name = "10.1.134.124";
+    my $port      = "3306";
+    my $db_name   = "SMIStatus";
+    my $dsn       = "DBI:mysql:host=$host_name;database=$db_name;port=$port";
+
+    return (DBI->connect($dsn, $user, $pw, {PrintError => 0, RaiseError => 1}));
+}
+
+### Get Company Info from Database
+sub GetCompanies {
+	my $sth = $dbh->prepare("SELECT * FROM Companies");
+	$sth->execute();
+
+	%Companies = ();
+	while(my $results = $sth->fetchrow_hashref()) {
+    	if(!exists($Companies{$$results{'CompanyID'}}{'CompanyName'})) {
+        	$Companies{$$results{'CompanyID'}}{'CompanyName'} = $$results{'CompanyName'};
+    	}
+	}
+}
+
+### Get Provider Info from Database
+sub GetProviders {
+	my $sth = $dbh->prepare("SELECT * FROM Targets");
+	$sth->execute();
+
+	%Provider = ();
+	while(my $results = $sth->fetchrow_hashref()) {
+    	if(!exists($Provider{$$results{'TargetID'}}{'IPAddress'})) {
+        	$Provider{$$results{'TargetID'}}{'IPAddress'} = $$results{'IPAddress'};
+        	$Provider{$$results{'TargetID'}}{'CompanyID'} = $$results{'CompanyID'};
+        	$Provider{$$results{'TargetID'}}{'Product'} = $$results{'Product'};
+        	$Provider{$$results{'TargetID'}}{'Namespace'} = $$results{'Namespace'};
+        	$Provider{$$results{'TargetID'}}{'Principal'} = $$results{'Principal'};
+        	$Provider{$$results{'TargetID'}}{'Credential'} = $$results{'Credential'};
+        	$Provider{$$results{'TargetID'}}{'Protocol'} = $$results{'Protocol'};
+        	$Provider{$$results{'TargetID'}}{'Port'} = $$results{'Port'};
+        	$Provider{$$results{'TargetID'}}{'Notify'} = $$results{'Notify'};
+        	$Provider{$$results{'TargetID'}}{'NotifyUsers'} = $$results{'NotifyUsers'};
+        	$Provider{$$results{'TargetID'}}{'ScanEnabled'} = $$results{'ScanEnabled'};
+    	}
+    	$Provider{$$results{'TargetID'}}{'Principal'} ||= "smilab";
+    	$Provider{$$results{'TargetID'}}{'Credential'} ||= "F00sb4ll";
+	}
+}
+
+### Print Help Message
+sub PrintHelp {
+    print <<EOF;
+$0 - scan SMI provider(s)
+
+$0 [-n] [-h] [-v] [-t <target_id>] [-r <numb_of_retries>]
+
+where:
+  -n = do no update database
+  -N = Only notify tcengineer\@snia.org
+  -h = this help
+  -r = number of retries (default: 3)
+  -t = only scan target_id provider
+  -v = turn verbose on; print target data and results of scan
+EOF
+};
+
+### Get Current Date/Timestamp in MySQL Format
+sub GetDateTime {
+	### Set date/time of this scan
+	($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
+	$year += 1900;
+	$mon++;
+	if($mon < 10) {$mon = "0" . $mon};
+	if($mday < 10) {$mday = "0" . $mday};
+	if($hour < 10) {$hour = "0" . $hour};
+	if($min < 10) { $min = "0" . $min};
+	if($sec < 10) { $sec = "0" . $sec};
+	$DATETIME = "$year-$mon-$mday $hour:$min:$sec";
+	chomp($DATETIME);
+	return($DATETIME);
+};

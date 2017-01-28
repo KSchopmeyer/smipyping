@@ -19,7 +19,8 @@ the variables.
 # This module is meant to be safe for 'import *'.
 
 __all__ = ['ENFORCE_INTEGER_RANGE', 'DEFAULT_SWEEP_PORT', 'USERDATA_FILE',
-           'PING_TEST_CLASS', 'SIMPLEPING_OPERATION_DEFAULT_TIMEOUT']
+           'PING_TEST_CLASS', 'SIMPLEPING_OPERATION_DEFAULT_TIMEOUT',
+           'DEFAULT_CONFIG_FILE']
 
 #: Enforce the value range in CIM integer types (e.g. :class:`~pywbem.Uint8`).
 #:
@@ -34,7 +35,7 @@ ENFORCE_INTEGER_RANGE = True
 DEFAULT_SWEEP_PORT = 5989
 
 #: File name for user data
-USERDATA_FILE = 'userdata_example.csv'
+USERDATA_FILE = 'targetdata_example.csv'
 
 #: The class that is used in ping tests.
 PING_TEST_CLASS = 'CIM_ComputerSystem'
@@ -43,5 +44,11 @@ PING_TIMEOUT = 2
 
 #: Timeout in seconds for the WBEM operation
 SIMPLEPING_OPERATION_DEFAULT_TIMEOUT = 20
+
+#: Default configuration file for smipyping cli
+DEFAULT_CONFIG_FILE = 'localconfig.ini'
+
+#: Defualt namespace when none is specified
+DEFAULT_NAMESPACE = 'root/cimv2'
 
 

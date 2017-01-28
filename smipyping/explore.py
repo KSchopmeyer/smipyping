@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-    TODO
+    SMIWBEMServer class extends WBEMServer class
 """
 
 from __future__ import print_function, absolute_import
@@ -34,6 +34,7 @@ class SMIWBEMServer(WBEMServer):
     def __init__(self, conn):
         super(SMIWBEMServer, self).__init__(conn)
 
+
 # named tuple for the info about opened servers.
 ServerInfoTuple = namedtuple('ServerInfoTuple',
                              ['url', 'server', 'user_id', 'status'])
@@ -63,7 +64,7 @@ def print_smi_profile_info(servers, user_data):
             line = [entry['Id'],
                     server_tuple.url,
                     entry['CompanyName'],
-                    entry['Product'],]
+                    entry['Product']]
             if versions is not None:
                 cell_str = ", ". join(sorted(versions))
                 line.append(fold_cell(cell_str, 14))
@@ -98,7 +99,7 @@ def print_server_info(servers, user_data):
                 entry['CompanyName'],
                 version,
                 interop_ns,
-                server_tuple.status,]
+                server_tuple.status]
 
         table_data.append(line)
 
@@ -207,13 +208,14 @@ def explore_server(server_url, principal, credential, args, logger=None):
     server = WBEMServer(conn)
 
     if args.verbose:
-        print('Brand:%s, Version:%s, Interop namespace:%s' % (server.brand,
-                                                              server.version,
-                                                              server.interop_ns))
+        print(
+            'Brand:%s, Version:%s, Interop namespace:%s' % (server.brand,
+                                                            server.version,
+                                                            server.interop_ns))
         print("All namespaces: %s" % server.namespaces)
     else:
         # force access to test server connection
-        _ = server.interop_ns
+        _ = server.interop_ns  # noqa: F841
 
     return server
 
@@ -229,8 +231,8 @@ def smi_version(server):
     snia_server_profiles = server.get_selected_profiles('SNIA', 'SMI-S')
     versions = []
     for inst in snia_server_profiles:
-        org = org_vm.tovalues(inst['RegisteredOrganization'])
-        name = inst['RegisteredName']
+        org = org_vm.tovalues(inst['RegisteredOrganization'])  # noqa: F841
+        name = inst['RegisteredName']  # noqa: F841
         vers = inst['RegisteredVersion']
         ####print("  %s %s Profile %s" % (org, name, vers))
         versions.append(vers)
@@ -345,7 +347,7 @@ def create_explore_logger(prog, logfile):
     """ Build logger instance"""
 
     # logging.basicConfig(stream=sys.stderr, level=logging.INFO,
-                    # format='%(asctime)s %(levelname)s %(message)s)')
+    # format='%(asctime)s %(levelname)s %(message)s)')
 
     logger = logging.getLogger(prog)
     hdlr = logging.FileHandler(logfile)
@@ -405,6 +407,7 @@ def main(prog):
     print_smi_profile_info(servers, user_data)
 
     return 0
+
 
 if __name__ == '__main__':
     prog_name = os.path.basename(_sys.argv[0])

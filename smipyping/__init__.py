@@ -52,7 +52,7 @@ import sys
 
 from .ping import *
 from .config import *
-from .userdata import *
+from .targetdata import *
 from .simpleping import *
 from .explore import *
 from .serversweep import *

@@ -42,5 +42,6 @@ def ping_host(hostname, timeout):
 
     # execute the ping command and discard text response
     FNULL = open(os.devnull, 'w')
-    return subprocess.call(command, shell=need_sh, stdout=FNULL, stderr=subprocess.STDOUT) == 0
+    return subprocess.call(
+        command, shell=need_sh, stdout=FNULL, stderr=subprocess.STDOUT) == 0
 
