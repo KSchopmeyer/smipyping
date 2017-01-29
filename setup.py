@@ -70,7 +70,10 @@ setup(
         'scapy',
         'pytest',
         'mysql-connector',
-        'configparser'],
+        'configparser',
+        'click',
+        'click_repl',
+        'click_spinner'],
 
     # smipyping prereqs for 'develop' command.
     # TOD enable this. pywbem does in os_setup.py

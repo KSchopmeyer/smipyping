@@ -399,8 +399,7 @@ class CsvTargetsData(TargetsData):
             writer.writeheader()
             for key, value in sorted(self.targetsdict.iteritems()):
                 writer.writerow(value)
-
-
+   
 class ProcessTargetDataCli(object):
     """
     This class is part of the cli for Target data.
@@ -448,8 +447,7 @@ The commands are:
             argparser.print_help()
             exit(1)
 
-        # TODO test if type is actually supported in config file
-        
+        # TODO test if type is actually supported in config file        
 
         target_data = TargetsData.factory(args.config_file, args, 'csv')
 
@@ -464,10 +462,6 @@ The commands are:
         """
         disp_parser = _argparse.ArgumentParser(
             description='Display target data repository')
-        # prefixing the argument with -- means it's optional
-        disp_parser.add_argument('-f', '--file',
-                                 default='targetdata_example.csv',
-                                 help='Filename to display')
 
         disp_parser.add_argument('-s', '--sort',
                                  default='IP',
