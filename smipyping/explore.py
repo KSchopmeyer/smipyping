@@ -15,12 +15,13 @@ import argparse as _argparse
 from collections import namedtuple
 
 from pywbem import WBEMConnection, WBEMServer, ValueMapping, Error, \
-                   ConnectionError, TimeoutError
+    ConnectionError, TimeoutError
 from ._cliutils import SmartFormatter as _SmartFormatter
 # TODO from ._cliutils import check_negative_int
-from .userdata import CsvUserData
+from ._targetdata import TargetsData
 from .functiontimeout import FunctionTimeoutError, functiontimeout
-from smipyping._terminaltable import print_terminal_table, fold_cell
+from ._terminaltable import print_terminal_table, fold_cell
+from .config import DEFAULT_CONFIG_FILE
 
 __all__ = ["print_smi_profile_info", "print_server_info", "explore_servers",
            "explore_server", "smi_version", "create_explore_logger",
@@ -38,6 +39,7 @@ class SMIWBEMServer(WBEMServer):
 # named tuple for the info about opened servers.
 ServerInfoTuple = namedtuple('ServerInfoTuple',
                              ['url', 'server', 'user_id', 'status'])
+
 
 def print_smi_profile_info(servers, user_data):
     """
@@ -105,7 +107,8 @@ def print_server_info(servers, user_data):
 
     print_terminal_table("Server Basic Information", table_data)
 
-def explore_servers(user_data, host_list, args, logger=None):
+
+def explore_servers(target_data, host_list, args, logger=None):
     """
     Explore the basic characteristics of a list of servers including
     existence, branding, etc.
@@ -124,7 +127,7 @@ def explore_servers(user_data, host_list, args, logger=None):
     """
     servers = []
     for host_addr in host_list:
-        entry = user_data.get_dict_for_host(host_addr)
+        entry = target_data.get_dict_for_host(host_addr)
         user_id = entry['Id']
         if not entry:
             raise ValueError('Error with host %s getting from userdata' %
@@ -191,6 +194,7 @@ def explore_servers(user_data, host_list, args, logger=None):
             traceback.format_exc()
     return servers
 
+
 # @functiontimeout(45)
 def explore_server(server_url, principal, credential, args, logger=None):
     """ Explore a cim server for characteristics defined by
@@ -219,6 +223,7 @@ def explore_server(server_url, principal, credential, args, logger=None):
 
     return server
 
+
 def smi_version(server):
     """
     Get the smi version used by this server from the SNIA profile information
@@ -234,9 +239,10 @@ def smi_version(server):
         org = org_vm.tovalues(inst['RegisteredOrganization'])  # noqa: F841
         name = inst['RegisteredName']  # noqa: F841
         vers = inst['RegisteredVersion']
-        ####print("  %s %s Profile %s" % (org, name, vers))
+        # ###print("  %s %s Profile %s" % (org, name, vers))
         versions.append(vers)
     return versions
+
 
 def explore_server_profiles(server, args, short_explore=True, logger=None):
 
@@ -250,11 +256,11 @@ def explore_server_profiles(server, args, short_explore=True, logger=None):
         if args.verbose:
             print("  %s %s Profile %s" % (org, name, vers))
 
-    #logger.info("Advertised management profiles:")
+    # ##logger.info("Advertised management profiles:")
     org_vm = ValueMapping.for_property(server, server.interop_ns,
                                        'CIM_RegisteredProfile',
                                        'RegisteredOrganization')
-    #for inst in server.profiles:
+    # for inst in server.profiles:
     #    print_profile_info(org_vm, inst)
 
     if short_explore:
@@ -305,6 +311,7 @@ def explore_server_profiles(server, args, short_explore=True, logger=None):
             logger.info("  %s", str(ip))
     return server
 
+
 def create_explore_parser(prog):
     """Create the cmd line parser for the explore functions"""
 
@@ -331,9 +338,11 @@ Examples:
 
     general_arggroup = argparser.add_argument_group(
         'General options')
-    general_arggroup.add_argument(
-        '--csvfile', '-c', default='userdata_example.csv',
-        help='Use csv input file')
+    argparser.add_argument(
+        '-f', '--config_file', metavar='CONFIG_FILE',
+        default=DEFAULT_CONFIG_FILE,
+        help=('Configuration file to use for config information. '
+              'Default=%s' % DEFAULT_CONFIG_FILE))
     general_arggroup.add_argument(
         '--verbose', '-v', action='store_true', default=False,
         help='Verbosity level')
@@ -342,6 +351,7 @@ Examples:
         help='Display detailed connection information')
 
     return argparser
+
 
 def create_explore_logger(prog, logfile):
     """ Build logger instance"""
@@ -382,8 +392,8 @@ def main(prog):
 
     logger = create_explore_logger(prog, logfile)
 
-    user_data = CsvUserData(args.csvfile)
-    hosts = user_data.get_hostid_list()
+    target_data = TargetsData.factory(args.config_file, 'csv', args.verbose)
+    hosts = target_data.get_hostid_list()
 
     filtered_hosts = []
 
@@ -397,14 +407,14 @@ def main(prog):
     else:
         filtered_hosts = hosts
 
-    servers = explore_servers(user_data, filtered_hosts, args, logger)
+    servers = explore_servers(target_data, filtered_hosts, args, logger)
 
     # print results
-    print_server_info(servers, user_data)
+    print_server_info(servers, target_data)
 
     # repeat to get smi info.
 
-    print_smi_profile_info(servers, user_data)
+    print_smi_profile_info(servers, target_data)
 
     return 0
 

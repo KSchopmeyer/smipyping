@@ -97,8 +97,9 @@ setup(
 
     scripts=[
         'simpleping',
-        'userdata',
+        'targets',
         'explore',
         'serversweep',
-        'simplepingall']
+        'simplepingall',
+        'smicli']
     )

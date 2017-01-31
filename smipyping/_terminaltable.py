@@ -8,6 +8,7 @@ from textwrap import wrap
 import six
 from terminaltables import SingleTable
 
+
 def print_terminal_table(title, table_data):
     """ Print table data as an ascii table. The input is a dictionary
         of table data in the format used by terminaltable package.
@@ -24,6 +25,7 @@ def print_terminal_table(title, table_data):
     print(table_instance.table)
     print()
 
+
 def fold_cell(cell_string, max_cell_width):
     """ Fold a line within a maximum width to fit within a table entry
     """
@@ -33,4 +35,3 @@ def fold_cell(cell_string, max_cell_width):
             new_cell = '\n'.join(wrap(cell_string, max_cell_width))
 
     return new_cell
-

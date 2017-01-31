@@ -1,28 +1,32 @@
 """
 Provides the components for a utility to test a WBEM server.
 
+The Simpleping class that executed a simplistic test on a server defined by
+the cmd input arguments.
+
 This tests a wbem server against a class defined in the configuration. If
 that class is found, it returns success. Otherwise it returns a fail code.
 
-This includes the cmd line parser, and funcitons to test the connection.
+If successul, the program returns exit code 0 and the text "Running"
+
+Otherwise it returns an exit code that is defines the error and a non-zero
+exit code.
+
+This  file includes the cmd line parser, and functions to test the connection.
 Returns exit code of 0 if the server is found and the defined class exists.
 
-Otherwise returns exit code 1.
 
-In addition, it returns an empty string if successful or a string with
-error code if in error.
-
-This module is the components of the tool. It is assembled in a separate
-script
+This module is the component of the script simpleping. It is assembled in a
+separate python file for testability
 """
 
 from __future__ import print_function, absolute_import
 
-import logging
 import argparse as _argparse
 import re
 from textwrap import fill
 import datetime
+
 from urlparse import urlparse
 from collections import namedtuple
 
@@ -32,10 +36,9 @@ from ._cliutils import SmartFormatter as _SmartFormatter
 
 from .ping import ping_host
 
-from .config import PING_TEST_CLASS, PING_TIMEOUT, DEFAULT_NAMESPACE, \
-    DEFAULT_CONFIG_FILE
+from .config import PING_TEST_CLASS, PING_TIMEOUT, DEFAULT_CONFIG_FILE
 
-from .targetdata import TargetsData
+from ._targetdata import TargetsData
 
 __all__ = ['SimplePing', 'TestResult']
 
@@ -82,6 +85,7 @@ class SimplePing(object):
         self.url = None
         self.timeout = None
 
+        # Error code keys and corresponding exit codes
         self.error_code = {
             'Running': 0,
             'WBEMException': 1,
@@ -202,6 +206,8 @@ class SimplePing(object):
         """
         netloc = urlparse(self.url).netloc
         target_address = netloc.split(':')
+        if self.verbose:
+            print('Ping network address %s' % target_address[0])
         if ping_host(target_address[0], PING_TIMEOUT):
             return(True, 'running')
         else:
@@ -239,6 +245,10 @@ class SimplePing(object):
         an error.
         """
         try:
+            if self.verbose:
+                print('Test server %s namespace %s creds %s class %s' %
+                      (conn.url, conn.default_namespace, conn.creds,
+                       PING_TEST_CLASS))
             insts = conn.EnumerateInstances(PING_TEST_CLASS)
 
             if self.verbose:
@@ -247,8 +257,9 @@ class SimplePing(object):
             rtn_code = ("Running", "")
 
         except CIMError as ce:
-            print('CIMERROR %r %s ' % (ce, ce.status_description))
-            rtn_code = ("WBEMException", ce.status_description)
+            print('CIMERROR %r %s %s ' % (ce, ce.status, ce.reason))
+            rtn_reason = '%s:%s' % (ce, ce.status, ce.reason)
+            rtn_code = ("WBEMException", rtn_reason)
         except ConnectionError as co:
             rtn_code = ("ConnectionError", co)
         except TimeoutError as to:
@@ -295,8 +306,12 @@ Examples:\n
           - (https localhost, port=15345, namespace=i user=sheldon
          password=penny)
 
+  % s -T 4
+
+  test providerid 4 from the default provider database
+
   %s http://[2001:db8::1234-eth0] -n interop -(http port 5988 ipv6, zone id eth0)
-    """ % (self.prog, self.prog)
+    """ % (self.prog, self.prog, self.prog)  # noqa: E501
 
         argparser = _argparse.ArgumentParser(
             prog=self.prog, usage=usage, description=desc, epilog=epilog,
@@ -395,7 +410,7 @@ Examples:\n
             '-f', '--config_file', metavar='CONFIG_FILE',
             default=DEFAULT_CONFIG_FILE,
             help=('Configuration file to use for config information. '
-            'Default=%s' % DEFAULT_CONFIG_FILE))
+                  'Default=%s' % DEFAULT_CONFIG_FILE))
         general_arggroup.add_argument(
             '-v', '--verbose', dest='verbose',
             action='store_true', default=False,
@@ -433,14 +448,16 @@ Examples:\n
 
         if not opts.server:
             if opts.target_id is None:
-                self.argparser.error('No WBEM server specified and no target_id')
+                self.argparser.error('No WBEM server specified and no '
+                                     'target_id')
             else:
                 if (opts.user is not None or opts.password is not None or
                         opts.namespace is not None):
                     self.argparser.error('-u, -n, or -p not used with'
                                          '-i option')
         elif opts.server and opts.target_id:
-            self.argparser.error('Too many choices. Both server and target_id')
+            self.argparser.error('Server argument and -T option are mutually '
+                                 'exclusive. Chose one or the other')
         elif opts.server and not opts.namespace:
             self.argparser.error('Namespace required when server specified')
         else:
@@ -449,8 +466,8 @@ Examples:\n
             self.user = opts.user
             self.password = opts.password
         if opts.target_id:
-            print('test target id %r config file %r' % (opts.target_id, opts.config_file))
-            target_data = TargetsData.factory(opts.config_file, opts, 'csv')
+            target_data = TargetsData.factory(opts.config_file, 'csv',
+                                              opts.verbose)
             if opts.target_id in target_data:
                 self.set_from_userrecord(opts.target_id, target_data)
             else:
@@ -484,3 +501,4 @@ Examples:\n
                  target_record['Namespace']))
         self.namespace = target_record['Namespace']
         self.user = target_record['Principal']
+        self.password = target_record['Credential']

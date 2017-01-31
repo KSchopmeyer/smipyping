@@ -52,12 +52,16 @@ import sys
 
 from .ping import *
 from .config import *
-from .targetdata import *
+from ._targetdata import *
 from .simpleping import *
 from .explore import *
 from .serversweep import *
 # TODO should not need this
 from ._cliutils import *
+from .smicli import *
+from ._cmd_database import *
+#from ._cmd_providers import *
+from .targetdatacli import *
 
 from ._version import __version__
 
