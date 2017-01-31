@@ -1,0 +1,40 @@
+"""
+smicli commands based on python click for operations on providers defined
+by the databse.
+"""
+from __future__ import print_function, absolute_import
+
+import click
+from pprint import pprint as pp  # noqa: F401
+
+from .smicli import smicli, CMD_OPTS_TXT
+
+from pywbem import WBEMConnection, WBEMServer
+
+
+@smicli.group('provider', options_metavar=CMD_OPTS_TXT)
+def providers_group():
+    """
+    Command group for operations on provider data.
+    """
+    pass
+
+@providers_group.command('namespaces', options_metavar=CMD_OPTS_TXT)
+@click.argument('ProviderID', type=int, metavar='ProviderID', required=True)
+@click.pass_obj
+def provider_namespaces(context, namespaces,**options):
+    """
+    get and display a list of classnames.
+    """
+    context.execute_cmd(lambda: cmd_providers_list(context, options))
+
+
+##############################################################
+#  Providers processing commands
+##############################################################
+
+
+def cmd_provider_namespaces(context, providerid, enable, **options):
+    """
+    Return a list of namespaces for the defined provider id
+    """
