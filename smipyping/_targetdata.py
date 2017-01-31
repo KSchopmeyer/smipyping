@@ -168,7 +168,7 @@ class TargetsData(object):
         """
         If an record for `host_data` exists return that record.
 
-        Else return None.
+        otherwise return None.
 
         Host data is a tuple of ipaddress and port.
 

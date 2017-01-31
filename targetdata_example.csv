@@ -1,4 +1,4 @@
-Id,CompanyName,Namespace,SMIVersion,Product,Principal,Credential,CimomVersion,IPAddress,InteropNamespace,Protocol,Port,ScanEnabled
+TargetID,CompanyName,Namespace,SMIVersion,Product,Principal,Credential,CimomVersion,IPAddress,InteropNamespace,Protocol,Port,ScanEnabled
 01,Brocade,root/brocade1,,BRCD1 Fabric,Administrator,Plugfest2012,J WBEM Server 1.2.1,10.1.134.163,interop,https,5989,Enabled
 02,Brocade,root/brocade1,,PROD Fabric,Administrator,Plugfest2012,J WBEM Server 1.2.1,10.1.134.163,interop,https,5989,Enabled
 03,Cisco,cimv2,1.5,DCNM,smilab6,F00sb4ll,J WBEM Server 3.7.1,10.1.137.211,interop,https,5989,Enabled

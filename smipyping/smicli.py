@@ -35,7 +35,7 @@ def smicli(ctx, config_file, verbose):
           additional information specific to SMI.
           
         
-        * manage a database that defines smi servers. It supports two forms
+        * Manage a database that defines smi servers. It supports two forms
           of the data base, sql database and csv file.
 
     """

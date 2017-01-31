@@ -1,6 +1,6 @@
 usage: simpleping [options] server
 
-Interactive shell for doing a simple CIM ping against a WBEM server defined by
+Script for doing a simple CIM ping against a WBEM server defined by
 the input parameters. This script connects to the server and test for the
 existence of a single class. If the  test fails it exists with non-zero exit
 code. It includes an option to ping the server before connecting.
@@ -15,6 +15,11 @@ Return:
         5. ConnectionError
         6. Ping error (only return if ping is executed)
     
+
+optional arguments:
+  -f CONFIG_FILE, --config_file CONFIG_FILE
+                        Configuration file to use for config information.
+                        Default=localconfig.ini
 
 Positional arguments:
   server                Host name or url of the WBEM server in this format:
@@ -37,14 +42,14 @@ Positional arguments:
 Server related options:
   Specify the WBEM server namespace and timeout
 
-  -n namespace, --namespace namespace
+  -n Namespace, --namespace Namespace
                         Namespace in the WBEM server for the test request.
                         Default: None
   -t timeout, --timeout timeout
                         Timeout of the completion of WBEM Server operation
                         in seconds(integer between 0 and 300).
                         Default: 20 seconds
-  -T TargetUserId, --target_user-id TargetUserId
+  -T TargetUserId, --target_id TargetUserId
                         If this argument is set, the value is a user id
                         instead of an server url as the source for the test. In
                         this case, namespace, user, and password arguments are
@@ -80,8 +85,8 @@ Connection security related options:
                         then be part  of the certfile
 
 General options:
-  --ping, -P            Ping for server as first test. This often shortens the
-                        total response time.
+  --no_ping, -x         Do not ping for server as first test. Executing the
+                        ping often shortens the total response time.
   -v, --verbose         Print more messages while processing
   -d, --debug           Display XML for request and response
   -h, --help            Show this help message and exit
@@ -92,5 +97,9 @@ Examples:
           - (https localhost, port=15345, namespace=i user=sheldon
          password=penny)
 
-  simpleping http://[2001:db8::1234-eth0] -(http port 5988 ipv6, zone id eth0)
+  simpleping -T 4
+
+  test providerid 4 from the default provider database
+
+  simpleping http://[2001:db8::1234-eth0] -n interop -(http port 5988 ipv6, zone id eth0)
     
