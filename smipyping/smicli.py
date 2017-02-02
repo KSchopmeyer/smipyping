@@ -15,7 +15,7 @@ from smipyping import DEFAULT_CONFIG_FILE
 GENERAL_OPTIONS_METAVAR = '[GENERAL-OPTIONS]'
 CMD_OPTS_TXT = '[COMMAND-OPTIONS]'
 
-DBTYPE = 'sql'
+DBTYPE = 'csv'
 
 
 @click.group(invoke_without_command=True,
@@ -96,7 +96,7 @@ class Context(object):
     @property
     def provider_data(self):
         """
-        :term:`proider_data`: Dictionary of provider data
+        :term:`provider_data`: Dictionary of provider data
         """
         return self._provider_data
 

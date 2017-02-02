@@ -94,6 +94,8 @@ class TargetsData(object):
             ('ScanEnabled', ('Enabled', 6, str)),
             ])  # noqa: E123
 
+        self.db_type = None
+
     @classmethod
     def factory(cls, filename, type, verbose):
         """Factory method to select subclass based on database type.
@@ -115,7 +117,7 @@ class TargetsData(object):
         else:
             ValueError('Invalid target factory type %s' % type)
 
-        inst.type_ = type
+        inst.db_type_ = type  # pylint: disable=invalid-name
 
         return inst
 
@@ -327,10 +329,18 @@ class TargetsData(object):
 
         print_terminal_table('Target Systems Overview', table_data)
 
-    def display_all(self):
+    def display_all(self, fields, company):
         """Display all entries in the base."""
-        col_list = ['TargetID', 'IPAddress', 'CompanyName', 'Product',
-                    'Port', 'Protocol', 'CimomVersion']
+        print('fields %s' % fields)
+        if not fields:
+            # list of default fields for display
+            col_list = ['TargetID', 'IPAddress', 'CompanyName', 'Product',
+                        'Port', 'Protocol', 'CimomVersion']
+        else:
+            print('fields0 %s' % fields)
+            col_list = fields
+
+        print('fields %s' % fields)
 
         self.display_cols(col_list)
 
@@ -345,8 +355,8 @@ class SQLTargetsData(TargetsData):
         super(SQLTargetsData, self).__init__(filename, verbose)
 
         try:
-            db_config = read_config(filename, 'mysql')
-            connection = MySQLConnection(**db_config)
+            sql_config = read_config(filename, 'mysql')
+            connection = MySQLConnection(**sql_config)
 
             if connection.is_connected():
                 print('connection established.')
@@ -376,7 +386,7 @@ class SQLTargetsData(TargetsData):
         except Exception as ex:
             print('Could not access sql database. Exception %s', str(ex))
             raise ValueError('Could not initialize sql database %r error %s'
-                             % (db_config, ex))
+                             % (sql_config, ex))
 
     def db_info(self):
         db_config = read_config(self.filename, 'mysql')
@@ -386,12 +396,17 @@ class SQLTargetsData(TargetsData):
 class CsvTargetsData(TargetsData):
     """Comma Separated Values form of the Target base."""
 
-    def __init__(self, filename, verbose):
+    def __init__(self, config_file, verbose):
         """Read the input file into a dictionary."""
-        super(CsvTargetsData, self).__init__(filename, verbose)
+        super(CsvTargetsData, self).__init__(config_file, verbose)
+        config_file_dir = os.path.dirname(config_file)
 
-        csv_config = read_config(filename, 'csv')
+        # get configuration and account for relative database name
+        csv_config = read_config(config_file, 'csv')
         self.filename = csv_config['filename']
+        if not os.path.dirname(self.filename):
+            self.filename = os.path.join(config_file_dir,
+                                         self.filename)
 
         if not os.path.isfile(self.filename):
             ValueError('CSV provider data file %s does not exist.' %

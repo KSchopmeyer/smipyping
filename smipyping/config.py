@@ -20,7 +20,7 @@ the variables.
 
 __all__ = ['ENFORCE_INTEGER_RANGE', 'DEFAULT_SWEEP_PORT', 'USERDATA_FILE',
            'PING_TEST_CLASS', 'SIMPLEPING_OPERATION_DEFAULT_TIMEOUT',
-           'DEFAULT_CONFIG_FILE']
+           'DEFAULT_CONFIG_FILE', 'DEFAULT_NAMESPACE', 'DB_TYPE']
 
 #: Enforce the value range in CIM integer types (e.g. :class:`~pywbem.Uint8`).
 #:
@@ -50,5 +50,8 @@ DEFAULT_CONFIG_FILE = 'localconfig.ini'
 
 #: Defualt namespace when none is specified
 DEFAULT_NAMESPACE = 'root/cimv2'
+
+#: type of database to use.  May be 'sql' or 'csv'
+DB_TYPE = 'csv'
 
 

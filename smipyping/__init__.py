@@ -62,6 +62,7 @@ from .smicli import *
 from ._cmd_database import *
 #from ._cmd_providers import *
 from .targetdatacli import *
+from ._scanport import *
 
 from ._version import __version__
 

@@ -18,61 +18,31 @@ import time
 import argparse as _argparse
 import threading
 
-# required to turn off  IP v6 warning message from scapy in import
-import logging
-SCPY_LOG = logging.getLogger("scapy.runtime")
-SCPY_LOG.setLevel(49)
-
-from scapy.all import *
-
 from ._cliutils import SmartFormatter as _SmartFormatter
 from ._cliutils import check_negative_int
 from .config import DEFAULT_SWEEP_PORT
 from ._utilities import display_argparser_args
+from ._scanport import check_port_syn
 
-# Results list, a list of tuples of ip_address, port
+# Results list, a list of tuples of ip_address, port. May be appended
+# multithread
 RESULTS = []
 
 
-def check_port_syn(dst_ip, dst_port, verbose):
+def check_port(test_ip, port, verbose):
     """
-    Check a single address with SYN for open port.
+    Runs define test against a single ip/port.
 
-    Uses scapy function to execute SYN on dst_ip and port.
-    This is one way to test for open https ports.
+    If the port is OK, sets results into RESULTS
 
-    Using SYN allows us to test for open port but in Python requires that
-    the code execute in admin mode.
+    This may be used either single threaded or multithreaded
+
+    Returns True if port OK
     """
-    SYNACK = 0x12
-    RSTACK = 0x14
-
-    conf.verb = 0  # Disable verbose in sr(), sr1() methods
-    port_open = False
-    src_port = RandShort()
-    p = IP(dst=dst_ip)/TCP(sport=src_port, dport=dst_port, flags='S')
-    resp = sr1(p, timeout=2)  # Sending packet
-    if str(type(resp)) == "<type 'NoneType'>":
-        if verbose:
-            print('%s Closed. response="none"' % dst_ip)
-    elif resp.haslayer(TCP):
-        if resp.getlayer(TCP).flags == SYNACK:
-            send_rst = sr(IP(dst=dst_ip)/TCP(sport=src_port, dport=dst_port,
-                                             flags='AR'), timeout=1)
-            port_open = True
-            if verbose:
-                print('check_port:%s Open' % dst_ip)
-        elif resp.getlayer(TCP).flags == RSTACK:
-            if verbose:
-                print('%s Closed. response="RSTACK"' % dst_ip)
-    else:
-        if verbose:
-            print('%s is Down' % dst_ip)
-    result_key = [dst_ip, dst_port]
-    if port_open:
-        RESULTS.append(result_key)
-    sys.stdout.flush()
-    return port_open
+    result = check_port_syn(test_ip, port, verbose)  # Test one ip:port
+    if result is True:
+        RESULTS.append([test_ip, port])
+    return result
 
 
 def scan_subnets(subnets, start_ip, end_ip, port, verbose):
@@ -95,6 +65,7 @@ def scan_subnets(subnets, start_ip, end_ip, port, verbose):
                 open_hosts.extend(rtn)
         return open_hosts
 
+    # if ports is list, make recursive call for ports
     if isinstance(port, list):
         for p in port:
             rtn = scan_subnets(subnets, start_ip, end_ip, p, verbose)
@@ -102,17 +73,18 @@ def scan_subnets(subnets, start_ip, end_ip, port, verbose):
                 open_hosts.extend(rtn)
         return open_hosts
 
+    # scan ports in this range
     for ip in range(start_ip, end_ip + 1):
         test_ip = subnets + '.' + str(ip)
         test_host_id = [test_ip, port]
 
-        result = check_port_syn(test_ip, port, verbose)  # Test one ip:port
+        result = check_port(test_ip, port, verbose)  # Test one ip:port
 
         # print('test %s %s result %s' % (test_ip, port, result))
 
         if verbose:
             response_txt = 'Exists' if result else 'None'
-            print('test address=%s, %s' % (test_host_id, response_txt))
+            print('test address=%s, %s' % ((test_host_id,), response_txt))
         else:
             sys.stdout.flush()
             addr_ = "%s:%s" % (test_host_id[0], test_host_id[1])
@@ -139,9 +111,9 @@ def scan_subnets_threaded(subnets, start_ip, end_ip, port, verbose):
     threads_ = []
 
     for test in tests:
-        process = threading.Thread(target=check_port_syn, args=(test[0],
-                                                                test[1],
-                                                                verbose))
+        process = threading.Thread(target=check_port, args=(test[0],
+                                                            test[1],
+                                                            verbose))
         threads_.append(process)
 
     for process in threads_:
@@ -198,8 +170,8 @@ def build_test_list(subnets, start_ip, end_ip, ports):
     return test_list
 
 
-def print_open_hosts_report(open_hosts, total_time, user_data, subnets, ports,
-                            startip, endip):
+def print_open_hosts_report(open_hosts, total_time, provider_data, subnets,
+                            ports, startip, endip):
     """
     Output report of the entries found.
 
@@ -223,12 +195,12 @@ def print_open_hosts_report(open_hosts, total_time, user_data, subnets, ports,
         # TODO this probably requires ordered dict rather than dictionary to
         # keep order
         for host_data in open_hosts:
-            if user_data is not None:
-                record_list = user_data.get_user_data_host(host_data)
+            if provider_data is not None:
+                record_list = provider_data.get_targets_host(host_data)
                 if record_list:
                     # TODO this should be a list since there may be multiples
                     # for single ip address
-                    entry = user_data.get_dict_record(record_list[0])
+                    entry = provider_data.get_dict_record(record_list[0])
                     if entry is not None:
                         print(
                             '%s:%s %-20s %-18s %-18s' % (host_data[0],
@@ -245,7 +217,7 @@ def print_open_hosts_report(open_hosts, total_time, user_data, subnets, ports,
                                         "Not in user data"))
 
             else:
-                print('%s' % (host_data))
+                print('%s, %s' % (host_data[0], host_data[1]))
     else:
         print('No WBEM Servers:subnet(s)=%s port(s)=%s range %s, %s' %
               (subnets, ports, range_txt, execution_time))
@@ -351,8 +323,9 @@ Examples:
     general_arggroup = argparser.add_argument_group(
         'General options')
     general_arggroup.add_argument(
-        '--csvfile', '-c',
-        help='Use csv input file')
+        '--config_file', '-c',
+        help='Use config file to determine if server is in database')
+    # TODO note that default is none and that is what happensw
     general_arggroup.add_argument(
         '--no_threads', action='store_true', default=False,
         help='If set, defaults to non-threaded implementation. The'

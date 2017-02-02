@@ -1,0 +1,13 @@
+1. Scapy
+Has different setup for python3
+
+pip3 install scapy-python3
+
+test for targets.   config file and resulting file name
+
+Need test for smipyping
+
+1. variations on file input
+
+
+Need test for 

@@ -23,12 +23,19 @@ def database_group():
 
 
 @database_group.command('list', options_metavar=CMD_OPTS_TXT)
+@click.option('-f', '--fields', multiple=True, type=str, default=None,
+              help='Define specific fields for output. It always includes '
+                   ' TargetID. Ex. -f TargetID -f CompanyName')
+@click.option('-c', '--company', type=str, default=None,
+              help='regex filter to filter selected companies.')
+# TODO sort by a particular field
 @click.pass_obj
-def database_list(context, **options):
+def database_list(context, fields, company, **options):
     """
     Display the entries in the provider database.
     """
-    context.execute_cmd(lambda: cmd_database_list(context, options))
+    context.execute_cmd(lambda: cmd_database_list(context, fields, company,
+                                                  options))
 
 
 @database_group.command('info', options_metavar=CMD_OPTS_TXT)
@@ -127,9 +134,12 @@ def cmd_database_get(context, recordid, options):
             raise click.ClickException("%s: %s" % (ex.__class__.__name__, ex))
 
 
-def cmd_database_list(context, options):
+def cmd_database_list(context, fields, company, options):
     """ List the smi providers in the database."""
-    try:
-        context.provider_data.display_all()
+
+    show = list(fields)
+    show.append('TargetID')
+    try:        
+        context.provider_data.display_all(list(fields), company)
     except Exception as ex:
         raise click.ClickException("%s: %s" % (ex.__class__.__name__, ex))
