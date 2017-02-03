@@ -38,7 +38,7 @@ class SMIWBEMServer(WBEMServer):
 
 # named tuple for information about opened servers.
 ServerInfoTuple = namedtuple('ServerInfoTuple',
-                             ['url', 'server', 'user_id', 'status', 'time'])
+                             ['url', 'server', 'target_id', 'status', 'time'])
 
 
 def print_smi_profile_info(servers, user_data):
@@ -55,15 +55,15 @@ def print_smi_profile_info(servers, user_data):
     table_data.append(table_hdr)
     for server_tuple in servers:
         if server_tuple.status == 'OK':
-            user_id = server_tuple.user_id
-            entry = user_data.get_dict_record(user_id)
+            target_id = server_tuple.target_id
+            entry = user_data.get_dict_record(target_id)
             try:
                 versions = smi_version(server_tuple.server)
             except Exception as ex:
                 print('Exception %s in smi_versions %s' % (ex, server_tuple))
                 continue
 
-            line = [entry['Id'],
+            line = [entry['TargetID'],
                     server_tuple.url,
                     entry['CompanyName'],
                     entry['Product']]
@@ -86,8 +86,8 @@ def print_server_info(servers, user_data):
         url = server_tuple.url
         server = server_tuple.server
         status = server_tuple.status
-        user_id = server_tuple.user_id
-        entry = user_data.get_dict_record(user_id)
+        target_id = server_tuple.target_id
+        entry = user_data.get_dict_record(target_id)
         brand = ''
         version = ''
         interop_ns = ''
@@ -96,7 +96,7 @@ def print_server_info(servers, user_data):
             version = server.version
             interop_ns = server.interop_ns
 
-        line = [user_id,
+        line = [target_id,
                 url,
                 brand,
                 entry['CompanyName'],
@@ -128,12 +128,13 @@ def explore_servers(target_data, host_list, args, logger=None):
         List of namedtuple ServerInfoTuple
     """
     servers = []
+    # #### TODO move this all back to IDs and stop mapping host to id.
     for host_addr in host_list:
         target = target_data.get_dict_for_host(host_addr)
-        user_id = target['TargetID']
         if not target:
             raise ValueError('Error with host %s getting from targetdata' %
                              host_addr)
+        target_id = target['TargetID']
 
         # get variables for the connection and logs
         url = '%s://%s' % (target['Protocol'], target['IPAddress'])
@@ -143,9 +144,10 @@ def explore_servers(target_data, host_list, args, logger=None):
         company_name = target['CompanyName']
         log_info = 'Url=%s Product=%s Company=%s' % (url, product, company_name)
 
-        if target.disabled_record(user_id):
+        # TODO too must swapping between entities.
+        if target_data.disabled_record(target):
             s = ServerInfoTuple(url=url, server=None, status='DISABLE',
-                                user_id=user_id, time=None)
+                                target_id=target_id, time=None)
             servers.append(s)
             logger.info('Disabled %s ' % (log_info))
         else:
@@ -158,7 +160,7 @@ def explore_servers(target_data, host_list, args, logger=None):
                                         logger)
                 cmd_time = datetime.datetime.now() - start_time
                 s = ServerInfoTuple(url=url, server=server, status='OK',
-                                    user_id=user_id, time=cmd_time)
+                                    target_id=target_id, time=cmd_time)
                 servers.append(s)
                 logger.info('OK %s time %s' % (log_info, cmd_time))
             except FunctionTimeoutError as fte:
@@ -166,7 +168,7 @@ def explore_servers(target_data, host_list, args, logger=None):
                 logger.error('Timeout decorator exception:%s %s time %s' %
                              (fte, log_info, cmd_time))
                 err = 'FunctTo'
-                servers.append(ServerInfoTuple(url, server, user_id, err,
+                servers.append(ServerInfoTuple(url, server, target_id, err,
                                                cmd_time))
                 traceback.format_exc()
 
@@ -175,7 +177,7 @@ def explore_servers(target_data, host_list, args, logger=None):
                 logger.error('ConnectionError %s exception:%s %s time %s' %
                              (ce, log_info, cmd_time))
                 err = 'ConnErr'
-                servers.append(ServerInfoTuple(url, server, user_id, err,
+                servers.append(ServerInfoTuple(url, server, target_id, err,
                                                cmd_time))
                 traceback.format_exc()
 
@@ -185,7 +187,7 @@ def explore_servers(target_data, host_list, args, logger=None):
                              ' time %s' % (to, log_info, cmd_time))
 
                 err = 'Timeout'
-                servers.append(ServerInfoTuple(url, server, user_id, err,
+                servers.append(ServerInfoTuple(url, server, target_id, err,
                                                cmd_time))
                 traceback.format_exc()
 
@@ -194,7 +196,7 @@ def explore_servers(target_data, host_list, args, logger=None):
                 logger.error('PyWBEM Error exception:%s %s time %s' %
                              (er, log_info, cmd_time))
                 err = 'PyWBMEr'
-                servers.append(ServerInfoTuple(url, server, user_id, err,
+                servers.append(ServerInfoTuple(url, server, target_id, err,
                                                cmd_time))
                 traceback.format_exc()
 
@@ -204,7 +206,7 @@ def explore_servers(target_data, host_list, args, logger=None):
                              (ex, log_info, cmd_time))
 
                 err = 'GenErr'
-                servers.append(ServerInfoTuple(url, server, user_id, err,
+                servers.append(ServerInfoTuple(url, server, target_id, err,
                                                cmd_time))
                 traceback.format_exc()
     return servers
@@ -333,12 +335,13 @@ def create_explore_parser(prog):
     """Create the cmd line parser for the explore functions"""
 
     usage = '%(prog)s [options] server'
-    desc = 'Sweep possible WBEMServer ports across a range of IP addresses.'
+    desc = 'Explore WBEM servers in the defined database for general ' \
+           'information about each server.'
     epilog = """
 Examples:
-  %s 10.1.134.25
-  %s 10.1.134
-  %s TODO entry_id list or nothing or all.
+  %s -u 10.1.134.25
+  %s -T 4
+  %s        # explores all servers in the base
 
 """ % (prog, prog, prog)
 
@@ -348,10 +351,28 @@ Examples:
 
     pos_arggroup = argparser.add_argument_group(
         'Positional arguments')
+
+    server_arggroup = argparser.add_argument_group(
+        'Server related options',
+        'Specify the server either by host address or database targetID')
     pos_arggroup.add_argument(
-        'wbemserver', metavar='server', nargs='?',
+        '-u', '--uri', metavar='URI', nargs='?',
         help='Optional host name or ip address of wbem servers to explore '
              'schema:address:')
+    server_arggroup.add_argument(
+        '-T', '--target_id', dest='target_id',
+        metavar='TargetUserId',
+        type=int,
+        help='R|If this argument is set, the value is a user id\n'
+             'instead of an server url as the source for the test. In\n'
+             'this case, namespace, user, and password arguments are\n'
+             'derived from the user data rather than cli input')
+    server_arggroup.add_argument(
+        '-t', '--timeout', dest='timeout', metavar='timeout', type=int,
+        default=20,
+        help='R|Timeout of the completion of WBEM Server operation\n'
+             'in seconds(integer between 0 and 300).\n'
+             'Default: 20 seconds')
 
     general_arggroup = argparser.add_argument_group(
         'General options')

@@ -216,7 +216,6 @@ class TargetsData(object):
         output_list = []
         # TODO clean up for python 3
         for _id, value in self.targetsdict.items():
-            # print('_id %s, value %s' % (_id, value))
             output_list.append(value['IPAddress'])
         return output_list
 

@@ -35,12 +35,18 @@ def main(prog):
     filtered_hosts = []
 
     # TODO make this list comprehension
-    if args.wbemserver is not None:
+    if args.uri and args.target_id:
+        print('ERROR: Use either uri or target_id option. They are exclusive')
+        return 1
+    if args.uri:
         for host in hosts:
             if host == args.wbemserver:
                 filtered_hosts.append(host)
         if len(filtered_hosts) == 0:
             raise ValueError('Ip address %s not in data base' % args.wbemserver)
+    elif args.target_id:
+        target = target_data[args.target_id]
+        filtered_hosts.append(target['IPAddress'])        
     else:
         filtered_hosts = hosts
 
