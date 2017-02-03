@@ -10,7 +10,7 @@ import os
 import sys as _sys
 import traceback
 import logging
-import datetime
+import time
 import argparse as _argparse
 from collections import namedtuple
 
@@ -95,7 +95,11 @@ def print_server_info(servers, user_data):
             brand = server.brand
             version = server.version
             interop_ns = server.interop_ns
-
+        disp_time = None
+        if server_tuple.time <= 60:
+            disp_time = "%.2f s" % (round(server_tuple.time, 1))
+        else:
+            disp_time = "%.2f m" % (server_tuple.time / 60)
         line = [target_id,
                 url,
                 brand,
@@ -103,7 +107,7 @@ def print_server_info(servers, user_data):
                 version,
                 interop_ns,
                 server_tuple.status,
-                server_tuple.time]
+                disp_time]
 
         table_data.append(line)
 
@@ -142,39 +146,41 @@ def explore_servers(target_data, host_list, args, logger=None):
         principal = target['Principal']
         product = target['Product']
         company_name = target['CompanyName']
-        log_info = 'Url=%s Product=%s Company=%s' % (url, product, company_name)
+        log_info = 'id=%s Url=%s Product=%s Company=%s' % (target_id, url,
+                                                           product,
+                                                           company_name)
 
-        # TODO too must swapping between entities.
+        # TODO too much swapping between entities.
         if target_data.disabled_record(target):
             s = ServerInfoTuple(url=url, server=None, status='DISABLE',
-                                target_id=target_id, time=None)
+                                target_id=target_id, time=0)
             servers.append(s)
             logger.info('Disabled %s ' % (log_info))
         else:
             logger.info('Open %s' % log_info)
-            start_time = datetime.datetime.now()
-            cmd_time = None
+            start_time = time.time()   # Scan start time
+            cmd_time = 0
             server = None
             try:
                 server = explore_server(url, principal, credential, args,
                                         logger)
-                cmd_time = datetime.datetime.now() - start_time
+                cmd_time = time.time() - start_time
                 s = ServerInfoTuple(url=url, server=server, status='OK',
                                     target_id=target_id, time=cmd_time)
                 servers.append(s)
                 logger.info('OK %s time %s' % (log_info, cmd_time))
             except FunctionTimeoutError as fte:
-                cmd_time = datetime.datetime.now() - start_time
-                logger.error('Timeout decorator exception:%s %s time %s' %
-                             (fte, log_info, cmd_time))
+                cmd_time = time.time() - start_time
+                logger.erro('Timeout decorator exception:%s %s time %s' %
+                            (fte, log_info, cmd_time))
                 err = 'FunctTo'
                 servers.append(ServerInfoTuple(url, server, target_id, err,
                                                cmd_time))
                 traceback.format_exc()
 
             except ConnectionError as ce:
-                cmd_time = datetime.datetime.now() - start_time
-                logger.error('ConnectionError %s exception:%s %s time %s' %
+                cmd_time = time.time() - start_time
+                logger.error('ConnectionError exception:%s %s time %s' %
                              (ce, log_info, cmd_time))
                 err = 'ConnErr'
                 servers.append(ServerInfoTuple(url, server, target_id, err,
@@ -182,8 +188,8 @@ def explore_servers(target_data, host_list, args, logger=None):
                 traceback.format_exc()
 
             except TimeoutError as to:
-                cmd_time = datetime.datetime.now() - start_time
-                logger.error('Timeout Error exception:%s  %s,'
+                cmd_time = time.time() - start_time
+                logger.error('Timeout Error exception:%s %s,'
                              ' time %s' % (to, log_info, cmd_time))
 
                 err = 'Timeout'
@@ -192,7 +198,7 @@ def explore_servers(target_data, host_list, args, logger=None):
                 traceback.format_exc()
 
             except Error as er:
-                cmd_time = datetime.datetime.now() - start_time
+                cmd_time = time.time() - start_time
                 logger.error('PyWBEM Error exception:%s %s time %s' %
                              (er, log_info, cmd_time))
                 err = 'PyWBMEr'
@@ -201,7 +207,7 @@ def explore_servers(target_data, host_list, args, logger=None):
                 traceback.format_exc()
 
             except Exception as ex:
-                cmd_time = datetime.datetime.now() - start_time
+                cmd_time = time.time() - start_time
                 logger.error('General Error: exception:%s %s time %s' %
                              (ex, log_info, cmd_time))
 
