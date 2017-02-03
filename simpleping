@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 """
-Provides a command line script for the simple ping function.
+Provides a command line script for the simple ping function to open the
+connection to a wbem server and test for a known class
 
 The simple ping function tests the server for a known class.
 
@@ -48,16 +49,17 @@ def main(prog):
     test_result = simpleping.test_server(verify_cert=opts.verify_cert)
 
     if test_result.code != 0:
-        print('%s Error Response, Exit code %s %s' % (simpleping.url,
+        print('%s Error Response, Exit code %s %s %s' % (simpleping.url,
                                                       test_result.code,
-                                                      test_result.type))
+                                                      test_result.type,
+                                                      test_result.exception))
     else:
         if opts.verbose:
             print('%s Return code = %s:%s in %s sec' % (simpleping.url,
                                                      test_result.type,
                                                      test_result.code,
                                                      test_result.execution_time))
-        print('')     # print an empty line if successful
+        print('Running')     # print the word 'Running' to match javaping
 
     return test_result.code
 

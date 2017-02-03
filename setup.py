@@ -68,7 +68,12 @@ setup(
         'six',
         'terminaltables',
         'scapy',
-        'pytest'],
+        'pytest',
+        'mysql-connector',
+        'configparser',
+        'click',
+        'click-repl',
+        'click-spinner'],
 
     # smipyping prereqs for 'develop' command.
     # TOD enable this. pywbem does in os_setup.py
@@ -92,8 +97,9 @@ setup(
 
     scripts=[
         'simpleping',
-        'userdata',
+        'targets',
         'explore',
         'serversweep',
-        'simplepingall']
+        'simplepingall',
+        'smicli']
     )

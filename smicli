@@ -1,0 +1,10 @@
+from __future__ import absolute_import
+
+import re
+from click_repl import register_repl
+import click
+from smipyping import smicli
+
+if __name__ == '__main__':
+    register_repl(smicli)
+    smicli()  #pylint: disable=no-value-for-parameter

@@ -3,24 +3,30 @@
 """
 Test the CSVUserData class.
 """
-
 from __future__ import absolute_import, print_function
+
+import os
 import unittest
 import six
 
-from smipyping import CsvUserData
+from smipyping import TargetsData
 
 # unimplemented = pytest.mark.skipif(True, reason="test not implemented")
 
-class ValidCSVTargetTableTests(unittest.TestCase):
-    def setUp(self):
-        self.target_table = CsvUserData('userdata_example.csv')
+TEST_CONFIG_FILE_NAME = 'testconfig.ini'
+SCRIPT_DIR = os.path.dirname(__file__)
 
-class CsvTargetTableTest(ValidCSVTargetTableTests):
+class ValidTargetTableTests(unittest.TestCase):
+    def setUp(self):
+        test_config_file = os.path.join(SCRIPT_DIR, TEST_CONFIG_FILE_NAME)
+        print('test_config_file %s' % test_config_file)
+        self.target_table = TargetsData.factory(test_config_file, 'csv', False)
+
+class TargetTableTest(ValidTargetTableTests):
     """Class for simple tests of CSVUserData class."""
 
     def test_get_table(self):
-        """Test getting the CsvUserData object."""
+        """Test getting the object."""
         self.assertTrue(len(self.target_table) != 0)
 
     def test_display_table(self):
@@ -55,7 +61,7 @@ class CsvTargetTableTest(ValidCSVTargetTableTests):
 
     def test_get_target_table_host(self):
         host_id = ['10.1.132.110', 5989]
-        result_list = self.target_table.get_user_data_host(host_id)
+        result_list = self.target_table.get_targets_host(host_id)
 
         self.assertTrue(result_list is not None)
 

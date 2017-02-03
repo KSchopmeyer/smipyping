@@ -1,0 +1,428 @@
+#!/usr/bin/perl
+#
+# Query the SMIStatus database and print a report giving percent of uptime for all enabled
+# providers.
+#
+#require "../../lib.pl";
+use DBI;
+use Date::Calc qw(:all);
+use Getopt::Std;
+use Mail::Sendmail;
+
+$ProgramID = 11;
+$ProgramName = "SMI Lab 16";
+
+$Hourly = 60;
+$HalfHour = 30;
+$Quarterly = 15;
+
+$Msg = "";
+
+getopts('vhde:m:');
+
+if($opt_h) {
+  print <<EOF;
+$0 - Create historical report from CIM provider database
+
+$0 [-h] [-v] [-e <target email_address>]
+
+where:
+  -e = email address report is emailed to (e.g. smilab\@snia.org)
+  -h = this help
+	-m = Add message to email
+  -v = verbose
+EOF
+  exit;
+}
+
+#################
+### Functions ###
+#################
+
+sub db_connect {
+
+  my $user      = "root";
+  my $pw        = "a2siem";
+  my $host_name = "10.1.134.124";
+  my $db_name   = "SMIStatus";
+  my $dsn       = "DBI:mysql:host=$host_name;database=$db_name";
+
+  return (DBI->connect($dsn, $user, $pw, {PrintError => 0, RaiseError => 1}));
+}
+
+###
+### Sort Routines
+###
+sub numerically {$a <=> $b};
+sub ByCompany { $Entry{$a}{'CompanyName'} cmp $Entry{$b}{'CompanyName'} };
+sub ByCompany1 {
+	$Entry{$a}{'CompanyName'} cmp $Entry{$b}{'CompanyName'} ||
+	$Entry{$a}{'Product'} cmp $Entry{$b}{'Product'}
+};
+sub ByPercentage {
+  $Entry{$a}{'Today'} <=> $Entry{$b}{'Today'} ||
+  $Entry{$a}{'Week'} <=> $Entry{$b}{'Week'} ||
+  $Entry{$a}{'Program'} <=> $Entry{$b}{'Program'}
+};
+
+(undef,$min,$hour,$mday,$mon,$year,undef,undef,undef) = localtime(time);
+$year += 1900;
+$mon++;
+
+$NowDays = Date_to_Days($year, $mon, $mday);
+$nmon = $mon;
+$nmday = $mday;
+if($mon < 10) {$mon = "0" . $mon};
+if($mday < 10) {$mday = "0" . $mday};
+if($hour < 10) {$hour = "0" . $hour};
+if($min < 10) {$min = "0" . $min};
+$Now = "$year-$mon-$mday $hour:$min";
+$Now1 = "$year-$nmon-$mday";
+
+######
+### Get Company data from database
+######
+my $dbh = &db_connect;
+my $sth = $dbh->prepare("SELECT *
+                           FROM Companies
+                        ");
+
+$sth->execute();
+
+while(my $results = $sth->fetchrow_hashref()) {
+  $Companies{$$results{'CompanyID'}}{'CompanyName'} = $$results{'CompanyName'};
+}
+
+######
+### Get list of SMI Provider Targets
+######
+my $sth = $dbh->prepare("SELECT *
+                           FROM Targets
+                           WHERE ScanEnabled = 'Enabled'
+                        ");
+
+$sth->execute();
+
+while(my $results = $sth->fetchrow_hashref()) {
+  foreach $Key (keys %{$results}) {
+    if($Key eq 'TargetID') {
+      next;
+    } elsif($Key eq 'CompanyID') {
+      $Targets{$$results{'TargetID'}}{'CompanyName'} = $Companies{$$results{'CompanyID'}}{'CompanyName'};
+    } else {
+      $Targets{$$results{'TargetID'}}{$Key} = $$results{$Key};
+    }
+  }
+}
+
+######
+### Get list of Users
+######
+my $sth = $dbh->prepare("SELECT *
+                           FROM Users
+                        ");
+
+$sth->execute();
+
+while(my $results = $sth->fetchrow_hashref()) {
+  foreach $Key (keys %{$results}) {
+    if($Key eq 'UserID') {
+      next;
+    } else {
+      $Users{$$results{'UserID'}}{$Key} = $$results{$Key};
+    }
+  }
+}
+
+######
+### Get Provider status from today
+###
+### Find all scans that were performed today for all targets
+######
+my $sth = $dbh->prepare("SELECT *
+                           FROM Pings
+                          WHERE YEAR(Timestamp) = '$year'
+                            AND MONTH(Timestamp) = '$mon'
+                            AND DAYOFMONTH(Timestamp) = '$mday'
+                        ");
+
+$sth->execute();
+
+while(my $results = $sth->fetchrow_hashref()) {
+  ######
+  ### Only track targets that are scan-enabled
+  ######
+  if($Targets{$$results{'TargetID'}}{'ScanEnabled'} eq "Enabled") {
+    ######
+    ### If this is the first time we've seen this target, populate
+    ### %Entry hash with general target information
+    ######
+    if(!exists($Entry{$$results{'TargetID'}}{'CompanyName'})) {
+      $Entry{$$results{'TargetID'}}{'CompanyName'} = $Targets{$$results{'TargetID'}}{'CompanyName'};
+      $Entry{$$results{'TargetID'}}{'IPAddress'}   = $Targets{$$results{'TargetID'}}{'IPAddress'};
+      $Entry{$$results{'TargetID'}}{'Product'}     = $Targets{$$results{'TargetID'}}{'Product'};
+      $Entry{$$results{'TargetID'}}{'SMIVersion'}     = $Targets{$$results{'TargetID'}}{'SMIVersion'};
+      $Entry{$$results{'TargetID'}}{'NotifyUsers'} = $Targets{$$results{'TargetID'}}{'NotifyUsers'};
+      $Entry{$$results{'TargetID'}}{'DayOK'} = 0;
+    }
+    ######
+    ### Keep track of the number of times this target was scanned,
+    ### regardless of results
+    ######
+    $Entry{$$results{'TargetID'}}{'DayCount'}++;
+  
+    ######
+    ### Now track the scans that returned an OK status for the target
+    ######
+    if($$results{'Status'} eq 'OK') {
+      $Entry{$$results{'TargetID'}}{'DayOK'}++;
+    }
+    ### Keep track of which files the data came from
+    ### FromFile-2004-04-25 08:00:00
+    if(!exists($DailyFiles{$$results{'Timestamp'}})) {
+      $DailyFiles{$$results{'Timestamp'}} = 1;
+    }
+  }
+}
+
+######
+### Track provider status for the entire program (e.g. SMI Lab 11)
+######
+
+my $sth = $dbh->prepare("SELECT StartDate, EndDate
+                           FROM Program
+                          WHERE ProgramID = '$ProgramID'
+                        ");
+$sth->execute();
+
+######
+### Find the starting and ending dates of the program
+######
+while(my $results = $sth->fetchrow_hashref()) {
+  $Start = $$results{'StartDate'};
+  $End = $$results{'EndDate'};
+}
+
+######
+### Find all scans that were performed over the entire
+### program for all targets
+######
+my $sth = $dbh->prepare("SELECT * FROM Pings
+                          WHERE Timestamp BETWEEN '$Start' AND '$End'
+                        ");
+
+$sth->execute();
+
+while(my $results = $sth->fetchrow_hashref()) {
+  ######
+  ### Skip targets that aren't scan-enabled
+  ######
+  if($Targets{$$results{'TargetID'}}{'ScanEnabled'} ne "Enabled") {
+    next;
+  }
+
+  ######
+  ### Keep track of the number of times this target was scanned,
+  ### regardless of results
+  ######
+  $Entry{$$results{'TargetID'}}{'ProgramCount'}++;
+
+  ######
+  ### Keep track of the number of times this target returned
+  ### an OK status
+  ######
+  if($$results{'Status'} eq 'OK') {
+    $Entry{$$results{'TargetID'}}{'ProgramOK'}++;
+  }
+
+  ### Keep track of which files the data came from
+  if(!exists($ProgFiles{$$results{'Timestamp'}})) {
+    $ProgFiles{$$results{'Timestamp'}} = 1;
+  }
+}
+
+foreach $TargetID (keys %Entry) {
+  ######
+  ### Skip CTP Test Machines
+  ######
+  if($Entry{$TargetID}{'CompanyName'} eq 'SMI-CTP') {
+    next;
+  }
+
+  ######
+  ### Determine the Daily percentage of successful scans for all targets
+  #$DayCount = scalar(keys %DailyFiles);
+  $DayCount = $Entry{$TargetID}{'DayCount'};
+  if($Entry{$TargetID}{'DayOK'} == 0) {
+    $Entry{$TargetID}{'Today'} = 0;
+  } else {
+    $Entry{$TargetID}{'Today'} = int(($Entry{$TargetID}{'DayOK'}/$DayCount) * 100);
+  }
+
+  #$DayCount = scalar(keys %DailyFiles);
+  #if($Entry{$TargetID}{'DayOK'} == 0) {
+  #  $Entry{$TargetID}{'Today'} = 0;
+  #} else {
+  #  $Entry{$TargetID}{'Today'} = int(($Entry{$TargetID}{'DayOK'}/$DayCount) * 100);
+  #}
+
+  ### Program Percentage
+  #$ProgramCount = scalar(keys %ProgFiles);
+  $ProgramCount = $Entry{$TargetID}{'ProgramCount'};
+  if($Entry{$TargetID}{'ProgramOK'} == 0) {
+    $Entry{$TargetID}{'Program'} = 0;
+  } else {
+    $Entry{$TargetID}{'Program'} = int(($Entry{$TargetID}{'ProgramOK'}/$ProgramCount) * 100);
+  }
+}
+
+foreach $TargetID (keys %Entry) {
+  #print "$TargetID-$Entry{$TargetID}{'CompanyName'}-$Entry{$TargetID}{'IPAddress'}-$Entry{$TargetID}{'NotifyUsers'}\n";
+  @Contacts = split(',', $Entry{$TargetID}{'NotifyUsers'});
+  if($#Contacts < 0) {
+    $Entry{$TargetID}{'Contact'} = "Unassigned";
+  } elsif($#Contacts == 0) {
+    $Entry{$TargetID}{'Contact'} = $Users{$Contacts[0]}{'Email'};
+  } else {
+    $Entry{$TargetID}{'Contact'} = "";
+    for($Contact = 0; $Contact <= $#Contacts; $Contact++) {
+      if($Contact == $#Contacts) {
+        $Entry{$TargetID}{'Contact'} .= "$Users{$Contacts[$Contact]}{'Email'}";
+      } else {
+        $Entry{$TargetID}{'Contact'} .= "$Users{$Contacts[$Contact]}{'Email'}<br> ";
+      }
+    }
+    #foreach $Contact (@Contacts) {
+    #  $Entry{$TargetID}{'Contact'} .= "$Users{$Contact}{'Email'}\n";
+    #}
+    chomp $Entry{$TargetID}{'Contact'};
+  }
+}
+
+if($opt_v) {
+  foreach $TargetID (sort ByPercentage keys %Entry) {
+    print "$Entry{$TargetID}{'CompanyName'} ($TargetID):\n";
+    foreach $Key (sort keys %{$Entry{$TargetID}}) {
+      print "  $Key: $Entry{$TargetID}{$Key}\n";
+    }
+    print "  Global DayCount: $DayCount\n";
+    print "  Global ProgramCount: $ProgramCount\n";
+  }
+  exit;
+}
+
+###
+### Email Report
+###
+if($opt_e) {
+  %mail = (
+    from           => 'tcengineer@snia.net',
+    to             => "$opt_e",
+    subject        => "Latest SMI Lab Provider Historical Report",
+    'content-type' => 'text/html; charset="iso-8859-1"',
+  );
+
+  $mail{body} = <<EOB;
+<html>
+  <head>
+    <style>
+body {
+  font-family: Trebuchet, sans-serif;
+  font-size: 0.75em;
+}
+
+td {
+	padding-left: .25em;
+	padding-right: .25em;
+}
+    </style>
+  </head>
+<body>
+EOB
+
+### Add message to email
+if($opt_m) {
+	$mail{body} .= <<EOB;
+	<p>${opt_m}</p><br>
+EOB
+}
+
+  $mail{body} .= <<EOB;
+	<font face="arial">
+  <center>
+  <table align="center" style="border-width: 1px; border-collapse: collapse;" border=1 cellpadding=2>
+    <tr>
+      <td align="center" colspan=7>
+        <strong>$ProgramName Provider Uptime Status</strong><br>
+        $Now<br>
+        Program Start: $Start<br>
+      </td>
+    </tr>
+    <tr>
+      <td bgcolor="#775da1"><strong><font color="#ffffff">Company</font></strong></td>
+      <td bgcolor="#775da1"><strong><font color="#ffffff">Product</font></strong></td>
+      <td bgcolor="#775da1"><strong><font color="#ffffff">SMI Version</font></strong></td>
+      <td bgcolor="#775da1"><strong><font color="#ffffff">IP Address</font></strong></td>
+      <td bgcolor="#775da1"><strong><font color="#ffffff">Today %</font></strong></td>
+      <td bgcolor="#775da1"><strong><font color="#ffffff">Program %</font></strong></td>
+      <td bgcolor="#775da1"><strong><font color="#ffffff">Contact(s)<font></strong></td>
+    </tr>
+EOB
+
+
+  foreach $TargetID (sort ByCompany1 keys %Entry) {
+    if($Entry{$TargetID}{'CompanyName'} eq 'SMI-CTP') {
+      next;
+    } else {
+      $mail{body} .= <<EOB;
+    <tr>
+      <td>$Entry{$TargetID}{'CompanyName'}</td>
+      <td>$Entry{$TargetID}{'Product'}</td>
+      <td>$Entry{$TargetID}{'SMIVersion'}</td>
+      <td>$Entry{$TargetID}{'IPAddress'}</td>
+      <td align="right">$Entry{$TargetID}{'Today'}%</td>
+      <td align="right">$Entry{$TargetID}{'Program'}%</td>
+      <td>$Entry{$TargetID}{'Contact'}</td>
+    </tr>
+EOB
+    }
+  }
+  $mail{body} .= <<EOB;
+  </table>
+</font>
+</body>
+</html>
+EOB
+
+	sendmail(%mail) or die $Mail::Sendmail::error;
+	#print "OK. Log says:\n", $Mail::Sendmail::log;
+}
+
+### Debug
+if($opt_d) {
+  $Cnt = 1;
+  #foreach $TargetID (keys %Entry) {
+  foreach $TargetID (sort ByPercentage keys %Entry) {
+    print "Cnt: $Cnt - TargetID: $TargetID\n";
+    foreach $Var (keys %{$Entry{$TargetID}}) {
+      print "$Var: $Entry{$TargetID}{$Var}\n";
+    }
+    print "---------------------------------------------------------\n";
+    $Cnt++;
+  }
+  exit;
+}
+
+if(0) {
+print "                         $ProgramName Provider Uptime Status\n\n";
+print "                                  $Now\n";
+print "                             Program Start: $Start\n";
+
+foreach $TargetID (sort ByPercentage keys %Entry) {
+  ### Skip SMI-CTP Machines
+  if($Entry{$TargetID}{'CompanyName'} eq 'SMI-CTP') {
+    next;
+  }
+  write STDOUT;
+}
+}

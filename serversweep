@@ -13,7 +13,8 @@ from __future__ import absolute_import
 import sys
 import os
 from smipyping import create_sweep_argparser, parse_sweep_args, \
-                      sweep_servers, CsvUserData
+                      sweep_servers, TargetsData
+from smipyping import DB_TYPE
 
 def main(prog_name):
     """
@@ -23,14 +24,19 @@ def main(prog_name):
     args = parse_sweep_args(argparser)
 
     # TODO clean up user_data
-    user_data = None
-    if args.csvfile is not None:
-        user_data = CsvUserData(args.csvfile)
-    user_data = None if args.csvfile is None else CsvUserData(args.csvfile)
+    provider_data = None
+    if args.config_file is not None:
+        provider_data = TargetsData.factory(args.config_file, DB_TYPE,
+                                            args.verbose)
+    else:
+        provider_data = None
 
     # Sweep the servers and display result
+    print('Start sweep for subnets %s, port %s, range %s:%s' %
+          (args.subnet, args.port, args.startip, args.endip))
+    print('This may take several minutes')
     sweep_servers(args.subnet, args.startip, args.endip, args.port,
-                  args.no_threads, user_data, args.verbose)
+                  args.no_threads, provider_data, args.verbose)
 
 if __name__ == '__main__':
     sys.exit(main(os.path.basename(sys.argv[0])))
