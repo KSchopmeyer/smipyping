@@ -97,7 +97,6 @@ setup(
 
     scripts=[
         'simpleping',
-        'targets',
         'explore',
         'serversweep',
         'simplepingall',
