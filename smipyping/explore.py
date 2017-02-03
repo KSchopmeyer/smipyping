@@ -19,7 +19,7 @@ from pywbem import WBEMConnection, WBEMServer, ValueMapping, Error, \
 from ._cliutils import SmartFormatter as _SmartFormatter
 # TODO from ._cliutils import check_negative_int
 from ._targetdata import TargetsData
-from .functiontimeout import FunctionTimeoutError, functiontimeout
+from .functiontimeout import FunctionTimeoutError
 from ._terminaltable import print_terminal_table, fold_cell
 from .config import DEFAULT_CONFIG_FILE
 
@@ -36,9 +36,9 @@ class SMIWBEMServer(WBEMServer):
         super(SMIWBEMServer, self).__init__(conn)
 
 
-# named tuple for the info about opened servers.
+# named tuple for information about opened servers.
 ServerInfoTuple = namedtuple('ServerInfoTuple',
-                             ['url', 'server', 'user_id', 'status'])
+                             ['url', 'server', 'user_id', 'status', 'time'])
 
 
 def print_smi_profile_info(servers, user_data):
@@ -79,7 +79,8 @@ def print_server_info(servers, user_data):
     """
 
     table_data = []
-    tbl_hdr = ['Id', 'Url', 'Brand', 'Company', 'Vers', 'Interop_ns', 'Status']
+    tbl_hdr = ['Id', 'Url', 'Brand', 'Company', 'Vers', 'Interop_ns',
+               'Status', 'time']
     table_data.append(tbl_hdr)
     for server_tuple in servers:
         url = server_tuple.url
@@ -101,7 +102,8 @@ def print_server_info(servers, user_data):
                 entry['CompanyName'],
                 version,
                 interop_ns,
-                server_tuple.status]
+                server_tuple.status,
+                server_tuple.time]
 
         table_data.append(line)
 
@@ -127,71 +129,84 @@ def explore_servers(target_data, host_list, args, logger=None):
     """
     servers = []
     for host_addr in host_list:
-        entry = target_data.get_dict_for_host(host_addr)
-        user_id = entry['Id']
-        if not entry:
-            raise ValueError('Error with host %s getting from userdata' %
+        target = target_data.get_dict_for_host(host_addr)
+        user_id = target['TargetID']
+        if not target:
+            raise ValueError('Error with host %s getting from targetdata' %
                              host_addr)
 
-        url = '%s://%s' % (entry['Protocol'], entry['IPAddress'])
-        credential = entry['Credential']
-        principal = entry['Principal']
+        # get variables for the connection and logs
+        url = '%s://%s' % (target['Protocol'], target['IPAddress'])
+        credential = target['Credential']
+        principal = target['Principal']
+        product = target['Product']
+        company_name = target['CompanyName']
+        log_info = 'Url=%s Product=%s Company=%s' % (url, product, company_name)
 
-        logger.info('Open %s Product=%s Company=%s' % (url, entry['Product'],
-                                                       entry['CompanyName']))
-        start_time = datetime.datetime.now()
-        server = None
-        try:
-            server = explore_server(url, principal, credential, args, logger)
-            s = ServerInfoTuple(url=url, server=server, status='OK',
-                                user_id=user_id)
+        if target.disabled_record(user_id):
+            s = ServerInfoTuple(url=url, server=None, status='DISABLE',
+                                user_id=user_id, time=None)
             servers.append(s)
-            dt = datetime.datetime.now() - start_time
-            logger.info(
-                'OK %s Product %s Company%s time %s' % (url, entry['Product'],
-                                                        entry['CompanyName'],
-                                                        dt))
+            logger.info('Disabled %s ' % (log_info))
+        else:
+            logger.info('Open %s' % log_info)
+            start_time = datetime.datetime.now()
+            cmd_time = None
+            server = None
+            try:
+                server = explore_server(url, principal, credential, args,
+                                        logger)
+                cmd_time = datetime.datetime.now() - start_time
+                s = ServerInfoTuple(url=url, server=server, status='OK',
+                                    user_id=user_id, time=cmd_time)
+                servers.append(s)
+                logger.info('OK %s time %s' % (log_info, cmd_time))
+            except FunctionTimeoutError as fte:
+                cmd_time = datetime.datetime.now() - start_time
+                logger.error('Timeout decorator exception:%s %s time %s' %
+                             (fte, log_info, cmd_time))
+                err = 'FunctTo'
+                servers.append(ServerInfoTuple(url, server, user_id, err,
+                                               cmd_time))
+                traceback.format_exc()
 
-        except FunctionTimeoutError as fte:
+            except ConnectionError as ce:
+                cmd_time = datetime.datetime.now() - start_time
+                logger.error('ConnectionError %s exception:%s %s time %s' %
+                             (ce, log_info, cmd_time))
+                err = 'ConnErr'
+                servers.append(ServerInfoTuple(url, server, user_id, err,
+                                               cmd_time))
+                traceback.format_exc()
 
-            logger.error('Timeout decorator exception:%s Product=%s Company=%s'
-                         ' %s' %
-                         (url, entry['Product'], entry['CompanyName'], fte))
-            err = 'FunctTo'
-            servers.append(ServerInfoTuple(url, server, user_id, err))
-            traceback.format_exc()
+            except TimeoutError as to:
+                cmd_time = datetime.datetime.now() - start_time
+                logger.error('Timeout Error exception:%s  %s,'
+                             ' time %s' % (to, log_info, cmd_time))
 
-        except ConnectionError as ce:
-            logger.error('ConnectionError exception:%s Product=%s Company=%s'
-                         ' %s' %
-                         (url, entry['Product'], entry['CompanyName'], ce))
-            err = 'ConnErr'
-            servers.append(ServerInfoTuple(url, server, user_id, err))
-            traceback.format_exc()
+                err = 'Timeout'
+                servers.append(ServerInfoTuple(url, server, user_id, err,
+                                               cmd_time))
+                traceback.format_exc()
 
-        except TimeoutError as to:
-            logger.error('Timeout Error exception:%s Product=%s Company=%s %s' %
-                         (url, entry['Product'], entry['CompanyName'], to))
+            except Error as er:
+                cmd_time = datetime.datetime.now() - start_time
+                logger.error('PyWBEM Error exception:%s %s time %s' %
+                             (er, log_info, cmd_time))
+                err = 'PyWBMEr'
+                servers.append(ServerInfoTuple(url, server, user_id, err,
+                                               cmd_time))
+                traceback.format_exc()
 
-            err = 'Timeout'
-            servers.append(ServerInfoTuple(url, server, user_id, err))
-            traceback.format_exc()
+            except Exception as ex:
+                cmd_time = datetime.datetime.now() - start_time
+                logger.error('General Error: exception:%s %s time %s' %
+                             (ex, log_info, cmd_time))
 
-        except Error as er:
-            logger.error('PyWBEM Error exception:%s Product=%s Company=%s %s' %
-                         (url, entry['Product'], entry['CompanyName'], er))
-            err = 'PyWBMEr'
-            servers.append(ServerInfoTuple(url, server, user_id, err))
-            traceback.format_exc()
-
-        except Exception as ex:
-            logger.error('General Error exception:%s Product=%s  Company=%s'
-                         ' %s' %
-                         (url, entry['Product'], entry['CompanyName'], ex))
-
-            err = 'GenErr'
-            servers.append(ServerInfoTuple(url, server, user_id, err))
-            traceback.format_exc()
+                err = 'GenErr'
+                servers.append(ServerInfoTuple(url, server, user_id, err,
+                                               cmd_time))
+                traceback.format_exc()
     return servers
 
 
@@ -199,6 +214,8 @@ def explore_servers(target_data, host_list, args, logger=None):
 def explore_server(server_url, principal, credential, args, logger=None):
     """ Explore a cim server for characteristics defined by
         the server class including namespaces, brand, version, etc. info.
+
+        Return: The server object that was created
     """
 
     if args.verbose:

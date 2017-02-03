@@ -17,37 +17,10 @@ from collections import OrderedDict
 from configparser import ConfigParser
 import six
 from mysql.connector import MySQLConnection, Error
-
-
 from smipyping._terminaltable import print_terminal_table, fold_cell
+from ._configfile import read_config
 
 __all__ = ['TargetsData']
-
-
-def read_config(filename, section):
-    """
-    Read configuration file for section and return a dictionary object if that
-    section is found
-
-    :param filename: name of the configuration file
-    :param section: name of the section (ex. mysql)
-    :return: a dictionary of database parameters
-    """
-    # create parser and read ini configuration file
-    parser = ConfigParser()
-    parser.read(filename)
-
-    # get section, default to mysql
-    db = {}
-    if parser.has_section(section):
-        items = parser.items(section)
-        for item in items:
-            db[item[0]] = item[1]
-    else:
-        raise TypeError('{0} not found in the {1} file'.format(section,
-                                                               filename))
-
-    return db
 
 
 class TargetsData(object):

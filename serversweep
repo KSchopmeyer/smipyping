@@ -32,6 +32,9 @@ def main(prog_name):
         provider_data = None
 
     # Sweep the servers and display result
+    print('Start sweep for subnets %s, port %s, range %s:%s' %
+          (args.subnet, args.port, args.startip, args.endip))
+    print('This may take several minutes')
     sweep_servers(args.subnet, args.startip, args.endip, args.port,
                   args.no_threads, provider_data, args.verbose)
 

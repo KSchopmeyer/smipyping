@@ -182,9 +182,9 @@ def print_open_hosts_report(open_hosts, total_time, provider_data, subnets,
     print("=" * 50)
     execution_time = ''
     if total_time <= 60:
-        execution_time = "%s sec" % (round(total_time, 1))
+        execution_time = "%.2f sec" % (round(total_time, 1))
     else:
-        execution_time = "%s min" % (total_time / 60)
+        execution_time = "%.2f min" % (total_time / 60)
 
     range_txt = '%s:%s' % (startip, endip)
 

@@ -36,7 +36,8 @@ from ._cliutils import SmartFormatter as _SmartFormatter
 
 from .ping import ping_host
 
-from .config import PING_TEST_CLASS, PING_TIMEOUT, DEFAULT_CONFIG_FILE
+from .config import PING_TEST_CLASS, PING_TIMEOUT, DEFAULT_CONFIG_FILE, \
+    DB_TYPE
 
 from ._targetdata import TargetsData
 
@@ -466,7 +467,7 @@ Examples:\n
             self.user = opts.user
             self.password = opts.password
         if opts.target_id:
-            target_data = TargetsData.factory(opts.config_file, 'csv',
+            target_data = TargetsData.factory(opts.config_file, DB_TYPE,
                                               opts.verbose)
             if opts.target_id in target_data:
                 self.set_from_userrecord(opts.target_id, target_data)

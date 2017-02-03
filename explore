@@ -12,10 +12,10 @@ from __future__ import absolute_import
 
 import sys as _sys
 import os
-from smipyping import create_explore_parser, CsvUserData, \
+from smipyping import create_explore_parser, TargetsData, \
                       create_explore_logger, \
                       explore_servers, print_server_info, \
-                      print_smi_profile_info
+                      print_smi_profile_info, DB_TYPE
 
 def main(prog):
     logfile = '%s.log' % prog
@@ -28,9 +28,9 @@ def main(prog):
         print('args %s' % args)
 
     logger = create_explore_logger(prog, logfile)
+    target_data = TargetsData.factory(args.config_file, DB_TYPE, args.verbose)
 
-    user_data = CsvUserData(args.csvfile)
-    hosts = user_data.get_hostid_list()
+    hosts = target_data.get_hostid_list()
 
     filtered_hosts = []
 
@@ -44,14 +44,14 @@ def main(prog):
     else:
         filtered_hosts = hosts
 
-    servers = explore_servers(user_data, filtered_hosts, args, logger)
+    servers = explore_servers(target_data, filtered_hosts, args, logger)
 
     # print results
-    print_server_info(servers, user_data)
+    print_server_info(servers, target_data)
 
     # repeat to get smi info.
 
-    print_smi_profile_info(servers, user_data)
+    print_smi_profile_info(servers, target_data)
 
     return 0
 
