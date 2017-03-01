@@ -61,8 +61,7 @@ def main(prog):
 
     targets = set(targets)
 
-    print('targets after set %s' % targets)
-        
+    print('targets after set %s' % targets)        
 
     ping = False if args.no_ping else True
 
