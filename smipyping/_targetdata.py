@@ -174,19 +174,22 @@ class TargetsData(object):
 
         return self.targetsdict[requested_id]
 
-    def get_dict_for_host(self, host):
+    def get_target_for_host(self, target_addr):
         """
-        For a host address, get the dictionary record .
+        For a host address, get the targets dictionary record if it exists.
 
-        Return: None
+        Parameters:
+            target_addr: hostname/IPAddress of target
+
+        Returns: None if not found or possibly multiple target_ids
 
         If not found. Does not work completely because of multiple IPs
         """
-        for record_id, value in self.targetsdict.iteritems():
+        targets = []
+        for target_id, value in self.targetsdict.iteritems():
             if value['IPAddress'] == host:
-                return value
-
-        return None
+                targets.append(target_id)
+        return targets
 
     def filter_targets(self, ip_filter=None, company_name_filter=None):
         """
@@ -247,7 +250,7 @@ class TargetsData(object):
                 line.append('%s' % record[name])
         return line
 
-    def disabled_record(self, target_record):
+    def disabled_target(self, target_record):
         """If record disabled, return true, else return false."""
         val = target_record['ScanEnabled'].lower()
         if val == 'enabled':

@@ -31,10 +31,11 @@ def smicli(ctx, config_file, verbose):
     General command line script for smipyping.  This script executes a number
     of subcommands to:
 
-        * explore one or more smi servers for basic WBEM information and
+    \b
+        * Explore one or more smi servers for basic WBEM information and
           additional information specific to SMI.
           
-        
+     \b   
         * Manage a database that defines smi servers. It supports two forms
           of the data base, sql database and csv file.
 

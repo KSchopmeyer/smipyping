@@ -50,7 +50,9 @@ def main(prog):
     else:
         filtered_hosts = hosts
 
-    servers = explore_servers(target_data, filtered_hosts, args, logger)
+    ping = False if args.no_ping else True
+
+    servers = explore_servers(target_data, filtered_hosts, args, ping, logger)
 
     # print results
     print_server_info(servers, target_data)

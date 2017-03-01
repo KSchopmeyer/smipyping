@@ -1,22 +1,23 @@
 # ------------------------------------------------------------------------------
-# Makefile for smipyping
+# Makefile for smipyping project
 #
-# Supported platforms for this makefile:
-#   Linux
-#   OS-X
-#   Windows (with CygWin, MinGW, etc.)
-#
-# Prerequisite commands for this makefile:
-#   make
-#   bash, sh, rm, mv, mkdir, echo
-#   find, xargs, grep, sed, tar
-#   python (Some active Python version, virtualenv is supported)
-#   pip (in the active Python environment)
-#
-# Additional prerequisites for development and for running some parts of this
-# makefile will be installed by 'make develop'.
-#
-# Prerequisites for usage will be installed by 'make install'.
+# Basic prerequisites for running this Makefile, to be provided manually:
+#   One of these OS platforms:
+#     Windows with CygWin
+#     Linux (any)
+#     OS-X
+#   These commands on all OS platforms:
+#     make (GNU make)
+#     bash
+#     rm, mv, find, xargs, tee
+#     python (This Makefile uses the active Python environment, virtual Python
+#        environments are supported)
+#     pip (in the active Python environment)
+#     twine (in the active Python environment)
+#   These commands on Linux and OS-X:
+#     uname
+# Additional prerequisites for running this Makefile are installed by running:
+#   make develop
 # ------------------------------------------------------------------------------
 
 # Determine OS platform make runs on
@@ -46,12 +47,15 @@ python_mn_version := $(shell python -c "import sys; sys.stdout.write('%s%s'%sys.
 # Directory for the generated distribution files
 dist_dir := dist
 
-# Distribution archives
+# Distribution archives (as built by setup.py)
 bdist_file := $(dist_dir)/$(package_name)-$(package_version)-py2.py3-none-any.whl
 sdist_file := $(dist_dir)/$(package_name)-$(package_version).tar.gz
 
-dist_files := $(bdist_file) $(sdist_file)
+# Windows installable (as built by setup.py)
+win64_dist_file := $(dist_dir)/$(package_name)-$(package_version).win-amd64.exe
 
+# dist_files := $(bdist_file) $(sdist_file) $(win64_dist_file)
+dist_files := $(bdist_file) $(sdist_file)
 
 # Directory for generated API documentation
 doc_build_dir := build_doc
@@ -154,6 +158,10 @@ develop:
 
 .PHONY: build
 build: $(bdist_file) $(sdist_file)
+	@echo '$@ done.'
+
+.PHONY: buildwin
+buildwin: $(win64_dist_file)
 	@echo '$@ done.'
 
 .PHONY: builddoc

@@ -50,18 +50,18 @@ from __future__ import absolute_import
 
 import sys
 
-from .ping import *
+from ._ping import *
 from .config import *
 from ._targetdata import *
-from .simpleping import *
-from .explore import *
-from .serversweep import *
+from ._simpleping import *
+from ._explore import *
+from ._serversweep import *
 # TODO should not need this
 from ._cliutils import *
 from .smicli import *
 from ._cmd_database import *
 #from ._cmd_providers import *
-from .targetdatacli import *
+from ._targetdatacli import *
 from ._scanport import *
 
 from ._version import __version__

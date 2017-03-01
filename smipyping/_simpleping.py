@@ -34,7 +34,7 @@ from pywbem import WBEMConnection, ConnectionError, Error, TimeoutError, \
     CIMError
 from ._cliutils import SmartFormatter as _SmartFormatter
 
-from .ping import ping_host
+from ._ping import ping_host
 
 from .config import PING_TEST_CLASS, PING_TIMEOUT, DEFAULT_CONFIG_FILE, \
     DB_TYPE
@@ -197,6 +197,7 @@ class SimplePing(object):
             exception=exception,
             execution_time=str(datetime.datetime.now() - start_time))
 
+    # TODO move this and corresponding simple_ping into ping iteslf.
     def ping_server(self):
         """
         Get the netloc from the url and ping the server.

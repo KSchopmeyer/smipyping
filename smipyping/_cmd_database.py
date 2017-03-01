@@ -86,8 +86,9 @@ def database_disable(context, providerid, enable, **options):
 
 
 def cmd_database_disable(context, providerid, enable, **options):
-        """Display the information fields for the providers dictionary."""
+    """Display the information fields for the providers dictionary."""
 
+    try:
         host_record = context.provider_data.get_dict_record(providerid)
 
         # TODO add test to see if already in correct state
@@ -99,13 +100,17 @@ def cmd_database_disable(context, providerid, enable, **options):
         else:
             print('Id %s invalid or not in table' % providerid)
 
+    except Exception as ex:
+        raise click.ClickException("%s: %s" % (ex.__class__.__name__, ex))    
+
 
 def cmd_database_info(context):
-        """Display information on the providers config anddata file."""
+        """Display information on the providers config and data file."""
 
         print('config file:%s\ndatabase type: %s' %
               (context.provider_data.filename, context.provider_data.type_))
         info_dict = context.provider_data.db_info()
+        
         for key in info_dict:
             print('  %s; %s' % (key, info_dict[key]))
 
@@ -127,8 +132,9 @@ def cmd_database_get(context, recordid, options):
                 print('%s: %s' % (key, provider_record[key]))
 
         except KeyError as ke:
-            print('record id %s invalid.' % recordid)
-            # TODO what should we do with error at this point???
+            print('record id %s invalid for this database.' % recordid)
+            raise click.ClickException("%s: %s" % (er.__class__.__name__, er))
+
 
         except Exception as ex:
             raise click.ClickException("%s: %s" % (ex.__class__.__name__, ex))
@@ -141,5 +147,6 @@ def cmd_database_list(context, fields, company, options):
     show.append('TargetID')
     try:        
         context.provider_data.display_all(list(fields), company)
+        
     except Exception as ex:
         raise click.ClickException("%s: %s" % (ex.__class__.__name__, ex))
