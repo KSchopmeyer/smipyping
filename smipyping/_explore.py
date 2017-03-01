@@ -23,7 +23,7 @@ from ._targetdata import TargetsData
 from ._functiontimeout import FunctionTimeoutError
 from ._terminaltable import print_terminal_table, fold_cell
 from ._ping import ping_host
-from .config import DEFAULT_CONFIG_FILE, PING_TIMEOUT
+from .config import DEFAULT_CONFIG_FILE, PING_TIMEOUT, DB_TYPE
 
 __all__ = ['Explorer', ]
 
@@ -35,17 +35,17 @@ ServerInfoTuple = namedtuple('ServerInfoTuple',
 
 class Explorer(object):
 
-    def __init__(self, prog, logfile=None,debug=None, ping=None, verbose=None,
-                 target_data=None):
+    def __init__(self, prog, target_data, logfile=None, debug=None, ping=None,
+                 verbose=None):
         """Initialize instance attributes."""
 
-        self.debug = debug
         self.verbose = verbose
         self.ping = ping
         self.target_data = target_data
         self.timeout = None
         self.prog = prog
         self.logfile = logfile
+        self.debug = debug
         self.create_logger(self.prog, self.logfile)
 
     def print_smi_profile_info(self, servers, user_data):
@@ -65,9 +65,10 @@ class Explorer(object):
                 target_id = server_tuple.target_id
                 entry = user_data.get_dict_record(target_id)
                 try:
-                    versions = smi_version(server_tuple.server)
+                    versions = self.smi_version(server_tuple.server)
                 except Exception as ex:
-                    print('Exception %s in smi_versions %s' % (ex, server_tuple))
+                    print('Exception %s in smi_versions %s' % (ex,
+                                                               server_tuple))
                     continue
 
                 line = [entry['TargetID'],
@@ -135,7 +136,8 @@ class Explorer(object):
         servers = []
         # #### TODO move this all back to IDs and stop mapping host to id.
         for target_id in target_list:
-            target = target_data[target_id]
+            print('target_id %s targets %s' % (target_id, self.target_data))
+            target = self.target_data[target_id]
 
             # get variables for the connection and logs
             url = '%s://%s' % (target['Protocol'], target['IPAddress'])
@@ -150,11 +152,11 @@ class Explorer(object):
             # TODO too much swapping between entities.
             # TODO need a target class since this goes back to top dict to
             # get info
-            if target_data.disabled_target(target):
+            if self.target_data.disabled_target(target):
                 s = ServerInfoTuple(url=url, server=None, status='DISABLE',
                                     target_id=target_id, time=0)
                 servers.append(s)
-                logger.info('Disabled %s ' % (log_info))
+                self.logger.info('Disabled %s ' % (log_info))
 
             else:
                 if self.ping:
@@ -167,8 +169,8 @@ class Explorer(object):
                                             target_id=target_id, time=cmd_time)
                         servers.append(s)
                         continue
-                svr_tuple = explore_server(url, target, principal, credential,
-                                           args, logger)
+                svr_tuple = self.explore_server(url, target, principal,
+                                                credential)
                 servers.append(svr_tuple)
 
         return servers
@@ -181,10 +183,11 @@ class Explorer(object):
         """
         credential = target['Credential']
         principal = target['Principal']
+        target_id = target['TargetID']
         log_info = 'id=%s Url=%s Product=%s Company=%s' \
-                % (target['TargetID'], url,
-                   target['Product'],
-                   target['CompanyName'])
+            % (target['TargetID'], url,
+               target['Product'],
+               target['CompanyName'])
 
         if self.verbose:
             print("WBEM server:  %s, principal=%s, credential=%s"
@@ -200,7 +203,7 @@ class Explorer(object):
 
             # Access the server since the creation of the connection and
             # server constructors do not actually contact the WBEM server
-            if args.verbose:
+            if self.verbose:
                 print('Brand:%s, Version:%s, Interop namespace:%s' %
                       (server.brand, server.version, server.interop_ns))
                 print("All namespaces: %s" % server.namespaces)
@@ -216,7 +219,7 @@ class Explorer(object):
         except FunctionTimeoutError as fte:
             cmd_time = time.time() - start_time
             self.logger.error('Timeout decorator exception:%s %s time %s' %
-                         (fte, log_info, cmd_time))
+                              (fte, log_info, cmd_time))
             err = 'FunctTo'
             svr_tuple = ServerInfoTuple(url, server, target_id, err, cmd_time)
             traceback.format_exc()
@@ -224,7 +227,7 @@ class Explorer(object):
         except ConnectionError as ce:
             cmd_time = time.time() - start_time
             self.logger.error('ConnectionError exception:%s %s time %s' %
-                         (ce, log_info, cmd_time))
+                              (ce, log_info, cmd_time))
             err = 'ConnErr'
             svr_tuple = ServerInfoTuple(url, server, target_id, err, cmd_time)
             traceback.format_exc()
@@ -232,7 +235,7 @@ class Explorer(object):
         except TimeoutError as to:
             cmd_time = time.time() - start_time
             self.logger.error('Timeout Error exception:%s %s,'
-                         ' time %s' % (to, log_info, cmd_time))
+                              ' time %s' % (to, log_info, cmd_time))
 
             err = 'Timeout'
             svr_tuple = ServerInfoTuple(url, server, target_id, err, cmd_time)
@@ -241,7 +244,7 @@ class Explorer(object):
         except Error as er:
             cmd_time = time.time() - start_time
             self.logger.error('PyWBEM Error exception:%s %s time %s' %
-                         (er, log_info, cmd_time))
+                              (er, log_info, cmd_time))
             err = 'PyWBMEr'
             svr_tuple = ServerInfoTuple(url, server, target_id, err, cmd_time)
             traceback.format_exc()
@@ -249,7 +252,7 @@ class Explorer(object):
         except Exception as ex:
             cmd_time = time.time() - start_time
             self.logger.error('General Error: exception:%s %s time %s' %
-                         (ex, log_info, cmd_time))
+                              (ex, log_info, cmd_time))
 
             err = 'GenErr'
             svr_tuple = ServerInfoTuple(url, server, target_id, err, cmd_time)
@@ -273,8 +276,8 @@ class Explorer(object):
 
     def smi_version(self, server):
         """
-        Get the smi version used by this server from the SNIA profile information
-        on the server
+        Get the smi version used by this server from the SNIA profile
+        information on the server
         """
 
         org_vm = ValueMapping.for_property(server, server.interop_ns,
@@ -293,8 +296,9 @@ class Explorer(object):
     def explore_server_profiles(self, server, args, short_explore=True):
 
         def print_profile_info(org_vm, inst):
-            """Print the registered org, name, version for the profile defined by
-               inst
+            """
+            Print the registered org, name, version for the profile
+            defined by inst
             """
             org = org_vm.tovalues(inst['RegisteredOrganization'])
             name = inst['RegisteredName']
@@ -312,7 +316,8 @@ class Explorer(object):
         if short_explore:
             return server
 
-        indication_profiles = server.get_selected_profiles('DMTF', 'Indications')
+        indication_profiles = server.get_selected_profiles('DMTF',
+                                                           'Indications')
 
         self.logger.info('Profiles for DMTF:Indications')
         for inst in indication_profiles:
@@ -335,7 +340,8 @@ class Explorer(object):
             try:
                 ci_paths = server.get_central_instances(
                     inst.path,
-                    "CIM_IndicationService", "CIM_System", ["CIM_HostedService"])
+                    "CIM_IndicationService", "CIM_System",
+                    ["CIM_HostedService"])
             except Exception as exc:
                 self.logger.error("Error: Central Instances%s", str(exc))
                 ci_paths = []
@@ -346,8 +352,9 @@ class Explorer(object):
             org = org_vm.tovalues(inst['RegisteredOrganization'])
             name = inst['RegisteredName']
             vers = inst['RegisteredVersion']
-            self.logger.info("Central instances for profile %s:%s:%s(autonomous):",
-                        org, name, vers)
+            self.logger.info(
+                "Central instances for profile %s:%s:%s(autonomous):",
+                org, name, vers)
 
             try:
                 ci_paths = server.get_central_instances(inst.path)
@@ -355,11 +362,10 @@ class Explorer(object):
                 print("Exception: %s" % str(exc))
                 ci_paths = []
             for ip in ci_paths:
-                logger.info("  %s", str(ip))
+                self.logger.info("  %s", str(ip))
         return server
 
-
-    def create_logger(prog, logfile):
+    def create_logger(self, prog, logfile):
         """ Build logger instance"""
 
         # logging.basicConfig(stream=sys.stderr, level=logging.INFO,
@@ -372,8 +378,8 @@ class Explorer(object):
             '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
         hdlr.setFormatter(formatter)
-        logger.addHandler(hdlr)
-        logger.setLevel(logging.INFO)
+        self.logger.addHandler(hdlr)
+        self.logger.setLevel(logging.INFO)
 
         ch = logging.StreamHandler()
         ch.setLevel(logging.DEBUG)
@@ -450,14 +456,13 @@ def main(prog):
         table generate
     """
 
-
     argparser = create_explore_parser(prog)
     args = argparser.parse_args()
 
     if args.verbose:
         print('args %s' % args)
 
-    # logfile = '%s.log' % prog
+    logfile = '%s.log' % prog
     # logger = create_explore_logger(prog, logfile)
 
     target_data = TargetsData.factory(args.config_file, 'csv', args.verbose)
@@ -485,11 +490,10 @@ def main(prog):
 
     ping = False if args.no_ping else True
 
-    explore = explorer(prog, logfile, target_data, target_list=targets,
-                       verbose=verbose, ping=ping, args=args,
-                       debug=debug)
+    explore = Explorer(prog, target_data, logfile=logfile, 
+                       verbose=args.verbose, ping=ping, debug=args.debug)
 
-    servers = explore.explore_servers(target_list=targets)
+    servers = explore.explore_servers(targets)
 
     # print results
     explore.print_server_info(servers, target_data)

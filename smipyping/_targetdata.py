@@ -187,7 +187,7 @@ class TargetsData(object):
         """
         targets = []
         for target_id, value in self.targetsdict.iteritems():
-            if value['IPAddress'] == host:
+            if value['IPAddress'] == target_addr:
                 targets.append(target_id)
         return targets
 
