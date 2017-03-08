@@ -214,7 +214,7 @@ def print_open_hosts_report(open_hosts, total_time, provider_data, subnets,
                             "Not in user data"))
                 else:
                     print('%s:%s %s' % (host_data[0], host_data[1],
-                                        "Not in user data"))
+                                        "Unknown Server"))
 
             else:
                 print('%s, %s' % (host_data[0], host_data[1]))

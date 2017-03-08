@@ -5,17 +5,15 @@ TODO: Remove this completely
 """
 import sys as _sys
 import csv
-from collections import OrderedDict
 import argparse as _argparse
-from configparser import ConfigParser
-import six
-from mysql.connector import MySQLConnection, Error
+from mysql.connector import MySQLConnection
 
 from smipyping._cliutils import SmartFormatter as _SmartFormatter
 from smipyping._terminaltable import print_terminal_table, fold_cell
 from smipyping.config import DEFAULT_CONFIG_FILE
 
 __all__ = ['ProcessTargetDataCli']
+
 
 class ProcessTargetDataCli(object):
     """

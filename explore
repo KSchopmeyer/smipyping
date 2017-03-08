@@ -53,33 +53,33 @@ def main(prog):
 
     targets = []
     for host in filtered_hosts:
-        print('targest extend host %s, rtns %s' %
-              (host, target_data.get_target_for_host(host)))
+        if args.verbose:
+            print('targest extend host %s, rtns %s' %
+                  (host, target_data.get_target_for_host(host)))
               
         targets.extend(target_data.get_target_for_host(host))
-    print('targets %s 0 %s ' % (targets, type(targets[0])))
+    if args.verbose:
+        print('targets %s 0 %s ' % (targets, type(targets[0])))
 
     targets = set(targets)
 
-    print('targets after set %s' % targets)        
+    if args.verbose:
+        print('targets after set %s' % targets)        
 
     ping = False if args.no_ping else True
 
     logfile = '%s.log' % prog
 
-    print('args %s' % args)
+    if args.verbose:
+        print('args %s' % args)
 
     explore = Explorer(prog, target_data, logfile=logfile, verbose=args.verbose,
-                       ping=ping)
+                       ping=ping, threaded=True)
 
     servers = explore.explore_servers(targets)
 
     # print results
     explore.print_server_info(servers, target_data)
-
-    # repeat to get smi info.
-
-    explore.print_smi_profile_info(servers, target_data)
 
     return 0
 

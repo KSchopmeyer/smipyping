@@ -14,6 +14,7 @@ import time
 import argparse as _argparse
 from collections import namedtuple
 from urlparse import urlparse
+import threading
 
 from pywbem import WBEMConnection, WBEMServer, ValueMapping, Error, \
     ConnectionError, TimeoutError
@@ -33,10 +34,13 @@ ServerInfoTuple = namedtuple('ServerInfoTuple',
                              ['url', 'server', 'target_id', 'status', 'time'])
 
 
+RESULTS = []
+
+
 class Explorer(object):
 
     def __init__(self, prog, target_data, logfile=None, debug=None, ping=None,
-                 verbose=None):
+                 verbose=None, threaded=False):
         """Initialize instance attributes."""
 
         self.verbose = verbose
@@ -46,7 +50,9 @@ class Explorer(object):
         self.prog = prog
         self.logfile = logfile
         self.debug = debug
+        self.threaded = threaded
         self.create_logger(self.prog, self.logfile)
+        self.explore_time = None
 
     def print_smi_profile_info(self, servers, user_data):
         """
@@ -86,9 +92,10 @@ class Explorer(object):
         """
 
         table_data = []
-        tbl_hdr = ['Id', 'Url', 'Brand', 'Company', 'Vers', 'Interop_ns',
-                   'Status', 'time']
+        tbl_hdr = ['Id', 'Url', 'Brand', 'Company', 'Product', 'Vers',
+                   'SMI Profiles', 'Interop_ns', 'Status', 'time']
         table_data.append(tbl_hdr)
+        servers.sort(key=lambda tup: int(tup.target_id))
         for server_tuple in servers:
             url = server_tuple.url
             server = server_tuple.server
@@ -98,10 +105,15 @@ class Explorer(object):
             brand = ''
             version = ''
             interop_ns = ''
+            smi_profiles = ''
             if server is not None and status == 'OK':
                 brand = server.brand
                 version = server.version
                 interop_ns = server.interop_ns
+                smi_profile_list = self.smi_version(server_tuple.server)
+                if smi_profile_list is not None:
+                    cell_str = ", ". join(sorted(smi_profile_list))
+                    smi_profiles = (fold_cell(cell_str, 14))
             disp_time = None
             if server_tuple.time <= 60:
                 disp_time = "%.2f s" % (round(server_tuple.time, 1))
@@ -111,7 +123,9 @@ class Explorer(object):
                     url,
                     brand,
                     entry['CompanyName'],
+                    entry['Product'],
                     version,
+                    smi_profiles,
                     interop_ns,
                     server_tuple.status,
                     disp_time]
@@ -133,10 +147,22 @@ class Explorer(object):
             List of namedtuple ServerInfoTuple representing the results of
             the explore
         """
+        self.explore_time = time.time()
+        if self.threaded:
+            servers = self.explore_threaded(target_list)
+        else:
+            servers = self.explore_non_threaded(target_list)
+
+        self.explore_time = time.time() - self.explore_time
+        self.logger.info('Explore Threaded=%s time=%.2f s', self.threaded,
+                         self.explore_time)
+        return servers
+
+    def explore_non_threaded(self, target_list):
+
         servers = []
         # #### TODO move this all back to IDs and stop mapping host to id.
         for target_id in target_list:
-            print('target_id %s targets %s' % (target_id, self.target_data))
             target = self.target_data[target_id]
 
             # get variables for the connection and logs
@@ -156,22 +182,61 @@ class Explorer(object):
                 s = ServerInfoTuple(url=url, server=None, status='DISABLE',
                                     target_id=target_id, time=0)
                 servers.append(s)
-                self.logger.info('Disabled %s ' % (log_info))
+                self.logger.info('Disabled %s ', log_info)
 
             else:
-                if self.ping:
-                    start_time = time.time()   # Scan start time
-                    ping_result = self.ping_server(url, self.verbose)
-                    if ping_result is False:
-                        cmd_time = time.time() - start_time
-                        s = ServerInfoTuple(url=url, server=None,
-                                            status='PING_FAIL',
-                                            target_id=target_id, time=cmd_time)
-                        servers.append(s)
-                        continue
                 svr_tuple = self.explore_server(url, target, principal,
                                                 credential)
                 servers.append(svr_tuple)
+
+        return servers
+
+    def explore_threaded(self, target_list):
+        """
+        Threaded scan of IP Addresses for open ports.
+
+        Scan the IP address defined by the input and return a list of open
+        IP addresses. This function creates multiple processes and executes
+        each call in a process for speed.
+        """
+        servers = []
+        # #### TODO move this all back to IDs and stop mapping host to id.
+        threads_ = []
+        for target_id in target_list:
+            target = self.target_data[target_id]
+
+            # get variables for the connection and logs
+            url = '%s://%s' % (target['Protocol'], target['IPAddress'])
+            credential = target['Credential']
+            principal = target['Principal']
+            product = target['Product']
+            company_name = target['CompanyName']
+            log_info = 'id=%s Url=%s Product=%s Company=%s' % (target_id, url,
+                                                               product,
+                                                               company_name)
+
+            # TODO too much swapping between entities.
+            # TODO need a target class since this goes back to top dict to
+            # get info
+            if self.target_data.disabled_target(target):
+                s = ServerInfoTuple(url=url, server=None, status='DISABLE',
+                                    target_id=target_id, time=0)
+                servers.append(s)
+                self.logger.info('Disabled %s ', log_info)
+            else:
+                process = threading.Thread(target=self.explore_server,
+                                           args=(url, target, principal,
+                                                 credential))
+                threads_.append(process)
+
+        for process in threads_:
+            process.start()
+
+        for process in threads_:
+            process.join()
+
+        for result in RESULTS:
+            servers.append(result)
 
         return servers
 
@@ -181,28 +246,37 @@ class Explorer(object):
 
             Return: The ServerInfoTuple object
         """
+        cmd_time = 0
+        start_time = time.time()   # Scan start time
+        target_id = target['TargetID']
         credential = target['Credential']
         principal = target['Principal']
-        target_id = target['TargetID']
         log_info = 'id=%s Url=%s Product=%s Company=%s' \
             % (target['TargetID'], url,
                target['Product'],
                target['CompanyName'])
-
-        if self.verbose:
-            print("WBEM server:  %s, principal=%s, credential=%s"
-                  % (url, principal, credential))
-        cmd_time = 0
-        start_time = time.time()   # Scan start time
+        svr_tuple = None
+        if self.ping:
+            ping_result = self.ping_server(url, self.verbose)
+            if ping_result is False:
+                cmd_time = time.time() - start_time
+                self.logger.error('PING_FAIL %s time %.2f s', log_info,
+                                  cmd_time)
+                svr_tuple = ServerInfoTuple(url=url, server=None,
+                                            status='PING_FAIL',
+                                            target_id=target_id,
+                                            time=cmd_time)
+                RESULTS.append(svr_tuple)
+                return svr_tuple
         try:
-            self.logger.info('Open %s' % log_info)
-            # start_time = time.time()   # Scan start time
+            self.logger.info('Open %s', log_info)
             conn = WBEMConnection(url, (principal, credential),
                                   no_verification=True, timeout=20)
             server = WBEMServer(conn)
 
-            # Access the server since the creation of the connection and
-            # server constructors do not actually contact the WBEM server
+            # Access the server since the creation of the connection
+            # and server constructors do not actually contact the
+            # WBEM server
             if self.verbose:
                 print('Brand:%s, Version:%s, Interop namespace:%s' %
                       (server.brand, server.version, server.interop_ns))
@@ -210,54 +284,64 @@ class Explorer(object):
             else:
                 # force access to test server connection
                 _ = server.interop_ns  # noqa: F841
+                _ = server.profiles  # noqa: F841
 
             cmd_time = time.time() - start_time
+
             svr_tuple = ServerInfoTuple(url=url, server=server,
-                                        target_id=target_id, status='OK',
+                                        target_id=target_id,
+                                        status='OK',
                                         time=cmd_time)
-            self.logger.info('OK %s time %s' % (log_info, cmd_time))
+            self.logger.info('OK %s time %.2f s', log_info, cmd_time)
+
         except FunctionTimeoutError as fte:
             cmd_time = time.time() - start_time
-            self.logger.error('Timeout decorator exception:%s %s time %s' %
-                              (fte, log_info, cmd_time))
+            self.logger.error('Timeout decorator exception:%s %s time %.2f s',
+                              fte, log_info, cmd_time)
             err = 'FunctTo'
-            svr_tuple = ServerInfoTuple(url, server, target_id, err, cmd_time)
+            svr_tuple = ServerInfoTuple(url, server, target_id, err,
+                                        cmd_time)
             traceback.format_exc()
 
         except ConnectionError as ce:
             cmd_time = time.time() - start_time
-            self.logger.error('ConnectionError exception:%s %s time %s' %
-                              (ce, log_info, cmd_time))
+            self.logger.error('ConnectionError exception:%s %s time %.2f s',
+                              ce, log_info, cmd_time)
             err = 'ConnErr'
-            svr_tuple = ServerInfoTuple(url, server, target_id, err, cmd_time)
+            svr_tuple = ServerInfoTuple(url, server, target_id, err,
+                                        cmd_time)
             traceback.format_exc()
 
         except TimeoutError as to:
             cmd_time = time.time() - start_time
-            self.logger.error('Timeout Error exception:%s %s,'
-                              ' time %s' % (to, log_info, cmd_time))
+            self.logger.error('Timeout Error exception:%s %s time %.2f s',
+                              to, log_info, cmd_time)
 
             err = 'Timeout'
-            svr_tuple = ServerInfoTuple(url, server, target_id, err, cmd_time)
+            svr_tuple = ServerInfoTuple(url, server, target_id, err,
+                                        cmd_time)
             traceback.format_exc()
 
         except Error as er:
             cmd_time = time.time() - start_time
-            self.logger.error('PyWBEM Error exception:%s %s time %s' %
-                              (er, log_info, cmd_time))
+            self.logger.error('PyWBEM Error exception:%s %s time %.2f s',
+                              er, log_info, cmd_time)
             err = 'PyWBMEr'
-            svr_tuple = ServerInfoTuple(url, server, target_id, err, cmd_time)
+            svr_tuple = ServerInfoTuple(url, server, target_id, err,
+                                        cmd_time)
             traceback.format_exc()
 
         except Exception as ex:
             cmd_time = time.time() - start_time
-            self.logger.error('General Error: exception:%s %s time %s' %
-                              (ex, log_info, cmd_time))
+            self.logger.error('General Error: exception:%s %s time %.2f s',
+                              ex, log_info, cmd_time)
 
             err = 'GenErr'
-            svr_tuple = ServerInfoTuple(url, server, target_id, err, cmd_time)
+            svr_tuple = ServerInfoTuple(url, server, target_id, err,
+                                        cmd_time)
             traceback.format_exc()
 
+        RESULTS.append(svr_tuple)
         return svr_tuple
 
     def ping_server(self, url, verbose):
@@ -289,7 +373,6 @@ class Explorer(object):
             org = org_vm.tovalues(inst['RegisteredOrganization'])  # noqa: F841
             name = inst['RegisteredName']  # noqa: F841
             vers = inst['RegisteredVersion']
-            # ###print("  %s %s Profile %s" % (org, name, vers))
             versions.append(vers)
         return versions
 
@@ -306,12 +389,9 @@ class Explorer(object):
             if args.verbose:
                 print("  %s %s Profile %s" % (org, name, vers))
 
-        # ##logger.info("Advertised management profiles:")
         org_vm = ValueMapping.for_property(server, server.interop_ns,
                                            'CIM_RegisteredProfile',
                                            'RegisteredOrganization')
-        # for inst in server.profiles:
-        #    print_profile_info(org_vm, inst)
 
         if short_explore:
             return server
@@ -442,6 +522,9 @@ Examples:
         help='R|Do not ping for server as first test. Executing the\n'
              'ping often shortens the total response time.')
     general_arggroup.add_argument(
+        '--threaded', action='store_true', default=False,
+        help='If set use threaded code to explore in parallel')
+    general_arggroup.add_argument(
         '--verbose', '-v', action='store_true', default=False,
         help='Verbosity level')
     general_arggroup.add_argument(
@@ -490,8 +573,9 @@ def main(prog):
 
     ping = False if args.no_ping else True
 
-    explore = Explorer(prog, target_data, logfile=logfile, 
-                       verbose=args.verbose, ping=ping, debug=args.debug)
+    explore = Explorer(prog, target_data, logfile=logfile,
+                       verbose=args.verbose, ping=ping, debug=args.debug,
+                       threaded=args.threaded)
 
     servers = explore.explore_servers(targets)
 
@@ -500,7 +584,7 @@ def main(prog):
 
     # repeat to get smi info.
 
-    explore.print_smi_profile_info(servers, target_data)
+    # explore.print_smi_profile_info(servers, target_data)
 
     return 0
 

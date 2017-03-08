@@ -50,24 +50,25 @@ from __future__ import absolute_import
 
 import sys
 
-from ._ping import *
-from .config import *
-from ._targetdata import *
-from ._simpleping import *
-from ._explore import *
-from ._serversweep import *
+from ._ping import *  # noqa: F401, F403
+from .config import *  # noqa: F401, F403
+from ._targetdata import *  # noqa: F401, F403
+from ._simpleping import *  # noqa: F401, F403
+from ._explore import *  # noqa: F401, F403
+from ._serversweep import *  # noqa: F401, F403
 # TODO should not need this
-from ._cliutils import *
-from .smicli import *
-from ._cmd_database import *
-#from ._cmd_providers import *
-from ._targetdatacli import *
-from ._scanport import *
+from ._cliutils import *  # noqa: F401, F403
+from .smicli import *  # noqa: F401, F403
+from ._cmd_database import *  # noqa: F401, F403
+#from ._cmd_providers import *  # noqa: F401, F403
+from ._targetdatacli import *  # noqa: F401, F403
+from ._scanport import *  # noqa: F401, F403
 
-from ._version import __version__
+from ._version import __version__  # noqa: F401, F403
 
-_python_m = sys.version_info[0]
-_python_n = sys.version_info[1]
+_python_m = sys.version_info[0]  # pylint: disable=invalid-name
+_python_n = sys.version_info[1]  # pylint: disable=invalid-name
+
 if _python_m == 2 and _python_n < 7:
     raise RuntimeError('On Python 2, smipyping requires Python 2.7 or higher')
 elif _python_m == 3 and _python_n < 4:

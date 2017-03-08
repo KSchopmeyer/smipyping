@@ -14,9 +14,8 @@ import os
 import csv
 import re
 from collections import OrderedDict
-from configparser import ConfigParser
 import six
-from mysql.connector import MySQLConnection, Error
+from mysql.connector import MySQLConnection
 from smipyping._terminaltable import print_terminal_table, fold_cell
 from ._configfile import read_config
 
