@@ -17,6 +17,8 @@ import sys
 import time
 import argparse as _argparse
 import threading
+import itertools
+import six
 
 from ._cliutils import SmartFormatter as _SmartFormatter
 from ._cliutils import check_negative_int
@@ -43,6 +45,108 @@ def check_port(test_ip, port, verbose):
     if result is True:
         RESULTS.append([test_ip, port])
     return result
+
+
+def expand_subnet_definition(net_def, min_val=1, max_val=254):
+    """
+    Get a list of IP addresses from the net_definition provided in net_def.
+
+    The syntax for the net definition is as follows:
+
+    Defines for octets of an IPV4 address where each octet is one of the
+    following:
+
+      Integer representing the octet.
+
+      Range definition for the octet defining the range of values in the
+      expansion.  The syntax of the range definition is <nin>:<max> where
+      min and max are integers.  Thus, 3:10 expands to all values from 3 to
+      10 (inclusive) for that octet of the IP address
+
+      List definition consists of list of values separated by commans. All of
+      the values in the list are included in the expansion.
+
+      Any missing octets are expanded to the range definition between
+      the input parameters min_val and max_val
+
+      Returns a list of the IP address that make up this expansion
+
+      Parameters:
+
+        net_def: String. See above for syntax
+
+        min_val - minimum value for the expand any missing octets in the
+        net definition
+
+        max_val - maximum value for the range expand for any missing octets
+        in the net definition
+
+      Returns:  A generator that returns ip addresses until the expansion
+      is exhausted.
+
+      Exceptions:
+        ValueError if any of the components of the net definition are in
+        error.
+    """
+    octet_max = 255
+    # try:
+    #    octets = expand_subnet_def(subnet_def, min_ip, max_ip)
+    # except Exception as ex:
+    #    print('Exception subnet %s Exception %s' % (subnet_def, ex))
+    #    raise
+
+    try:
+        octets = net_def.split('.')
+        ipv4_octet_count = 4
+        for index in range(ipv4_octet_count):
+            try:
+                octets[index]
+            except IndexError:
+                octets.append('%d:%d' % (min_val, max_val))
+    except Exception as ex:
+        print('Exception subnet %s Exception %s' % (net_def, ex))
+        raise
+
+    octet_lists = []
+    try:
+        for octet in octets:
+            if octet.isdigit():
+                try:
+                    octet = int(octet)
+                except Exception as ex:
+                    raise ValueError('octet %s not integer' % octet)
+                octet_lists.append([octet])
+            elif ':' in octet:
+                range_ = octet.split(':')
+                min_ = int(range_[0])
+                max_ = int(range_[1]) + 1    # range is inclusive
+                if len(range_) != 2:
+                    raise ValueError('Range %s invalid. Too many components' %
+                                     range_)
+                if min_ < 0:
+                    raise ValueError('Value %s in range %s invalid' % (min_,
+                                                                       range_))
+                if max_ > octet_max:
+                    raise ValueError('Value %s in range %s invalid. gt %s' %
+                                     (max_, range_, octet_max))
+                if max_ <= min_:
+                    raise ValueError('Value %s must be gt %s in  def %s' %
+                                     (max_, min_, octet))
+
+                octect_list = [item for item in six.moves.range(min_, max_)]
+                octet_lists.append(octect_list)
+            elif ',' in octet:
+                items = octet.split(',')
+                octet_lists.append([int(x) for x in items])
+            else:
+                raise ValueError('Invalid octet %s in net definition %s' %
+                                 (octet, net_def))
+    except ValueError:
+        raise
+
+    # product_get, a generator that iproduces results of merged lists
+    for ip in itertools.product(*octet_lists):
+        yield '.'.join(map(str, ip))  # pylint: disable=bad-builtin
 
 
 def scan_subnets(subnets, start_ip, end_ip, port, verbose):
@@ -106,26 +210,27 @@ def scan_subnets_threaded(subnets, start_ip, end_ip, port, verbose):
     IP addresses. This function creates multiple processes and executes
     each call in a process for speed.
     """
-    tests = build_test_list(subnets, start_ip, end_ip, port)
-    open_hosts = []
+
+    # TODO modify this so we use a queue since the user can not force
+    # hundreds of scans with the net definition mechanism.
+    # Queue will set the max threads to execute in parallel.
+
     threads_ = []
+    for test in build_test_list(subnets, start_ip, end_ip, port):
+        thread_ = threading.Thread(target=check_port, args=(test[0],
+                                                             test[1],
+                                                             verbose))
+        threads_.append(thread_)
+    # pylint: disable=expression-not-assigned
+    [process.start() for process in threads_]
+    [process.join() for process in threads_]
 
-    for test in tests:
-        process = threading.Thread(target=check_port, args=(test[0],
-                                                            test[1],
-                                                            verbose))
-        threads_.append(process)
+    open_hosts = [result for result in RESULTS]
 
-    for process in threads_:
-        process.start()
-    for process in threads_:
-        process.join()
-    for result in RESULTS:
-        open_hosts.append(result)
     return open_hosts
 
 
-def build_test_list(subnets, start_ip, end_ip, ports):
+def build_test_list(net_defs, start_ip, end_ip, ports):
     """
     Create list of IP addresses and ports to scan.
 
@@ -134,40 +239,33 @@ def build_test_list(subnets, start_ip, end_ip, ports):
 
     Parameters:
 
-      subnets:
-        single subnet or list of subnets to scan
+      net_defs:
+        single net definition or list of net definitions.
 
       start_ip:
-        Start IP address for scan
+        min value of any octets in net_defs that are not defined
 
       end_ip:
-        End IP address for scan.
+        max value for any octets in net_def that are not defined
 
       ports:
         single port or list of ports to scan
 
     Returns:
-      Dictionary of hosts that have defined ports open.
+      Generator that generates a set of the combination of net defs and
+      ports until the combinations are exhausted.
     """
-    test_list = []
 
-    if isinstance(subnets, list):
-        subnetlist = subnets
-    else:
-        subnetlist = [subnets]
+    if not isinstance(net_defs, list):
+        net_defs = [net_defs]
 
-    if isinstance(ports, list):
-        ports = ports
-    else:
+    if not isinstance(ports, list):
         ports = [ports]
 
-    for subnet in subnetlist:
-        for port_ in ports:
-            for ip in range(start_ip, end_ip + 1):
-                test_ip = '%s.%s' % (subnet, ip)
-                test_list.append((test_ip, port_))
-
-    return test_list
+    for net_def in net_defs:
+        for test_ip in expand_subnet_definition(net_def, start_ip, end_ip):
+            for port_ in ports:
+                yield test_ip, port_
 
 
 def print_open_hosts_report(open_hosts, total_time, provider_data, subnets,
@@ -214,7 +312,7 @@ def print_open_hosts_report(open_hosts, total_time, provider_data, subnets,
                             "Not in user data"))
                 else:
                     print('%s:%s %s' % (host_data[0], host_data[1],
-                                        "Unknown Server"))
+                                        "UnknownServer"))
 
             else:
                 print('%s, %s' % (host_data[0], host_data[1]))
@@ -230,7 +328,9 @@ def sweep_servers(subnets, startip, endip, ports, no_threads, user_data,
     Execute the scan on the subnets defined by the input parameters.
 
     Parameters:
-      subnets: list of subnets
+      subnets: list of subnets. Each subnet is defined as a sweep range where
+      the sweep range for each component of the ip address is either an
+      integer (designates a single address) or a range (integer:integer)
 
       startip: start ip for the scan on each subnet
 
@@ -302,7 +402,15 @@ Examples:
         'Positional arguments')
     pos_arggroup.add_argument(
         'subnet', metavar='subnet', nargs='+',
-        help='IP subnets to scan (ex. 10.1.132). Multiple subnets allowed')
+        help='IP subnets to scan (ex. 10.1.132). Multiple subnets allowed. '
+             'Each subnet definition is itself a definition that consists '
+             'of octets that are integers, range definitions, or integer '
+             'lists. A range expansion is in the form int:int which defines '
+             'the mininum and maximum values for that octet. '
+             'A list expansion is in the form int, int, int that defines '
+             'the set of valuse for that octet. '
+             'Examples: 10.1.132,134 expands to addresses in 10.1.132 and '
+             '10.1.134.')
 
     subnet_arggroup = argparser.add_argument_group(
         'Scan related options',
