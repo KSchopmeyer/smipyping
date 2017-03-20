@@ -243,8 +243,8 @@ class SimplePing(object):
                                             ce.status_code_name,
                                             ce.status_description))
             rtn_reason = '%s:%s:%s:%s' % (ce, ce.status_code,
-                                         ce.status_code_name,
-                                         ce.status_description)
+                                          ce.status_code_name,
+                                          ce.status_description)
             rtn_code = ("WBEMException", ce.status_code_name)
         except ConnectionError as co:
             rtn_code = ("ConnectionError", co)
