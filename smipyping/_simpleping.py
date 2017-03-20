@@ -32,7 +32,7 @@ from collections import namedtuple
 
 from pywbem import WBEMConnection, ConnectionError, Error, TimeoutError, \
     CIMError
-from ._cliutils import SmartFormatter as _SmartFormatter
+from ._cliutils import SmiSmartFormatter
 
 from ._ping import ping_host
 
@@ -47,27 +47,6 @@ TestResult = namedtuple('TestResult', ['code',
                                        'type',
                                        'exception',
                                        'execution_time'])
-
-
-class SmiCustomFormatter(_SmartFormatter,
-                         _argparse.RawDescriptionHelpFormatter):
-    """
-    Define a custom Formatter to allow formatting help and epilog.
-
-    argparse formatter specifically allows multipleinheritance for the
-    formatter customization and actually recommends this in a discussion
-    in one of the issues.
-
-    http://bugs.python.org/issue13023
-
-    Also recommended in a StackOverflow discussion:
-
-    http://stackoverflow.com/questions/18462610/argumentparser-epilog-and-description-formatting-in-conjunction-with-argumentdef
-
-
-    """
-
-    pass
 
 
 class SimplePing(object):
@@ -259,9 +238,14 @@ class SimplePing(object):
             rtn_code = ("Running", "")
 
         except CIMError as ce:
-            print('CIMERROR %r %s %s ' % (ce, ce.status, ce.reason))
-            rtn_reason = '%s:%s' % (ce, ce.status, ce.reason)
-            rtn_code = ("WBEMException", rtn_reason)
+            print('CIMERROR %r %s %s %s' % (ce,
+                                            ce.status_code,
+                                            ce.status_code_name,
+                                            ce.status_description))
+            rtn_reason = '%s:%s:%s:%s' % (ce, ce.status_code,
+                                         ce.status_code_name,
+                                         ce.status_description)
+            rtn_code = ("WBEMException", ce.status_code_name)
         except ConnectionError as co:
             rtn_code = ("ConnectionError", co)
         except TimeoutError as to:
@@ -317,7 +301,7 @@ Examples:\n
 
         argparser = _argparse.ArgumentParser(
             prog=self.prog, usage=usage, description=desc, epilog=epilog,
-            add_help=False, formatter_class=SmiCustomFormatter)
+            add_help=False, formatter_class=SmiSmartFormatter)
 
         pos_arggroup = argparser.add_argument_group(
             'Positional arguments')

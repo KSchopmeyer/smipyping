@@ -16,35 +16,39 @@ from __future__ import print_function, absolute_import
 import sys
 import time
 import argparse as _argparse
-import threading
+from threading import Thread
+import Queue
 import itertools
 import six
 
-from ._cliutils import SmartFormatter as _SmartFormatter
+from ._cliutils import SmiSmartFormatter
 from ._cliutils import check_negative_int
-from .config import DEFAULT_SWEEP_PORT
+from .config import DEFAULT_SWEEP_PORT, MAX_THREADS
 from ._utilities import display_argparser_args
 from ._scanport import check_port_syn
 
-# Results list, a list of tuples of ip_address, port. May be appended
-# multithread
-RESULTS = []
 
-
-def check_port(test_ip, port, verbose):
+def check_port(test_address, verbose):
     """
-    Runs define test against a single ip/port.
+    Runs defined test against a single ip/port defined as a tuple in
+    test_address
 
-    If the port is OK, sets results into RESULTS
+    Parameters:
 
-    This may be used either single threaded or multithreaded
+      test_address: tuple containing ip address and port
 
-    Returns True if port OK
+      verbose (bool): passed on to the actual port check for possible
+        detailed display
+
+    Returns:
+        True if port OK
+
+    Exceptions:
+        TODO
     """
-    result = check_port_syn(test_ip, port, verbose)  # Test one ip:port
-    if result is True:
-        RESULTS.append([test_ip, port])
-    return result
+    check_result = check_port_syn(test_address[0], test_address[1],
+                                  verbose)  # Test one ip:port
+    return check_result
 
 
 def expand_subnet_definition(net_def, min_val=1, max_val=254):
@@ -89,11 +93,6 @@ def expand_subnet_definition(net_def, min_val=1, max_val=254):
         error.
     """
     octet_max = 255
-    # try:
-    #    octets = expand_subnet_def(subnet_def, min_ip, max_ip)
-    # except Exception as ex:
-    #    print('Exception subnet %s Exception %s' % (subnet_def, ex))
-    #    raise
 
     try:
         octets = net_def.split('.')
@@ -149,7 +148,7 @@ def expand_subnet_definition(net_def, min_val=1, max_val=254):
         yield '.'.join(map(str, ip))  # pylint: disable=bad-builtin
 
 
-def scan_subnets(subnets, start_ip, end_ip, port, verbose):
+def scan_subnets(subnets, start_ip, end_ip, ports, verbose):
     """
     Nonthreaded scan of IP addresses for open ports.
 
@@ -161,48 +160,45 @@ def scan_subnets(subnets, start_ip, end_ip, port, verbose):
     """
     open_hosts = []
 
-    # if subnets or port is list, recursively call with each entry
-    if isinstance(subnets, list):
-        for subnet in subnets:
-            rtn = scan_subnets(subnet, start_ip, end_ip, port, verbose)
-            if rtn is not None:
-                open_hosts.extend(rtn)
-        return open_hosts
+    for test_addr in build_test_list(subnets, start_ip, end_ip, ports):
 
-    # if ports is list, make recursive call for ports
-    if isinstance(port, list):
-        for p in port:
-            rtn = scan_subnets(subnets, start_ip, end_ip, p, verbose)
-            if rtn is not None:
-                open_hosts.extend(rtn)
-        return open_hosts
-
-    # scan ports in this range
-    for ip in range(start_ip, end_ip + 1):
-        test_ip = subnets + '.' + str(ip)
-        test_host_id = [test_ip, port]
-
-        result = check_port(test_ip, port, verbose)  # Test one ip:port
+        result = check_port(test_addr, verbose)  # Test one ip:port
 
         # print('test %s %s result %s' % (test_ip, port, result))
 
         if verbose:
             response_txt = 'Exists' if result else 'None'
-            print('test address=%s, %s' % ((test_host_id,), response_txt))
-        else:
-            sys.stdout.flush()
-            addr_ = "%s:%s" % (test_host_id[0], test_host_id[1])
-            sys.stdout.write(addr_)
-            if not test_ip == end_ip:
-                sys.stdout.write('\b' * (len(addr_) + 4))
+            print('test address=%s, %s' % ((test_addr,), response_txt))
+        # else:
+        #    sys.stdout.flush()
+        #    addr_ = "%s:%s" % (test_addr[0], test_addr[1])
+        #    sys.stdout.write(addr_)
+        #    if not test_ip == end_ip:
+        #        sys.stdout.write('\b' * (len(addr_) + 4))
 
         if result:  # Port exists
-            open_hosts.append(test_host_id)  # Append to list
+            open_hosts.append(test_addr)  # Append to list
 
     return open_hosts
 
 
-def scan_subnets_threaded(subnets, start_ip, end_ip, port, verbose):
+def process_queue(queue, results, verbose):
+    """This is thread function that processes a queue to do check_port
+    """
+    while not queue.empty():
+        work = queue.get()
+        test_addr = work[0]
+        results = work[1]
+        verbose = work[2]
+        check_result = check_port(test_addr, verbose)
+        if check_result is True:
+            results.append(test_addr)
+        queue.task_done()
+    return
+
+
+def scan_subnets_threaded(subnets, min_octet_val, max_octet_val, ports,
+                          verbose):
     """
     Threaded scan of IP Addresses for open ports.
 
@@ -211,26 +207,30 @@ def scan_subnets_threaded(subnets, start_ip, end_ip, port, verbose):
     each call in a process for speed.
     """
 
-    # TODO modify this so we use a queue since the user can not force
-    # hundreds of scans with the net definition mechanism.
-    # Queue will set the max threads to execute in parallel.
+    # set up queue to hold all call info
+    queue = Queue.Queue(maxsize=0)
+    num_threads = MAX_THREADS
 
-    threads_ = []
-    for test in build_test_list(subnets, start_ip, end_ip, port):
-        thread_ = threading.Thread(target=check_port, args=(test[0],
-                                                             test[1],
-                                                             verbose))
-        threads_.append(thread_)
-    # pylint: disable=expression-not-assigned
-    [process.start() for process in threads_]
-    [process.join() for process in threads_]
+    results = []
+    tests = 0
+    for test_addr in build_test_list(subnets, min_octet_val, max_octet_val,
+                                     ports):
+        tests += 1
+        queue.put((test_addr, results, verbose))
 
-    open_hosts = [result for result in RESULTS]
+    # Start worker threads.
+    for i in range(num_threads):
+        worker = Thread(target=process_queue, args=(queue, results, verbose))
+        worker.daemon = True    # allows main program to exit.
+        worker.start()
 
-    return open_hosts
+    queue.join()
+
+    # returns list of ip addresses that were were found
+    return results
 
 
-def build_test_list(net_defs, start_ip, end_ip, ports):
+def build_test_list(net_defs, min_octet_val, max_octet_val, ports):
     """
     Create list of IP addresses and ports to scan.
 
@@ -242,10 +242,10 @@ def build_test_list(net_defs, start_ip, end_ip, ports):
       net_defs:
         single net definition or list of net definitions.
 
-      start_ip:
+      min_octet_val:
         min value of any octets in net_defs that are not defined
 
-      end_ip:
+      max_octet_val:
         max value for any octets in net_def that are not defined
 
       ports:
@@ -254,6 +254,8 @@ def build_test_list(net_defs, start_ip, end_ip, ports):
     Returns:
       Generator that generates a set of the combination of net defs and
       ports until the combinations are exhausted.
+
+      Each call returns a tuple of IP address, port
     """
 
     if not isinstance(net_defs, list):
@@ -263,7 +265,9 @@ def build_test_list(net_defs, start_ip, end_ip, ports):
         ports = [ports]
 
     for net_def in net_defs:
-        for test_ip in expand_subnet_definition(net_def, start_ip, end_ip):
+        for test_ip in expand_subnet_definition(net_def, min_octet_val,
+                                                max_octet_val):
+            # return one tuple of ip address, port for each call
             for port_ in ports:
                 yield test_ip, port_
 
@@ -317,13 +321,13 @@ def print_open_hosts_report(open_hosts, total_time, provider_data, subnets,
             else:
                 print('%s, %s' % (host_data[0], host_data[1]))
     else:
-        print('No WBEM Servers:subnet(s)=%s port(s)=%s range %s, %s' %
+        print('No WBEM Servers found:subnet(s)=%s port(s)=%s range %s, %s' %
               (subnets, ports, range_txt, execution_time))
     print("=" * 50)
 
 
-def sweep_servers(subnets, startip, endip, ports, no_threads, user_data,
-                  verbose):
+def sweep_servers(subnets, min_octet_val, max_octet_val, ports, no_threads,
+                  user_data, verbose):
     """
     Execute the scan on the subnets defined by the input parameters.
 
@@ -353,11 +357,11 @@ def sweep_servers(subnets, startip, endip, ports, no_threads, user_data,
         open_hosts = []
 
         if no_threads:
-            scan_results = scan_subnets(subnets, startip,
-                                        endip, ports, verbose)
+            scan_results = scan_subnets(subnets, min_octet_val,
+                                        max_octet_val, ports, verbose)
         else:
-            scan_results = scan_subnets_threaded(subnets, startip,
-                                                 endip, ports, verbose)
+            scan_results = scan_subnets_threaded(subnets, min_octet_val,
+                                                 max_octet_val, ports, verbose)
         if scan_results is not None:
             open_hosts.extend(sorted(scan_results))
 
@@ -370,7 +374,7 @@ def sweep_servers(subnets, startip, endip, ports, no_threads, user_data,
     total_time = time.time() - start_time
 
     print_open_hosts_report(open_hosts, total_time, user_data, subnets, ports,
-                            startip, endip)
+                            min_octet_val, max_octet_val)
 
 
 def create_sweep_argparser(prog_name):
@@ -382,47 +386,60 @@ def create_sweep_argparser(prog_name):
     prog = prog_name  # Name of the script file invoking this module
     usage = '%(prog)s [options] subnet [subnet] ...'
     desc = 'Sweep possible WBEMServer ports across a range of IP subnets '\
-           'and ports to find existing open WBEM servers.'
+           'and ports to find existing running WBEM servers.'
     epilog = """
 Examples:
-  %s 10.1.134 --startip=1 --endip=254
-        The above example will scan the subnets 10.1.134 from 1 to 254
+  %s 10.1.132:134
+        The above example will scan the subnets 10.1.134, 10.1.133, and
+        10.1.134 from 1 to 254 for the 4 the octet of ip addresses. This
+        is explicitly defined by 10.1.132:124.1:254
   %s 10.1.134
-        Scan a complete subnet, 10.1.134 for the default port (5989)
-  %s 10.1.132 10.1.134 -p 5989 -p 5988
-        Scan 10.1.132 and 10.1.134 for ports 5988 and 5989
+        Scan a complete Class C subnet, 10.1.134 for the default port (5989)
+  %s 10.1.132,134 -p 5989 -p 5988
+        Scan 10.1.132.1:254 and 10.1.134.1:254 for ports 5988 and 5989
 
 """ % (prog, prog, prog)
 
     argparser = _argparse.ArgumentParser(
         prog=prog, usage=usage, description=desc, epilog=epilog,
-        formatter_class=_SmartFormatter)
+        formatter_class=SmiSmartFormatter)
 
     pos_arggroup = argparser.add_argument_group(
         'Positional arguments')
     pos_arggroup.add_argument(
         'subnet', metavar='subnet', nargs='+',
-        help='IP subnets to scan (ex. 10.1.132). Multiple subnets allowed. '
-             'Each subnet definition is itself a definition that consists '
-             'of octets that are integers, range definitions, or integer '
-             'lists. A range expansion is in the form int:int which defines '
-             'the mininum and maximum values for that octet. '
-             'A list expansion is in the form int, int, int that defines '
-             'the set of valuse for that octet. '
-             'Examples: 10.1.132,134 expands to addresses in 10.1.132 and '
-             '10.1.134.')
+        help='R|IP subnets to scan (ex. 10.1.132). Multiple subnets\n '
+             'allowed. Each subnet string is itself a definition that\n'
+             'consists of period separated octets that are used to\n'
+             'create the individual ip addresses to be tested:\n'
+             '  * Integers: Each integer is in the range 0-255\n'
+             '      ex. 10.1.2.9\n'
+             '  * Octet range definitions: A range expansion is in the\n'
+             '     form: int:int which defines the mininum and maximum\n'
+             '      values for that octet (ex 10.1.132:134) or\n'
+             '  * Integer lists: A list expansion is in the form:\n'
+             '     int,int,int\n'
+             '     that defines the set of values for that octet.\n'
+             'Missing octet definitions are expanded to the value\n'
+             'range defined by the min and max octet value parameters\n'
+             'All octets of the ip address can use any of the 3\n'
+             'definitions.\n'
+             'Examples: 10.1.132,134 expands to addresses in 10.1.132\n'
+             'and 10.1.134. where the last octet is the range 1 to 254')
 
     subnet_arggroup = argparser.add_argument_group(
         'Scan related options',
         'Specify parameters of the subnet scan')
     subnet_arggroup.add_argument(
-        '--startip', '-s', metavar='Start', nargs='?', default=1,
+        '--min_octet_val', '-s', metavar='Min', nargs='?', default=1,
         type=check_negative_int,
-        help='Start scanning from this IP')
+        help='Minimum expanded value for any octet that is not specifically '
+             ' included in a net definition. Default = 1')
     subnet_arggroup.add_argument(
-        '--endip', '-e', metavar='End', nargs='?', default=254,
+        '--max_octet_val', '-e', metavar='Max', nargs='?', default=254,
         type=check_negative_int,
-        help='Scan to this IP')
+        help='Minimum expanded value for any octet that is not specifically '
+             ' included in a net definition. Default = 254')
     subnet_arggroup.add_argument(
         '--port', '-p', nargs='?', action='append', type=int,
         help='Port(s) to test. This argument may be repeated to test '

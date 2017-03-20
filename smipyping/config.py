@@ -54,4 +54,8 @@ DEFAULT_NAMESPACE = 'root/cimv2'
 #: type of database to use.  May be 'sql' or 'csv'
 DB_TYPE = 'csv'
 
+#: Maximum number of parallel threads to use in multithreaded operations
+
+MAX_THREADS  = 200
+
 
