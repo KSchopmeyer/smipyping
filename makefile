@@ -76,7 +76,7 @@ doc_utility_help_files := \
     $(doc_conf_dir)/simpleping.help.txt \
     $(doc_conf_dir)/serversweep.help.txt \
     $(doc_conf_dir)/explore.help.txt \
-    $(doc_conf_dir)/userdata.help.txt \
+    $(doc_conf_dir)/target.help.txt \
 
 # Dependents for Sphinx documentation build
 doc_dependent_files := \
@@ -84,10 +84,10 @@ doc_dependent_files := \
     $(wildcard $(doc_conf_dir)/*.rst) \
     $(wildcard $(doc_conf_dir)/notebooks/*.ipynb) \
     $(package_name)/__init__.py \
-    $(package_name)/userdata.py \
-    $(package_name)/explore.py \
-    $(package_name)/simpleping.py \
-    $(package_name)/serversweep.py \
+    $(package_name)/_target.py \
+    $(package_name)/_explore.py \
+    $(package_name)/_simpleping.py \
+    $(package_name)/_serversweep.py \
 
 # PyLint config file
 pylint_rc_file := pylintrc
@@ -322,15 +322,23 @@ $(test_log_file): makefile $(package_name)/*.py tests/*.py coveragerc
 	mv -f $(test_tmp_file) $(test_log_file)
 	@echo 'Done: Created test log file: $@'
 
-$(doc_conf_dir)/serversweep.help.txt: serversweep $(package_name)/serversweep.py
+$(doc_conf_dir)/serversweep.help.txt: serversweep $(package_name)/_serversweep.py
 	./serversweep --help >$@
 	@echo 'Done: Created serversweep script help message file: $@'
 
-$(doc_conf_dir)/simpleping.help.txt: simpleping $(package_name)/simpleping.py
+$(doc_conf_dir)/explore.help.txt: explore $(package_name)/_explore.py
+	./serversweep --help >$@
+	@echo 'Done: Created serversweep script help message file: $@'
+
+$(doc_conf_dir)/targets.help.txt: target $(package_name)/_targetdata.py
+	./serversweep --help >$@
+	@echo 'Done: Created serversweep script help message file: $@'
+
+$(doc_conf_dir)/simpleping.help.txt: simpleping $(package_name)/_simpleping.py
 	./simpleping --help >$@
 	@echo 'Done: Created simpleping script help message file: $@'
 
-$(doc_conf_dir)/simplepingall.help.txt: simplepingall $(package_name)/simpleping.py
+$(doc_conf_dir)/simplepingall.help.txt: simplepingall $(package_name)/_simpleping.py
 	./simplepingall --help >$@
 	@echo 'Done: Created simpleping script help message file: $@'
 

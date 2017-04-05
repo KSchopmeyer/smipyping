@@ -28,6 +28,7 @@ from ._scanport import check_port_syn
 
 __all__ = ['ServerSweep', 'create_sweep_argparser', 'parse_sweep_args']
 
+
 class ServerSweep(object):
     """
     Class to define the functionality to execute port sweeps of
@@ -291,11 +292,16 @@ class ServerSweep(object):
                 for port_ in self.ports:
                     yield test_ip, port_
 
-    def write_results(self, open_hosts, output_file=serversweep.tst):
+    def write_results(self, open_hosts, output_file='serversweep.tst',
+                      new_only=True):
         """
         Write the results to an output file for further processing
         """
-        pass
+        f1 = open(output_file, 'w+')
+        # add code to filter
+        for open_host in open_hosts:
+            # clear the file
+            print('%s' % open_host, file=f1)
 
     def print_open_hosts_report(self, open_hosts):
         """
@@ -315,13 +321,15 @@ class ServerSweep(object):
         range_txt = '%s:%s' % (self.min_octet_val, self.max_octet_val)
 
         if len(open_hosts) != 0:
-            print('Open WBEMServers:subnet(s)=%s port(s)=%s range %s, %s'
-                  ' count %s'
+            print('Open WBEMServers:subnet(s)=%s port(s)=%s range %s, time %s'
+                  ' total_pings %s count %s'
                   % (self.net_defs, self.ports, range_txt, execution_time,
-                     len(open_hosts)))
+                     self.total_pings, len(open_hosts)))
             # open_hosts.sort(key=lambda ip: map(int, ip.split('.')))
             # TODO this probably requires ordered dict rather than dictionary to
-            # keep order
+            # keep order. We are not outputing in full order. Note that
+            # ip address itself is not good ordering since not all octets are
+            # 3 char
             for host_data in open_hosts:
                 if self.provider_data is not None:
                     record_list = self.provider_data.get_targets_host(host_data)

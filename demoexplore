@@ -1,0 +1,2 @@
+CONFIG_FILE=$PWD/localdbconfig.ini
+./explore --config_file $CONFIG_FILE

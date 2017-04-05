@@ -55,7 +55,6 @@ DEFAULT_NAMESPACE = 'root/cimv2'
 DB_TYPE = 'csv'
 
 #: Maximum number of parallel threads to use in multithreaded operations
-
-MAX_THREADS  = 200
+MAX_THREADS  = 100
 
 
