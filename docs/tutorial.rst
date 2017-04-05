@@ -1,0 +1,46 @@
+
+.. _`Tutorial`:
+
+Tutorial
+========
+
+This section contains a few short tutorials about using pywbem. It is intended
+to be enough to get people up and going who already know a bit about WBEM and
+CIM.
+
+The tutorials in this section are
+`Jupyter Notebooks <http://jupyter-notebook-beginner-guide.readthedocs.io/>`_,
+and are shown using the online
+`Jupyter Notebook Viewer <http://nbviewer.jupyter.org/>`_.
+This allows viewing the tutorials without having Jupyter Notebook installed
+locally.
+
+In order to view a tutorial, just click on a link in this table:
+
+===================================  ==========================================
+Tutorial                             Short description
+===================================  ==========================================
+None developed to date
+===================================  ==========================================
+
+For the following topics, tutorials are not yet available:
+
+* TODO
+
+Executing code in the tutorials
+-------------------------------
+
+You cannot directly modify or execute the code in the tutorials using the
+Jupyter Notebook Viewer, though. In order to do that, the Jupyter Notebook
+Viewer provides a download button at the top right corner of the page.
+
+You must have Jupyter Notebook
+`installed <https://jupyter.readthedocs.io/en/latest/install.html>`_,
+preferrably in a
+`virtual Python environment <http://docs.python-guide.org/en/latest/dev/virtualenvs/>`_,
+and you must have pywbem installed.
+
+To see a list of your downloaded notebook files, start Jupyter Notebook as
+follows::
+
+    jupyter notebook --notebook-dir={your-notebook-dir}

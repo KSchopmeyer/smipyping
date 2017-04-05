@@ -76,7 +76,7 @@ doc_utility_help_files := \
     $(doc_conf_dir)/simpleping.help.txt \
     $(doc_conf_dir)/serversweep.help.txt \
     $(doc_conf_dir)/explore.help.txt \
-    $(doc_conf_dir)/target.help.txt \
+    $(doc_conf_dir)/targets.help.txt \
 
 # Dependents for Sphinx documentation build
 doc_dependent_files := \
@@ -84,7 +84,7 @@ doc_dependent_files := \
     $(wildcard $(doc_conf_dir)/*.rst) \
     $(wildcard $(doc_conf_dir)/notebooks/*.ipynb) \
     $(package_name)/__init__.py \
-    $(package_name)/_target.py \
+    $(package_name)/_targetdata.py \
     $(package_name)/_explore.py \
     $(package_name)/_simpleping.py \
     $(package_name)/_serversweep.py \
@@ -327,12 +327,12 @@ $(doc_conf_dir)/serversweep.help.txt: serversweep $(package_name)/_serversweep.p
 	@echo 'Done: Created serversweep script help message file: $@'
 
 $(doc_conf_dir)/explore.help.txt: explore $(package_name)/_explore.py
-	./serversweep --help >$@
-	@echo 'Done: Created serversweep script help message file: $@'
+	./explore --help >$@
+	@echo 'Done: Created explore script help message file: $@'
 
-$(doc_conf_dir)/targets.help.txt: target $(package_name)/_targetdata.py
-	./serversweep --help >$@
-	@echo 'Done: Created serversweep script help message file: $@'
+$(doc_conf_dir)/targets.help.txt: targets $(package_name)/_targetdata.py
+	./targets --help >$@
+	@echo 'Done: Created targets script help message file: $@'
 
 $(doc_conf_dir)/simpleping.help.txt: simpleping $(package_name)/_simpleping.py
 	./simpleping --help >$@
@@ -340,5 +340,5 @@ $(doc_conf_dir)/simpleping.help.txt: simpleping $(package_name)/_simpleping.py
 
 $(doc_conf_dir)/simplepingall.help.txt: simplepingall $(package_name)/_simpleping.py
 	./simplepingall --help >$@
-	@echo 'Done: Created simpleping script help message file: $@'
+	@echo 'Done: Created simplepingall script help message file: $@'
 
