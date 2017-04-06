@@ -7,11 +7,11 @@ from __future__ import print_function, absolute_import
 import click
 from pprint import pprint as pp  # noqa: F401
 
-from .smicli import smicli, CMD_OPTS_TXT
+from .smicli import cli, CMD_OPTS_TXT
 
 
-@smicli.group('server', options_metavar=CMD_OPTS_TXT)
-def database_group():
+@cli.group('server', options_metavar=CMD_OPTS_TXT)
+def explore_group():
     """
     Command group for operations on provider data maintained in a database.
 
@@ -21,10 +21,11 @@ def database_group():
     """
     pass
 
-@server_group.command('info', options_metavar=CMD_OPTS_TXT)
+
+@explore_group.command('info', options_metavar=CMD_OPTS_TXT)
 @click.argument('providerid', multiple=True, type=str, default=None,
-              help='Define a specific Provider ID from the database to '
-                   ' use.')
+                help='Define a specific Provider ID from the database to '
+                     ' use.')
 @click.pass_obj
 def provider_info(context, providerid, **options):
     """
@@ -37,16 +38,12 @@ def provider_info(context, providerid, **options):
     base.
     """
     context.execute_cmd(lambda: cmd_provider_info(context, providerid,
-                                                   options))
+                                                  options))
 
 
-def cmd_provider_info(context, providerid, options)
+def cmd_provider_info(context, providerid, options):
     """Search get brand info for a set of providers"""
 
     # get server info for this provider
 
     # get the info for this set of providers
-
-    
-
-    

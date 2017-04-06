@@ -63,6 +63,7 @@ from ._cmd_database import *  # noqa: F401, F403
 #from ._cmd_providers import *  # noqa: F401, F403
 from ._targetdatacli import *  # noqa: F401, F403
 from ._scanport import *  # noqa: F401, F403
+from ._click_context import *  # noqa: F401, F403
 
 from ._version import __version__  # noqa: F401, F403
 

@@ -24,7 +24,7 @@ from ._targetdata import TargetsData
 from ._functiontimeout import FunctionTimeoutError
 from ._terminaltable import print_terminal_table, fold_cell
 from ._ping import ping_host
-from .config import DEFAULT_CONFIG_FILE, PING_TIMEOUT, DB_TYPE
+from .config import DEFAULT_CONFIG_FILE, PING_TIMEOUT
 
 __all__ = ['Explorer', ]
 

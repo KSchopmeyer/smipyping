@@ -55,6 +55,17 @@ DEFAULT_NAMESPACE = 'root/cimv2'
 DB_TYPE = 'csv'
 
 #: Maximum number of parallel threads to use in multithreaded operations
-MAX_THREADS  = 100
+MAX_THREADS = 100
 
+#: Characters for cmdline prompt when the smicli repl is executing.
+#: The prompt is presented at the beginning of a line awaiting a command
+#: input.
+#: The prompt MUST BE Unicode (prompt-toolkit requirement)
 
+PYWBEMCLI_PROMPT = u'smicli> '
+
+#: File path of history file for interactive mode.
+#: If the file name starts with tilde (which is handled by the shell, not by
+#: the file system), it is properly expanded.
+
+PYWBEMCLI_HISTORY_FILE = '~/.smicli_history'

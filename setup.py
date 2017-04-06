@@ -9,7 +9,7 @@ from __future__ import print_function, absolute_import
 from os import path
 from setuptools import setup
 
-here = path.abspath(path.dirname(__file__))
+HERE = path.abspath(path.dirname(__file__))
 
 
 def package_version(filename, varname):
@@ -23,15 +23,16 @@ def package_version(filename, varname):
         exec(fp.read(), None, _locals)  # pylint: disable=exec-used
     return _locals[varname]
 
-# Get the long description from the README file
-with open(path.join(here, 'README.md')) as f:
-    long_description = f.read()
 
-pkg_version = package_version("smipyping/_version.py", "__version__")
+# Get the long description from the README file
+with open(path.join(HERE, 'README.md')) as f:
+    long_description = f.read()  # pylint: disable=invalid-name
+
+PKG_VERSION = package_version("smipyping/_version.py", "__version__")
 
 setup(
     name='smipyping',
-    version=pkg_version,
+    version=PKG_VERSION,
     description='smipyping - SMI Lab Test Tools',
     long_description=long_description,
     url='https://git@bitbucket.org:kschopmeyer/smipyping.git',
@@ -73,7 +74,8 @@ setup(
         'configparser',
         'click',
         'click-repl',
-        'click-spinner'],
+        'click-spinner',
+        'prompt_toolkit'],
 
     # smipyping prereqs for 'develop' command.
     # TOD enable this. pywbem does in os_setup.py
@@ -100,5 +102,5 @@ setup(
         'explore',
         'serversweep',
         'simplepingall',
-        'smicli']
+        'smicli']  # noqa: E123
     )
