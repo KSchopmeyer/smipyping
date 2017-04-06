@@ -29,7 +29,7 @@ class TargetsData(object):
     environment.
     """
 
-    def __init__(self, filename, verbose):
+    def __init__(self, filename, db_type, verbose):
         """Initialize the abstract Targets instance.
 
         This controls all other
@@ -66,7 +66,7 @@ class TargetsData(object):
             ('ScanEnabled', ('Enabled', 6, str)),
             ])  # noqa: E123
 
-        self.db_type = None
+        self.db_type = db_type
 
     @classmethod
     def factory(cls, filename, type, verbose):
@@ -81,15 +81,13 @@ class TargetsData(object):
             print('targetdata factory file %s type %s v %s' % (filename, type,
                                                                verbose))
         if type == ('csv'):
-            inst = CsvTargetsData(filename, verbose)
+            inst = CsvTargetsData(filename, type, verbose)
 
         elif type == ('sql'):
-            inst = SQLTargetsData(filename, verbose)
+            inst = SQLTargetsData(filename, type, verbose)
 
         else:
             ValueError('Invalid target factory type %s' % type)
-
-        inst.db_type_ = type  # pylint: disable=invalid-name
 
         return inst
 
@@ -99,7 +97,8 @@ class TargetsData(object):
 
     def __repr__(self):
         """Rep of target data"""
-        return ('Targetdata rep count=%s' % len(self.targetsdict))
+        return ('Targetdata filename%s db_type %s, rep count=%s' %
+                (self.filename, self.db_type, len(self.targetsdict)))
 
     def get_field_list(self):
         """Return a list of the base table file names in the order defined."""
@@ -322,11 +321,11 @@ class TargetsData(object):
 class SQLTargetsData(TargetsData):
     """Source is sql data"""
     # TODO filename is config file name, not actual file name.
-    def __init__(self, filename, verbose):
+    def __init__(self, filename, type, verbose):
         """Read the input file into a dictionary."""
 
         print('SQL Database type %s %s' % (filename, verbose))
-        super(SQLTargetsData, self).__init__(filename, verbose)
+        super(SQLTargetsData, self).__init__(filename, type, verbose)
 
         try:
             sql_config = read_config(filename, 'mysql')
@@ -363,16 +362,23 @@ class SQLTargetsData(TargetsData):
                              % (sql_config, ex))
 
     def db_info(self):
-        db_config = read_config(self.filename, 'mysql')
+        """ Return info on the database used"""
+        try:
+
+            db_config = read_config(self.filename, self.db_type)
+        except ValueError as ve:
+            print('Section %s not in configfile %s %ve' % (self.db_type,
+                                                           self.filename,
+                                                           ve))
         return db_config
 
 
 class CsvTargetsData(TargetsData):
     """Comma Separated Values form of the Target base."""
 
-    def __init__(self, config_file, verbose):
+    def __init__(self, config_file, type, verbose):
         """Read the input file into a dictionary."""
-        super(CsvTargetsData, self).__init__(config_file, verbose)
+        super(CsvTargetsData, self).__init__(config_file, type, verbose)
         config_file_dir = os.path.dirname(config_file)
 
         # get configuration and account for relative database name
@@ -403,8 +409,14 @@ class CsvTargetsData(TargetsData):
 
         self.targetsdict = result
 
+    # TODO consolidate this to use predefined type.
     def db_info(self):
-        db_config = read_config(self.filename, 'csv')
+        try:
+            db_config = read_config(self.filename, self.db_type)
+        except ValueError as ve:
+            print('Section %s not in configfile %s %s' % (self.db_type,
+                                                          self.filename,
+                                                          ve))
         return db_config
 
     def write_updated(self):

@@ -62,10 +62,10 @@ MAX_THREADS = 100
 #: input.
 #: The prompt MUST BE Unicode (prompt-toolkit requirement)
 
-PYWBEMCLI_PROMPT = u'smicli> '
+SMICLI_PROMPT = u'smicli> '
 
 #: File path of history file for interactive mode.
 #: If the file name starts with tilde (which is handled by the shell, not by
 #: the file system), it is properly expanded.
 
-PYWBEMCLI_HISTORY_FILE = '~/.smicli_history'
+SMICLI_HISTORY_FILE = '~/.smicli_history'

@@ -29,7 +29,7 @@ from smipyping import TargetsData
 from smipyping import DEFAULT_CONFIG_FILE
 from ._click_context import ClickContext
 
-from .config import PYWBEMCLI_PROMPT, PYWBEMCLI_HISTORY_FILE
+from .config import SMICLI_PROMPT, SMICLI_HISTORY_FILE
 
 # Display of options in usage line
 GENERAL_OPTIONS_METAVAR = '[GENERAL-OPTIONS]'
@@ -48,7 +48,7 @@ __all__ = ['cli']
               help='Display extra information about the processing.')
 @click.version_option(help="Show the version of this command and exit.")
 @click.pass_context
-def cli(ctx, config_file, verbose):
+def cli(ctx, config_file, verbose, provider_data=None):
     """
     General command line script for smipyping.  This script executes a number
     of subcommands to:
@@ -69,8 +69,13 @@ def cli(ctx, config_file, verbose):
         # We apply the documented option defaults.
         if config_file is None:
             config_file = DEFAULT_CONFIG_FILE
-            print('Using default config file %s' % config_file)
-        provider_data = TargetsData.factory(config_file, DBTYPE, verbose)
+            if verbose:
+                print('Using default config file %s' % config_file)
+        try:
+            provider_data = TargetsData.factory(config_file, DBTYPE, verbose)
+        except ValueError as ve:
+            raise click.ClickException("%s: %s" % (ex.__class__.__name__, ex))
+            
 
     else:
         # We are processing an interactive command.
@@ -86,12 +91,10 @@ def cli(ctx, config_file, verbose):
     # its own command context different from the command context for the
     # command line.
     ctx.obj = ClickContext(ctx, config_file, provider_data, verbose)
-    print('set contextdone ')
 
     # Invoke default command
     if ctx.invoked_subcommand is None:
-        print('invoke cmd')
-        ctx.invoke(ctx)
+        ctx.invoke(repl)
 
 
 @cli.command('help')

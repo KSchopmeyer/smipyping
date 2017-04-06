@@ -32,6 +32,8 @@ def read_config(filename, section):
     :param section: name of the section (ex. mysql)
     :return: a dictionary of parameters in that section
 
+    Exception: Returns ValueError if the section defined not in config file
+
     """
     # create parser and read ini configuration file
     parser = ConfigParser()
@@ -44,7 +46,7 @@ def read_config(filename, section):
         for item in items:
             db[item[0]] = item[1]
     else:
-        raise TypeError('{0} not found in the {1} file'.format(section,
+        raise ValueError('{0} not found in the {1} file'.format(section,
                                                                filename))
 
     return db

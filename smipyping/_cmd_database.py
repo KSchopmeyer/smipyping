@@ -8,6 +8,7 @@ from __future__ import print_function, absolute_import
 import click
 
 from .smicli import cli, CMD_OPTS_TXT
+from ._configfile import read_config
 
 
 @cli.group('database', options_metavar=CMD_OPTS_TXT)
@@ -106,13 +107,15 @@ def cmd_database_disable(context, providerid, enable, options):
 
 def cmd_database_info(context):
     """Display information on the providers config and data file."""
+    
+    print('DB Info:\nfilename:%s\ndatabase type: %s' %
+          (context.provider_data.filename, context.provider_data.db_type))
 
-    print('config file:%s\ndatabase type: %s' %
-          (context.provider_data.filename, context.provider_data.type_))
-    info_dict = context.provider_data.db_info()
-
-    for key in info_dict:
-        print('  %s; %s' % (key, info_dict[key]))
+    print('config file %s' % context.config_file)
+    config_info_dict = read_config(context.config_file,
+                                   context.provider_data.db_type)
+     for key in config_info_dict:
+        print('  %s; %s' % (key, config_info_dict[key]))
 
 
 def cmd_database_fields(context):
