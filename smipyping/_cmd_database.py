@@ -109,26 +109,26 @@ def cmd_database_info(context):
     """Display information on the providers config and data file."""
     
     print('DB Info:\nfilename:%s\ndatabase type: %s' %
-          (context.provider_data.filename, context.provider_data.db_type))
+          (context.target_data.filename, context.target_date.db_type))
 
     print('config file %s' % context.config_file)
     config_info_dict = read_config(context.config_file,
-                                   context.provider_data.db_type)
-     for key in config_info_dict:
+                                   context.target_data.db_type)
+    for key in config_info_dict:
         print('  %s; %s' % (key, config_info_dict[key]))
 
 
 def cmd_database_fields(context):
     """Display the information fields for the providers dictionary."""
 
-    print('\n'.join(context.provider_data.get_field_list()))
+    print('\n'.join(context.target_data.get_field_list()))
 
 
 def cmd_database_get(context, recordid, options):
     """Display the fields of a single provider record."""
 
     try:
-        provider_record = context.provider_data.get_dict_record(recordid)
+        provider_record = context.target_data.get_dict_record(recordid)
 
         # TODO need to order output.
         for key in provider_record:
@@ -148,7 +148,7 @@ def cmd_database_list(context, fields, company, options):
     show = list(fields)
     show.append('TargetID')
     try:
-        context.provider_data.display_all(list(fields), company)
+        context.target_data.display_all(list(fields), company)
 
     except Exception as ex:
         raise click.ClickException("%s: %s" % (ex.__class__.__name__, ex))

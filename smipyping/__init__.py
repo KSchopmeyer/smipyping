@@ -50,19 +50,23 @@ from __future__ import absolute_import
 
 import sys
 
-from ._ping import *  # noqa: F401, F403
 from .config import *  # noqa: F401, F403
+# core classes and functions
+from ._ping import *  # noqa: F401, F403
+
 from ._targetdata import *  # noqa: F401, F403
 from ._simpleping import *  # noqa: F401, F403
 from ._explore import *  # noqa: F401, F403
 from ._serversweep import *  # noqa: F401, F403
 # TODO should not need this
 from ._cliutils import *  # noqa: F401, F403
-from .smicli import *  # noqa: F401, F403
-from ._cmd_database import *  # noqa: F401, F403
-#from ._cmd_providers import *  # noqa: F401, F403
 from ._targetdatacli import *  # noqa: F401, F403
 from ._scanport import *  # noqa: F401, F403
+
+# smicli support libraries
+from .smicli import *  # noqa: F401, F403
+from ._cmd_database import *  # noqa: F401, F403
+from ._cmd_provider import *  # noqa: F401, F403
 from ._click_context import *  # noqa: F401, F403
 
 from ._version import __version__  # noqa: F401, F403

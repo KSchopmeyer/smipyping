@@ -1,59 +1,38 @@
-usage: serversweep [options] subnet [subnet] ...
+usage: explore [options] server
 
-Sweep possible WBEMServer ports across a range of IP subnets and ports to find existing running WBEM servers.
+Explore WBEM servers in the defined database for general information about
+each server.
 
 optional arguments:
   -h, --help            show this help message and exit
+  -f CONFIG_FILE, --config_file CONFIG_FILE
+                        Configuration file to use for config information.
+                        Default=localconfig.ini
 
 Positional arguments:
-  subnet                IP subnets to scan (ex. 10.1.132). Multiple subnets
-                         allowed. Each subnet string is itself a definition that
-                        consists of period separated octets that are used to
-                        create the individual ip addresses to be tested:
-                          * Integers: Each integer is in the range 0-255
-                              ex. 10.1.2.9
-                          * Octet range definitions: A range expansion is in the
-                             form: int:int which defines the mininum and maximum
-                              values for that octet (ex 10.1.132:134) or
-                          * Integer lists: A list expansion is in the form:
-                             int,int,int
-                             that defines the set of values for that octet.
-                        Missing octet definitions are expanded to the value
-                        range defined by the min and max octet value parameters
-                        All octets of the ip address can use any of the 3
-                        definitions.
-                        Examples: 10.1.132,134 expands to addresses in 10.1.132
-                        and 10.1.134. where the last octet is the range 1 to 254
+  -u [URI], --uri [URI]
+                        Optional host name or ip address of wbem servers to
+                        explore schema:address:
 
-Scan related options:
-  Specify parameters of the subnet scan
+Server related options:
+  Specify the server either by host address or database targetID
 
-  --min_octet_val [Min], -s [Min]
-                        Minimum expanded value for any octet that is not
-                        specifically included in a net definition. Default = 1
-  --max_octet_val [Max], -e [Max]
-                        Minimum expanded value for any octet that is not
-                        specifically included in a net definition. Default =
-                        254
-  --port [PORT], -p [PORT]
-                        Port(s) to test. This argument may be repeated to test
-                        multiple ports
+  -T TargetId, --target_id TargetId
+                        If this argument is set, the value is a user id
+                        instead of an server url as the source for the test. In
+                        this case, namespace, user, and password arguments are
+                        derived from the user data rather than cli input
+  -t timeout, --timeout timeout
+                        Timeout of the completion of WBEM Server operation
+                        in seconds(integer between 0 and 300).
+                        Default: 20 seconds
 
 General options:
-  --config_file CONFIG_FILE, -c CONFIG_FILE
-                        Use config file to determine if server is in database
-  --no_threads          If set, uses non-threaded implementation for pings.
-                        The non-threaded implementation takes MUCH longer to
-                        execute butis provided in case threading causes issues
-                        in a particular user environment.
-  --verbose, -v         If set output detail displays as test proceeds
+  --no_ping, -n         Do not ping for server as first test. Executing the
+                        ping often shortens the total response time.
+  --threaded            If set use threaded code to explore in parallel
+  --verbose, -v         Verbosity level
+  --debug, -d           Display detailed connection information
 
-Examples:
-  serversweep 10.1.132:134
-        The above example will scan the subnets 10.1.134, 10.1.133, and
-        10.1.134 from 1 to 254 for the 4 the octet of ip addresses. This
-        is explicitly defined by 10.1.132:124.1:254
-  serversweep 10.1.134
-        Scan a complete Class C subnet, 10.1.134 for the default port (5989)
-  serversweep 10.1.132,134 -p 5989 -p 5988
-        Scan 10.1.132.1:254 and 10.1.134.1:254 for ports 5988 and 5989
+Examples: explore -u 10.1.134.25 explore -T 4 explore # explores all servers
+in the base

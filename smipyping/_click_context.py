@@ -27,10 +27,10 @@ class ClickContext(object):
         Manage the click context object
     """
 
-    def __init__(self, ctx, config_file, provider_data, verbose):
+    def __init__(self, ctx, config_file,target_data, verbose):
         self._config_file = config_file
         self._verbose = verbose
-        self._provider_data = provider_data
+        self._target_data = target_data
         self._spinner = click_spinner.Spinner()
 
     @property
@@ -48,11 +48,11 @@ class ClickContext(object):
         return self._verbose
 
     @property
-    def provider_data(self):
+    def target_data(self):
         """
-        :term:`provider_data`: Dictionary of provider data
+        :term:`target_data file`: Dictionary of provider data
         """
-        return self._provider_data
+        return self._target_data
 
     @property
     def spinner(self):
@@ -65,8 +65,8 @@ class ClickContext(object):
         """
         Call the cmd executor defined by cmd with the spinner
         """
-        if self._provider_data is None:
-            raise click.ClickException("No providers database defined")
+        if self._target_data is None:
+            raise click.ClickException("No provider targets database defined")
         self.spinner.start()
         try:
             cmd()

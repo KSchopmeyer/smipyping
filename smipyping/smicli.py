@@ -50,7 +50,7 @@ __all__ = ['cli']
 @click.pass_context
 def cli(ctx, config_file, verbose, provider_data=None):
     """
-    General command line script for smipyping.  This script executes a number
+    General command line script for smicli.  This script executes a number
     of subcommands to:
 
     \b
@@ -72,7 +72,7 @@ def cli(ctx, config_file, verbose, provider_data=None):
             if verbose:
                 print('Using default config file %s' % config_file)
         try:
-            provider_data = TargetsData.factory(config_file, DBTYPE, verbose)
+            target_data = TargetsData.factory(config_file, DBTYPE, verbose)
         except ValueError as ve:
             raise click.ClickException("%s: %s" % (ex.__class__.__name__, ex))
             
@@ -83,14 +83,14 @@ def cli(ctx, config_file, verbose, provider_data=None):
         if config_file is None:
             config_file = ctx.obj.config_file
         if provider_data is None:
-            provider_data = ctx.obj.provider_data
+            target_data = ctx.obj.target_data
         if verbose is None:
             verbose = ctx.obj.verbose
             
     # Create a command context for each command: An interactive command has
     # its own command context different from the command context for the
     # command line.
-    ctx.obj = ClickContext(ctx, config_file, provider_data, verbose)
+    ctx.obj = ClickContext(ctx, config_file, target_data, verbose)
 
     # Invoke default command
     if ctx.invoked_subcommand is None:
