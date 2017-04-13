@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-
 # (C) Copyright 2017 Inova Development Inc.
 # All Rights Reserved
 #
