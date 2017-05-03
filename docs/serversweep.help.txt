@@ -1,35 +1,59 @@
 usage: serversweep [options] subnet [subnet] ...
 
-Sweep possible WBEMServer ports across a range of IP subnets and ports to find
-existing open WBEM servers.
+Sweep possible WBEMServer ports across a range of IP subnets and ports to find existing running WBEM servers.
 
 optional arguments:
   -h, --help            show this help message and exit
 
 Positional arguments:
   subnet                IP subnets to scan (ex. 10.1.132). Multiple subnets
-                        allowed
+                         allowed. Each subnet string is itself a definition that
+                        consists of period separated octets that are used to
+                        create the individual ip addresses to be tested:
+                          * Integers: Each integer is in the range 0-255
+                              ex. 10.1.2.9
+                          * Octet range definitions: A range expansion is in the
+                             form: int:int which defines the mininum and maximum
+                              values for that octet (ex 10.1.132:134) or
+                          * Integer lists: A list expansion is in the form:
+                             int,int,int
+                             that defines the set of values for that octet.
+                        Missing octet definitions are expanded to the value
+                        range defined by the min and max octet value parameters
+                        All octets of the ip address can use any of the 3
+                        definitions.
+                        Examples: 10.1.132,134 expands to addresses in 10.1.132
+                        and 10.1.134. where the last octet is the range 1 to 254
 
 Scan related options:
   Specify parameters of the subnet scan
 
-  --startip [Start], -s [Start]
-                        Start scanning from this IP
-  --endip [End], -e [End]
-                        Scan to this IP
+  --min_octet_val [Min], -s [Min]
+                        Minimum expanded value for any octet that is not
+                        specifically included in a net definition. Default = 1
+  --max_octet_val [Max], -e [Max]
+                        Minimum expanded value for any octet that is not
+                        specifically included in a net definition. Default =
+                        254
   --port [PORT], -p [PORT]
                         Port(s) to test. This argument may be repeated to test
                         multiple ports
 
 General options:
-  --csvfile CSVFILE, -c CSVFILE
-                        Use csv input file
-  --no_threads          If set, defaults to non-threaded implementation. The
-                        non-threaded implementation takes much longer to
-                        execute.
+  --config_file CONFIG_FILE, -c CONFIG_FILE
+                        Use config file to determine if server is in database
+  --no_threads          If set, uses non-threaded implementation for pings.
+                        The non-threaded implementation takes MUCH longer to
+                        execute butis provided in case threading causes issues
+                        in a particular user environment.
   --verbose, -v         If set output detail displays as test proceeds
 
-Examples: serversweep 10.1.134 --startip=1 --endip=254 The above example will
-scan the subnets 10.1.134 from 1 to 254 serversweep 10.1.134 Scan a complete
-subnet, 10.1.134 for the default port (5989) serversweep 10.1.132 10.1.134 -p
-5989 -p 5988 Scan 10.1.132 and 10.1.134 for ports 5988 and 5989
+Examples:
+  serversweep 10.1.132:134
+        The above example will scan the subnets 10.1.134, 10.1.133, and
+        10.1.134 from 1 to 254 for the 4 the octet of ip addresses. This
+        is explicitly defined by 10.1.132:124.1:254
+  serversweep 10.1.134
+        Scan a complete Class C subnet, 10.1.134 for the default port (5989)
+  serversweep 10.1.132,134 -p 5989 -p 5988
+        Scan 10.1.132.1:254 and 10.1.134.1:254 for ports 5988 and 5989

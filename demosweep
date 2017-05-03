@@ -1,0 +1,12 @@
+#!/bin/bash
+
+##
+## This is a demo of the sweeper using the current defintion of the
+## snia network.  It sweeps all of the SNIA network as defined below.
+## 
+##
+export PYTHONPATH=/home/.virtualenvs/smipyping27
+CONFIG_FILE=$PWD/localdbconfig.ini
+# sweeps 10.1  132 AND 134, all in octet 4(1 through 254)
+#        10.2  100 THROUGH 117      octet 4(1 through 50)
+sudo ./serversweep 10.1.132,134 10.2.100:117.1:50 -c $CONFIG_FILE -p 5988 -p 5989

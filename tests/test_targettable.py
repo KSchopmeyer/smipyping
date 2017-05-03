@@ -16,11 +16,13 @@ from smipyping import TargetsData
 TEST_CONFIG_FILE_NAME = 'testconfig.ini'
 SCRIPT_DIR = os.path.dirname(__file__)
 
+
 class ValidTargetTableTests(unittest.TestCase):
     def setUp(self):
         test_config_file = os.path.join(SCRIPT_DIR, TEST_CONFIG_FILE_NAME)
         print('test_config_file %s' % test_config_file)
         self.target_table = TargetsData.factory(test_config_file, 'csv', False)
+
 
 class TargetTableTest(ValidTargetTableTests):
     """Class for simple tests of CSVUserData class."""
@@ -72,6 +74,7 @@ class TargetTableTest(ValidTargetTableTests):
     def test_enabled_target(self):
         self.assertFalse(self.target_table.disabled_record(
             self.target_table[4]))
+
 
 if __name__ == '__main__':
     unittest.main()

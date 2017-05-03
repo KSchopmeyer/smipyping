@@ -5,17 +5,13 @@ TODO: Remove this completely
 """
 import sys as _sys
 import csv
-from collections import OrderedDict
 import argparse as _argparse
-from configparser import ConfigParser
-import six
-from mysql.connector import MySQLConnection, Error
 
 from smipyping._cliutils import SmartFormatter as _SmartFormatter
-from smipyping._terminaltable import print_terminal_table, fold_cell
 from smipyping.config import DEFAULT_CONFIG_FILE
 
 __all__ = ['ProcessTargetDataCli']
+
 
 class ProcessTargetDataCli(object):
     """
@@ -50,7 +46,7 @@ The commands are:
             '-f', '--config_file', metavar='CONFIG_FILE',
             default=DEFAULT_CONFIG_FILE,
             help=('Configuration file to use for config information. '
-            'Default=%s' % DEFAULT_CONFIG_FILE))
+                  'Default=%s' % DEFAULT_CONFIG_FILE))
         argparser.add_argument(
             '-v', '--verbose', action='store_true', default=False)
 
@@ -140,13 +136,13 @@ The commands are:
             target_data.display_disabled()
 
     def disabled(self, target_data):
-        #~ disp_parser = _argparse.ArgumentParser(
-            #~ description='Display disabled')
-        #~ # prefixing the argument with -- means it's optional
-        #~ disp_parser.add_argument('-f', '--file',
-                                 #~ default='targetdata_example.csv',
-                                 #~ help='Filename to display')
-        #~ args = disp_parser.parse_args(_sys.argv[2:])
+        # ~ disp_parser = _argparse.ArgumentParser(
+            # ~ description='Display disabled')
+        # ~ # prefixing the argument with -- means it's optional
+        # ~ disp_parser.add_argument('-f', '--file',
+                                # ~ default='targetdata_example.csv',
+                                # ~ help='Filename to display')
+        # ~ args = disp_parser.parse_args(_sys.argv[2:])
         target_data.display_disabled()
 
     def fields(self, target_data):

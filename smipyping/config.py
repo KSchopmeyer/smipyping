@@ -1,4 +1,17 @@
-
+# (C) Copyright 2017 Inova Development Inc.
+# All Rights Reserved
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """
 The :mod:`smipyping.config` module sets configuration variables for smipyping.
 
@@ -40,6 +53,7 @@ USERDATA_FILE = 'targetdata_example.csv'
 #: The class that is used in ping tests.
 PING_TEST_CLASS = 'CIM_ComputerSystem'
 
+#: Timetout in seconds for the ping command
 PING_TIMEOUT = 2
 
 #: Timeout in seconds for the WBEM operation
@@ -54,4 +68,18 @@ DEFAULT_NAMESPACE = 'root/cimv2'
 #: type of database to use.  May be 'sql' or 'csv'
 DB_TYPE = 'csv'
 
+#: Maximum number of parallel threads to use in multithreaded operations
+MAX_THREADS = 100
 
+#: Characters for cmdline prompt when the smicli repl is executing.
+#: The prompt is presented at the beginning of a line awaiting a command
+#: input.
+#: The prompt MUST BE Unicode (prompt-toolkit requirement)
+
+SMICLI_PROMPT = u'smicli> '
+
+#: File path of history file for interactive mode.
+#: If the file name starts with tilde (which is handled by the shell, not by
+#: the file system), it is properly expanded.
+
+SMICLI_HISTORY_FILE = '~/.smicli_history'

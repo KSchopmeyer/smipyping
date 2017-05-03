@@ -4,13 +4,14 @@ data file.
 """
 from __future__ import print_function, absolute_import
 
+# from pprint import pprint as pp  # noqa: F401
 import click
-from pprint import pprint as pp  # noqa: F401
 
-from .smicli import smicli, CMD_OPTS_TXT
+from .smicli import cli, CMD_OPTS_TXT
+from ._configfile import read_config
 
 
-@smicli.group('database', options_metavar=CMD_OPTS_TXT)
+@cli.group('database', options_metavar=CMD_OPTS_TXT)
 def database_group():
     """
     Command group for operations on provider data maintained in a database.
@@ -85,9 +86,10 @@ def database_disable(context, providerid, enable, **options):
 ##############################################################
 
 
-def cmd_database_disable(context, providerid, enable, **options):
-        """Display the information fields for the providers dictionary."""
+def cmd_database_disable(context, providerid, enable, options):
+    """Display the information fields for the providers dictionary."""
 
+    try:
         host_record = context.provider_data.get_dict_record(providerid)
 
         # TODO add test to see if already in correct state
@@ -99,39 +101,45 @@ def cmd_database_disable(context, providerid, enable, **options):
         else:
             print('Id %s invalid or not in table' % providerid)
 
+    except Exception as ex:
+        raise click.ClickException("%s: %s" % (ex.__class__.__name__, ex))
+
 
 def cmd_database_info(context):
-        """Display information on the providers config anddata file."""
+    """Display information on the providers config and data file."""
+    
+    print('DB Info:\nfilename:%s\ndatabase type: %s' %
+          (context.target_data.filename, context.target_date.db_type))
 
-        print('config file:%s\ndatabase type: %s' %
-              (context.provider_data.filename, context.provider_data.type_))
-        info_dict = context.provider_data.db_info()
-        for key in info_dict:
-            print('  %s; %s' % (key, info_dict[key]))
+    print('config file %s' % context.config_file)
+    config_info_dict = read_config(context.config_file,
+                                   context.target_data.db_type)
+    for key in config_info_dict:
+        print('  %s; %s' % (key, config_info_dict[key]))
 
 
 def cmd_database_fields(context):
-        """Display the information fields for the providers dictionary."""
+    """Display the information fields for the providers dictionary."""
 
-        print('\n'.join(context.provider_data.get_field_list()))
+    print('\n'.join(context.target_data.get_field_list()))
 
 
 def cmd_database_get(context, recordid, options):
-        """Display the fields of a single provider record."""
+    """Display the fields of a single provider record."""
 
-        try:
-            provider_record = context.provider_data.get_dict_record(recordid)
+    try:
+        provider_record = context.target_data.get_dict_record(recordid)
 
-            # TODO need to order output.
-            for key in provider_record:
-                print('%s: %s' % (key, provider_record[key]))
+        # TODO need to order output.
+        for key in provider_record:
+            print('%s: %s' % (key, provider_record[key]))
 
-        except KeyError as ke:
-            print('record id %s invalid.' % recordid)
-            # TODO what should we do with error at this point???
+    except KeyError as ke:
+        print('record id %s invalid for this database.' % recordid)
+        raise click.ClickException("%s: %s" % (ke.__class__.__name__, ke))
 
-        except Exception as ex:
-            raise click.ClickException("%s: %s" % (ex.__class__.__name__, ex))
+    except Exception as ex:
+        raise click.ClickException("%s: %s" % (ex.__class__.__name__, ex))
 
 
 def cmd_database_list(context, fields, company, options):
@@ -139,7 +147,8 @@ def cmd_database_list(context, fields, company, options):
 
     show = list(fields)
     show.append('TargetID')
-    try:        
-        context.provider_data.display_all(list(fields), company)
+    try:
+        context.target_data.display_all(list(fields), company)
+
     except Exception as ex:
         raise click.ClickException("%s: %s" % (ex.__class__.__name__, ex))

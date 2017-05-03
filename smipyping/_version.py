@@ -16,4 +16,3 @@ Version of the smipyping package.
 #:   PyPI)
 #: * "M.N.U": The final M.N.U release
 __version__ = '0.6.0.dev0'
-

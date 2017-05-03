@@ -1,22 +1,23 @@
 # ------------------------------------------------------------------------------
-# Makefile for smipyping
+# Makefile for smipyping project
 #
-# Supported platforms for this makefile:
-#   Linux
-#   OS-X
-#   Windows (with CygWin, MinGW, etc.)
-#
-# Prerequisite commands for this makefile:
-#   make
-#   bash, sh, rm, mv, mkdir, echo
-#   find, xargs, grep, sed, tar
-#   python (Some active Python version, virtualenv is supported)
-#   pip (in the active Python environment)
-#
-# Additional prerequisites for development and for running some parts of this
-# makefile will be installed by 'make develop'.
-#
-# Prerequisites for usage will be installed by 'make install'.
+# Basic prerequisites for running this Makefile, to be provided manually:
+#   One of these OS platforms:
+#     Windows with CygWin
+#     Linux (any)
+#     OS-X
+#   These commands on all OS platforms:
+#     make (GNU make)
+#     bash
+#     rm, mv, find, xargs, tee
+#     python (This Makefile uses the active Python environment, virtual Python
+#        environments are supported)
+#     pip (in the active Python environment)
+#     twine (in the active Python environment)
+#   These commands on Linux and OS-X:
+#     uname
+# Additional prerequisites for running this Makefile are installed by running:
+#   make develop
 # ------------------------------------------------------------------------------
 
 # Determine OS platform make runs on
@@ -46,12 +47,15 @@ python_mn_version := $(shell python -c "import sys; sys.stdout.write('%s%s'%sys.
 # Directory for the generated distribution files
 dist_dir := dist
 
-# Distribution archives
+# Distribution archives (as built by setup.py)
 bdist_file := $(dist_dir)/$(package_name)-$(package_version)-py2.py3-none-any.whl
 sdist_file := $(dist_dir)/$(package_name)-$(package_version).tar.gz
 
-dist_files := $(bdist_file) $(sdist_file)
+# Windows installable (as built by setup.py)
+win64_dist_file := $(dist_dir)/$(package_name)-$(package_version).win-amd64.exe
 
+# dist_files := $(bdist_file) $(sdist_file) $(win64_dist_file)
+dist_files := $(bdist_file) $(sdist_file)
 
 # Directory for generated API documentation
 doc_build_dir := build_doc
@@ -72,7 +76,7 @@ doc_utility_help_files := \
     $(doc_conf_dir)/simpleping.help.txt \
     $(doc_conf_dir)/serversweep.help.txt \
     $(doc_conf_dir)/explore.help.txt \
-    $(doc_conf_dir)/userdata.help.txt \
+    $(doc_conf_dir)/targets.help.txt \
 
 # Dependents for Sphinx documentation build
 doc_dependent_files := \
@@ -80,10 +84,10 @@ doc_dependent_files := \
     $(wildcard $(doc_conf_dir)/*.rst) \
     $(wildcard $(doc_conf_dir)/notebooks/*.ipynb) \
     $(package_name)/__init__.py \
-    $(package_name)/userdata.py \
-    $(package_name)/explore.py \
-    $(package_name)/simpleping.py \
-    $(package_name)/serversweep.py \
+    $(package_name)/_targetdata.py \
+    $(package_name)/_explore.py \
+    $(package_name)/_simpleping.py \
+    $(package_name)/_serversweep.py \
 
 # PyLint config file
 pylint_rc_file := pylintrc
@@ -154,6 +158,10 @@ develop:
 
 .PHONY: build
 build: $(bdist_file) $(sdist_file)
+	@echo '$@ done.'
+
+.PHONY: buildwin
+buildwin: $(win64_dist_file)
 	@echo '$@ done.'
 
 .PHONY: builddoc
@@ -314,15 +322,23 @@ $(test_log_file): makefile $(package_name)/*.py tests/*.py coveragerc
 	mv -f $(test_tmp_file) $(test_log_file)
 	@echo 'Done: Created test log file: $@'
 
-$(doc_conf_dir)/serversweep.help.txt: serversweep $(package_name)/serversweep.py
+$(doc_conf_dir)/serversweep.help.txt: serversweep $(package_name)/_serversweep.py
 	./serversweep --help >$@
 	@echo 'Done: Created serversweep script help message file: $@'
 
-$(doc_conf_dir)/simpleping.help.txt: simpleping $(package_name)/simpleping.py
+$(doc_conf_dir)/explore.help.txt: explore $(package_name)/_explore.py
+	./explore --help >$@
+	@echo 'Done: Created explore script help message file: $@'
+
+$(doc_conf_dir)/targets.help.txt: targets $(package_name)/_targetdata.py
+	./targets --help >$@
+	@echo 'Done: Created targets script help message file: $@'
+
+$(doc_conf_dir)/simpleping.help.txt: simpleping $(package_name)/_simpleping.py
 	./simpleping --help >$@
 	@echo 'Done: Created simpleping script help message file: $@'
 
-$(doc_conf_dir)/simplepingall.help.txt: simplepingall $(package_name)/simpleping.py
+$(doc_conf_dir)/simplepingall.help.txt: simplepingall $(package_name)/_simpleping.py
 	./simplepingall --help >$@
-	@echo 'Done: Created simpleping script help message file: $@'
+	@echo 'Done: Created simplepingall script help message file: $@'
 

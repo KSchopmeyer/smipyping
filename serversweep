@@ -2,19 +2,22 @@
 # -*- coding: utf-8 -*-
 
 """
-    Provides script interface to manage user data. This is temporary
+This script executes the PortSweep functions to sweep a set of ip address
+and ports for possible WBEM Servers.
 
+This is a temporary version of the code in a separate script until it is
+integrated into a single multi-level script.
 
-    This script:
-        Has a number of subcommands to manage the userdata.
+NOTE: This script must be executed in admin mode because python does not
+allow the port inspect test in user mode.
+
 """
 from __future__ import absolute_import
 
 import sys
 import os
-from smipyping import create_sweep_argparser, parse_sweep_args, \
-                      sweep_servers, TargetsData
-from smipyping import DB_TYPE
+from smipyping import ServerSweep, TargetsData, DB_TYPE, \
+    create_sweep_argparser, parse_sweep_args
 
 def main(prog_name):
     """
@@ -23,7 +26,6 @@ def main(prog_name):
     argparser = create_sweep_argparser(prog_name)
     args = parse_sweep_args(argparser)
 
-    # TODO clean up user_data
     provider_data = None
     if args.config_file is not None:
         provider_data = TargetsData.factory(args.config_file, DB_TYPE,
@@ -33,10 +35,17 @@ def main(prog_name):
 
     # Sweep the servers and display result
     print('Start sweep for subnets %s, port %s, range %s:%s' %
-          (args.subnet, args.port, args.startip, args.endip))
-    print('This may take several minutes')
-    sweep_servers(args.subnet, args.startip, args.endip, args.port,
-                  args.no_threads, provider_data, args.verbose)
+          (args.subnet, args.port, args.min_octet_val, args.max_octet_val))
+    print('The sweep may take several minutes')
+    sweep = ServerSweep(args.subnet, args.port, provider_data=provider_data,
+                        no_threads=args.no_threads,
+                        min_octet_val=args.min_octet_val,
+                        max_octet_val=args.max_octet_val,
+                        verbose=args.verbose)
+
+    open_servers = sweep.sweep_servers()
+
+    sweep.print_open_hosts_report(open_servers)
 
 if __name__ == '__main__':
     sys.exit(main(os.path.basename(sys.argv[0])))

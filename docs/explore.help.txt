@@ -1,0 +1,38 @@
+usage: explore [options] server
+
+Explore WBEM servers in the defined database for general information about
+each server.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -f CONFIG_FILE, --config_file CONFIG_FILE
+                        Configuration file to use for config information.
+                        Default=localconfig.ini
+
+Positional arguments:
+  -u [URI], --uri [URI]
+                        Optional host name or ip address of wbem servers to
+                        explore schema:address:
+
+Server related options:
+  Specify the server either by host address or database targetID
+
+  -T TargetId, --target_id TargetId
+                        If this argument is set, the value is a user id
+                        instead of an server url as the source for the test. In
+                        this case, namespace, user, and password arguments are
+                        derived from the user data rather than cli input
+  -t timeout, --timeout timeout
+                        Timeout of the completion of WBEM Server operation
+                        in seconds(integer between 0 and 300).
+                        Default: 20 seconds
+
+General options:
+  --no_ping, -n         Do not ping for server as first test. Executing the
+                        ping often shortens the total response time.
+  --threaded            If set use threaded code to explore in parallel
+  --verbose, -v         Verbosity level
+  --debug, -d           Display detailed connection information
+
+Examples: explore -u 10.1.134.25 explore -T 4 explore # explores all servers
+in the base

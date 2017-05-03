@@ -1,0 +1,2 @@
+CONFIG_FILE=$PWD/localdbconfig.ini
+simplepingall -c $CONFIG_FILE

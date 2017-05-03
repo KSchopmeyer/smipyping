@@ -12,10 +12,10 @@ from __future__ import absolute_import
 
 import sys as _sys
 import os
-from smipyping import create_explore_parser, TargetsData, \
-                      create_explore_logger, \
-                      explore_servers, print_server_info, \
-                      print_smi_profile_info, DB_TYPE
+from smipyping._explore import create_explore_parser
+
+from smipyping import Explorer, DB_TYPE, TargetsData
+
 
 def main(prog):
     logfile = '%s.log' % prog
@@ -27,10 +27,11 @@ def main(prog):
     if args.verbose:
         print('args %s' % args)
 
-    logger = create_explore_logger(prog, logfile)
     target_data = TargetsData.factory(args.config_file, DB_TYPE, args.verbose)
 
     hosts = target_data.get_hostid_list()
+
+    print('hosts %s' % hosts)
 
     filtered_hosts = []
 
@@ -46,20 +47,42 @@ def main(prog):
             raise ValueError('Ip address %s not in data base' % args.wbemserver)
     elif args.target_id:
         target = target_data[args.target_id]
-        filtered_hosts.append(target['IPAddress'])        
+        filtered_hosts.append(target['IPAddress'])
     else:
         filtered_hosts = hosts
 
-    servers = explore_servers(target_data, filtered_hosts, args, logger)
+    targets = []
+    for host in filtered_hosts:
+        if args.verbose:
+            print('targest extend host %s, rtns %s' %
+                  (host, target_data.get_target_for_host(host)))
+              
+        targets.extend(target_data.get_target_for_host(host))
+    if args.verbose:
+        print('targets %s 0 %s ' % (targets, type(targets[0])))
+
+    targets = set(targets)
+
+    if args.verbose:
+        print('targets after set %s' % targets)        
+
+    ping = False if args.no_ping else True
+
+    logfile = '%s.log' % prog
+
+    if args.verbose:
+        print('args %s' % args)
+
+    explore = Explorer(prog, target_data, logfile=logfile, verbose=args.verbose,
+                       ping=ping, threaded=True)
+
+    servers = explore.explore_servers(targets)
 
     # print results
-    print_server_info(servers, target_data)
-
-    # repeat to get smi info.
-
-    print_smi_profile_info(servers, target_data)
+    explore.print_server_info(servers, target_data)
 
     return 0
+
 
 if __name__ == '__main__':
     prog_name = os.path.basename(_sys.argv[0])

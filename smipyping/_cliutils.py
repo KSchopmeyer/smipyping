@@ -69,3 +69,18 @@ class SmartFormatter(argparse.HelpFormatter):
         if text.startswith('R|'):
             return text[2:].splitlines()
         return argparse.HelpFormatter._split_lines(self, text, width)
+
+
+class SmiSmartFormatter(SmartFormatter,
+                        argparse.RawDescriptionHelpFormatter):
+    """
+    Define a custom Formatter to allow formatting help and epilog.
+
+    argparse formatter specifically allows multiple inheritance for the
+    formatter customization and actually recommends this in a discussion
+    in one of the issues:
+
+        http://bugs.python.org/issue13023
+
+    """
+    pass
