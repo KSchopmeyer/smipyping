@@ -39,6 +39,8 @@ from ._ping import ping_host
 from .config import PING_TEST_CLASS, PING_TIMEOUT, DEFAULT_CONFIG_FILE, \
     DB_TYPE
 
+from smipyping._configfile import read_config
+
 from ._targetdata import TargetsData
 
 __all__ = ['SimplePing', 'TestResult']
@@ -452,8 +454,9 @@ Examples:\n
             self.user = opts.user
             self.password = opts.password
         if opts.target_id:
-            target_data = TargetsData.factory(opts.config_file, DB_TYPE,
-                                              opts.verbose)
+            # TODO is there optionality on the config_file here
+            db_config = read_config(opts.config_file, DB_TYPE)
+            target_data = TargetsData.factory(db_config, DB_TYPE, opts.verbose)
             if opts.target_id in target_data:
                 self.set_from_userrecord(opts.target_id, target_data)
             else:

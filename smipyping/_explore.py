@@ -1,5 +1,20 @@
 #!/usr/bin/env python
 
+# (C) Copyright 2017 Inova Development Inc.
+# All Rights Reserved
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
     SMIWBEMServer class extends WBEMServer class
 """
@@ -21,8 +36,8 @@ from pywbem import WBEMConnection, WBEMServer, ValueMapping, Error, \
 from ._cliutils import SmartFormatter as _SmartFormatter
 # TODO from ._cliutils import check_negative_int
 from ._targetdata import TargetsData
-from ._functiontimeout import FunctionTimeoutError
 from ._terminaltable import print_terminal_table, fold_cell
+from ._csvtable import write_csv_table
 from ._ping import ping_host
 from .config import DEFAULT_CONFIG_FILE, PING_TIMEOUT
 
@@ -87,7 +102,7 @@ class Explorer(object):
                 table_data.append(line)
         print_terminal_table("Display SMI Profile Information", table_data)
 
-    def print_server_info(self, servers, user_data):
+    def report_server_info(self, servers, user_data, table_type='report'):
         """ Display a table of info from the server scan
         """
 
@@ -132,7 +147,12 @@ class Explorer(object):
 
             table_data.append(line)
 
-        print_terminal_table("Server Basic Information", table_data)
+        if table_type =='report':
+            print_terminal_table("Server Basic Information", table_data)
+        elif table_type == 'csv':
+            write_csv_table(table_data)
+        else:
+            TypeError('table type invalid %s' % table_type)
 
     def explore_servers(self, target_list):
         """
@@ -293,15 +313,6 @@ class Explorer(object):
                                         status='OK',
                                         time=cmd_time)
             self.logger.info('OK %s time %.2f s', log_info, cmd_time)
-
-        except FunctionTimeoutError as fte:
-            cmd_time = time.time() - start_time
-            self.logger.error('Timeout decorator exception:%s %s time %.2f s',
-                              fte, log_info, cmd_time)
-            err = 'FunctTo'
-            svr_tuple = ServerInfoTuple(url, server, target_id, err,
-                                        cmd_time)
-            traceback.format_exc()
 
         except ConnectionError as ce:
             cmd_time = time.time() - start_time
@@ -580,11 +591,7 @@ def main(prog):
     servers = explore.explore_servers(targets)
 
     # print results
-    explore.print_server_info(servers, target_data)
-
-    # repeat to get smi info.
-
-    # explore.print_smi_profile_info(servers, target_data)
+    explore.report_server_info(servers, target_data)
 
     return 0
 

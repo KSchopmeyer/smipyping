@@ -53,7 +53,8 @@ import sys
 from .config import *  # noqa: F401, F403
 # core classes and functions
 from ._ping import *  # noqa: F401, F403
-
+from ._csvtable import *  # noqa: F401, F403
+from ._terminaltable import *  # noqa: F401, F403 
 from ._targetdata import *  # noqa: F401, F403
 from ._simpleping import *  # noqa: F401, F403
 from ._explore import *  # noqa: F401, F403
@@ -67,9 +68,10 @@ from ._scanport import *  # noqa: F401, F403
 from .smicli import *  # noqa: F401, F403
 from ._cmd_database import *  # noqa: F401, F403
 from ._cmd_provider import *  # noqa: F401, F403
+from ._cmd_explorer import *  # noqa: F401, F403
 from ._click_context import *  # noqa: F401, F403
 
-from ._version import __version__  # noqa: F401, F403
+from ._version import __version__  # noqa: F401, F403gy
 
 _python_m = sys.version_info[0]  # pylint: disable=invalid-name
 _python_n = sys.version_info[1]  # pylint: disable=invalid-name

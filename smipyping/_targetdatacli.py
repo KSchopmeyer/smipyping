@@ -3,12 +3,15 @@ Argparse CLi for the temporary target script.
 
 TODO: Remove this completely
 """
+import os
 import sys as _sys
 import csv
 import argparse as _argparse
 
-from smipyping._cliutils import SmartFormatter as _SmartFormatter
-from smipyping.config import DEFAULT_CONFIG_FILE
+from ._cliutils import SmartFormatter as _SmartFormatter
+from ._targetdata import TargetsData
+from .config import DEFAULT_CONFIG_FILE
+from ._configfile import read_config
 
 __all__ = ['ProcessTargetDataCli']
 
@@ -60,9 +63,11 @@ The commands are:
             argparser.print_help()
             exit(1)
 
-        # TODO test if type is actually supported in config file
+        DB_TYPE = 'csv'
 
-        target_data = TargetsData.factory(args.config_file, args, 'csv')
+        db_config = read_config(args.config_file, DB_TYPE)
+        db_config['directory'] = os.path.dirname(args.config_file)
+        target_data = TargetsData.factory(db_config, args, DB_TYPE)
 
         # use dispatch pattern to invoke method with same name
         getattr(self, args.command)(target_data)

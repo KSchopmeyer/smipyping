@@ -1,7 +1,22 @@
 #!/usr/bin/env python
 
+# (C) Copyright 2017 Inova Development Inc.
+# All Rights Reserved
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
-Test the CSVUserData class.
+Test the TargetsData class class.
 """
 from __future__ import absolute_import, print_function
 
@@ -11,17 +26,23 @@ import six
 
 from smipyping import TargetsData
 
+from smipyping._configfile import read_config
+
 # unimplemented = pytest.mark.skipif(True, reason="test not implemented")
 
 TEST_CONFIG_FILE_NAME = 'testconfig.ini'
 SCRIPT_DIR = os.path.dirname(__file__)
+
+DB_TYPE = 'csv'
 
 
 class ValidTargetTableTests(unittest.TestCase):
     def setUp(self):
         test_config_file = os.path.join(SCRIPT_DIR, TEST_CONFIG_FILE_NAME)
         print('test_config_file %s' % test_config_file)
-        self.target_table = TargetsData.factory(test_config_file, 'csv', False)
+        db_config = read_config(test_config_file, DB_TYPE)
+        db_config['directory'] = os.path.dirname(test_config_file)
+        self.target_table = TargetsData.factory(db_config, DB_TYPE, False)
 
 
 class TargetTableTest(ValidTargetTableTests):
@@ -68,11 +89,11 @@ class TargetTableTest(ValidTargetTableTests):
         self.assertTrue(result_list is not None)
 
     def test_disabled_target(self):
-        self.assertTrue(self.target_table.disabled_record(
+        self.assertTrue(self.target_table.disabled_target(
             self.target_table[42]))
 
     def test_enabled_target(self):
-        self.assertFalse(self.target_table.disabled_record(
+        self.assertFalse(self.target_table.disabled_target(
             self.target_table[4]))
 
 
