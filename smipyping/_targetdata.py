@@ -81,7 +81,7 @@ class TargetsData(object):
         self.db_type = db_type
 
     @classmethod
-    def factory(cls, db_dict, db_type,  verbose):
+    def factory(cls, db_dict, db_type, verbose):
         """Factory method to select subclass based on database type.
            Currently the types sql and csv are supported.
 
@@ -393,11 +393,28 @@ class CsvTargetsData(TargetsData):
         """Read the input file into a dictionary."""
         super(CsvTargetsData, self).__init__(db_dict, dbtype, verbose)
 
-        self.filename = db_dict['filename']
+        fn = db_dict['filename']
+        self.filename = fn
 
-        if not os.path.isfile(self.filename):
-            ValueError('CSV provider data file %s does not exist.' %
-                       self.filename)
+        # If the filename is not a full directory, the data file must be
+        # either in the local directory or the same directory as the
+        # config file defined by the db_dict entry directory
+        if os.path.isabs(fn):
+            if not os.path.isfile(fn):
+                ValueError('CSV target data file %s does not exist ' % fn)
+            else:
+                self.filename = fn
+        else:
+            if os.path.isfile(fn):
+                self.filename = fn
+            else:
+                full_fn = os.path.join(db_dict['directory'], fn)
+                if not os.path.isfile(full_fn):
+                    ValueError('CSV target data file %s does not exist '
+                               'in local directory or config directory %s' %
+                               (fn, db_dict['directory']))
+                else:
+                    self.filename = full_fn
 
         with open(self.filename) as input_file:
             reader = csv.DictReader(input_file)

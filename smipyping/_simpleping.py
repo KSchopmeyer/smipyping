@@ -414,15 +414,19 @@ Examples:\n
         self.argparser = argparser
         return argparser  # used for unittests
 
-    def parse_cmdline(self):
+    def parse_cmdline(self, input_params=None):
         """
         Parse the command line.
 
-        This function  tests for any required arguments.
+        This function  creates the argparser and uses it to parse the
+        command line or the list of arguments in input_params
 
         It returns the parsed options or generates an exception.
         """
-        opts = self.argparser.parse_args()
+        if input_params:
+            opts = self.argparser.parse_args(input_params)
+        else:
+            opts = self.argparser.parse_args()
 
         # save cli options for use in subsequent functions.
         self.verbose = opts.verbose

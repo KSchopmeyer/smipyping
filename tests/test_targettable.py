@@ -39,7 +39,6 @@ DB_TYPE = 'csv'
 class ValidTargetTableTests(unittest.TestCase):
     def setUp(self):
         test_config_file = os.path.join(SCRIPT_DIR, TEST_CONFIG_FILE_NAME)
-        print('test_config_file %s' % test_config_file)
         db_config = read_config(test_config_file, DB_TYPE)
         db_config['directory'] = os.path.dirname(test_config_file)
         self.target_table = TargetsData.factory(db_config, DB_TYPE, False)
