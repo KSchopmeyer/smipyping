@@ -39,6 +39,8 @@ from ._ping import ping_host
 from .config import PING_TEST_CLASS, PING_TIMEOUT, DEFAULT_CONFIG_FILE, \
     DB_TYPE
 
+from smipyping._configfile import read_config
+
 from ._targetdata import TargetsData
 
 __all__ = ['SimplePing', 'TestResult']
@@ -412,15 +414,19 @@ Examples:\n
         self.argparser = argparser
         return argparser  # used for unittests
 
-    def parse_cmdline(self):
+    def parse_cmdline(self, input_params=None):
         """
         Parse the command line.
 
-        This function  tests for any required arguments.
+        This function  creates the argparser and uses it to parse the
+        command line or the list of arguments in input_params
 
         It returns the parsed options or generates an exception.
         """
-        opts = self.argparser.parse_args()
+        if input_params:
+            opts = self.argparser.parse_args(input_params)
+        else:
+            opts = self.argparser.parse_args()
 
         # save cli options for use in subsequent functions.
         self.verbose = opts.verbose
@@ -452,8 +458,9 @@ Examples:\n
             self.user = opts.user
             self.password = opts.password
         if opts.target_id:
-            target_data = TargetsData.factory(opts.config_file, DB_TYPE,
-                                              opts.verbose)
+            # TODO is there optionality on the config_file here
+            db_config = read_config(opts.config_file, DB_TYPE)
+            target_data = TargetsData.factory(db_config, DB_TYPE, opts.verbose)
             if opts.target_id in target_data:
                 self.set_from_userrecord(opts.target_id, target_data)
             else:

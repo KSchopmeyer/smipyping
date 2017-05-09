@@ -33,7 +33,8 @@ the variables.
 
 __all__ = ['ENFORCE_INTEGER_RANGE', 'DEFAULT_SWEEP_PORT', 'USERDATA_FILE',
            'PING_TEST_CLASS', 'SIMPLEPING_OPERATION_DEFAULT_TIMEOUT',
-           'DEFAULT_CONFIG_FILE', 'DEFAULT_NAMESPACE', 'DB_TYPE']
+           'DEFAULT_CONFIG_FILE', 'DEFAULT_NAMESPACE', 'DB_TYPE',
+           'DEFAULT_SMI_CLI_CONFIG_FILES']
 
 #: Enforce the value range in CIM integer types (e.g. :class:`~pywbem.Uint8`).
 #:
@@ -62,11 +63,16 @@ SIMPLEPING_OPERATION_DEFAULT_TIMEOUT = 20
 #: Default configuration file for smipyping cli
 DEFAULT_CONFIG_FILE = 'localconfig.ini'
 
+#: Default smi cli configuration file for smipyping cli
+#: These are the default names for the smicli config files
+
+DEFAULT_SMI_CLI_CONFIG_FILES = ['smicli.ini', 'smicli.cfg']
+
 #: Defualt namespace when none is specified
 DEFAULT_NAMESPACE = 'root/cimv2'
 
 #: type of database to use.  May be 'sql' or 'csv'
-DB_TYPE = 'csv'
+DB_TYPE = 'sql'
 
 #: Maximum number of parallel threads to use in multithreaded operations
 MAX_THREADS = 100

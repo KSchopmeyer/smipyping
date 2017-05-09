@@ -1,3 +1,17 @@
+# (C) Copyright 2017 Inova Development Inc.
+# All Rights Reserved
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """
 smicli commands based on python click for operations on the smipyping
 data file.
@@ -41,7 +55,7 @@ def database_list(context, fields, company, **options):
 
 @database_group.command('info', options_metavar=CMD_OPTS_TXT)
 @click.pass_obj
-def database_info(context, **options):
+def database_info(context):
     """
     get and display a list of classnames.
     """
@@ -70,7 +84,7 @@ def database_get(context, providerid, **options):
 
 @database_group.command('disable', options_metavar=CMD_OPTS_TXT)
 @click.argument('ProviderID', type=int, metavar='ProviderID', required=True)
-@click.option('-e', '--enable', type=str, is_flag=True,
+@click.option('-e', '--enable', is_flag=True,
               help='Enable the Provider if it is disabled.')
 @click.pass_obj
 def database_disable(context, providerid, enable, **options):
@@ -95,7 +109,6 @@ def cmd_database_disable(context, providerid, enable, options):
         # TODO add test to see if already in correct state
 
         if host_record is not None:
-            current_state = host_record['EnableScan']
             host_record['EnableScan'] = False if enable is True else True
             context.provider_data.write_updated()
         else:
@@ -107,9 +120,9 @@ def cmd_database_disable(context, providerid, enable, options):
 
 def cmd_database_info(context):
     """Display information on the providers config and data file."""
-    
+
     print('DB Info:\nfilename:%s\ndatabase type: %s' %
-          (context.target_data.filename, context.target_date.db_type))
+          (context.target_data.filename, context.target_data.db_type))
 
     print('config file %s' % context.config_file)
     config_info_dict = read_config(context.config_file,

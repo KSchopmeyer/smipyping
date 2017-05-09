@@ -30,6 +30,11 @@ from smipyping import DEFAULT_CONFIG_FILE
 from ._click_context import ClickContext
 
 from .config import SMICLI_PROMPT, SMICLI_HISTORY_FILE
+from ._cmd_configfile import CONTEXT_SETTINGS
+
+# TODO TEMP
+from ._configfile import read_config
+
 
 # Display of options in usage line
 GENERAL_OPTIONS_METAVAR = '[GENERAL-OPTIONS]'
@@ -41,7 +46,8 @@ __all__ = ['cli']
 
 
 @click.group(invoke_without_command=True,
-             options_metavar=GENERAL_OPTIONS_METAVAR)
+             options_metavar=GENERAL_OPTIONS_METAVAR,
+             context_settings=CONTEXT_SETTINGS)
 @click.option('-c', '--config_file', type=str, envvar='SMI_CONFIG_FILE',
               help="Configuration file to use for config information.")
 @click.option('-v', '--verbose', type=str, is_flag=True,
@@ -63,19 +69,34 @@ def cli(ctx, config_file, verbose, provider_data=None):
 
     """
     # TODO add for noverify, etc.
+    print('CONTEXT_SETTINGS %s ' % CONTEXT_SETTINGS)
+    # for data_key in ctx.default_map.keys():
+    #    print('ctx default map data key %s' % data_key)
+
     if ctx.obj is None:
         # We are in command mode or are processing the command line options in
         # interactive mode.
         # We apply the documented option defaults.
-        if config_file is None:
-            config_file = DEFAULT_CONFIG_FILE
-            if verbose:
-                print('Using default config file %s' % config_file)
+        if ctx.default_map['dbtype']:
+            db_type = ctx.default_map['dbtype']
+        else:
+            db_type = 'csv'
+        print('dbtype %s' % db_type)
+
+        db_info = ctx.default_map[db_type]
+        config_file_dir = os.path.dirname(os.getcwd())
+        db_info['directory'] = config_file_dir
+        print('db_info %s' % db_info)
+
         try:
-            target_data = TargetsData.factory(config_file, DBTYPE, verbose)
+            print('csv config config_file %s' % config_file)
+            csv_config = read_config(config_file, 'csv')
+            filename = csv_config['filename']
+            if not os.path.dirname(filename):
+                filename = os.path.join(config_file_dir, filename)
+            target_data = TargetsData.factory(db_info, DBTYPE, verbose)
         except ValueError as ve:
-            raise click.ClickException("%s: %s" % (ex.__class__.__name__, ex))
-            
+            raise click.ClickException("%s: %s" % (ve.__class__.__name__, ve))
 
     else:
         # We are processing an interactive command.
@@ -86,7 +107,7 @@ def cli(ctx, config_file, verbose, provider_data=None):
             target_data = ctx.obj.target_data
         if verbose is None:
             verbose = ctx.obj.verbose
-            
+
     # Create a command context for each command: An interactive command has
     # its own command context different from the command context for the
     # command line.

@@ -1,5 +1,17 @@
-#!/usr/bin/env python
-##
+# (C) Copyright 2017 Inova Development Inc.
+# All Rights Reserved
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Define the base of targets (i.e. systems to be tested)
@@ -16,7 +28,7 @@ import re
 from collections import OrderedDict
 import six
 from mysql.connector import MySQLConnection
-from smipyping._terminaltable import print_terminal_table, fold_cell
+from ._terminaltable import print_terminal_table, fold_cell
 from ._configfile import read_config
 
 __all__ = ['TargetsData']
@@ -29,7 +41,7 @@ class TargetsData(object):
     environment.
     """
 
-    def __init__(self, filename, db_type, verbose):
+    def __init__(self, db_dict, db_type, verbose):
         """Initialize the abstract Targets instance.
 
         This controls all other
@@ -44,7 +56,7 @@ class TargetsData(object):
             argparse arguments to be saved in the instance
         """
         self.targets_dict = {}
-        self.filename = filename
+        self.db_dict = db_dict
         self.verbose = verbose
         # # Defines each record for the data base and outputs.
         # # The Name is the database name for the property
@@ -69,7 +81,7 @@ class TargetsData(object):
         self.db_type = db_type
 
     @classmethod
-    def factory(cls, filename, type, verbose):
+    def factory(cls, db_dict, db_type, verbose):
         """Factory method to select subclass based on database type.
            Currently the types sql and csv are supported.
 
@@ -78,16 +90,18 @@ class TargetsData(object):
 
         inst = None
         if verbose:
-            print('targetdata factory file %s type %s v %s' % (filename, type,
-                                                               verbose))
-        if type == ('csv'):
-            inst = CsvTargetsData(filename, type, verbose)
+            print('targetdata factory datafile %s type %s v %s'
+                  % (db_dict,
+                     db_type,
+                     verbose))
+        if db_type == ('csv'):
+            inst = CsvTargetsData(db_dict, db_type, verbose)
 
-        elif type == ('sql'):
-            inst = SQLTargetsData(filename, type, verbose)
+        elif db_type == ('sql'):
+            inst = SQLTargetsData(db_dict, db_type, verbose)
 
         else:
-            ValueError('Invalid target factory type %s' % type)
+            ValueError('Invalid target factory db_type %s' % db_type)
 
         return inst
 
@@ -302,7 +316,7 @@ class TargetsData(object):
 
         print_terminal_table('Target Systems Overview', table_data)
 
-    def display_all(self, fields, company):
+    def display_all(self, fields=None, company=None):
         """Display all entries in the base."""
         print('fields %s' % fields)
         if not fields:
@@ -321,15 +335,17 @@ class TargetsData(object):
 class SQLTargetsData(TargetsData):
     """Source is sql data"""
     # TODO filename is config file name, not actual file name.
-    def __init__(self, filename, type, verbose):
+    def __init__(self, db_dict, dbtype, verbose):
         """Read the input file into a dictionary."""
 
-        print('SQL Database type %s %s' % (filename, verbose))
-        super(SQLTargetsData, self).__init__(filename, type, verbose)
+        print('SQL Database type %s %s' % (db_dict, verbose))
+        super(SQLTargetsData, self).__init__(db_dict, dbtype, verbose)
 
         try:
-            sql_config = read_config(filename, 'mysql')
-            connection = MySQLConnection(**sql_config)
+            connection = MySQLConnection(host=db_dict['host'],
+                                         database=db_dict['database'],
+                                         user=db_dict['user'],
+                                         password=db_dict['password'])
 
             if connection.is_connected():
                 print('connection established.')
@@ -359,7 +375,7 @@ class SQLTargetsData(TargetsData):
         except Exception as ex:
             print('Could not access sql database. Exception %s', str(ex))
             raise ValueError('Could not initialize sql database %r error %s'
-                             % (sql_config, ex))
+                             % (db_dict, ex))
 
     def db_info(self):
         """ Return info on the database used"""
@@ -367,7 +383,7 @@ class SQLTargetsData(TargetsData):
 
             db_config = read_config(self.filename, self.db_type)
         except ValueError as ve:
-            print('Section %s not in configfile %s %ve' % (self.db_type,
+            print('Section %s not in configfile %s %s' % (self.db_type,
                                                            self.filename,
                                                            ve))
         return db_config
@@ -376,21 +392,32 @@ class SQLTargetsData(TargetsData):
 class CsvTargetsData(TargetsData):
     """Comma Separated Values form of the Target base."""
 
-    def __init__(self, config_file, type, verbose):
+    def __init__(self, db_dict, dbtype, verbose):
         """Read the input file into a dictionary."""
-        super(CsvTargetsData, self).__init__(config_file, type, verbose)
-        config_file_dir = os.path.dirname(config_file)
+        super(CsvTargetsData, self).__init__(db_dict, dbtype, verbose)
 
-        # get configuration and account for relative database name
-        csv_config = read_config(config_file, 'csv')
-        self.filename = csv_config['filename']
-        if not os.path.dirname(self.filename):
-            self.filename = os.path.join(config_file_dir,
-                                         self.filename)
+        fn = db_dict['filename']
+        self.filename = fn
 
-        if not os.path.isfile(self.filename):
-            ValueError('CSV provider data file %s does not exist.' %
-                       self.filename)
+        # If the filename is not a full directory, the data file must be
+        # either in the local directory or the same directory as the
+        # config file defined by the db_dict entry directory
+        if os.path.isabs(fn):
+            if not os.path.isfile(fn):
+                ValueError('CSV target data file %s does not exist ' % fn)
+            else:
+                self.filename = fn
+        else:
+            if os.path.isfile(fn):
+                self.filename = fn
+            else:
+                full_fn = os.path.join(db_dict['directory'], fn)
+                if not os.path.isfile(full_fn):
+                    ValueError('CSV target data file %s does not exist '
+                               'in local directory or config directory %s' %
+                               (fn, db_dict['directory']))
+                else:
+                    self.filename = full_fn
 
         with open(self.filename) as input_file:
             reader = csv.DictReader(input_file)

@@ -1,14 +1,32 @@
+# (C) Copyright 2017 Inova Development Inc.
+# All Rights Reserved
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Argparse CLi for the temporary target script.
 
 TODO: Remove this completely
 """
+import os
 import sys as _sys
 import csv
 import argparse as _argparse
 
-from smipyping._cliutils import SmartFormatter as _SmartFormatter
-from smipyping.config import DEFAULT_CONFIG_FILE
+from ._cliutils import SmartFormatter as _SmartFormatter
+from ._targetdata import TargetsData
+from .config import DEFAULT_CONFIG_FILE
+from ._configfile import read_config
 
 __all__ = ['ProcessTargetDataCli']
 
@@ -60,9 +78,11 @@ The commands are:
             argparser.print_help()
             exit(1)
 
-        # TODO test if type is actually supported in config file
+        DB_TYPE = 'csv'
 
-        target_data = TargetsData.factory(args.config_file, args, 'csv')
+        db_config = read_config(args.config_file, DB_TYPE)
+        db_config['directory'] = os.path.dirname(args.config_file)
+        target_data = TargetsData.factory(db_config, args, DB_TYPE)
 
         # use dispatch pattern to invoke method with same name
         getattr(self, args.command)(target_data)
@@ -82,7 +102,7 @@ The commands are:
 
         # now that we're inside a subcommand, ignore the first
         # TWO argvs, ie the command and the subcommand
-        args = disp_parser.parse_args(_sys.argv[2:])
+        disp_parser.parse_args(_sys.argv[2:])
 
         print('keys %s' % list(target_data.table_format_dict))
 
@@ -124,9 +144,6 @@ The commands are:
         # TODO add test to see if already in correct state
 
         if host_record is not None:
-
-            current_state = host_record['EnableScan']
-
             host_record['EnableScan'] = False if args.enable is True else True
             target_data.write_updated()
         else:

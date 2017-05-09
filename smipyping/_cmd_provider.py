@@ -19,8 +19,8 @@ data file.
 """
 from __future__ import print_function, absolute_import
 
+# from pprint import pprint as pp  # noqa: F401
 import click
-from pprint import pprint as pp  # noqa: F401
 
 from pywbem import WBEMServer, WBEMConnection, Error, ValueMapping
 
@@ -32,12 +32,13 @@ from .config import PING_TIMEOUT
 @cli.group('provider', options_metavar=CMD_OPTS_TXT)
 def provider_group():
     """
-    Command group for operations on provider data maintained in a database.
+    Command group for simple operations on providers.
 
 
     This group of commands provides commands to query the providers defined
     by entries in the targets database.  this includes commands like ping,
-    get basic info, get namespace info, get profile information.
+    get basic info, get namespace info, get profile information. for
+    individual providers.
 
     It differs from the explore group in that it provides tools to process
     individual providers in the database rather than try to explore the
@@ -223,7 +224,7 @@ def cmd_provider_namespaces(context, options):
     server = connect_target(targets, target_id)
     try:
         # execute the namespaces just to get the data
-        server.namespaces
+        server.namespaces  # pylint: disable=pointless-statement
         context.spinner.stop()
 
         click.echo("Interop namespace:\n  %s" % server.interop_ns)
@@ -257,7 +258,7 @@ def cmd_provider_info(context, options):
     try:
         # execute the namespaces to force contact with server before
         # turning off the spinner.
-        server.namespaces
+        server.namespaces  # pylint: disable=pointless-statement
         context.spinner.stop()
 
         click.echo("Brand:\n  %s" % server.brand)

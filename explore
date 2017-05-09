@@ -16,6 +16,7 @@ from smipyping._explore import create_explore_parser
 
 from smipyping import Explorer, DB_TYPE, TargetsData
 
+from smipyping._configfile import read_config
 
 def main(prog):
     logfile = '%s.log' % prog
@@ -27,7 +28,9 @@ def main(prog):
     if args.verbose:
         print('args %s' % args)
 
-    target_data = TargetsData.factory(args.config_file, DB_TYPE, args.verbose)
+    db_config = read_config(args.config_file, DB_TYPE)
+    db_config['directory'] = os.path.dirname(args.config_file)
+    target_data = TargetsData.factory(db_config, DB_TYPE, args.verbose)
 
     hosts = target_data.get_hostid_list()
 
@@ -79,7 +82,7 @@ def main(prog):
     servers = explore.explore_servers(targets)
 
     # print results
-    explore.print_server_info(servers, target_data)
+    explore.report_server_info(servers, target_data)
 
     return 0
 

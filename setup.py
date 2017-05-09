@@ -75,6 +75,7 @@ setup(
         'click',
         'click-repl',
         'click-spinner',
+        'click-configfile',
         'prompt_toolkit'],
 
     # smipyping prereqs for 'develop' command.
