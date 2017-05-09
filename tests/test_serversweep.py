@@ -58,7 +58,7 @@ class ExpandSubnetDefTests(unittest.TestCase):
         """
         Test the build_test_list function
         """
-        #pylint: disable=invalid-name
+        # pylint: disable=invalid-name
         t1 = ServerSweep('10.1.1.1,2', [5988, 5989],
                          min_octet_val=1, max_octet_val=254)
         actual = [x for x in t1.build_test_list()]

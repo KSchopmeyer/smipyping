@@ -342,7 +342,10 @@ class SQLTargetsData(TargetsData):
         super(SQLTargetsData, self).__init__(db_dict, dbtype, verbose)
 
         try:
-            connection = MySQLConnection(**db_dict)
+            connection = MySQLConnection(host=db_dict['host'],
+                                         database=db_dict['database'],
+                                         user=db_dict['user'],
+                                         password=db_dict['password'])
 
             if connection.is_connected():
                 print('connection established.')
@@ -380,7 +383,7 @@ class SQLTargetsData(TargetsData):
 
             db_config = read_config(self.filename, self.db_type)
         except ValueError as ve:
-            print('Section %s not in configfile %s %ve' % (self.db_type,
+            print('Section %s not in configfile %s %s' % (self.db_type,
                                                            self.filename,
                                                            ve))
         return db_config

@@ -72,7 +72,7 @@ DEFAULT_SMI_CLI_CONFIG_FILES = ['smicli.ini', 'smicli.cfg']
 DEFAULT_NAMESPACE = 'root/cimv2'
 
 #: type of database to use.  May be 'sql' or 'csv'
-DB_TYPE = 'csv'
+DB_TYPE = 'sql'
 
 #: Maximum number of parallel threads to use in multithreaded operations
 MAX_THREADS = 100

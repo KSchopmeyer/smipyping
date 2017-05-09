@@ -81,7 +81,7 @@ def cli(ctx, config_file, verbose, provider_data=None):
             db_type = ctx.default_map['dbtype']
         else:
             db_type = 'csv'
-        print('db_type %s' % db_type)
+        print('dbtype %s' % db_type)
 
         db_info = ctx.default_map[db_type]
         config_file_dir = os.path.dirname(os.getcwd())
