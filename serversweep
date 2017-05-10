@@ -45,8 +45,8 @@ def main(prog_name):
 
     provider_data = None
     if args.config_file is not None:
-        db_config['directory'] = os.path.dirname(args.config_file)
         db_config = read_config(args.config_file, DB_TYPE)
+        db_config['directory'] = os.path.dirname(args.config_file)
         provider_data = TargetsData.factory(db_config, DB_TYPE,
                                             args.verbose)
     else:

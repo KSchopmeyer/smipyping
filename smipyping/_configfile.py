@@ -36,6 +36,7 @@ def read_config(filename, section):
 
     """
     # create parser and read ini configuration file
+    print('read_configfile name %s, section %s' % (filename, section))
     parser = ConfigParser()
     parser.read(filename)
 

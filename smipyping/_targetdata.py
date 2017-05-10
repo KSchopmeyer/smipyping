@@ -338,7 +338,7 @@ class SQLTargetsData(TargetsData):
     def __init__(self, db_dict, dbtype, verbose):
         """Read the input file into a dictionary."""
 
-        print('SQL Database type %s %s' % (db_dict, verbose))
+        print('SQL Database type %s  verbose=%s' % (db_dict, verbose))
         super(SQLTargetsData, self).__init__(db_dict, dbtype, verbose)
 
         try:
@@ -348,11 +348,15 @@ class SQLTargetsData(TargetsData):
                                          password=db_dict['password'])
 
             if connection.is_connected():
-                print('connection established.')
+                print('sql db connection established. host %s, db %s' %
+                      (db_dict['host'], db_dict['database']))
             else:
-                print('SQL database connection failed.')
+                print('SQL database connection failed. host %s, db %s' %
+                    (db_dict['host'], db_dict['database']))
                 raise ValueError('Connection to database failed')
+            print('connection %r' % connection)
             cursor = connection.cursor(dictionary=True)
+            print('connection cursor set')
             companies = {}
             cursor.execute('SELECT * FROM Companies')
             rows = cursor.fetchall()
@@ -360,7 +364,7 @@ class SQLTargetsData(TargetsData):
                 key = int(row['CompanyID'])
                 # print('companies key %s value %s' % (key, row))
                 companies[key] = row
-
+            print('companies complete')
             result = {}
             cursor.execute('SELECT * FROM Targets')
             rows = cursor.fetchall()
@@ -384,8 +388,8 @@ class SQLTargetsData(TargetsData):
             db_config = read_config(self.filename, self.db_type)
         except ValueError as ve:
             print('Section %s not in configfile %s %s' % (self.db_type,
-                                                           self.filename,
-                                                           ve))
+                                                          self.filename,
+                                                          ve))
         return db_config
 
 

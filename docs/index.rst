@@ -25,7 +25,10 @@ The general pywbem web site is: http://pywbem.github.io/pywbem/index.html.
 
    intro.rst
    tutorial.rst
+   database.rst
    utilities.rst
+   smiclicmdlineinterface.rst
+   smiclisubcommands.rst
    development.rst
    appendix.rst
    changes.rst

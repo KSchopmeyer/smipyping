@@ -19,8 +19,9 @@
 
 from __future__ import print_function, absolute_import
 
-from click_configfile import ConfigFileReader, Param, SectionSchema
-from click_configfile import matches_section
+from click_configfile import ConfigFileReader, Param, SectionSchema, \
+    matches_section
+
 import click
 
 from .config import DEFAULT_SMI_CLI_CONFIG_FILES
