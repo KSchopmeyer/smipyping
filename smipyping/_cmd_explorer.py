@@ -26,6 +26,7 @@ from .smicli import cli, CMD_OPTS_TXT
 from ._explore import Explorer
 
 
+
 @cli.group('explorer', options_metavar=CMD_OPTS_TXT)
 def explorer_group():
     """
@@ -67,10 +68,10 @@ def cmd_explore_all(context, **options):
     """Explore all of the providers defined in the current database and
     report results.
     """
-    db_config = read_config(args.config_file, DB_TYPE)
+    db_config = read_config(args.config_file, DBTYPE)
     db_config['directory'] = os.path.dirname(args.config_file)
-    target_data = TargetsData.factory(args.config_file, DB_TYPE, args.verbose)
-    
+    target_data = TargetsData.factory(args.config_file, DBTYPE, args.verbose)
+
     explore = Explorer('smicli', target_data, logfile=logfile,
                        verbose=args.verbose,
                        ping=context['ping'], threaded=True)

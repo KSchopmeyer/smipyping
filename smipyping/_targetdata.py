@@ -28,6 +28,7 @@ import re
 from collections import OrderedDict
 import six
 from mysql.connector import MySQLConnection
+from mysql.connector.cursor import MySQLCursor
 from ._terminaltable import print_terminal_table, fold_cell
 from ._configfile import read_config
 
@@ -107,12 +108,12 @@ class TargetsData(object):
 
     def __str__(self):
         """String info on targetdata. TODO. Put more info her"""
-        return ('count=%s' % len(self.targetsdict))
+        return ('count=%s' % len(self.targets_dict))
 
     def __repr__(self):
         """Rep of target data"""
         return ('Targetdata filename%s db_type %s, rep count=%s' %
-                (self.filename, self.db_type, len(self.targetsdict)))
+                (self.filename, self.db_type, len(self.targets_dict)))
 
     def get_field_list(self):
         """Return a list of the base table file names in the order defined."""
@@ -124,11 +125,11 @@ class TargetsData(object):
 
     def __contains__(self, record_id):
         """Determine if record_id is in targets dictionary."""
-        return record_id in self.targetsdict
+        return record_id in self.targets_dict
 
     def __iter__(self):
         """iterator for targets."""
-        return six.iterkeys(self.targetsdict)
+        return six.iterkeys(self.targets_dict)
 
     def iteritems(self):
         """
@@ -136,19 +137,19 @@ class TargetsData(object):
 
         Returns key and value
         """
-        for key, val in self.targetsdict.iteritems():
+        for key, val in self.targets_dict.iteritems():
             yield (key, val)
 
     def __getitem__(self, record_id):
         """Return the record for the defined record_id from the targets."""
-        return self.targetsdict[record_id]
+        return self.targets_dict[record_id]
 
     def __delitem__(self, record_id):
-        del self.targetsdict[record_id]
+        del self.targets_dict[record_id]
 
     def __len__(self):
         """Return number of targets"""
-        return len(self.targetsdict)
+        return len(self.targets_dict)
 
     # TODO we have multiple of these. See get dict_for_host,get_hostid_list
     def get_targets_host(self, host_id):
@@ -165,7 +166,7 @@ class TargetsData(object):
         """
         # TODO clean up for PY 3
         return_list = []
-        for key, value in self.targetsdict.iteritems():
+        for key, value in self.targets_dict.iteritems():
             ip_address = value["IPAddress"]
             port = value["Port"]
             # TODO port from database is a string. Should be int internal.
@@ -184,7 +185,7 @@ class TargetsData(object):
         if not isinstance(requested_id, six.integer_types):
             requested_id = int(requested_id)
 
-        return self.targetsdict[requested_id]
+        return self.targets_dict[requested_id]
 
     def get_target_for_host(self, target_addr):
         """
@@ -198,7 +199,7 @@ class TargetsData(object):
         If not found. Does not work completely because of multiple IPs
         """
         targets = []
-        for target_id, value in self.targetsdict.iteritems():
+        for target_id, value in self.targets_dict.iteritems():
             if value['IPAddress'] == target_addr:
                 targets.append(target_id)
         return targets
@@ -212,7 +213,7 @@ class TargetsData(object):
         """
 
         rtn = OrderedDict()
-        for key, value in self.targetsdict.items():
+        for key, value in self.targets_dict.items():
             if ip_filter and re.match(ip_filter, value['IPAddress']):
                 rtn.append[key] = value
             if company_name_filter and \
@@ -230,7 +231,7 @@ class TargetsData(object):
         """
         output_list = []
         # TODO clean up for python 3
-        for _id, value in self.targetsdict.items():
+        for _id, value in self.targets_dict.items():
             output_list.append(value['IPAddress'])
         return output_list
 
@@ -287,8 +288,8 @@ class TargetsData(object):
         table_data.append(self.tbl_hdr(col_list))
 
         # TODO can we do this with list comprehension
-        for record_id in sorted(self.targetsdict.iterkeys()):
-            if self.disabled_record(self.targetsdict[record_id]):
+        for record_id in sorted(self.targets_dict.iterkeys()):
+            if self.disabled_record(self.targets_dict[record_id]):
                 table_data.append(self.tbl_record(record_id, col_list))
 
         print_terminal_table('Disabled hosts', table_data)
@@ -311,7 +312,7 @@ class TargetsData(object):
         # terminaltables creates the table headers from
         table_data.append(self.tbl_hdr(column_list))
 
-        for record_id in sorted(self.targetsdict.iterkeys()):
+        for record_id in sorted(self.targets_dict.iterkeys()):
             table_data.append(self.tbl_record(record_id, column_list))
 
         print_terminal_table('Target Systems Overview', table_data)
@@ -341,6 +342,13 @@ class SQLTargetsData(TargetsData):
         print('SQL Database type %s  verbose=%s' % (db_dict, verbose))
         super(SQLTargetsData, self).__init__(db_dict, dbtype, verbose)
 
+        class MySQLCursorDict(MySQLCursor):
+            def _row_to_python(self, rowdata, desc=None):
+                row = super(MySQLCursorDict, self)._row_to_python(rowdata, desc)
+                if row:
+                    return dict(zip(self.column_names, row))
+                return None
+
         try:
             connection = MySQLConnection(host=db_dict['host'],
                                          database=db_dict['database'],
@@ -352,11 +360,16 @@ class SQLTargetsData(TargetsData):
                       (db_dict['host'], db_dict['database']))
             else:
                 print('SQL database connection failed. host %s, db %s' %
-                    (db_dict['host'], db_dict['database']))
+                      (db_dict['host'], db_dict['database']))
                 raise ValueError('Connection to database failed')
-            print('connection %r' % connection)
-            cursor = connection.cursor(dictionary=True)
-            print('connection cursor set')
+
+            # account for issue that the dictionary=True attribute only
+            # works on mysql v2 by creating a special subclass to force
+            # the conversion to dictionary.
+            # from http://stackoverflow.com/questions/22769873/python-mysql-connector-dictcursor  # noqa: E501
+            cursor = connection.cursor(cursor_class=MySQLCursorDict)
+
+            # get the companies table
             companies = {}
             cursor.execute('SELECT * FROM Companies')
             rows = cursor.fetchall()
@@ -364,7 +377,8 @@ class SQLTargetsData(TargetsData):
                 key = int(row['CompanyID'])
                 # print('companies key %s value %s' % (key, row))
                 companies[key] = row
-            print('companies complete')
+
+            # get the Targets table
             result = {}
             cursor.execute('SELECT * FROM Targets')
             rows = cursor.fetchall()
@@ -374,7 +388,8 @@ class SQLTargetsData(TargetsData):
                 row['CompanyName'] = companies[row['CompanyID']]['CompanyName']
                 result[key] = row
 
-            self.targetsdict = result
+            # save the combined table for the other functions.
+            self.targets_dict = result
 
         except Exception as ex:
             print('Could not access sql database. Exception %s', str(ex))
@@ -382,15 +397,17 @@ class SQLTargetsData(TargetsData):
                              % (db_dict, ex))
 
     def db_info(self):
-        """ Return info on the database used"""
+        """
+        Display the db info andReturn info on the database used as a
+        dictionary.
+        """
         try:
-
-            db_config = read_config(self.filename, self.db_type)
+            print('database characteristics')
+            for key in self.db_dict:
+                print('%s: %s' % key, self.db_dict[key])
         except ValueError as ve:
-            print('Section %s not in configfile %s %s' % (self.db_type,
-                                                          self.filename,
-                                                          ve))
-        return db_config
+            print('Invalid database configuration exception %s' % ve)
+        return self.db_dict
 
 
 class CsvTargetsData(TargetsData):
@@ -438,9 +455,11 @@ class CsvTargetsData(TargetsData):
                 else:
                     result[key] = row
 
-        self.targetsdict = result
+        self.targets_dict = result
 
     # TODO consolidate this to use predefined type.
+    # TODO this is completely broken because filename applies to the
+    # config file, not the data file.
     def db_info(self):
         try:
             db_config = read_config(self.filename, self.db_type)
@@ -464,5 +483,5 @@ class CsvTargetsData(TargetsData):
         with open(file_name, 'wb') as f:
             writer = csv.DictWriter(f, fieldnames=self.get_field_list())
             writer.writeheader()
-            for key, value in sorted(self.targetsdict.iteritems()):
+            for key, value in sorted(self.targets_dict.iteritems()):
                 writer.writerow(value)

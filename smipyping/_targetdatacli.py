@@ -78,11 +78,11 @@ The commands are:
             argparser.print_help()
             exit(1)
 
-        DB_TYPE = 'csv'
+        DBTYPE = 'csv'
 
-        db_config = read_config(args.config_file, DB_TYPE)
+        db_config = read_config(args.config_file, DBTYPE)
         db_config['directory'] = os.path.dirname(args.config_file)
-        target_data = TargetsData.factory(db_config, args, DB_TYPE)
+        target_data = TargetsData.factory(db_config, args, DBTYPE)
 
         # use dispatch pattern to invoke method with same name
         getattr(self, args.command)(target_data)

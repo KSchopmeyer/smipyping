@@ -147,7 +147,7 @@ class Explorer(object):
 
             table_data.append(line)
 
-        if table_type =='report':
+        if table_type == 'report':
             print_terminal_table("Server Basic Information", table_data)
         elif table_type == 'csv':
             write_csv_table(table_data)

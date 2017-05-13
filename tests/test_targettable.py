@@ -33,15 +33,15 @@ from smipyping._configfile import read_config
 TEST_CONFIG_FILE_NAME = 'testconfig.ini'
 SCRIPT_DIR = os.path.dirname(__file__)
 
-DB_TYPE = 'csv'
+DBTYPE = 'csv'
 
 
 class ValidTargetTableTests(unittest.TestCase):
     def setUp(self):
         test_config_file = os.path.join(SCRIPT_DIR, TEST_CONFIG_FILE_NAME)
-        db_config = read_config(test_config_file, DB_TYPE)
+        db_config = read_config(test_config_file, DBTYPE)
         db_config['directory'] = os.path.dirname(test_config_file)
-        self.target_table = TargetsData.factory(db_config, DB_TYPE, False)
+        self.target_table = TargetsData.factory(db_config, DBTYPE, False)
 
 
 class TargetTableTest(ValidTargetTableTests):

@@ -68,6 +68,7 @@ def cli(ctx, config_file, verbose, provider_data=None):
           of the data base, sql database and csv file.
 
     """
+    
     # TODO add for noverify, etc.
     print('CONTEXT_SETTINGS %s ' % CONTEXT_SETTINGS)
     # for data_key in ctx.default_map.keys():
@@ -77,11 +78,12 @@ def cli(ctx, config_file, verbose, provider_data=None):
         # We are in command mode or are processing the command line options in
         # interactive mode.
         # We apply the documented option defaults.
+        # setup a default db_info
         if ctx.default_map['dbtype']:
             db_type = ctx.default_map['dbtype']
         else:
-            db_type = 'csv'
-        print('dbtype %s' % db_type)
+            db_type = DBTYPE
+        print('dbtype %s' % DBTYPE)
 
         db_info = ctx.default_map[db_type]
         config_file_dir = os.path.dirname(os.getcwd())
@@ -89,11 +91,11 @@ def cli(ctx, config_file, verbose, provider_data=None):
         print('db_info %s' % db_info)
 
         try:
-            print('csv config config_file %s' % config_file)
-            csv_config = read_config(config_file, 'csv')
-            filename = csv_config['filename']
-            if not os.path.dirname(filename):
-                filename = os.path.join(config_file_dir, filename)
+            # print('csv config config_file %s' % config_file)
+            # csv_config = read_config(config_file, 'csv')
+            # filename = csv_config['filename']
+            # if not os.path.dirname(filename):
+            #    filename = os.path.join(config_file_dir, filename)
             target_data = TargetsData.factory(db_info, DBTYPE, verbose)
         except ValueError as ve:
             raise click.ClickException("%s: %s" % (ve.__class__.__name__, ve))

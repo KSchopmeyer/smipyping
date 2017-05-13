@@ -14,10 +14,10 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import relationship
 
 CONFIG_FILE = 'dbconfig.ini'
-DB_TYPE = 'mysql'
+DBTYPE = 'mysql'
 
 
-def read_db_config(filename=CONFIG_FILE, section=DB_TYPE):
+def read_db_config(filename=CONFIG_FILE, section=DBTYPE):
     """ Read database configuration file and return a dictionary object
     :param filename: name of the configuration file
     :param section: section of database configuration
@@ -40,7 +40,7 @@ def read_db_config(filename=CONFIG_FILE, section=DB_TYPE):
     return db
 
 
-def create_dburl(configfile, section=DB_TYPE, connector='mysql+mysqlconnector'):
+def create_dburl(configfile, section=DBTYPE, connector='mysql+mysqlconnector'):
     """
     Create a url for the database connection from the config file  section
     defined in the call.
@@ -70,7 +70,7 @@ def create_sql_engine(configfile, section, echo=None):
         configured "Session" class
     """
     Session = sessionmaker()
-    engine = create_engine(create_dburl(configfile, section=DB_TYPE), echo=echo)
+    engine = create_engine(create_dburl(configfile, section=DBTYPE), echo=echo)
     Session.configure(bind=engine)  # once engine is available
     return Session()
 
@@ -223,7 +223,7 @@ def test_tables(configfile, args):
     Test the defined tables and database
     """
 
-    session = create_sql_engine(configfile, section=DB_TYPE)
+    session = create_sql_engine(configfile, section=DBTYPE)
 
     for table in args.tables:
         if table == 'Companies':

@@ -48,5 +48,5 @@ def read_config(filename, section):
             result[item[0]] = item[1]
     else:
         raise ValueError('{0} not found in the {1} file'.format(section,
-                                                               filename))
+                                                                filename))
     return result

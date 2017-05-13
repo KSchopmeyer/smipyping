@@ -27,7 +27,7 @@ class ClickContext(object):
         Manage the click context object
     """
 
-    def __init__(self, ctx, config_file,target_data, verbose):
+    def __init__(self, ctx, config_file, target_data, verbose):
         self._config_file = config_file
         self._verbose = verbose
         self._target_data = target_data

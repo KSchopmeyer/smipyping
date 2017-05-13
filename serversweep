@@ -31,7 +31,7 @@ from __future__ import absolute_import
 
 import sys
 import os
-from smipyping import ServerSweep, TargetsData, DB_TYPE, \
+from smipyping import ServerSweep, TargetsData, DBTYPE, \
     create_sweep_argparser, parse_sweep_args
 
 from smipyping._configfile import read_config
@@ -45,9 +45,9 @@ def main(prog_name):
 
     provider_data = None
     if args.config_file is not None:
-        db_config = read_config(args.config_file, DB_TYPE)
+        db_config = read_config(args.config_file, DBTYPE)
         db_config['directory'] = os.path.dirname(args.config_file)
-        provider_data = TargetsData.factory(db_config, DB_TYPE,
+        provider_data = TargetsData.factory(db_config, DBTYPE,
                                             args.verbose)
     else:
         provider_data = None

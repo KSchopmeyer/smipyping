@@ -37,7 +37,7 @@ from ._cliutils import SmiSmartFormatter
 from ._ping import ping_host
 
 from .config import PING_TEST_CLASS, PING_TIMEOUT, DEFAULT_CONFIG_FILE, \
-    DB_TYPE
+    DBTYPE
 
 from smipyping._configfile import read_config
 
@@ -459,8 +459,8 @@ Examples:\n
             self.password = opts.password
         if opts.target_id:
             # TODO is there optionality on the config_file here
-            db_config = read_config(opts.config_file, DB_TYPE)
-            target_data = TargetsData.factory(db_config, DB_TYPE, opts.verbose)
+            db_config = read_config(opts.config_file, DBTYPE)
+            target_data = TargetsData.factory(db_config, DBTYPE, opts.verbose)
             if opts.target_id in target_data:
                 self.set_from_userrecord(opts.target_id, target_data)
             else:
