@@ -58,23 +58,33 @@ def connect(configfile, args):
             cursor.execute("SHOW TABLES")
             for (table_name,) in cursor:
                 print('  %s' % table_name)
-
-        for table in args.tables:
-            print('Table: %s' % table)
-            cursor = connection.cursor()
-            if args.showcolumnnames:
-                cursor.execute('SHOW columns from %s' % table)
-                for column in cursor.fetchall():
-                    print('%s:%s:%s' % (column[0], column[1], column[2]))
-                #print([column[0] for column in cursor.fetchall()])
-                #print([column for column in cursor.fetchall()])
-                #   This does not work print(cursor.column_names)
-
+        else:
+            print('args.table %s' % args.tables)
+            table_list = []
+            if args.tables[0] == "all":
+                cursor = connection.cursor()
+                cursor.execute("SHOW TABLES")
+                for (table_name,) in cursor:
+                    table_list.append(table_name)
             else:
-                cursor.execute('SELECT * FROM %s' % table)
-                rows = cursor.fetchall()
-                for row in rows:
-                    print(row)
+                table_list.extend(args.tables)
+                
+            for table in table_list:
+                print('Table: %s' % table)
+                cursor = connection.cursor()
+                if args.showcolumnnames:
+                    cursor.execute('SHOW columns from %s' % table)
+                    for column in cursor.fetchall():
+                        print('   %s:%s:%s' % (column[0], column[1], column[2]))
+                    #print([column[0] for column in cursor.fetchall()])
+                    #print([column for column in cursor.fetchall()])
+                    #   This does not work print(cursor.column_names)
+
+                else:
+                    cursor.execute('SELECT * FROM %s' % table)
+                    rows = cursor.fetchall()
+                    for row in rows:
+                        print(row)
 
     except Error as error:
         print(error)

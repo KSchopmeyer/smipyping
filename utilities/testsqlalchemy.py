@@ -217,6 +217,46 @@ class Notification(Base):
 # for instance in session.query(Company).order_by(Company.ID):
 #    print(instance.CompanyName)
 
+def print_company(session):
+    print('Table %s' % Company.__table__)
+    print('Companies count = %s' % session.query(Company).count())
+    for row in session.query(Company, Company.CompanyName).all():
+        print(row.Company)
+
+def print_targets(session):
+    print('Table %s' % Target.__table__)
+    print('Targets count = %s' % session.query(Target).count())
+    for row in session.query(Target, Target.TargetID).all():
+        print('companyId %s' % row.Target.CompanyID)
+        company = session.query(Company).filter(Company.CompanyID == row.Target.CompanyID).first()
+        print('Company = %s' % company)
+        print row.Target, company.CompanyName
+
+def print_previous_scans(session):
+    print('Table %s' % 'Table %s' % PreviousScan.__table__)
+    print('PreviousScan count = %s' % session.query(PreviousScan).count())
+    for row in session.query(PreviousScan, PreviousScan.ScanID).all():
+        print row.PreviousScan
+
+def print_lastscan(session):
+    print('Table %s' % LastScan.__table__)
+    print('LastScan count = %s' % session.query(LastScan).count())
+    for row in session.query(LastScan, LastScan.ScanID).all():
+        print row.LastScan
+
+def print_users(session):
+
+    print('Table %s' % User.__table__)
+    print('Users count = %s' % session.query(User).count())
+    for row in session.query(User, User.UserID).all():
+        print row.User
+
+def print_pings(session):
+
+    print('Table %s' % Ping.__table__)
+    print('Users count = %s' % session.query(Ping).count())
+    for row in session.query(Ping, Ping.PingID).all():
+        print row.User
 
 def test_tables(configfile, args):
     """
@@ -227,35 +267,28 @@ def test_tables(configfile, args):
 
     for table in args.tables:
         if table == 'Companies':
-            print('Table %s' % Company.__table__)
-            print('Companies count = %s' % session.query(Company).count())
-            for row in session.query(Company, Company.CompanyName).all():
-                print(row.Company)
+            print_company(session)
         elif table == 'Targets':
-            print(Target.__table__)
-            print('Targets count = %s' % session.query(Target).count())
-            for row in session.query(Target, Target.TargetID).all():
-                print('companyId %s' % row.Target.CompanyID)
-                company = session.query(Company).filter(Company.CompanyID == row.Target.CompanyID).first()
-                print('Company = %s' % company)
-                print row.Target, company.CompanyName
+            print_targets(session)
         elif table == 'Users':
-            print(User.__table__)
-            print('Users count = %s' % session.query(User).count())
-            for row in session.query(User, User.UserID).all():
-                print row.User
+            print('Table %s' % User.__table__)
 
         elif table == 'PreviousScans':
-            print(PreviousScan.__table__)
-            print('PreviousScan count = %s' % session.query(PreviousScan).count())
-            for row in session.query(PreviousScan, PreviousScan.ScanID).all():
-                print row.PreviousScan
+            print_previous_scans(session)
 
         elif table == 'LastScans':
-            print(LastScan.__table__)
-            print('LastScan count = %s' % session.query(LastScan).count())
-            for row in session.query(LastScan, LastScan.ScanID).all():
-                print row.LastScan
+            print_lastscan(session)
+
+        elif table == 'Pings':
+            print_Pings(session)            
+
+        elif table == "all":
+            print_company(session)
+            print_targets(session)
+            print_previous_scans(session)
+            print_lastscan(session)
+            print_pings(session)
+
 
         else:
             print('Table %s Not found' % table)
