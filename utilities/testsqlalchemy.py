@@ -2,6 +2,7 @@
 """
 Test using sqlalchemy to manage database
 """
+from __future__ import print_function, absolute_import
 
 import argparse
 from configparser import ConfigParser
@@ -40,7 +41,7 @@ def read_db_config(filename=CONFIG_FILE, section=DBTYPE):
     return db
 
 
-def create_dburl(configfile, section=DBTYPE, connector='mysql+mysqlconnector'):
+def get_dbconfig(configfile, section=DBTYPE, connector='mysql+mysqlconnector'):
     """
     Create a url for the database connection from the config file  section
     defined in the call.
@@ -53,26 +54,32 @@ def create_dburl(configfile, section=DBTYPE, connector='mysql+mysqlconnector'):
     host = db_config['host']
     database = db_config['database']
 
-    dburl = '%s://%s:%s@%s/%s' % (connector, user, password, host, database)
-    print('dburl  %s' % dburl)
+    db_config = '%s://%s:%s@%s/%s' % (connector, user, password, host, database)
+    print('db_config  %s' % db_config)
 
-    return dburl
+    return db_config
 
 
 def create_sql_engine(configfile, section, echo=None):
     """
-    Create the sql_alchemy engine and return the handle of the engine.
+    Create the sql_alchemy session and return the session.
 
     Parameters:
+
         echo: Boolean. Set to true to show sql generated.
 
     Returns:
         configured "Session" class
     """
     Session = sessionmaker()
-    engine = create_engine(create_dburl(configfile, section=DBTYPE), echo=echo)
+    engine = create_engine(get_dbconfig(configfile, section=DBTYPE), echo=echo)
     Session.configure(bind=engine)  # once engine is available
     return Session()
+
+
+def create_sqlalchemy_engine(configfile, section, echo=None):
+    engine = create_engine(get_dbconfig(configfile, section=DBTYPE), echo=echo)
+    return engine
 
 
 Base = declarative_base()
@@ -93,8 +100,8 @@ class Company(Base):
     targets_for_company = relationship("Target")
 
     def __repr__(self):
-        return("<Companies(CompanyName='%s id %s')>" % (self.CompanyName,
-                                                        self.CompanyID))
+        return("CompanyID=%s; CompanyName='%s'" % (self.CompanyID,
+                                                   self.CompanyName))
 
 
 class Target(Base):
@@ -117,13 +124,13 @@ class Target(Base):
     Port = Column(String(10), nullable=False)
 
     # TODO what is diff between backref and back_populates.
-    company = relationship("Company", backref="targets")
+    company = relationship("Company")
 
     def __repr__(self):
-        return('<Targets(TargetID=%s IPAddress=%s CompanyID=%s, Namespace=%s'
-               ' SMIVersion=%s Product=%s Principal=%s Credential=%s'
-               ' CimomVersion=%s InteropNamespace=%s Notify=%s NotifyUsers=%s'
-               ' ScanEnabled=%s Protocol=%s Port=%s)>' %
+        return('TargetID=%s; IPAddress=%s; CompanyID=%s; Namespace=%s;'
+               ' SMIVersion=%s; Product=%s; Principal=%s; Credential=%s;'
+               ' CimomVersion=%s; InteropNamespace=%s; Notify=%s;'
+               ' NotifyUsers=%s; ScanEnabled=%s; Protocol=%s Port=%s' %
                (self.TargetID, self.IPAddress, self.CompanyID, self.Namespace,
                 self.SMIVersion, self.Product, self.Principal, self.Credential,
                 self.CimomVersion, self.InteropNamespace, self.Notify,
@@ -141,9 +148,12 @@ class User(Base):
     Active = Column(Enum('Active', 'Inactive'), nullable=False)
     Notify = Column(Enum('Enabled', 'Disabled'), nullable=False)
 
+    # TODO what is diff between backref and back_populates.
+    company = relationship("Company", backref="targets")
+
     def __repr__(self):
-        return('<Users(UserID=%s, Firstname=%s, Lastname=%s, Email=%s'
-               'CompanyID=%s Active=%s,Notify=%s>' %
+        return('UserID=%s; Firstname=%s; Lastname=%s; Email=%s;'
+               'CompanyID=%s; Active=%s; Notify=%s' %
                (self.UserID, self.Firstname, self.Lastname, self.Email,
                 self.CompanyID, self.Active, self.Notify))
 
@@ -152,11 +162,14 @@ class Ping(Base):
     __tablename__ = 'Pings'
     PingID = Column(Integer(11), primary_key=True)
     TargetID = Column(Integer(11), ForeignKey("Targets.TargetID"))
-    Timestamp = Column(DateTime,  nullable=False)
+    Timestamp = Column(DateTime, nullable=False)
     Status = Column(String(255), nullable=False)
 
+    # TODO what is diff between backref and back_populates.
+    target = relationship("Target", backref="targets")
+
     def __repr__(self):
-        return('<Ping(PingID=%s, TargetID=%s, Timestamp=%s, Status=%s>' %
+        return('PingID=%s; TargetID=%s; Timestamp=%s; Status=%s' %
                (self.PingID, self.TargetID, self.Timestamp, self.Status))
 
 
@@ -166,8 +179,7 @@ class PreviousScan(Base):
     TimeStamp = Column(DateTime, nullable=False)
 
     def __repr__(self):
-        return('<PreviousScan(ScanID=%s, Timestamp=%s>' % (self.ScanID,
-                                                           self.TargetID))
+        return('ScanID=%s,\; Timestamp=%s' % (self.ScanID, self.TargetID))
 
 
 class LastScan(Base):
@@ -176,8 +188,7 @@ class LastScan(Base):
     LastScan = Column(DateTime, nullable=False)
 
     def __repr__(self):
-        return('<LastScan(ScanID=%s, LastScan=%s>' % (self.ScanID,
-                                                      self.LastScan))
+        return('ScanID=%s, LastScan=%s' % (self.ScanID, self.LastScan))
 
 
 class Program(Base):
@@ -188,12 +199,11 @@ class Program(Base):
     EndDate = Column(Date, nullable=False)
 
     def __repr__(self):
-        return(
-            '<Program(ProgramID=%s, ProgramName=%s StartDate=%s '
-            ' EndDate>' % (self.ProgramID,
-                           self.ProgramName,
-                           self.StartDate,
-                           self.EndDate))
+        return('ProgramID=%s; ProgramName=%s; StartDate=%s;  EndDate=%s' %
+               (self.ProgramID,
+                self.ProgramName,
+                self.StartDate,
+                self.EndDate))
 
 
 class Notification(Base):
@@ -206,59 +216,90 @@ class Notification(Base):
 
     def __repr__(self):
         return(
-            '<Notification(NotificationID=%s, NotificationID=%s UserID=%s '
-            ' TargetID=% Message=%s>>' % (self.NotificationID,
+            'NotificationID=%s, NotificationID=%s; UserID=%s; '
+            ' TargetID=%s; Message=%s' % (self.NotificationID,
                                           self.NotificationID,
                                           self.UserID,
                                           self.TargetID,
                                           self.Message))
 
 
-# for instance in session.query(Company).order_by(Company.ID):
-#    print(instance.CompanyName)
+def print_table_info(session, table, verbose):
+    print('Table %s; count = %s' % (table.__table__,
+                                    session.query(table).count()))
 
-def print_company(session):
-    print('Table %s' % Company.__table__)
-    print('Companies count = %s' % session.query(Company).count())
-    for row in session.query(Company, Company.CompanyName).all():
-        print(row.Company)
 
-def print_targets(session):
-    print('Table %s' % Target.__table__)
-    print('Targets count = %s' % session.query(Target).count())
-    for row in session.query(Target, Target.TargetID).all():
-        print('companyId %s' % row.Target.CompanyID)
-        company = session.query(Company).filter(Company.CompanyID == row.Target.CompanyID).first()
-        print('Company = %s' % company)
-        print row.Target, company.CompanyName
+def print_companies(session, verbose=False):
+    print_table_info(session, Company, verbose)
+    if verbose:
+        for row in session.query(Company, Company.CompanyID).all():
+            print(row.Company)
+            #print('type row %s, row.Company %s' % (type(row),
+            #                                    type(row.Company)))
+            print('Target Relationships:')
+            for target in row.Company.targets_for_company:
+                print('  id=%s, product=%s' % (target.TargetID,
+                                               target.Product))
+            # print('targets type %s' % type(row.Company.targets_for_company))
+            # targets type <class 'sqlalchemy.orm.collections.InstrumentedList'>
+            # print('targets %s' % row.Company.targets_for_company)
 
-def print_previous_scans(session):
-    print('Table %s' % 'Table %s' % PreviousScan.__table__)
-    print('PreviousScan count = %s' % session.query(PreviousScan).count())
-    for row in session.query(PreviousScan, PreviousScan.ScanID).all():
-        print row.PreviousScan
+# <Companies(CompanyName='Tintri id 33')>
+# type row <class 'sqlalchemy.util._collections.KeyedTuple'>,
+# row.Company <class '__main__.Company'>
 
-def print_lastscan(session):
-    print('Table %s' % LastScan.__table__)
-    print('LastScan count = %s' % session.query(LastScan).count())
-    for row in session.query(LastScan, LastScan.ScanID).all():
-        print row.LastScan
 
-def print_users(session):
+def print_targets(session, verbose=False):
+    print_table_info(session, Target, verbose)
+    if verbose:
+        for row in session.query(Target, Target.TargetID).all():
+            print('Target: %s\nCompany (%s)' % (row.Target, row.Target.company))
+            print(row._asdict())
 
-    print('Table %s' % User.__table__)
-    print('Users count = %s' % session.query(User).count())
-    for row in session.query(User, User.UserID).all():
-        print row.User
 
-def print_pings(session):
+def print_previous_scans(session, verbose=False):
+    print_table_info(session, PreviousScan, verbose)
 
-    print('Table %s' % Ping.__table__)
-    print('Users count = %s' % session.query(Ping).count())
-    for row in session.query(Ping, Ping.PingID).all():
-        print row.User
+    if verbose:
+        for row in session.query(PreviousScan, PreviousScan.ScanID).all():
+            print(row.PreviousScan)
 
-def test_tables(configfile, args):
+
+def print_lastscan(session, verbose=False):
+    print_table_info(session, LastScan, verbose)
+    if verbose:
+        for row in session.query(LastScan, LastScan.ScanID).all():
+            print(row.LastScan)
+
+
+def print_users(session, verbose=False):
+    print_table_info(session, User, verbose)
+
+    if verbose:
+        for row in session.query(User, User.UserID).all():
+            print(row.User)
+
+
+def print_pings(session, verbose=False):
+    """
+    Display info on Pings
+
+    This does not show full output because of potential size since there
+    may be thousands of ping results
+    """
+    print_table_info(session, Ping, verbose)
+
+    # blocked because produces enormous output
+    # if verbose:
+    #    for row in session.query(Ping, Ping.PingID).all():
+    #        print(row.Ping)
+
+    print('oldest record; %s\nnewest record; %s' %
+          (session.query(Ping).first(),
+           session.query(Ping).order_by(-Ping.PingID).first()))
+
+
+def display_tables(configfile, args):
     """
     Test the defined tables and database
     """
@@ -267,32 +308,36 @@ def test_tables(configfile, args):
 
     for table in args.tables:
         if table == 'Companies':
-            print_company(session)
+            print_companies(session, verbose=args.verbose)
         elif table == 'Targets':
-            print_targets(session)
+            print_targets(session, verbose=args.verbose)
         elif table == 'Users':
-            print('Table %s' % User.__table__)
-
+            print_users(session, verbose=args.verbose)
         elif table == 'PreviousScans':
-            print_previous_scans(session)
-
+            print_previous_scans(session, verbose=args.verbose)
         elif table == 'LastScans':
-            print_lastscan(session)
-
+            print_lastscan(session, verbose=args.verbose)
         elif table == 'Pings':
-            print_Pings(session)            
+            print_pings(session, verbose=args.verbose)
 
         elif table == "all":
-            print_company(session)
-            print_targets(session)
-            print_previous_scans(session)
-            print_lastscan(session)
-            print_pings(session)
-
+            print_companies(session, verbose=args.verbose)
+            print_targets(session, verbose=args.verbose)
+            print_previous_scans(session, verbose=args.verbose)
+            print_lastscan(session, verbose=args.verbose)
+            print_pings(session, verbose=args.verbose)
+            print_users(session, verbose=args.verbose)
 
         else:
             print('Table %s Not found' % table)
             raise ValueError('Table %s Not found' % table)
+
+
+def display_table_names(configfile, args):
+    engine = create_sqlalchemy_engine(configfile, args)
+    print ('Defined Table Names:')
+    for name in engine.table_names():
+        print('   %s' % name)
 
 
 def main():
@@ -302,18 +347,25 @@ def main():
                         help='Config file to use. Default = "localconfig"')
     parser.add_argument('-t', '--tables', nargs='*',
                         default=['Companies'],
-                        help='One or more table names. Default is Companies')
-    parser.add_argument('-s', '--showtablenames', action='store_true',
-                        help='List the names of all tables in the database.')
+                        help='One or more table names. Default is Companies. '
+                             '"all" means to show info on all tables.')
+    parser.add_argument('-n', '--tablenames', action='store_true',
+                        help='List the names of all tables in the database. '
+                             'This option lists names and exits ')
     parser.add_argument('-c', '--showcolumnnames', action='store_true',
                         help='List the names of all columns in each table.')
-    parser.add_argument('-v', '--verbose', action='store_true')
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help='If false, show only overview info on tables in '
+                        '-t and database. If True, list entries in tables')
     args = parser.parse_args()
 
     if args.verbose:
         print(args)
     configfile = args.configfile + '.ini'
-    test_tables(configfile, args)
+    if args.tablenames:
+        display_table_names(configfile, args)
+    else:
+        display_tables(configfile, args)
 
 
 if __name__ == '__main__':

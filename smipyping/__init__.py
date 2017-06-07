@@ -56,20 +56,25 @@ from ._ping import *  # noqa: F401, F403
 from ._csvtable import *  # noqa: F401, F403
 from ._terminaltable import *  # noqa: F401, F403 
 from ._targetdata import *  # noqa: F401, F403
+
+# TODO should not need this
+from ._cliutils import *  # noqa: F401, F403
+from ._scanport import *  # noqa: F401, F403
+
+# support for particular script cmds
 from ._simpleping import *  # noqa: F401, F403
 from ._explore import *  # noqa: F401, F403
 from ._serversweep import *  # noqa: F401, F403
-# TODO should not need this
-from ._cliutils import *  # noqa: F401, F403
 from ._targetdatacli import *  # noqa: F401, F403
-from ._scanport import *  # noqa: F401, F403
+
 
 # smicli support libraries
 from .smicli import *  # noqa: F401, F403
+from ._click_context import *  # noqa: F401, F403
 from ._cmd_database import *  # noqa: F401, F403
 from ._cmd_provider import *  # noqa: F401, F403
 from ._cmd_explorer import *  # noqa: F401, F403
-from ._click_context import *  # noqa: F401, F403
+from ._cmd_configfile import *  # noqa: F401, F403
 
 from ._version import __version__  # noqa: F401, F403gy
 

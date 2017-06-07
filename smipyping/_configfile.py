@@ -20,7 +20,6 @@ tools.  It will be replaced with the common config for the click based tools
 from __future__ import print_function, absolute_import
 
 from configparser import ConfigParser
-# ##from smipyping._terminaltable import print_terminal_table, fold_cell
 
 
 def read_config(filename, section):

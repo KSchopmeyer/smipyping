@@ -70,7 +70,8 @@ setup(
         'terminaltables',
         'scapy',
         'pytest',
-        'mysql-connector',
+        # Version 2.2.3 requires separate os install of Protobuf
+        'mysql-connector==2.1.4',
         'configparser',
         'click',
         'click-repl',

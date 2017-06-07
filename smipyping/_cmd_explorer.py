@@ -26,7 +26,6 @@ from .smicli import cli, CMD_OPTS_TXT
 from ._explore import Explorer
 
 
-
 @cli.group('explorer', options_metavar=CMD_OPTS_TXT)
 def explorer_group():
     """

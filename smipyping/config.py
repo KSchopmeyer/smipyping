@@ -33,7 +33,7 @@ the variables.
 
 __all__ = ['ENFORCE_INTEGER_RANGE', 'DEFAULT_SWEEP_PORT', 'USERDATA_FILE',
            'PING_TEST_CLASS', 'SIMPLEPING_OPERATION_DEFAULT_TIMEOUT',
-           'DEFAULT_CONFIG_FILE', 'DEFAULT_NAMESPACE', 'DBTYPE',
+           'DEFAULT_CONFIG_FILE', 'DEFAULT_NAMESPACE', 'DEFAULT_DBTYPE',
            'DEFAULT_SMI_CLI_CONFIG_FILES']
 
 #: Enforce the value range in CIM integer types (e.g. :class:`~pywbem.Uint8`).
@@ -71,8 +71,8 @@ DEFAULT_SMI_CLI_CONFIG_FILES = ['smicli.ini', 'smicli.cfg']
 #: Defualt namespace when none is specified
 DEFAULT_NAMESPACE = 'root/cimv2'
 
-#: type of database to use.  May be 'sql' or 'csv'
-DBTYPE = 'sql'
+#: type of database to use.  May be 'mysql' or 'csv'
+DEFAULT_DBTYPE = 'mysql'
 
 #: Maximum number of parallel threads to use in multithreaded operations
 MAX_THREADS = 100
