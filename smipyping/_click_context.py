@@ -14,6 +14,8 @@
 # limitations under the License.
 """
 Click context file. Used to communicate between click commands.
+
+This defines the context object that is passed to each click command.
 """
 
 from __future__ import absolute_import, unicode_literals
@@ -27,11 +29,18 @@ class ClickContext(object):
         Manage the click context object
     """
 
-    def __init__(self, ctx, config_file, target_data, verbose):
+    def __init__(self, ctx, config_file, db_type, db_info, target_data,
+                 verbose):
         self._config_file = config_file
+        self._db_type = db_type
+        self._db_info = db_info
         self._verbose = verbose
         self._target_data = target_data
         self._spinner = click_spinner.Spinner()
+
+    def __repr__(self):
+        print('config_file %s, verbose %s, db_type %s, db_info %s' %
+              (self.config_file, self.db_type, self.db_info, self.verbose))
 
     @property
     def config_file(self):
@@ -39,6 +48,20 @@ class ClickContext(object):
         :term:`string`: Name of the config file used.
         """
         return self._config_file
+
+    @property
+    def db_type(self):
+        """
+        :term:`string`: Type of db used.
+        """
+        return self._db_type
+
+    @property
+    def db_info(self):
+        """
+        :term:`dict`: Detailed info on db used. Varies by db type.
+        """
+        return self._db_info
 
     @property
     def verbose(self):

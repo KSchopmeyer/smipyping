@@ -71,10 +71,11 @@ from ._targetdatacli import *  # noqa: F401, F403
 # smicli support libraries
 from .smicli import *  # noqa: F401, F403
 from ._click_context import *  # noqa: F401, F403
-from ._cmd_database import *  # noqa: F401, F403
+from ._cmd_targets import *  # noqa: F401, F403
 from ._cmd_provider import *  # noqa: F401, F403
 from ._cmd_explorer import *  # noqa: F401, F403
-from ._cmd_configfile import *  # noqa: F401, F403
+
+from ._click_configfile import *  # noqa: F401, F403
 
 from ._version import __version__  # noqa: F401, F403gy
 
