@@ -32,7 +32,6 @@ https port so the choices of test are limited.
 from __future__ import print_function, absolute_import
 import sys
 import time
-import argparse as _argparse
 from threading import Thread
 import Queue
 import itertools
@@ -44,7 +43,7 @@ from .config import DEFAULT_SWEEP_PORT, MAX_THREADS
 from ._utilities import display_argparser_args
 from ._scanport import check_port_syn
 
-__all__ = ['ServerSweep', 'create_sweep_argparser', 'parse_sweep_args']
+__all__ = ['ServerSweep']
 
 
 class ServerSweep(object):
@@ -413,111 +412,4 @@ class ServerSweep(object):
         return(open_hosts)
 
 
-def create_sweep_argparser(prog_name):
-    """
-    Create the argument parser for server sweep cmd line.
 
-    Returns the created parser.
-    """
-    prog = prog_name  # Name of the script file invoking this module
-    usage = '%(prog)s [options] subnet [subnet] ...'
-    desc = 'Sweep possible WBEMServer ports across a range of IP subnets '\
-           'and ports to find existing running WBEM servers.'
-    epilog = """
-Examples:
-  %s 10.1.132:134
-        The above example will scan the subnets 10.1.134, 10.1.133, and
-        10.1.134 from 1 to 254 for the 4 the octet of ip addresses. This
-        is explicitly defined by 10.1.132:124.1:254
-  %s 10.1.134
-        Scan a complete Class C subnet, 10.1.134 for the default port (5989)
-  %s 10.1.132,134 -p 5989 -p 5988
-        Scan 10.1.132.1:254 and 10.1.134.1:254 for ports 5988 and 5989
-
-""" % (prog, prog, prog)
-
-    argparser = _argparse.ArgumentParser(
-        prog=prog, usage=usage, description=desc, epilog=epilog,
-        formatter_class=SmiSmartFormatter)
-
-    pos_arggroup = argparser.add_argument_group(
-        'Positional arguments')
-    pos_arggroup.add_argument(
-        'subnet', metavar='subnet', nargs='+',
-        help='R|IP subnets to scan (ex. 10.1.132). Multiple subnets\n '
-             'allowed. Each subnet string is itself a definition that\n'
-             'consists of period separated octets that are used to\n'
-             'create the individual ip addresses to be tested:\n'
-             '  * Integers: Each integer is in the range 0-255\n'
-             '      ex. 10.1.2.9\n'
-             '  * Octet range definitions: A range expansion is in the\n'
-             '     form: int:int which defines the mininum and maximum\n'
-             '      values for that octet (ex 10.1.132:134) or\n'
-             '  * Integer lists: A list expansion is in the form:\n'
-             '     int,int,int\n'
-             '     that defines the set of values for that octet.\n'
-             'Missing octet definitions are expanded to the value\n'
-             'range defined by the min and max octet value parameters\n'
-             'All octets of the ip address can use any of the 3\n'
-             'definitions.\n'
-             'Examples: 10.1.132,134 expands to addresses in 10.1.132\n'
-             'and 10.1.134. where the last octet is the range 1 to 254')
-
-    subnet_arggroup = argparser.add_argument_group(
-        'Scan related options',
-        'Specify parameters of the subnet scan')
-    subnet_arggroup.add_argument(
-        '--min_octet_val', '-s', metavar='Min', nargs='?', default=1,
-        type=check_negative_int,
-        help='Minimum expanded value for any octet that is not specifically '
-             ' included in a net definition. Default = 1')
-    subnet_arggroup.add_argument(
-        '--max_octet_val', '-e', metavar='Max', nargs='?', default=254,
-        type=check_negative_int,
-        help='Minimum expanded value for any octet that is not specifically '
-             ' included in a net definition. Default = 254')
-    subnet_arggroup.add_argument(
-        '--port', '-p', nargs='?', action='append', type=int,
-        help='Port(s) to test. This argument may be repeated to test '
-             'multiple ports')
-
-    general_arggroup = argparser.add_argument_group(
-        'General options')
-    general_arggroup.add_argument(
-        '--config_file', '-c',
-        help='Use config file to determine if server is in database')
-    general_arggroup.add_argument(
-        '--no_threads', action='store_true', default=False,
-        help='If set, uses non-threaded implementation for pings. The '
-             'non-threaded implementation takes MUCH longer to execute but'
-             'is provided in case threading causes issues in a particular '
-             'user environment.')
-    general_arggroup.add_argument(
-        '--verbose', '-v', action='store_true', default=False,
-        help='If set output detail displays as test proceeds')
-
-    return argparser
-
-
-def parse_sweep_args(argparser):
-    """
-    Process the cmdline arguments including any default substitution.
-
-    This is based on the argparser defined by the create... function.
-
-    Either returns the args or executes argparser.error
-    """
-    args = argparser.parse_args()
-
-    if not args.subnet:
-        argparser.error('No Subnet specified. At least one subnet required.')
-
-    # set default port if none provided.
-    if args.port is None:
-        # This is from a variable in config.py
-        args.port = [DEFAULT_SWEEP_PORT]
-
-    if args.verbose:
-        display_argparser_args(args)
-
-    return args

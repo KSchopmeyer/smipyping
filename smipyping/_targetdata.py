@@ -46,7 +46,7 @@ class TargetsData(object):
         """Initialize the abstract Targets instance.
 
         This controls all other
-        target bases. This defines the common defintion of all targets bases
+        target bases. This defines the common definition of all targets bases
         including field names, and common methods.
 
         Parameters:
@@ -91,18 +91,19 @@ class TargetsData(object):
 
         inst = None
         if verbose:
-            print('targetdata factory datafile %s type %s v %s'
+            print('targetdata factory datafile %s dbtype %s verbose %s'
                   % (db_dict,
                      db_type,
                      verbose))
         if db_type == ('csv'):
             inst = CsvTargetsData(db_dict, db_type, verbose)
 
-        elif db_type == ('sql'):
+        elif db_type == ('mysql'):
             inst = SQLTargetsData(db_dict, db_type, verbose)
-
         else:
             ValueError('Invalid target factory db_type %s' % db_type)
+
+        print('Resultingtarget factory inst %r' % inst)
 
         return inst
 
@@ -112,8 +113,8 @@ class TargetsData(object):
 
     def __repr__(self):
         """Rep of target data"""
-        return ('Targetdata filename%s db_type %s, rep count=%s' %
-                (self.filename, self.db_type, len(self.targets_dict)))
+        return ('Targetdata db_type %s, rep count=%s' %
+                (self.db_type, len(self.targets_dict)))
 
     def get_field_list(self):
         """Return a list of the base table file names in the order defined."""
@@ -231,7 +232,9 @@ class TargetsData(object):
         """
         output_list = []
         # TODO clean up for python 3
+
         for _id, value in self.targets_dict.items():
+            print('get_hostid_list value %s' % (value,))
             output_list.append(value['IPAddress'])
         return output_list
 
@@ -366,27 +369,36 @@ class SQLTargetsData(TargetsData):
             # account for issue that the dictionary=True attribute only
             # works on mysql v2 by creating a special subclass to force
             # the conversion to dictionary.
-            # from http://stackoverflow.com/questions/22769873/python-mysql-connector-dictcursor  # noqa: E501
+            # from http://stackoverflow.com/questions/22769873/
+            # python-mysql-connector-dictcursor  # noqa: E501
             cursor = connection.cursor(cursor_class=MySQLCursorDict)
 
             # get the companies table
             companies = {}
-            cursor.execute('SELECT * FROM Companies')
+            cursor.execute('SELECT CompanyID, CompanyName FROM Companies')
             rows = cursor.fetchall()
+
             for row in rows:
-                key = int(row['CompanyID'])
+                key = int(row[0])
                 # print('companies key %s value %s' % (key, row))
-                companies[key] = row
+                companies[key] = row[1]
+                print('companies key %s is %s' % (key, companies[key]))
 
             # get the Targets table
             result = {}
-            cursor.execute('SELECT * FROM Targets')
+            # fetchall returns tuple so need index to fields, not names
+            cursor.execute('SELECT TargetID, IPAddress, CompanyID, Namespace, '
+                           'SMIVersion, Product, Principal, Credential, '
+                           'CimomVersion, InterOpNamespace, Notify, '
+                           'NotifyUsers, ScanEnabled, Protocol, Port '
+                           'FROM Targets')
             rows = cursor.fetchall()
             for row in rows:
-                key = int(row['TargetID'])
+                key = int(row[0])
                 # denormalize CompanyId by adding CompanyName
-                row['CompanyName'] = companies[row['CompanyID']]['CompanyName']
+                #row['CompanyName'] = companies[row[0]]['CompanyName']
                 result[key] = row
+                print('result for key %s %s' % (result[key], result[key]))
 
             # save the combined table for the other functions.
             self.targets_dict = result
@@ -439,6 +451,7 @@ class CsvTargetsData(TargetsData):
                                (fn, db_dict['directory']))
                 else:
                     self.filename = full_fn
+        print('CSV database type ' % self)
 
         with open(self.filename) as input_file:
             reader = csv.DictReader(input_file)

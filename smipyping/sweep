@@ -1,3 +1,0 @@
-#!/bin/bash
-
-sudo ./serversweep.py 10.1.132 10.1.134 -p 5988 -p 5989 -t
