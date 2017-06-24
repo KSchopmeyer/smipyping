@@ -118,7 +118,7 @@ class ServerSweep(object):
         determine what all will be scanned.
         """
         test_list = [result for result in self.build_test_list()]
-        print('scan list len %s:' % len(test_list))
+        print('scan list count=%s:' % len(test_list))
         index = 0
         for test_addr in test_list:
             index += 1

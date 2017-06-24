@@ -175,7 +175,6 @@ def main(prog_name):
     # Sweep the servers and display result
     print('Start sweep for subnets %s, port %s, range %s:%s' %
           (args.subnet, args.port, args.min_octet_val, args.max_octet_val))
-    print('The sweep may take several minutes')
     sweep = ServerSweep(args.subnet, args.port, provider_data=provider_data,
                         no_threads=args.no_threads,
                         min_octet_val=args.min_octet_val,
@@ -185,6 +184,7 @@ def main(prog_name):
     if args.dryrun:
         sweep.list_subnets_to_scan()
     else:
+        print('The sweep may take several minutes and requires root privileges')
         open_servers = sweep.sweep_servers()
         sweep.print_open_hosts_report(open_servers)
 
