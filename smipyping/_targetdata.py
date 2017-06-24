@@ -337,7 +337,14 @@ class TargetsData(object):
 
 
 class SQLTargetsData(TargetsData):
-    """Source is sql data"""
+    """
+    This subclass of TargetsData process targets infromation from an sql
+    database.
+
+    Generate the targetstable from the sql database targets table and
+    the companies table, by mapping the data to the dictionary defined
+    for targets
+    """
     # TODO filename is config file name, not actual file name.
     def __init__(self, db_dict, dbtype, verbose):
         """Read the input file into a dictionary."""
@@ -365,7 +372,11 @@ class SQLTargetsData(TargetsData):
                 print('SQL database connection failed. host %s, db %s' %
                       (db_dict['host'], db_dict['database']))
                 raise ValueError('Connection to database failed')
+        except Exception as ex:
+            raise ValueError('Could not connect to sql database %r error %s'
+                             % (db_dict, ex))
 
+        try:
             # account for issue that the dictionary=True attribute only
             # works on mysql v2 by creating a special subclass to force
             # the conversion to dictionary.
@@ -374,18 +385,19 @@ class SQLTargetsData(TargetsData):
             cursor = connection.cursor(cursor_class=MySQLCursorDict)
 
             # get the companies table
-            companies = {}
             cursor.execute('SELECT CompanyID, CompanyName FROM Companies')
             rows = cursor.fetchall()
-
+            companies = {}
             for row in rows:
-                key = int(row[0])
-                # print('companies key %s value %s' % (key, row))
-                companies[key] = row[1]
-                print('companies key %s is %s' % (key, companies[key]))
+                key = row['CompanyID']
+                companies[key] = row['CompanyName']
 
+        except Exception as ex:
+            raise ValueError('Could not create companies table %r error %s'
+                             % (rows, ex))
+        try:
             # get the Targets table
-            result = {}
+            targets_dict = {}
             # fetchall returns tuple so need index to fields, not names
             cursor.execute('SELECT TargetID, IPAddress, CompanyID, Namespace, '
                            'SMIVersion, Product, Principal, Credential, '
@@ -394,23 +406,27 @@ class SQLTargetsData(TargetsData):
                            'FROM Targets')
             rows = cursor.fetchall()
             for row in rows:
-                key = int(row[0])
-                # denormalize CompanyId by adding CompanyName
-                #row['CompanyName'] = companies[row[0]]['CompanyName']
-                result[key] = row
-                print('result for key %s %s' % (result[key], result[key]))
+                key = row['TargetID']
+                targets_dict[key] = row
 
             # save the combined table for the other functions.
-            self.targets_dict = result
+            self.targets_dict = targets_dict
+        except Exception as ex:
+            raise ValueError('Error: setup sql based targets table %r error %s'
+                             % (db_dict, ex))
+        try:
+            # set the companyname into the targets table
+            for target_key in self.targets_dict:
+                target = self.targets_dict[target_key]
+                target['CompanyName'] = companies[target['CompanyID']]
 
         except Exception as ex:
-            print('Could not access sql database. Exception %s', str(ex))
-            raise ValueError('Could not initialize sql database %r error %s'
+            raise ValueError('Error: putting Company Name in table %r error %s'
                              % (db_dict, ex))
 
     def db_info(self):
         """
-        Display the db info andReturn info on the database used as a
+        Display the db info and Return info on the database used as a
         dictionary.
         """
         try:

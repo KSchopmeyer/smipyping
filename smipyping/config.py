@@ -34,7 +34,7 @@ the variables.
 __all__ = ['ENFORCE_INTEGER_RANGE', 'DEFAULT_SWEEP_PORT', 'USERDATA_FILE',
            'PING_TEST_CLASS', 'SIMPLEPING_OPERATION_DEFAULT_TIMEOUT',
            'DEFAULT_CONFIG_FILE', 'DEFAULT_NAMESPACE', 'DEFAULT_DBTYPE',
-           'DEFAULT_SMI_CLI_CONFIG_FILES', 'DB_POSSIBLE_TYPES']
+           'DEFAULT_SMICLI_CONFIG_FILES', 'DB_POSSIBLE_TYPES']
 
 #: Enforce the value range in CIM integer types (e.g. :class:`~pywbem.Uint8`).
 #:

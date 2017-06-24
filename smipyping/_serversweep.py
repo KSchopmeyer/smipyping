@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-
 # (C) Copyright 2017 Inova Development Inc.
 # All Rights Reserved
 #
@@ -39,6 +38,7 @@ import six
 
 from .config import MAX_THREADS
 from ._scanport import check_port_syn
+from ._terminaltable import print_terminal_table
 
 __all__ = ['ServerSweep']
 
@@ -191,12 +191,19 @@ class ServerSweep(object):
         self.total_pings = test_count
 
         # Start worker threads.
+        threads = []
         for i in range(num_threads):
-            worker = Thread(target=self.process_queue, args=(queue, results))
-            worker.daemon = True    # allows main program to exit.
-            worker.start()
+            t = Thread(target=self.process_queue, args=(queue, results))
+            t.daemon = True    # allows main program to exit.
+            threads.append(t)
+            t.start()
 
-        queue.join()
+        try:
+            queue.join()
+        except KeyboardInterrupt:
+            print("Ctrl-c received! Sending kill to threads...")
+            for t in threads:
+                t.kill_received = True
 
         # returns list of ip addresses that were were found
         return results
@@ -346,47 +353,61 @@ class ServerSweep(object):
             execution_time = "%.2f min" % (self.total_sweep_time / 60)
 
         range_txt = '%s:%s' % (self.min_octet_val, self.max_octet_val)
-
+        table = []
         if len(open_hosts) != 0:
-            print('Open WBEMServers:subnet(s)=%s port(s)=%s range %s, time %s'
-                  ' total_pings %s count %s'
-                  % (self.net_defs, self.ports, range_txt, execution_time,
-                     self.total_pings, len(open_hosts)))
+            title = 'Open WBEMServers:subnet(s)=%s port(s)=%s range %s,' \
+                    ' time %s total_pings %s answered count %s' \
+                    % (self.net_defs, self.ports, range_txt, execution_time,
+                       self.total_pings, len(open_hosts))
+            print(title)
             # open_hosts.sort(key=lambda ip: map(int, ip.split('.')))
             # TODO this probably requires ordered dict rather than dictionary to
             # keep order. We are not outputing in full order. Note that
             # ip address itself is not good ordering since not all octets are
             # 3 char
+            headers = ['IPAddress', 'CompanyName', 'Product',
+                       'SMIVersion']
+            table = [headers]
+            print('%20s %20s %18s %18s' %
+                  ('IPAddress', 'CompanyName', 'Product', 'SMIVersion'))
             for host_data in open_hosts:
+                ip_address = '%s:%s' % (host_data[0], host_data[1])
                 if self.provider_data is not None:
                     record_list = self.provider_data.get_targets_host(host_data)
                     if record_list:
                         # TODO this should be a list since there may be
-                        # multiples # for single ip address
+                        # multiples for single ip address
                         entry = self.provider_data.get_dict_record(
                             record_list[0])
                         if entry is not None:
-                            print(
-                                '%s:%s %-20s %-18s %-18s' %
-                                (host_data[0],
-                                 host_data[1],
-                                 entry['CompanyName'],
-                                 entry['Product'],
-                                 entry['SMIVersion']))
+                            print('%20s %-20s %-18s %-18s' %
+                                  (ip_address,
+                                   entry['CompanyName'],
+                                   entry['Product'],
+                                   entry['SMIVersion']))
+                            table.append([ip_address,
+                                          entry['CompanyName'],
+                                          entry['Product'],
+                                          entry['SMIVersion']])
                         else:
-                            print('Invalid entry %s %s:%s %s' % (
-                                record_list[0], host_data[0], host_data[1],
+                            print('Invalid entry %s %s %s' % (
+                                record_list[0], ip_address,
                                 "Not in user data"))
+                            table.append([ip_address, "Not in base", "", ""])
                     else:
-                        print('%s:%s %s' % (host_data[0], host_data[1],
-                                            "UnknownServer"))
-
+                        print('%s %s' % (ip_address, "UnknownServer"))
+                        table.append([ip_address, "Unknown"])
+                # no host info requested.
                 else:
-                    print('%s, %s' % (host_data[0], host_data[1]))
+                    print('%s' % ip_address)
+                    table.append([ip_address])
         else:
             print('No WBEM Servers found:subnet(s)=%s port(s)=%s range %s, %s' %
                   (self.net_defs, self.ports, range_txt, execution_time))
         print("=" * 50)
+
+        if table:
+            print_terminal_table(title, table)
 
     def sweep_servers(self):
         """
