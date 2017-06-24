@@ -57,7 +57,7 @@ Examples:
         is explicitly defined by 10.1.132:124.1:254
   %s 10.1.134
         Scan a complete Class C subnet, 10.1.134 for the default port (5989)
-  %s 10.1.132,134 -p 5989 -p 5988
+  %s 10.1.132,134 -p 5989 5988
         Scan 10.1.132.1:254 and 10.1.134.1:254 for ports 5988 and 5989
 
 """ % (prog, prog, prog)
@@ -103,10 +103,10 @@ Examples:
         help='Minimum expanded value for any octet that is not specifically '
              ' included in a net definition. Default = 254')
     subnet_arggroup.add_argument(
-        '--port', '-p', nargs='?', action='append', type=int,
+        '--port', '-p', nargs='*', action='store', type=check_negative_int,
         default=DEFAULT_SWEEP_PORT,
-        help='Port(s) to test. This argument may be repeated to test '
-             'multiple ports. Default=%s' % DEFAULT_SWEEP_PORT)
+        help='Port(s) to test. This argument may be define multiple ports. '
+             ' Ex. -p 5988 5989. Default=%s' % DEFAULT_SWEEP_PORT)
 
     general_arggroup = argparser.add_argument_group(
         'General options')
@@ -126,7 +126,10 @@ Examples:
     general_arggroup.add_argument(
         '--verbose', '-v', action='store_true', default=False,
         help='If set output detail displays as test proceeds')
-
+    general_arggroup.add_argument(
+        '--dryrun', action='store_true', default=False,
+        help='Display list of systems/ports to be scanned but do not scan. '
+             ' This is a diagnostic tool')
     return argparser
 
 
@@ -179,9 +182,11 @@ def main(prog_name):
                         max_octet_val=args.max_octet_val,
                         verbose=args.verbose)
 
-    open_servers = sweep.sweep_servers()
-
-    sweep.print_open_hosts_report(open_servers)
+    if args.dryrun:
+        sweep.list_subnets_to_scan()
+    else:
+        open_servers = sweep.sweep_servers()
+        sweep.print_open_hosts_report(open_servers)
 
 if __name__ == '__main__':
     sys.exit(main(os.path.basename(sys.argv[0])))

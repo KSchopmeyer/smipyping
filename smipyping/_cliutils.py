@@ -28,10 +28,10 @@ def check_negative_int(value):
     """
     Test the input value for type int and ge 0.
 
-    Generate exception if it fails these tests.
+    Generate exception if it fails this tests.
 
     Parameters
-        input string
+        input string representing an integer
     Returns
         integer value
 
@@ -39,7 +39,8 @@ def check_negative_int(value):
     """
     ivalue = int(value)
     if ivalue < 0:
-        raise argparse.ArgumentTypeError('%s: invalid positive int value' %
+        raise argparse.ArgumentTypeError('%s: invalid. '
+                                         ' Positive int value required' %
                                          value)
     return ivalue
 

@@ -37,10 +37,7 @@ import Queue
 import itertools
 import six
 
-from ._cliutils import SmiSmartFormatter
-from ._cliutils import check_negative_int
-from .config import DEFAULT_SWEEP_PORT, MAX_THREADS
-from ._utilities import display_argparser_args
+from .config import MAX_THREADS
 from ._scanport import check_port_syn
 
 __all__ = ['ServerSweep']
@@ -113,6 +110,19 @@ class ServerSweep(object):
         check_result = check_port_syn(test_address[0], test_address[1],
                                       self.verbose)  # Test one ip:port
         return check_result
+
+    def list_subnets_to_scan(self):
+        """
+        show the ip addresses and ports to be scanned as a list and count
+        of the totals.  This is primarily a diagnostic tool but helps users
+        determine what all will be scanned.
+        """
+        test_list = [result for result in self.build_test_list()]
+        print('scan list len %s:' % len(test_list))
+        index = 0
+        for test_addr in test_list:
+            index += 1
+            print(' %4s %s' % (index, test_addr))
 
     def scan_subnets(self):
         """
@@ -410,6 +420,3 @@ class ServerSweep(object):
         self.total_sweep_time = time.time() - start_time
 
         return(open_hosts)
-
-
-
