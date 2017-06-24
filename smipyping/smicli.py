@@ -71,8 +71,10 @@ def cli(ctx, config_file, db_type, verbose, provider_data=None, db_info=None):
 
     # TODO add for noverify, etc.
     print('CONTEXT_SETTINGS %s ' % CONTEXT_SETTINGS)
-    # for data_key in ctx.default_map.keys():
-    #    print('ctx default map data key %s' % data_key)
+    print('ctx type %s' % type(ctx))
+    if ctx and ctx.default_map:
+        for data_key in ctx.default_map.keys():
+            print('ctx default map data key %s' % data_key)
 
     if ctx.obj is None:
         # We are in command mode or are processing the command line options in
@@ -82,13 +84,17 @@ def cli(ctx, config_file, db_type, verbose, provider_data=None, db_info=None):
         # get the db_type. Order is cmd line, config file, default
         if db_type:
             db_type = db_type
-        elif 'dbtype' in ctx.default_map:
+        elif  ctx.default_map and 'dbtype' in ctx.default_map:
             db_type = ctx.default_map['dbtype']
         else:
             db_type = DEFAULT_DBTYPE
         print('dbtype %s' % db_type)
 
-        db_info = ctx.default_map[db_type]
+        if ctx.default_map:
+            db_info = ctx.default_map[db_type]
+        else:
+            # NEED DEFAULT for dbinfo
+            db_info = {}
         config_file_dir = os.path.dirname(os.getcwd())
         db_info['directory'] = config_file_dir
         print('db_info %s' % db_info)

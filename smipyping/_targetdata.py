@@ -28,7 +28,6 @@ import re
 from collections import OrderedDict
 import six
 from mysql.connector import MySQLConnection
-from mysql.connector.cursor import MySQLCursor
 from ._terminaltable import print_terminal_table, fold_cell
 from ._configfile import read_config
 
@@ -352,13 +351,6 @@ class SQLTargetsData(TargetsData):
         print('SQL Database type %s  verbose=%s' % (db_dict, verbose))
         super(SQLTargetsData, self).__init__(db_dict, dbtype, verbose)
 
-        class MySQLCursorDict(MySQLCursor):
-            def _row_to_python(self, rowdata, desc=None):
-                row = super(MySQLCursorDict, self)._row_to_python(rowdata, desc)
-                if row:
-                    return dict(zip(self.column_names, row))
-                return None
-
         try:
             connection = MySQLConnection(host=db_dict['host'],
                                          database=db_dict['database'],
@@ -373,30 +365,32 @@ class SQLTargetsData(TargetsData):
                       (db_dict['host'], db_dict['database']))
                 raise ValueError('Connection to database failed')
         except Exception as ex:
-            raise ValueError('Could not connect to sql database %r error %s'
+            raise ValueError('Could not connect to sql database %r. '
+                             ' Exception: %r'
                              % (db_dict, ex))
 
+        # get companies table
         try:
-            # account for issue that the dictionary=True attribute only
-            # works on mysql v2 by creating a special subclass to force
-            # the conversion to dictionary.
-            # from http://stackoverflow.com/questions/22769873/
             # python-mysql-connector-dictcursor  # noqa: E501
-            cursor = connection.cursor(cursor_class=MySQLCursorDict)
+            cursor = connection.cursor(dictionary=True)
 
             # get the companies table
             cursor.execute('SELECT CompanyID, CompanyName FROM Companies')
             rows = cursor.fetchall()
             companies = {}
+            # ##print('company rows %s' % rows)
             for row in rows:
+                # ##print('row %s' % (row,))
                 key = row['CompanyID']
+                # ##print('key %s' % key)
                 companies[key] = row['CompanyName']
+                # ##print('companies %s' % companies)
 
         except Exception as ex:
-            raise ValueError('Could not create companies table %r error %s'
+            raise ValueError('Could not create companies table %r Exception: %r'
                              % (rows, ex))
+        # get targets table
         try:
-            # get the Targets table
             targets_dict = {}
             # fetchall returns tuple so need index to fields, not names
             cursor.execute('SELECT TargetID, IPAddress, CompanyID, Namespace, '
@@ -412,7 +406,8 @@ class SQLTargetsData(TargetsData):
             # save the combined table for the other functions.
             self.targets_dict = targets_dict
         except Exception as ex:
-            raise ValueError('Error: setup sql based targets table %r error %s'
+            raise ValueError('Error: setup sql based targets table %r. '
+                             'Exception: %r'
                              % (db_dict, ex))
         try:
             # set the companyname into the targets table

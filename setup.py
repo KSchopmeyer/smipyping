@@ -71,6 +71,7 @@ setup(
         'scapy',
         'pytest',
         # Version 2.2.3 requires separate os install of Protobuf
+        # stay with 2.1.4 for now.
         'mysql-connector==2.1.4',
         'configparser',
         'click',
