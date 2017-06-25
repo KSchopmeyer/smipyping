@@ -39,10 +39,9 @@ CMD_OPTS_TXT = '[COMMAND-OPTIONS]'
 
 __all__ = ['cli']
 
-
 @click.group(invoke_without_command=True,
-             options_metavar=GENERAL_OPTIONS_METAVAR,
-             context_settings=CONTEXT_SETTINGS)
+             context_settings=CONTEXT_SETTINGS,
+             options_metavar=GENERAL_OPTIONS_METAVAR)
 @click.option('-c', '--config_file', type=str, envvar='SMI_CONFIG_FILE',
               help="Configuration file to use for config information.")
 # TODO set up default support
@@ -50,7 +49,7 @@ __all__ = ['cli']
               envvar='SMI_DB_TYPE',
               help="Database type. May be defined on cmd line, config file, "
                    " or through default. Default is %s." % DEFAULT_DBTYPE)
-@click.option('-v', '--verbose', type=str, is_flag=True,
+@click.option('-v', '--verbose', is_flag=True,
               help='Display extra information about the processing.')
 @click.version_option(help="Show the version of this command and exit.")
 @click.pass_context

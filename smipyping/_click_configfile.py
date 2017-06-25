@@ -24,8 +24,6 @@ from __future__ import print_function, absolute_import
 from click_configfile import ConfigFileReader, Param, SectionSchema, \
     matches_section
 
-import click
-
 from .config import DEFAULT_SMICLI_CONFIG_FILES
 
 
@@ -61,9 +59,9 @@ class ConfigSectionSchema(object):
         user = Param(type=str)        # user name for db access
         password = Param(type=str)    # user password for db access
 
-    @matches_section("logging")
-    class Logging(SectionSchema):
-        """ Logging config section schema"""
+    @matches_section("log")
+    class Log(SectionSchema):
+        """ Log config section schema"""
         name = Param(type=str)
         loglevel = Param(type=str)
 
@@ -74,7 +72,7 @@ class ConfigFileProcessor(ConfigFileReader):
         ConfigSectionSchema.General,     # PRIMARY SCHEMA
         ConfigSectionSchema.Csv,
         ConfigSectionSchema.Mysql,
-        ConfigSectionSchema.Logging
+        ConfigSectionSchema.Log
     ]
 
     @classmethod
@@ -118,7 +116,7 @@ def get_config_dict():
         TODO
 
     """
-    return dict(ConfigFileProcessor.read_config())
+    return dict(default_map=ConfigFileProcessor.read_config())
 
 
 # -- COMMAND:
