@@ -130,6 +130,7 @@ dist_manifest_in_files := \
 dist_dependent_files := \
     $(package_name)/LICENSE.txt \
     README.md \
+    requirements.txt \
     INSTALL.md \
     $(wildcard *.py) \
     $(wildcard $(package_name)/*.py) \
@@ -139,17 +140,18 @@ dist_dependent_files := \
 
 .PHONY: help
 help:
-	@echo 'makefile for $(package_name)'
+	@echo 'Makefile for $(package_name) project'
 	@echo 'Package version will be: $(package_version)'
 	@echo 'Uses the currently active Python environment: Python $(python_version)'
 	@echo 'Valid targets are (they do just what is stated, i.e. no automatic prereq targets):'
 	@echo '  develop    - Prepare the development environment by installing prerequisites'
-	@echo '  build      - Build the distribution files in: $(dist_dir)'
+	@echo '  build      - Build the distribution files in: $(dist_dir) (requires Linux)'
+	@echo '  buildwin   - Build the Windows installable in: $(dist_dir) (requires Windows 64-bit)'
 	@echo '  builddoc   - Build documentation in: $(doc_build_dir)'
 	@echo '  check      - Run PyLint&Flake8 on sources and save results in: pylint.log&flake8.log'
 	@echo '  test       - Run unit tests and save results in: $(test_log_file)'
 	@echo '  all        - Do all of the above'
-	@echo '  install    - Install distribution archive to active Python environment'
+	@echo '  install    - Install package in active Python environment and test import (includes build)'
 	@echo '  upload     - build + upload the distribution files to PyPI'
 	@echo '  clean      - Remove any temporary files'
 	@echo '  clobber    - Remove everything; ensure clean start like a fresh clone'
