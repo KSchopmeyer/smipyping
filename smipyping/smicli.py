@@ -23,10 +23,11 @@ from __future__ import print_function, absolute_import
 import os
 import click_repl
 import click
+
 from prompt_toolkit.history import FileHistory
 
 from smipyping import TargetsData
-from smipyping import DEFAULT_CONFIG_FILE, DEFAULT_DBTYPE, DB_POSSIBLE_TYPES
+from smipyping import DEFAULT_DBTYPE, DB_POSSIBLE_TYPES
 from ._click_context import ClickContext
 
 from .config import SMICLI_PROMPT, SMICLI_HISTORY_FILE
@@ -39,13 +40,14 @@ CMD_OPTS_TXT = '[COMMAND-OPTIONS]'
 
 __all__ = ['cli']
 
+
 @click.group(invoke_without_command=True,
              context_settings=CONTEXT_SETTINGS,
              options_metavar=GENERAL_OPTIONS_METAVAR)
 @click.option('-c', '--config_file', type=str, envvar='SMI_CONFIG_FILE',
               help="Configuration file to use for config information.")
 # TODO set up default support
-@click.option('-D', '--db_type', type=click.Choice(DB_POSSIBLE_TYPES),
+@click.option('-d', '--db_type', type=click.Choice(DB_POSSIBLE_TYPES),
               envvar='SMI_DB_TYPE',
               help="Database type. May be defined on cmd line, config file, "
                    " or through default. Default is %s." % DEFAULT_DBTYPE)
@@ -69,8 +71,6 @@ def cli(ctx, config_file, db_type, verbose, provider_data=None, db_info=None):
     """
 
     # TODO add for noverify, etc.
-    print('CONTEXT_SETTINGS %s ' % CONTEXT_SETTINGS)
-    print('ctx type %s' % type(ctx))
     if ctx and ctx.default_map:
         for data_key in ctx.default_map.keys():
             print('ctx default map data key %s' % data_key)
@@ -83,20 +83,25 @@ def cli(ctx, config_file, db_type, verbose, provider_data=None, db_info=None):
         # get the db_type. Order is cmd line, config file, default
         if db_type:
             db_type = db_type
-        elif  ctx.default_map and 'dbtype' in ctx.default_map:
+        elif ctx.default_map and 'dbtype' in ctx.default_map:
             db_type = ctx.default_map['dbtype']
         else:
             db_type = DEFAULT_DBTYPE
-        print('dbtype %s' % db_type)
+        if verbose:
+            print('dbtype %s' % db_type)
 
         if ctx.default_map:
             db_info = ctx.default_map[db_type]
         else:
             # NEED DEFAULT for dbinfo
             db_info = {}
+            print('WARNING: No Database info provided for database type %s'
+                  % db_type)
         config_file_dir = os.path.dirname(os.getcwd())
         db_info['directory'] = config_file_dir
-        print('db_info %s' % db_info)
+        if verbose:
+            print('db_info %s' % db_info)
+
         # TODO: Why not glue db_type into db_info itself in context.
 
         # use db info to get target info.
