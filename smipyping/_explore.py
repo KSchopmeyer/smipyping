@@ -456,17 +456,33 @@ class Explorer(object):
         # logging.basicConfig(stream=sys.stderr, level=logging.INFO,
         # format='%(asctime)s %(levelname)s %(message)s)')
 
-        self.logger = logging.getLogger(prog)
-        hdlr = logging.FileHandler(logfile)
-        # formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-        formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        if logfile:
+            self.logger = logging.getLogger(prog)
+            hdlr = logging.FileHandler(logfile)
+            # formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+            formatter = logging.Formatter(
+                '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-        hdlr.setFormatter(formatter)
-        self.logger.addHandler(hdlr)
-        self.logger.setLevel(logging.INFO)
+            hdlr.setFormatter(formatter)
+            self.logger.addHandler(hdlr)
+            self.logger.setLevel(logging.INFO)
 
-        ch = logging.StreamHandler()
-        ch.setLevel(logging.DEBUG)
-        ch.setFormatter(formatter)
-        self.logger.addHandler(ch)
+            ch = logging.StreamHandler()
+            ch.setLevel(logging.DEBUG)
+            ch.setFormatter(formatter)
+            self.logger.addHandler(ch)
+        else:
+            self.logger = logging.getLogger(prog)
+            hdlr = logging.NullHandler()
+            # formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+            formatter = logging.Formatter(
+                '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+            hdlr.setFormatter(formatter)
+            self.logger.addHandler(hdlr)
+            self.logger.setLevel(logging.INFO)
+
+            ch = logging.StreamHandler()
+            ch.setLevel(logging.DEBUG)
+            ch.setFormatter(formatter)
+            self.logger.addHandler(ch)

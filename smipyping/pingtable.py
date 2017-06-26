@@ -21,7 +21,7 @@
 from __future__ import print_function, absolute_import
 
 import datetime
-import six
+from smipyping._configfile import read_config
 
 
 __all__ = ['PingTable', 'CsvPingTable']
@@ -54,8 +54,8 @@ class CsvPingTable(PingTable):
         with open(file, "rb") as f:
             first = f.readline()      # Read the first line.
             f.seek(-2, 2)             # Jump to the second last byte.
-            while f.read(1) != b"\n": # Until EOL is found...
-                f.seek(-2, 1)         # ...jump back the read byte plus one more.
+            while f.read(1) != b"\n":  # Until EOL is found...
+                f.seek(-2, 1)         # ...jump back, read byte plus one more.
             last = f.readline()       # Read last line.
             return last
 
@@ -63,9 +63,10 @@ class CsvPingTable(PingTable):
         """ Write a single record into the table"""
         ping_id = self.get_last_ping_id()
         with open(self.filename, 'a') as ping_file:
-            print("%s,%s,%s,'%s'" %(ping_id, target_id,
+            print("%s,%s,%s,'%s'" % (ping_id, target_id,
                                     datetime.datetime.now(),
                                     status), file=ping_file)
+
 
 class SQLPingTable(PingTable):
     def __init(self, filename, args):
@@ -73,6 +74,3 @@ class SQLPingTable(PingTable):
 
     def get_last_ping_id(self):
         return 9999
-
-
-

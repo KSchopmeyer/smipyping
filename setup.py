@@ -83,6 +83,7 @@ setup(
     # smipyping prereqs for 'develop' command.
     # TOD enable this. pywbem does in os_setup.py
     develop_requires=[
+        "mock>=2.0.0", # BSD
         "pytest>=2.4",
         "pytest-cov",
         "Sphinx>=1.3",

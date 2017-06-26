@@ -377,12 +377,12 @@ class SQLTargetsData(TargetsData):
             # get the companies table
             cursor.execute('SELECT CompanyID, CompanyName FROM Companies')
             rows = cursor.fetchall()
-            companies = {}            
+            companies = {}
             for row in rows:
                 # required because the dictionary=True in cursor statement
                 # only works in v2 mysql-connector
                 assert isinstance(row, dict), "Issue with mysql-connection ver"
-                    
+
                 key = row['CompanyID']
                 companies[key] = row['CompanyName']
 
