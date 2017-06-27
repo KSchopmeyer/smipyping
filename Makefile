@@ -9,11 +9,11 @@
 #   These commands on all OS platforms:
 #     make (GNU make)
 #     bash
-#     rm, mv, find, xargs, tee
-#     python (This Makefile uses the active Python environment, virtual Python
-#        environments are supported)
-#     pip (in the active Python environment)
-#     twine (in the active Python environment)
+#     rm, mv, find, tee, which
+#   These commands on all OS platforms in the active Python environment:
+#     python (or python3 on OS-X)
+#     pip (or pip3 on OS-X)
+#     twine
 #   These commands on Linux and OS-X:
 #     uname
 # Environment variables:
@@ -134,19 +134,7 @@ else
 pytest_opts :=
 endif
 
-# Files to be put into distribution archive.
-# Keep in sync with dist_dependent_files.
-# This is used for 'include' statements in MANIFEST.in. The wildcards are used
-# as specified, without being expanded.
-dist_manifest_in_files := \
-    $(package_name)/LICENSE.txt \
-    README.md \
-    INSTALL.md \
-    *.py \
-    $(package_name)/*.py \
-
-# Files that are dependents of the distribution archive.
-# Keep in sync with dist_manifest_in_files.
+# Files the distribution archive depends upon.
 dist_dependent_files := \
     $(package_name)/LICENSE.txt \
     README.md \
@@ -154,6 +142,7 @@ dist_dependent_files := \
     INSTALL.md \
     $(wildcard *.py) \
     $(wildcard $(package_name)/*.py) \
+    $(wildcard $(cli_package_name)/*.py) \
 
 # No built-in rules needed:
 .SUFFIXES:
@@ -165,7 +154,7 @@ help:
 	@echo 'Uses the currently active Python environment: Python $(python_version_fn)'
 	@echo 'Valid targets are (they do just what is stated, i.e. no automatic prereq targets):'
 	@echo '  develop    - Prepare the development environment by installing prerequisites'
-	@echo '  build      - Build the distribution files in: $(dist_dir) (requires Linux)'
+	@echo '  build      - Build the distribution files in: $(dist_dir) (requires Linux or OSX)'
 	@echo '  buildwin   - Build the Windows installable in: $(dist_dir) (requires Windows 64-bit)'
 	@echo '  builddoc   - Build documentation in: $(doc_build_dir)'
 	@echo '  check      - Run PyLint and Flake8 on sources and save results in: pylint.log and flake8.log'
@@ -173,7 +162,8 @@ help:
 	@echo '               Env.var TESTCASES can be used to specify a py.test expression for its -k option'
 	@echo '  all        - Do all of the above (except buildwin when not on Windows)'
 	@echo '  install    - Install package in active Python environment and test import (includes build)'
-	@echo '  upload     - build + upload the distribution files to PyPI'
+	@echo '  uninstall  - Uninstall package from active Python environment'
+	@echo '  upload     - Upload the distribution files to PyPI (includes uninstall+build)'
 	@echo '  clean      - Remove any temporary files'
 	@echo '  clobber    - Remove any build products (includes uninstall+clean)'
 	@echo '  pyshow     - Show location and version of the python and pip commands'
@@ -193,9 +183,8 @@ _pip:
 
 .PHONY: develop
 develop: _pip
-	# ##@echo 'Installing runtime and development requirements with PACKAGE_LEVEL=$(PACKAGE_LEVEL)'
-	# $(PIP_CMD) install $(pip_level_opts) -r dev-requirements.txt
-	python setup.py develop
+	@echo 'Installing runtime and development requirements with PACKAGE_LEVEL=$(PACKAGE_LEVEL)'
+	$(PIP_CMD) install $(pip_level_opts) -r dev-requirements.txt
 	@echo '$@ done.'
 
 .PHONY: build
@@ -276,12 +265,16 @@ flake8: flake8.log
 	@echo '$@ done.'
 
 .PHONY: install
-install: $(sdist_file)
-	mkdir tmp_install
-	tar -x -C tmp_install -f $(sdist_file)
-	sh -c "cd tmp_install/$(package_name)-$(package_version) && python setup.py install"
-	rm -Rf tmp_install
-	@echo 'Done: Installed smipyping into current Python environment.'
+install: _pip
+	@echo 'Installing runtime requirements with PACKAGE_LEVEL=$(PACKAGE_LEVEL)'
+	$(PIP_CMD) install $(pip_level_opts) .
+	$(PYTHON_CMD) -c "import smipyping; print('Import: ok')"
+	@echo 'Done: Installed $(package_name) into current Python environment.'
+	@echo '$@ done.'
+
+.PHONY: uninstall
+uninstall:
+	bash -c '$(PIP_CMD) show $(package_name) >/dev/null; rc=$$?; if [[ $$rc == 0 ]]; then $(PIP_CMD) uninstall -y $(package_name); fi'
 	@echo '$@ done.'
 
 .PHONY: test
@@ -289,10 +282,11 @@ test: $(test_log_file)
 	@echo '$@ done.'
 
 .PHONY: clobber
-clobber: clean
-	rm -f pylint.log flake8.log test_*.log  $(dist_files)
-	rm -Rf $(doc_build_dir) .tox
-	@echo 'Done: Removed everything to get to a fresh state.'
+clobber: uninstall clean
+	rm -Rf $(doc_build_dir) htmlcov .tox
+	rm -fv pylint.log flake8.log test_*.log
+	rm -fv $(bdist_file) $(sdist_file) $(win64_dist_file)
+	@echo 'Done: Removed all build products to get to a fresh state.'
 	@echo '$@ done.'
 
 # Also remove any build products that are dependent on the Python version
@@ -322,23 +316,26 @@ else
 	@false
 endif
 
-# Note: distutils depends on the right files specified in MANIFEST.in, even when
-# they are already specified e.g. in 'package_data' in setup.py.
-# We generate the MANIFEST.in file automatically, to have a single point of
-# control (this makefile) for what gets into the distribution archive.
-MANIFEST.in: Makefile
-	echo '# file GENERATED by Makefile, do NOT edit' >$@
-	echo '$(dist_manifest_in_files)' | xargs -r -n 1 echo include >>$@
-	@echo 'Done: Created manifest input file: $@'
-
 # Distribution archives.
-# Note: Deleting MANIFEST causes distutils (setup.py) to read MANIFEST.in and to
-# regenerate MANIFEST. Otherwise, changes in MANIFEST.in will not be used.
-$(bdist_file) $(sdist_file): setup.py MANIFEST.in $(dist_dependent_files)
-	rm -rf MANIFEST $(package_name).egg-info .eggs
+$(bdist_file) $(sdist_file): Makefile setup.py $(dist_dependent_files)
+ifneq ($(PLATFORM),Windows)
+	rm -Rfv $(package_name).egg-info .eggs
 	$(PYTHON_CMD) setup.py sdist -d $(dist_dir) bdist_wheel -d $(dist_dir) --universal
 	@echo 'Done: Created distribution files: $@'
+else
+	@echo 'Error: Creating distribution archives requires to run on Linux or OSX'
+	@false
+endif
 
+$(win64_dist_file): Makefile setup.py $(dist_dependent_files)
+ifeq ($(PLATFORM),Windows)
+	rm -Rfv $(package_name).egg-info .eggs
+	$(PYTHON_CMD) setup.py bdist_wininst -d $(dist_dir) -o -t "$(package_name) v$(package_version)"
+	@echo 'Done: Created Windows installable: $@'
+else
+	@echo 'Error: Creating Windows installable requires to run on Windows'
+	@false
+endif
 
 # TODO: Once PyLint has no more errors, remove the dash "-"
 pylint.log: Makefile $(pylint_rc_file) $(check_py_files)
@@ -363,8 +360,11 @@ $(test_log_file): Makefile $(package_name)/*.py tests/*.py .coveragerc
 	# TODO fix. For some reason cov losing packagename. NOTE: Should not
 	# be package name either.
 	# bash -c 'set -o pipefail; PYTHONWARNINGS=default py.test --cov $(package_name) --cov-config .coveragerc --cov-report=html --ignore=attic --ignore=releases --ignore=tests/testclient -s 2>&1 |tee $(test_tmp_file)'
-	bash -c 'set -o pipefail; PYTHONWARNINGS=default py.test --ignore=attic --ignore=releases --ignore=tests/testclient -s 2>&1 |tee $(test_tmp_file)'
-	mv -f $(test_tmp_file) $(test_log_file)
+	# bash -c 'set -o pipefail; PYTHONWARNINGS=default py.test --ignore=attic --ignore=releases --ignore=tests/testclient -s 2>&1 |tee $(test_tmp_file)'
+	# mv -f $(test_tmp_file) $(test_log_file)
+	rm -fv $@
+	bash -c 'set -o pipefail; PYTHONWARNINGS=default py.test --cov $(package_name) --cov-config .coveragerc --cov-report=html $(pytest_opts) -s 2>&1 |tee $@.tmp'
+	mv -f $@.tmp $@
 	@echo 'Done: Created test log file: $@'
 
 # Create the help text files for each separate script
