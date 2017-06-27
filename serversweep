@@ -17,14 +17,14 @@
 # limitations under the License.
 
 """
-This script executes the PortSweep functions to sweep a set of ip address
+This script executes the ServerSweep functions to sweep a set of ip address
 and ports for possible WBEM Servers.
 
 This is a temporary version of the code in a separate script until it is
 integrated into a single multi-level script.
 
 NOTE: This script must be executed in admin mode because python does not
-allow the port inspect test in user mode.
+allow the current port inspect test in user mode.
 
 """
 from __future__ import absolute_import

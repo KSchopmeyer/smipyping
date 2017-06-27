@@ -130,12 +130,13 @@ class Target(Base):
         return('TargetID=%s; IPAddress=%s; CompanyID=%s; Namespace=%s;'
                ' SMIVersion=%s; Product=%s; Principal=%s; Credential=%s;'
                ' CimomVersion=%s; InteropNamespace=%s; Notify=%s;'
-               ' NotifyUsers=%s; ScanEnabled=%s; Protocol=%s Port=%s' %
+               ' NotifyUsers=%s; ScanEnabled=%s; Protocol=%s; Port=%s;'
+               ' company=%s' %
                (self.TargetID, self.IPAddress, self.CompanyID, self.Namespace,
                 self.SMIVersion, self.Product, self.Principal, self.Credential,
                 self.CimomVersion, self.InteropNamespace, self.Notify,
                 self.NotifyUsers, self.ScanEnabled, self.Protocol,
-                self.Port))
+                self.Port, self.company))
 
 
 class User(Base):
@@ -179,7 +180,7 @@ class PreviousScan(Base):
     TimeStamp = Column(DateTime, nullable=False)
 
     def __repr__(self):
-        return('ScanID=%s,\; Timestamp=%s' % (self.ScanID, self.TargetID))
+        return('ScanID=%s, Timestamp=%s' % (self.ScanID, self.TargetID))
 
 
 class LastScan(Base):
@@ -256,6 +257,25 @@ def print_targets(session, verbose=False):
             print('Target: %s\nCompany (%s)' % (row.Target, row.Target.company))
             print(row._asdict())
 
+def print_targets_user_pw(session, verbose=False):
+    group = []
+    for row in session.query(Target, Target.TargetID).all():
+        TargetID = row.__dict__['TargetID']
+        data = row.__dict__['Target']
+        print('data %s' % data)
+        CompanyID = data.CompanyID
+        CompanyName = data.company.CompanyName
+        CompanyName = CompanyName.replace(' ', '_')
+        Principal = data.Principal
+        Credential = data.Credential
+        tup = (CompanyName, Principal, Credential)
+        group.append(tup)
+    group = set(group)
+    group = sorted(group, key=lambda tup: tup[0])
+    print("Company   User   PW")
+    for item in group:
+        print('%s %s %s' % (item[0], item[1], item[2]))
+
 
 def print_previous_scans(session, verbose=False):
     print_table_info(session, PreviousScan, verbose)
@@ -327,6 +347,9 @@ def display_tables(configfile, args):
             print_lastscan(session, verbose=args.verbose)
             print_pings(session, verbose=args.verbose)
             print_users(session, verbose=args.verbose)
+
+        elif table == 'userpw':
+            print_targets_user_pw(session, verbose=args.verbose)
 
         else:
             print('Table %s Not found' % table)

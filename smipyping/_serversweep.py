@@ -61,7 +61,8 @@ class ServerSweep(object):
           in the scan
 
           provider_data (todo) The provider data  that defines the known
-          providers.  This is Optional.
+          providers.  This is optional. If not provided, it is not included
+          in the output report.
 
           no_threads (bool): Flag to indicate whether the threaded
             implementation is to be used
@@ -345,7 +346,6 @@ class ServerSweep(object):
         Product, etc.
         """
         print('\n')
-        print("=" * 50)
         execution_time = ''
         if self.total_sweep_time <= 60:
             execution_time = "%.2f sec" % (round(self.total_sweep_time, 1))
@@ -355,11 +355,10 @@ class ServerSweep(object):
         range_txt = '%s:%s' % (self.min_octet_val, self.max_octet_val)
         table = []
         if len(open_hosts) != 0:
-            title = 'Open WBEMServers:subnet(s)=%s port(s)=%s range %s,' \
-                    ' time %s total_pings %s answered count %s' \
+            title = 'Open WBEMServers:subnet(s)=%s\n    port(s)=%s range %s,' \
+                    ' time %s\n    total pings=%s pings answered=%s' \
                     % (self.net_defs, self.ports, range_txt, execution_time,
                        self.total_pings, len(open_hosts))
-            print(title)
             # open_hosts.sort(key=lambda ip: map(int, ip.split('.')))
             # TODO this probably requires ordered dict rather than dictionary to
             # keep order. We are not outputing in full order. Note that
@@ -368,8 +367,8 @@ class ServerSweep(object):
             headers = ['IPAddress', 'CompanyName', 'Product',
                        'SMIVersion']
             table = []
-            print('%20s %20s %18s %18s' %
-                  ('IPAddress', 'CompanyName', 'Product', 'SMIVersion'))
+            unknown = 0
+            known = 0
             for host_data in open_hosts:
                 ip_address = '%s:%s' % (host_data[0], host_data[1])
                 if self.provider_data is not None:
@@ -380,34 +379,32 @@ class ServerSweep(object):
                         entry = self.provider_data.get_dict_record(
                             record_list[0])
                         if entry is not None:
-                            print('%20s %-20s %-18s %-18s' %
-                                  (ip_address,
-                                   entry['CompanyName'],
-                                   entry['Product'],
-                                   entry['SMIVersion']))
+                            known += 1
                             table.append([ip_address,
                                           entry['CompanyName'],
                                           entry['Product'],
                                           entry['SMIVersion']])
                         else:
+                            unknown += 1
                             print('Invalid entry %s %s %s' % (
                                 record_list[0], ip_address,
                                 "Not in user data"))
                             table.append([ip_address, "Not in base", "", ""])
                     else:
-                        print('%s %s' % (ip_address, "UnknownServer"))
+                        unknown += 1
                         table.append([ip_address, "Unknown"])
                 # no host info requested.
                 else:
-                    print('%s' % ip_address)
                     table.append([ip_address])
         else:
             print('No WBEM Servers found:subnet(s)=%s port(s)=%s range %s, %s' %
                   (self.net_defs, self.ports, range_txt, execution_time))
-        print("=" * 50)
 
         if table:
             print_ascii_table(headers, table, title)
+
+        print('\nResults: Found=%s, Unknown=%s, Total=%s' % (known, unknown,
+                                                             known + unknown))
 
     def sweep_servers(self):
         """

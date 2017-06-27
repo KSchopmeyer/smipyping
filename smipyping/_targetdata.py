@@ -102,7 +102,8 @@ class TargetsData(object):
         else:
             ValueError('Invalid target factory db_type %s' % db_type)
 
-        print('Resultingtarget factory inst %r' % inst)
+        if verbose:
+            print('Resulting target factory inst %r' % inst)
 
         return inst
 
