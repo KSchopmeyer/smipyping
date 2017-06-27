@@ -51,14 +51,7 @@ namespace and should be used from there.
 .. autodata:: smipyping._version.__version__
 
 """
-
-# There are submodules, but clients shouldn't need to know about them.
-# Importing just this module is enough.
-# These are explicitly safe for 'import *'
-
 from __future__ import absolute_import
-
-import sys
 
 from .config import *  # noqa: F401, F403
 # core classes and functions
@@ -88,12 +81,4 @@ from ._cmd_explorer import *  # noqa: F401, F403
 
 from ._click_configfile import *  # noqa: F401, F403
 
-from ._version import __version__  # noqa: F401, F403gy
-
-_python_m = sys.version_info[0]  # pylint: disable=invalid-name
-_python_n = sys.version_info[1]  # pylint: disable=invalid-name
-
-if _python_m == 2 and _python_n < 7:
-    raise RuntimeError('On Python 2, smipyping requires Python 2.7 or higher')
-elif _python_m == 3 and _python_n < 4:
-    raise RuntimeError('On Python 3, smipyping requires Python 3.4 or higher')
+from ._version import *  # noqa: F401, F403

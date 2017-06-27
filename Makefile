@@ -16,9 +16,35 @@
 #     twine (in the active Python environment)
 #   These commands on Linux and OS-X:
 #     uname
+# Environment variables:
+#   PYTHON_CMD: Python command to use (OS-X needs to distinguish Python 2/3)
+#   PIP_CMD: Pip command to use (OS-X needs to distinguish Python 2/3)
+#   PACKAGE_LEVEL: minimum/latest - Level of Python dependent packages to use
 # Additional prerequisites for running this Makefile are installed by running:
 #   make develop
 # ------------------------------------------------------------------------------
+
+# Python / Pip commands
+ifndef PYTHON_CMD
+  PYTHON_CMD := python
+endif
+ifndef PIP_CMD
+  PIP_CMD := pip
+endif
+
+# Package level
+ifndef PACKAGE_LEVEL
+  PACKAGE_LEVEL := latest
+endif
+ifeq ($(PACKAGE_LEVEL),minimum)
+  pip_level_opts := -c minimum-constraints.txt
+else
+  ifeq ($(PACKAGE_LEVEL),latest)
+    pip_level_opts := --upgrade
+  else
+    $(error Error: Invalid value for PACKAGE_LEVEL variable: $(PACKAGE_LEVEL))
+  endif
+endif
 
 # Determine OS platform make runs on
 ifeq ($(OS),Windows_NT)
@@ -28,24 +54,20 @@ else
   PLATFORM := $(shell uname -s)
 endif
 
-# Name of this Python package
+# Name of this Python package (top-level Python namespace + Pypi package name)
 package_name := smipyping
 
 # Name of the Python namespace for the CLI
 cli_package_name := smicli
 
-# Package version as specified in smipyping/_version.py
-package_specified_version := $(shell sh -c "grep -E '^ *__version__ *= ' smipyping/_version.py |sed -r 's/__version__ *= *\x27(.*)\x27.*/\1/'")
+# Package version (full version, including any pre-release suffixes, e.g. "0.1.0-alpha1")
+package_version := $(shell $(PYTHON_CMD) -c "import sys, $(package_name); sys.stdout.write($(package_name).__version__)")
 
-# Normalized package version (as normalized by setup.py during building)
-package_version := $(shell sh -c "echo $(package_specified_version) |sed 's/[.-]\?\(rc[0-9]\+\)$$/\1/' |sed 's/[.]\?dev[0-9]\*$$/\.dev0/'")
+# Python major version
+python_major_version := $(shell $(PYTHON_CMD) -c "import sys; sys.stdout.write('%s'%sys.version_info[0])")
 
-# Final version of this package (M.N.U)
-package_final_version := $(shell sh -c "echo $(package_version) |sed 's/rc[0-9]\+$$//' |sed 's/\.dev0$$//'")
-
-# Python versions
-python_version := $(shell python -c "import sys; sys.stdout.write('%s.%s.%s'%sys.version_info[0:3])")
-python_mn_version := $(shell python -c "import sys; sys.stdout.write('%s%s'%sys.version_info[0:2])")
+# Python major+minor version for use in file names
+python_version_fn := $(shell $(PYTHON_CMD) -c "import sys; sys.stdout.write('%s%s'%(sys.version_info[0],sys.version_info[1]))")
 
 # Directory for the generated distribution files
 dist_dir := dist
@@ -66,13 +88,9 @@ doc_build_dir := build_doc
 # Directory where Sphinx conf.py is located
 doc_conf_dir := docs
 
-# Paper format for the Sphinx LaTex/PDF builder.
-# Valid values: a4, letter
-doc_paper_format := a4
-
 # Documentation generator command
 doc_cmd := sphinx-build
-doc_opts := -v -d $(doc_build_dir)/doctrees -c $(doc_conf_dir) -D latex_paper_size=$(doc_paper_format) .
+doc_opts := -v -d $(doc_build_dir)/doctrees -c $(doc_conf_dir) .
 
 # File names of automatically generated utility help message text output
 doc_utility_help_files := \
@@ -92,20 +110,16 @@ doc_dependent_files := \
     $(package_name)/_simpleping.py \
     $(package_name)/_serversweep.py \
 
-# PyLint config file
-pylint_rc_file := pylintrc
 
-# PyLint source files to check
-pylint_py_files := \
-    setup.py \
-    $(wildcard $(package_name)/*.py) \
-    $(wildcard tests/*.py)
 
 # Flake8 config file
 flake8_rc_file := .flake8
 
-# Flake8 source files to check
-flake8_py_files := \
+# PyLint config file
+pylint_rc_file := .pylintrc
+
+# Source files for check (with PyLint and Flake8)
+check_py_files := \
     setup.py \
     $(wildcard $(package_name)/*.py) \
     $(wildcard tests/*.py)
@@ -113,6 +127,12 @@ flake8_py_files := \
 # Test log
 test_log_file := test_$(python_mn_version).log
 test_tmp_file := test_$(python_mn_version).tmp.log
+
+ifdef TESTCASES
+pytest_opts := -k $(TESTCASES)
+else
+pytest_opts :=
+endif
 
 # Files to be put into distribution archive.
 # Keep in sync with dist_dependent_files.
@@ -142,22 +162,39 @@ dist_dependent_files := \
 help:
 	@echo 'Makefile for $(package_name) project'
 	@echo 'Package version will be: $(package_version)'
-	@echo 'Uses the currently active Python environment: Python $(python_version)'
+	@echo 'Uses the currently active Python environment: Python $(python_version_fn)'
 	@echo 'Valid targets are (they do just what is stated, i.e. no automatic prereq targets):'
 	@echo '  develop    - Prepare the development environment by installing prerequisites'
 	@echo '  build      - Build the distribution files in: $(dist_dir) (requires Linux)'
 	@echo '  buildwin   - Build the Windows installable in: $(dist_dir) (requires Windows 64-bit)'
 	@echo '  builddoc   - Build documentation in: $(doc_build_dir)'
-	@echo '  check      - Run PyLint&Flake8 on sources and save results in: pylint.log&flake8.log'
-	@echo '  test       - Run unit tests and save results in: $(test_log_file)'
-	@echo '  all        - Do all of the above'
+	@echo '  check      - Run PyLint and Flake8 on sources and save results in: pylint.log and flake8.log'
+	@echo '  test       - Run unit tests (and test coverage) and save results in: $(test_log_file)'
+	@echo '               Env.var TESTCASES can be used to specify a py.test expression for its -k option'
+	@echo '  all        - Do all of the above (except buildwin when not on Windows)'
 	@echo '  install    - Install package in active Python environment and test import (includes build)'
 	@echo '  upload     - build + upload the distribution files to PyPI'
 	@echo '  clean      - Remove any temporary files'
-	@echo '  clobber    - Remove everything; ensure clean start like a fresh clone'
+	@echo '  clobber    - Remove any build products (includes uninstall+clean)'
+	@echo '  pyshow     - Show location and version of the python and pip commands'
+	@echo 'Environment variables:'
+	@echo '  PACKAGE_LEVEL="minimum" - Install minimum version of dependent Python packages'
+	@echo '  PACKAGE_LEVEL="latest" - Default: Install latest version of dependent Python packages'
+	@echo '  PYTHON_CMD=... - Name of python command. Default: python'
+	@echo '  PIP_CMD=... - Name of pip command. Default: pip'
+
+.PHONY: _pip
+_pip:
+	@echo 'Installing/upgrading pip, setuptools and wheel with PACKAGE_LEVEL=$(PACKAGE_LEVEL)'
+	$(PIP_CMD) install --upgrade pip
+	$(PIP_CMD) install $(pip_level_opts) pip
+	$(PIP_CMD) install $(pip_level_opts) setuptools
+	$(PIP_CMD) install $(pip_level_opts) wheel
 
 .PHONY: develop
-develop:
+develop: _pip
+	# ##@echo 'Installing runtime and development requirements with PACKAGE_LEVEL=$(PACKAGE_LEVEL)'
+	# $(PIP_CMD) install $(pip_level_opts) -r dev-requirements.txt
 	python setup.py develop
 	@echo '$@ done.'
 
@@ -184,7 +221,7 @@ $(doc_build_dir)/html/docs/index.html: Makefile $(doc_utility_help_files) $(doc_
 
 .PHONY: pdf
 pdf: Makefile $(doc_utility_help_files) $(doc_dependent_files)
-	rm -f $@
+	rm -fv $@
 	$(doc_cmd) -b latex $(doc_opts) $(doc_build_dir)/pdf
 	@echo "Running LaTeX files through pdflatex..."
 	$(MAKE) -C $(doc_build_dir)/pdf all-pdf
@@ -216,6 +253,14 @@ doclinkcheck:
 doccoverage:
 	$(doc_cmd) -b coverage $(doc_opts) $(doc_build_dir)/coverage
 	@echo "Done: Created the doc coverage results in: $(doc_build_dir)/coverage/python.txt"
+	@echo '$@ done.'
+
+.PHONY: pyshow
+pyshow:
+	which $(PYTHON_CMD)
+	$(PYTHON_CMD) --version
+	which $(PIP_CMD)
+	$(PIP_CMD) --version
 	@echo '$@ done.'
 
 .PHONY: check
@@ -253,11 +298,9 @@ clobber: clean
 # Also remove any build products that are dependent on the Python version
 .PHONY: clean
 clean:
-	find . -name "*.pyc" -delete
-	sh -c "find . -name \"__pycache__\" |xargs -r rm -Rf"
-	sh -c "ls -d tmp_* |xargs -r rm -Rf"
-	rm -f MANIFEST .coverage $(test_tmp_file)
-	rm -Rf build tmp_install testtmp tests/testtmp .cache $(package_name).egg-info .eggs
+	rm -Rf build .cache $(package_name).egg-info .eggs
+	rm -f MANIFEST MANIFEST.in AUTHORS ChangeLog .coverage
+	find . -name "*.pyc" -delete -o -name "__pycache__" -delete -o -name "*.tmp" -delete -o -name "tmp_*" -delete
 	@echo 'Done: Cleaned out all temporary files.'
 	@echo '$@ done.'
 
@@ -266,10 +309,18 @@ all: develop check build builddoc test
 	@echo '$@ done.'
 
 .PHONY: upload
-upload:  $(dist_files)
+upload: uninstall $(dist_files)
+ifeq (,$(findstring .dev,$(package_version)))
+	@echo '==> This will upload $(package_name) version $(package_version) to PyPI!'
+	@echo -n '==> Continue? [yN] '
+	@bash -c 'read answer; if [[ "$$answer" != "y" ]]; then echo "Aborted."; false; fi'
 	twine upload $(dist_files)
-	@echo 'Done: Uploaded smipyping version to PyPI: $(package_version)'
+	@echo 'Done: Uploaded $(package_name) version to PyPI: $(package_version)'
 	@echo '$@ done.'
+else
+	@echo 'Error: A development version $(package_version) of $(package_name) cannot be uploaded to PyPI!'
+	@false
+endif
 
 # Note: distutils depends on the right files specified in MANIFEST.in, even when
 # they are already specified e.g. in 'package_data' in setup.py.
@@ -285,44 +336,30 @@ MANIFEST.in: Makefile
 # regenerate MANIFEST. Otherwise, changes in MANIFEST.in will not be used.
 $(bdist_file) $(sdist_file): setup.py MANIFEST.in $(dist_dependent_files)
 	rm -rf MANIFEST $(package_name).egg-info .eggs
-	python setup.py sdist -d $(dist_dir) bdist_wheel -d $(dist_dir) --universal
+	$(PYTHON_CMD) setup.py sdist -d $(dist_dir) bdist_wheel -d $(dist_dir) --universal
 	@echo 'Done: Created distribution files: $@'
 
 
-# TODO: Once pylint has no more errors, remove the dash "-"
-# PyLint status codes:
-# * 0 if everything went fine
-# * 1 if fatal messages issued
-# * 2 if error messages issued
-# * 4 if warning messages issued
-# * 8 if refactor messages issued
-# * 16 if convention messages issued
-# * 32 on usage error
-# Status 1 to 16 will be bit-ORed.
-# The make command checks for statuses: 1,2,32
-pylint.log: Makefile $(pylint_rc_file) $(pylint_py_files)
-ifeq ($(python_mn_version),27)
-	rm -f pylint.log
-	-bash -c 'set -o pipefail; PYTHONPATH=. pylint --rcfile=$(pylint_rc_file) --output-format=text $(pylint_py_files) 2>&1 |tee pylint.tmp.log; rc=$$?; if (($$rc >= 32 || $$rc & 0x03)); then exit $$rc; fi'
-	mv -f pylint.tmp.log pylint.log
-	@echo 'Done: Created Pylint log file: $@'
+# TODO: Once PyLint has no more errors, remove the dash "-"
+pylint.log: Makefile $(pylint_rc_file) $(check_py_files)
+ifeq ($(python_major_version), 2)
+	rm -fv $@
+	-bash -c 'set -o pipefail; pylint --rcfile=$(pylint_rc_file) --output-format=text $(check_py_files) 2>&1 |tee $@.tmp'
+	mv -f $@.tmp $@
+	@echo 'Done: Created PyLint log file: $@'
 else
-	@echo 'Info: Pylint requires Python 2.7; skipping this step on Python $(python_version)'
+	@echo 'Info: PyLint requires Python 2; skipping this step on Python $(python_major_version)'
 endif
 
-# TODO: Once flake8 has no more errors, remove the dash "-"
-flake8.log: Makefile $(flake8_rc_file) $(flake8_py_files)
-ifeq ($(python_mn_version),26)
-	@echo 'Info: Flake8 requires Python 2.7 or Python 3; skipping this step on Python $(python_version)'
-else
-	rm -f flake8.log
-	-bash -c "set -o pipefail; PYTHONPATH=. flake8 --statistics --config=$(flake8_rc_file) $(flake8_py_files) 2>&1 |tee flake8.tmp.log"
-	mv -f flake8.tmp.log flake8.log
-	@echo 'Done: Created flake8 log file: $@'
-endif
+# TODO: Once Flake8 has no more errors, remove the dash "-"
+flake8.log: Makefile $(flake8_rc_file) $(check_py_files)
+	rm -fv $@
+	bash -c 'set -o pipefail; flake8 $(check_py_files) 2>&1 |tee $@.tmp'
+	mv -f $@.tmp $@
+	@echo 'Done: Created Flake8 log file: $@'
 
 $(test_log_file): Makefile $(package_name)/*.py tests/*.py .coveragerc
-	rm -f $(test_log_file)
+	rm -fv $(test_log_file)
 	# TODO fix. For some reason cov losing packagename. NOTE: Should not
 	# be package name either.
 	# bash -c 'set -o pipefail; PYTHONWARNINGS=default py.test --cov $(package_name) --cov-config .coveragerc --cov-report=html --ignore=attic --ignore=releases --ignore=tests/testclient -s 2>&1 |tee $(test_tmp_file)'
@@ -330,6 +367,7 @@ $(test_log_file): Makefile $(package_name)/*.py tests/*.py .coveragerc
 	mv -f $(test_tmp_file) $(test_log_file)
 	@echo 'Done: Created test log file: $@'
 
+# Create the help text files for each separate script
 $(doc_conf_dir)/serversweep.help.txt: serversweep $(package_name)/_serversweep.py
 	./serversweep --help >$@
 	@echo 'Done: Created serversweep script help message file: $@'

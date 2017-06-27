@@ -407,7 +407,7 @@ class ServerSweep(object):
         print("=" * 50)
 
         if table:
-            print_ascii_table(title, headers, table)
+            print_ascii_table(headers, table, title)
 
     def sweep_servers(self):
         """

@@ -94,8 +94,8 @@ class Explorer(object):
                     cell_str = ", ". join(sorted(versions))
                     line.append(fold_cell(cell_str, 14))
                 table_data.append(line)
-        print_ascii_table("Display SMI Profile Information", table_hdr,
-                          table_data)
+        print_ascii_table(table_hdr, table_data,
+                          "Display SMI Profile Information")
 
     def report_server_info(self, servers, user_data, table_type='report'):
         """ Display a table of info from the server scan
@@ -104,7 +104,6 @@ class Explorer(object):
         table_data = []
         tbl_hdr = ['Id', 'Url', 'Brand', 'Company', 'Product', 'Vers',
                    'SMI Profiles', 'Interop_ns', 'Status', 'time']
-        table_data.append(tbl_hdr)
         servers.sort(key=lambda tup: int(tup.target_id))
         for server_tuple in servers:
             url = server_tuple.url
@@ -143,7 +142,8 @@ class Explorer(object):
             table_data.append(line)
 
         if table_type == 'report':
-            print_ascii_table("Server Basic Information", table_data)
+            print_ascii_table(tbl_hdr, table_data,
+                              "Server Basic Information")
         elif table_type == 'csv':
             write_csv_table(table_data)
         else:

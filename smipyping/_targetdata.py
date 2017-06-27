@@ -292,7 +292,7 @@ class TargetsData(object):
             if self.disabled_record(self.targets_dict[record_id]):
                 table_data.append(self.tbl_record(record_id, col_list))
 
-        print_ascii_table('Disabled hosts', col_list, table_data)
+        print_ascii_table(col_list, table_data, 'Disabled hosts')
 
     def display_cols(self, column_list):
         """
@@ -315,7 +315,7 @@ class TargetsData(object):
         for record_id in sorted(self.targets_dict.iterkeys()):
             table_data.append(self.tbl_record(record_id, column_list))
 
-        print_ascii_table('Target Systems Overview', table_header,table_data)
+        print_ascii_table(table_header, table_data, 'Target Systems Overview')
 
     def display_all(self, fields=None, company=None):
         """Display all entries in the base."""
