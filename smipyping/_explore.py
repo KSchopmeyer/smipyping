@@ -30,7 +30,7 @@ import threading
 
 from pywbem import WBEMConnection, WBEMServer, ValueMapping, Error, \
     ConnectionError, TimeoutError
-from ._terminaltable import print_terminal_table, fold_cell
+from ._asciitable import print_ascii_table, fold_cell
 from ._csvtable import write_csv_table
 from ._ping import ping_host
 from .config import PING_TIMEOUT
@@ -94,7 +94,8 @@ class Explorer(object):
                     cell_str = ", ". join(sorted(versions))
                     line.append(fold_cell(cell_str, 14))
                 table_data.append(line)
-        print_terminal_table("Display SMI Profile Information", table_data)
+        print_ascii_table("Display SMI Profile Information", table_hdr,
+                          table_data)
 
     def report_server_info(self, servers, user_data, table_type='report'):
         """ Display a table of info from the server scan
@@ -142,7 +143,7 @@ class Explorer(object):
             table_data.append(line)
 
         if table_type == 'report':
-            print_terminal_table("Server Basic Information", table_data)
+            print_ascii_table("Server Basic Information", table_data)
         elif table_type == 'csv':
             write_csv_table(table_data)
         else:
@@ -459,7 +460,6 @@ class Explorer(object):
         if logfile:
             self.logger = logging.getLogger(prog)
             hdlr = logging.FileHandler(logfile)
-            # formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
             formatter = logging.Formatter(
                 '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -474,7 +474,6 @@ class Explorer(object):
         else:
             self.logger = logging.getLogger(prog)
             hdlr = logging.NullHandler()
-            # formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
             formatter = logging.Formatter(
                 '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 

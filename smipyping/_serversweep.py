@@ -38,7 +38,7 @@ import six
 
 from .config import MAX_THREADS
 from ._scanport import check_port_syn
-from ._terminaltable import print_terminal_table
+from ._asciitable import print_ascii_table
 
 __all__ = ['ServerSweep']
 
@@ -192,7 +192,7 @@ class ServerSweep(object):
 
         # Start worker threads.
         threads = []
-        for i in range(num_threads):
+        for i in range(num_threads):  # pylint: disable=unused-variable
             t = Thread(target=self.process_queue, args=(queue, results))
             t.daemon = True    # allows main program to exit.
             threads.append(t)
@@ -367,7 +367,7 @@ class ServerSweep(object):
             # 3 char
             headers = ['IPAddress', 'CompanyName', 'Product',
                        'SMIVersion']
-            table = [headers]
+            table = []
             print('%20s %20s %18s %18s' %
                   ('IPAddress', 'CompanyName', 'Product', 'SMIVersion'))
             for host_data in open_hosts:
@@ -407,7 +407,7 @@ class ServerSweep(object):
         print("=" * 50)
 
         if table:
-            print_terminal_table(title, table)
+            print_ascii_table(title, headers, table)
 
     def sweep_servers(self):
         """

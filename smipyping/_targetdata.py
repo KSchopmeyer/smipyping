@@ -28,7 +28,7 @@ import re
 from collections import OrderedDict
 import six
 from mysql.connector import MySQLConnection
-from ._terminaltable import print_terminal_table, fold_cell
+from ._asciitable import print_ascii_table, fold_cell
 from ._configfile import read_config
 
 __all__ = ['TargetsData']
@@ -287,14 +287,12 @@ class TargetsData(object):
 
         table_data = []
 
-        table_data.append(self.tbl_hdr(col_list))
-
         # TODO can we do this with list comprehension
         for record_id in sorted(self.targets_dict.iterkeys()):
             if self.disabled_record(self.targets_dict[record_id]):
                 table_data.append(self.tbl_record(record_id, col_list))
 
-        print_terminal_table('Disabled hosts', table_data)
+        print_ascii_table('Disabled hosts', col_list, table_data)
 
     def display_cols(self, column_list):
         """
@@ -311,13 +309,13 @@ class TargetsData(object):
         """
         table_data = []
 
-        # terminaltables creates the table headers from
-        table_data.append(self.tbl_hdr(column_list))
+        # asciitables creates the table headers from
+        table_header = self.tbl_hdr(column_list)
 
         for record_id in sorted(self.targets_dict.iterkeys()):
             table_data.append(self.tbl_record(record_id, column_list))
 
-        print_terminal_table('Target Systems Overview', table_data)
+        print_ascii_table('Target Systems Overview', table_header,table_data)
 
     def display_all(self, fields=None, company=None):
         """Display all entries in the base."""
