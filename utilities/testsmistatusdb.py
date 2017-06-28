@@ -81,10 +81,15 @@ def connect(configfile, args):
                     #   This does not work print(cursor.column_names)
 
                 else:
-                    cursor.execute('SELECT * FROM %s' % table)
-                    rows = cursor.fetchall()
-                    for row in rows:
-                        print(row)
+                    cursor.execute('SELECT COUNT(*) FROM %s' % table)
+                    res = cursor.fetchone()
+                    total_rows = res[0]
+                    print('Rows in table=%s' % total_rows)
+                    if table != "Pings":
+                        cursor.execute('SELECT * FROM %s' % table)
+                        rows = cursor.fetchall()
+                        for row in rows:
+                            print(row)
 
     except Error as error:
         print(error)

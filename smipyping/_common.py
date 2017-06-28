@@ -106,7 +106,7 @@ def pick_multiple_from_list(context, options, title):
         selection_txt = None
         try:
             response = prompt(
-                'Select multiples entries by index or Ctrl-C to exit >')
+                'Select multiple entries by index or Ctrl-C to exit >')
             selections = response.split()
             for selection_txt in selections:
                 if selection_txt.isdigit():
