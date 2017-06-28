@@ -444,6 +444,19 @@ class SQLTargetsData(TargetsData):
             print('Invalid database configuration exception %s' % ve)
         return self.db_dict
 
+    def write_updated_record(self, recordid):
+        """
+        Update the database record
+        """
+        # TODO this untested.
+        cursor.execute ("""
+           UPDATE tblTableName
+           SET Year=%s, Month=%s, Day=%s, Hour=%s, Minute=%s
+           WHERE Server=%s
+        """, (Year, Month, Day, Hour, Minute, ServerID))
+
+        connect.commit()
+
 
 class CsvTargetsData(TargetsData):
     """Comma Separated Values form of the Target base."""
@@ -505,8 +518,10 @@ class CsvTargetsData(TargetsData):
                                                           ve))
         return db_config
 
-    def write_updated(self):
-        """Backup the existing file and write the new one."""
+    def write_updated_record(self, recordid):
+        """Backup the existing file and write the new one.
+        with cvs it writes the whole file back
+        """
         backfile = '%s.bak' % self.filename
         # TODO does this cover directories/clean up for possible exceptions.
         if os.path.isfile(backfile):

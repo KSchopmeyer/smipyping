@@ -1,7 +1,7 @@
 .. _`smicli subcommands`:
 
 smicli subcommand options
-============================
+=========================
 
 There are a number of ``smicli``  groups and subcommands defined.  Each subcommand
 may have arguments  and options (defined with - or -- as part of the

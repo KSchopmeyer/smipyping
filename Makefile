@@ -388,3 +388,7 @@ $(doc_conf_dir)/simplepingall.help.txt: simplepingall $(package_name)/_simplepin
 	./simplepingall --help >$@
 	@echo 'Done: Created simplepingall script help message file: $@'
 
+$(doc_conf_dir)/smicli_help.rst: smicli $(package_name)/smicli.py
+	tools/click_help_capture.py --help >$@
+	@echo 'Done: Created smicli script help message file: $@'
+

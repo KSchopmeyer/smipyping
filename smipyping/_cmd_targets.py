@@ -113,14 +113,17 @@ def cmd_targets_disable(context, targetid, enable, options):
         target_record = context.target_data.get_dict_record(targetid)
 
         # TODO add test to see if already in correct state
-        next_state = 'Enabled' if target_record['ScanEnabled'] else 'Disabled'
+        next_state = 'Enabled' if enable else 'Disabled'
         print('Current Status=%s proposed change=%s'
               % (target_record['ScanEnabled'], next_state))
+        if target_record['ScanEnabled'] == next_state:
+            print('State already same as proposed change')
+            return
         return
 
         if target_record is not None:
             target_record['ScanEnabled'] = False if enable is True else True
-            context.provider_data.write_updated(targetid)
+            context.provider_data.write_updated_record(targetid)
         else:
             print('Id %s invalid or not in table' % targetid)
 

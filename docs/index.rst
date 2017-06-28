@@ -1,6 +1,6 @@
 
 smipyping - SMI lab support tools
-**********************
+*********************************
 
 smipyping is set of wbem clients, written in pure Python.
 It supports Python 2 and Python 3.
@@ -24,11 +24,11 @@ The general pywbem web site is: http://pywbem.github.io/pywbem/index.html.
    :numbered:
 
    intro.rst
-   tutorial.rst
    database.rst
    utilities.rst
    smiclicmdlineinterface.rst
    smiclisubcommands.rst
+   smicli_help.rst
    development.rst
    appendix.rst
    changes.rst

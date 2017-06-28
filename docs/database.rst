@@ -1,8 +1,8 @@
 
 .. _`WBEM Server database`:
 
-smipyping utility commands
-=====================
+smipyping database
+==================
 
 Because smipyping operates on a number of WBEM Servers at the same time
 and also maintains status of these servers over time, it depends on a database
@@ -34,3 +34,18 @@ database. Thus for csv files, an editor suffices.
 
 However, for the mysql database a tool such as the mysql workbench is useful
 to be able to add entries, delete entries, make modifications, etc.
+
+Database structure
+------------------
+
+TODO
+
+Alternative Databases
+---------------------
+
+TODO
+
+Database parameter definitions
+------------------------------
+
+TODO
