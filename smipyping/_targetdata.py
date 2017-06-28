@@ -246,22 +246,26 @@ class TargetsData(object):
             hdr.append(value[0])
         return hdr
 
-    def tbl_record(self, record_id, field_list):
-        """Return the fields defined in field_list for the record_id."""
+    def tbl_record(self, record_id, field_list, fold=False):
+        """Return the fields defined in field_list for the record_id.
+        String fields will be folded if their width is greater than the
+        specification in the format_dictionary and fold=True
+        """
         # TODO can we make this a std cvt function.
 
         record = self.get_dict_record(record_id)
 
         line = []
         for name in field_list:
-            # TODOcell_str = record[name]
+            field_str = record[name]
             value = self.get_format_dict(name)
-            if isinstance(name, six.string_types):
-                # max_width = value[1]
-                line.append(fold_cell(record[name], value[1]))
-                # if max_width < len(cell_str):
-                #    cell_str = '\n'.join(wrap(cell_str, max_width))
-                # line.append(cell_str)
+            max_width = value[1]
+            field_type = value[2]
+            if field_type is str and field_str:
+                if max_width < len(field_str):
+                    line.append(fold_cell(field_str, max_width))
+                else:
+                    line.append('%s' % record[name])
             else:
                 line.append('%s' % record[name])
         return line
@@ -276,6 +280,16 @@ class TargetsData(object):
         else:
             ValueError('ScanEnabled field must contain "Enabled" or "Disabled'
                        ' string. %s is invalid.' % val)
+
+    def get_output_width(self, col_list):
+        """
+        Get the width of a table from the column names in the list
+        """
+        total_width = 0
+        for name in col_list:
+            value = self.get_format_dict(name)
+            total_width += value[1]
+        return total_width
 
     def db_info(self):
         """get info on the database used"""
@@ -313,23 +327,22 @@ class TargetsData(object):
         # asciitables creates the table headers from
         table_header = self.tbl_hdr(column_list)
 
+        table_width = self.get_output_width(column_list) + len(column_list)
+        fold = False if table_width < 80 else True
+
         for record_id in sorted(self.targets_dict.iterkeys()):
-            table_data.append(self.tbl_record(record_id, column_list))
+            table_data.append(self.tbl_record(record_id, column_list, fold))
 
         print_ascii_table(table_header, table_data, 'Target Systems Overview')
 
     def display_all(self, fields=None, company=None):
         """Display all entries in the base."""
-        print('fields %s' % fields)
         if not fields:
             # list of default fields for display
             col_list = ['TargetID', 'IPAddress', 'CompanyName', 'Product',
                         'Port', 'Protocol', 'CimomVersion']
         else:
-            print('fields0 %s' % fields)
             col_list = fields
-
-        print('fields %s' % fields)
 
         self.display_cols(col_list)
 

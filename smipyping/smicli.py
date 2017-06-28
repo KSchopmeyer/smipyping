@@ -71,9 +71,10 @@ def cli(ctx, config_file, db_type, verbose, provider_data=None, db_info=None):
     """
 
     # TODO add for noverify, etc.
-    if ctx and ctx.default_map:
-        for data_key in ctx.default_map.keys():
-            print('ctx default map data key %s' % data_key)
+    if verbose:
+        if ctx and ctx.default_map:
+            for data_key in ctx.default_map.keys():
+                print('ctx default map data key %s' % data_key)
 
     if ctx.obj is None:
         # We are in command mode or are processing the command line options in

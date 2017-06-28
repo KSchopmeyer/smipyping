@@ -39,20 +39,25 @@ def targets_group():
     pass
 
 
+# TODO Use some other multiple mechanism. This one is a mess.
+# TODO implement ordering.
+
+
 @targets_group.command('list', options_metavar=CMD_OPTS_TXT)
 @click.option('-f', '--fields', multiple=True, type=str, default=None,
               help='Define specific fields for output. It always includes '
                    ' TargetID. Ex. -f TargetID -f CompanyName')
-@click.option('-c', '--company', type=str, default=None,
-              help='regex filter to filter selected companies.')
+# @click.option('-c', '--company', type=str, default=None,
+#              help='regex filter to filter selected companies.')
+@click.option('-o', '--order', type=str, default=None,
+              help='sort by the defined field name. NOT IMPLEMENTED')
 # TODO sort by a particular field
 @click.pass_obj
-def targets_list(context, fields, company, **options):
+def targets_list(context, fields, **options):
     """
     Display the entries in the provider database.
     """
-    context.execute_cmd(lambda: cmd_targets_list(context, fields, company,
-                                                 options))
+    context.execute_cmd(lambda: cmd_targets_list(context, fields, options))
 
 
 @targets_group.command('info', options_metavar=CMD_OPTS_TXT)
@@ -74,25 +79,25 @@ def targets_fields(context):
 
 
 @targets_group.command('get', options_metavar=CMD_OPTS_TXT)
-@click.argument('ProviderID', type=int, metavar='ProviderID', required=True)
+@click.argument('TargetID', type=int, metavar='TargetaID', required=True)
 @click.pass_obj
-def targets_get(context, providerid, **options):
+def targets_get(context, targetid, **options):
     """
     Get the details of a single record from the database and display.
     """
-    context.execute_cmd(lambda: cmd_targets_get(context, providerid, options))
+    context.execute_cmd(lambda: cmd_targets_get(context, targetid, options))
 
 
 @targets_group.command('disable', options_metavar=CMD_OPTS_TXT)
-@click.argument('ProviderID', type=int, metavar='ProviderID', required=True)
+@click.argument('TargetID', type=int, metavar='TargetID', required=True)
 @click.option('-e', '--enable', is_flag=True,
-              help='Enable the Provider if it is disabled.')
+              help='Enable the Target if it is disabled.')
 @click.pass_obj
-def targets_disable(context, providerid, enable, **options):
+def targets_disable(context, targetid, enable, **options):
     """
     Disable a provider from scanning.
     """
-    context.execute_cmd(lambda: cmd_targets_disable(context, providerid,
+    context.execute_cmd(lambda: cmd_targets_disable(context, targetid,
                                                     enable, options))
 
 
@@ -101,19 +106,23 @@ def targets_disable(context, providerid, enable, **options):
 ##############################################################
 
 
-def cmd_targets_disable(context, providerid, enable, options):
+def cmd_targets_disable(context, targetid, enable, options):
     """Display the information fields for the providers dictionary."""
 
     try:
-        host_record = context.provider_data.get_dict_record(providerid)
+        target_record = context.target_data.get_dict_record(targetid)
 
         # TODO add test to see if already in correct state
+        next_state = 'Enabled' if target_record['ScanEnabled'] else 'Disabled'
+        print('Current Status=%s proposed change=%s'
+              % (target_record['ScanEnabled'], next_state))
+        return
 
-        if host_record is not None:
-            host_record['EnableScan'] = False if enable is True else True
-            context.provider_data.write_updated()
+        if target_record is not None:
+            target_record['ScanEnabled'] = False if enable is True else True
+            context.provider_data.write_updated(targetid)
         else:
-            print('Id %s invalid or not in table' % providerid)
+            print('Id %s invalid or not in table' % targetid)
 
     except Exception as ex:
         raise click.ClickException("%s: %s" % (ex.__class__.__name__, ex))
@@ -139,31 +148,31 @@ def cmd_targets_fields(context):
     print('\n'.join(context.target_data.get_field_list()))
 
 
-def cmd_targets_get(context, recordid, options):
+def cmd_targets_get(context, targetid, options):
     """Display the fields of a single provider record."""
 
     try:
-        provider_record = context.target_data.get_dict_record(recordid)
+        target_record = context.target_data.get_dict_record(targetid)
 
         # TODO need to order output.
-        for key in provider_record:
-            print('%s: %s' % (key, provider_record[key]))
+        for key in target_record:
+            print('%s: %s' % (key, target_record[key]))
 
     except KeyError as ke:
-        print('record id %s invalid for this database.' % recordid)
+        print('record id %s invalid for this database.' % targetid)
         raise click.ClickException("%s: %s" % (ke.__class__.__name__, ke))
 
     except Exception as ex:
         raise click.ClickException("%s: %s" % (ex.__class__.__name__, ex))
 
 
-def cmd_targets_list(context, fields, company, options):
+def cmd_targets_list(context, fields, options):
     """ List the smi providers in the database."""
 
     show = list(fields)
     show.append('TargetID')
     try:
-        context.target_data.display_all(list(fields), company)
+        context.target_data.display_all(list(fields), company=None)
 
     except Exception as ex:
         raise click.ClickException("%s: %s" % (ex.__class__.__name__, ex))
