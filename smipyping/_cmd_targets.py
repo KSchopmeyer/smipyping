@@ -46,7 +46,8 @@ def targets_group():
 @targets_group.command('list', options_metavar=CMD_OPTS_TXT)
 @click.option('-f', '--fields', multiple=True, type=str, default=None,
               help='Define specific fields for output. It always includes '
-                   ' TargetID. Ex. -f TargetID -f CompanyName')
+                   ' TargetID. Ex. -f TargetID -f CompanyName '
+                   'Default: a Standard list of fields')
 # @click.option('-c', '--company', type=str, default=None,
 #              help='regex filter to filter selected companies.')
 @click.option('-o', '--order', type=str, default=None,
@@ -79,7 +80,7 @@ def targets_fields(context):
 
 
 @targets_group.command('get', options_metavar=CMD_OPTS_TXT)
-@click.argument('TargetID', type=int, metavar='TargetaID', required=True)
+@click.argument('TargetID', type=int, metavar='TargetID', required=True)
 @click.pass_obj
 def targets_get(context, targetid, **options):
     """
@@ -162,7 +163,7 @@ def cmd_targets_get(context, targetid, options):
             print('%s: %s' % (key, target_record[key]))
 
     except KeyError as ke:
-        print('record id %s invalid for this database.' % targetid)
+        print('TargetID %s not in the database.' % targetid)
         raise click.ClickException("%s: %s" % (ke.__class__.__name__, ke))
 
     except Exception as ex:
@@ -173,7 +174,7 @@ def cmd_targets_list(context, fields, options):
     """ List the smi providers in the database."""
 
     show = list(fields)
-    show.append('TargetID')
+    show.append('TargetID')  # always show TargetID
     try:
         context.target_data.display_all(list(fields), company=None)
 

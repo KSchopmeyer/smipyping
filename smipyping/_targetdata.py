@@ -33,6 +33,9 @@ from ._configfile import read_config
 
 __all__ = ['TargetsData']
 
+STANDARD_FIELDS_DISPLAY_LIST = ['TargetID', 'IPAddress', 'CompanyName',
+                                'Product', 'Port', 'Protocol', 'CimomVersion']
+
 
 class TargetsData(object):
     """Abstract top level class for the Target Base.
@@ -339,8 +342,7 @@ class TargetsData(object):
         """Display all entries in the base."""
         if not fields:
             # list of default fields for display
-            col_list = ['TargetID', 'IPAddress', 'CompanyName', 'Product',
-                        'Port', 'Protocol', 'CimomVersion']
+            col_list = STANDARD_FIELDS_DISPLAY_LIST
         else:
             col_list = fields
 
@@ -449,14 +451,16 @@ class SQLTargetsData(TargetsData):
         """
         Update the database record
         """
+        pass
         # TODO this untested.
-        cursor.execute ("""
-           UPDATE tblTableName
-           SET Year=%s, Month=%s, Day=%s, Hour=%s, Minute=%s
-           WHERE Server=%s
-        """, (Year, Month, Day, Hour, Minute, ServerID))
+        # cursor.execute ("""
+        #   UPDATE tblTableName
+        #   SET Year=%s, Month=%s, Day=%s, Hour=%s, Minute=%s
+        #   WHERE Server=%s
+        # """,
+        # (Year, Month, Day, Hour, Minute, ServerID))
 
-        connect.commit()
+        # connect.commit()
 
 
 class CsvTargetsData(TargetsData):
