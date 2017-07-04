@@ -20,6 +20,7 @@ from smipyping._configfile import read_config
 from smipyping.config import DEFAULT_CONFIG_FILE, DEFAULT_DBTYPE
 from smipyping._cliutils import SmartFormatter as _SmartFormatter
 
+
 def create_explore_parser(prog):
     """Create the cmd line parser for the explore functions"""
 
@@ -90,6 +91,7 @@ Examples:
 
     return argparser
 
+
 def main(prog):
     """
         Parse the command line and execute the explorer with the results
@@ -104,7 +106,7 @@ def main(prog):
     if args.verbose:
         print('args %s' % args)
 
-    db_config = read_config(args.config_file, args.dbtype)
+    db_config = read_config(args.config_file, args.dbtype, args.verbose)
     db_config['directory'] = os.path.dirname(args.config_file)
     target_data = TargetsData.factory(db_config, args.dbtype, args.verbose)
 

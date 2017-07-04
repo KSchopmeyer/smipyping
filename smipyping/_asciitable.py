@@ -52,7 +52,7 @@ def print_ascii_table(table_header, table_data, title=None, inner_border=False,
         boundary character representation
     """
 
-    if not outer_border and title:  # terminaltable does not print title if no 
+    if not outer_border and title:  # terminaltable does not print title if no
         print(title)
     table_data = [table_header] + table_data
     table_instance = SingleTable(table_data, title)

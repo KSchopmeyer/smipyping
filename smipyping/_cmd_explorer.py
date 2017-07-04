@@ -19,8 +19,8 @@ data file.
 """
 from __future__ import print_function, absolute_import
 
-import click
 from pprint import pprint as pp  # noqa: F401
+import click
 
 from .smicli import cli, CMD_OPTS_TXT
 from ._explore import Explorer
@@ -69,20 +69,20 @@ def cmd_explore_all(context, **options):
     """Explore all of the providers defined in the current database and
     report results.
     """
-    print('options %s' % options)
+    print('cmd_explorer options %s' % options)
     # print('context %s' % context)
 
     # TODO configure logging
     explorer = Explorer('smicli', context.target_data, logfile=None,
-                       verbose=context.verbose,
-                       ping=options['ping'], threaded=options['thread'])
+                        verbose=context.verbose,
+                        ping=options['ping'], threaded=options['thread'])
 
     hosts = context.target_data.get_hostid_list()
     targets = []
     for host in hosts:
         if context.verbose:
             print('targest extend host %s, rtns %s' %
-                  (host, target_data.get_target_for_host(host)))
+                  (host, context.target_data.get_target_for_host(host)))
 
         targets.extend(context.target_data.get_target_for_host(host))
 
@@ -93,5 +93,3 @@ def cmd_explore_all(context, **options):
     # print results
     # TODO make this part of normal print services
     explorer.report_server_info(servers, context.target_data)
-
-

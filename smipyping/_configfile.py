@@ -22,7 +22,7 @@ from __future__ import print_function, absolute_import
 from configparser import ConfigParser
 
 
-def read_config(filename, section):
+def read_config(filename, section, verbose=False):
     """
     Read configuration file for section and return a dictionary object if that
     section is found. If the section is not found, a TypeError is raised
@@ -35,7 +35,8 @@ def read_config(filename, section):
 
     """
     # create parser and read ini configuration file
-    print('read_configfile name %s, section %s' % (filename, section))
+    if verbose:
+        print('read_configfile name %s, section %s' % (filename, section))
     parser = ConfigParser()
     parser.read(filename)
 

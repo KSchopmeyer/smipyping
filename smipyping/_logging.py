@@ -14,17 +14,16 @@
 # limitations under the License.
 from __future__ import print_function, absolute_import
 
-import sys
 import logging
 import inspect
 from decorator import decorate
-from .config import LOG_OPS_CALLS_NAME, LOG_HTTP_NAME
 
 # from ._constants import API_LOGGER_NAME
 API_LOGGER_NAME = 'smipyping.api'
 
 # possible log output destinations
 LOG_DESTINATIONS = ['file', 'stderr', 'none']
+
 
 def get_logger(name):
     """

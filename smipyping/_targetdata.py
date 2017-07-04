@@ -359,8 +359,8 @@ class SQLTargetsData(TargetsData):
     # TODO filename is config file name, not actual file name.
     def __init__(self, db_dict, dbtype, verbose):
         """Read the input file into a dictionary."""
-
-        print('SQL Database type %s  verbose=%s' % (db_dict, verbose))
+        if verbose:
+            print('SQL Database type %s  verbose=%s' % (db_dict, verbose))
         super(SQLTargetsData, self).__init__(db_dict, dbtype, verbose)
 
         try:
@@ -370,8 +370,9 @@ class SQLTargetsData(TargetsData):
                                          password=db_dict['password'])
 
             if connection.is_connected():
-                print('sql db connection established. host %s, db %s' %
-                      (db_dict['host'], db_dict['database']))
+                if verbose:
+                    print('sql db connection established. host %s, db %s' %
+                          (db_dict['host'], db_dict['database']))
             else:
                 print('SQL database connection failed. host %s, db %s' %
                       (db_dict['host'], db_dict['database']))
