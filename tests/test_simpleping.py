@@ -59,7 +59,6 @@ class PingTestCase(CommandLineTestCase):
     def test_cmdline_no_ns(self):
         args = self.parse_with_exception('http://localhost')
 
-
     def test_cmdline2(self):
         args = self.parse('http://localhost -n root --user fred')
         print('args %s' % args)

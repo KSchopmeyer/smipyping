@@ -21,25 +21,19 @@
 
 from __future__ import print_function, absolute_import
 
-import os
-import sys as _sys
 import traceback
 import logging
 import time
-import argparse as _argparse
 from collections import namedtuple
 from urlparse import urlparse
 import threading
 
 from pywbem import WBEMConnection, WBEMServer, ValueMapping, Error, \
     ConnectionError, TimeoutError
-from ._cliutils import SmartFormatter as _SmartFormatter
-# TODO from ._cliutils import check_negative_int
-from ._targetdata import TargetsData
-from ._terminaltable import print_terminal_table, fold_cell
+from ._asciitable import print_ascii_table, fold_cell
 from ._csvtable import write_csv_table
 from ._ping import ping_host
-from .config import DEFAULT_CONFIG_FILE, PING_TIMEOUT
+from .config import PING_TIMEOUT
 
 __all__ = ['Explorer', ]
 
@@ -100,7 +94,8 @@ class Explorer(object):
                     cell_str = ", ". join(sorted(versions))
                     line.append(fold_cell(cell_str, 14))
                 table_data.append(line)
-        print_terminal_table("Display SMI Profile Information", table_data)
+        print_ascii_table(table_hdr, table_data,
+                          "Display SMI Profile Information")
 
     def report_server_info(self, servers, user_data, table_type='report'):
         """ Display a table of info from the server scan
@@ -109,7 +104,6 @@ class Explorer(object):
         table_data = []
         tbl_hdr = ['Id', 'Url', 'Brand', 'Company', 'Product', 'Vers',
                    'SMI Profiles', 'Interop_ns', 'Status', 'time']
-        table_data.append(tbl_hdr)
         servers.sort(key=lambda tup: int(tup.target_id))
         for server_tuple in servers:
             url = server_tuple.url
@@ -147,8 +141,9 @@ class Explorer(object):
 
             table_data.append(line)
 
-        if table_type =='report':
-            print_terminal_table("Server Basic Information", table_data)
+        if table_type == 'report':
+            print_ascii_table(tbl_hdr, table_data,
+                              "Server Basic Information")
         elif table_type == 'csv':
             write_csv_table(table_data)
         else:
@@ -462,140 +457,31 @@ class Explorer(object):
         # logging.basicConfig(stream=sys.stderr, level=logging.INFO,
         # format='%(asctime)s %(levelname)s %(message)s)')
 
-        self.logger = logging.getLogger(prog)
-        hdlr = logging.FileHandler(logfile)
-        # formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-        formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        if logfile:
+            self.logger = logging.getLogger(prog)
+            hdlr = logging.FileHandler(logfile)
+            formatter = logging.Formatter(
+                '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-        hdlr.setFormatter(formatter)
-        self.logger.addHandler(hdlr)
-        self.logger.setLevel(logging.INFO)
+            hdlr.setFormatter(formatter)
+            self.logger.addHandler(hdlr)
+            self.logger.setLevel(logging.INFO)
 
-        ch = logging.StreamHandler()
-        ch.setLevel(logging.DEBUG)
-        ch.setFormatter(formatter)
-        self.logger.addHandler(ch)
+            ch = logging.StreamHandler()
+            ch.setLevel(logging.DEBUG)
+            ch.setFormatter(formatter)
+            self.logger.addHandler(ch)
+        else:
+            self.logger = logging.getLogger(prog)
+            hdlr = logging.NullHandler()
+            formatter = logging.Formatter(
+                '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
+            hdlr.setFormatter(formatter)
+            self.logger.addHandler(hdlr)
+            self.logger.setLevel(logging.INFO)
 
-def create_explore_parser(prog):
-    """Create the cmd line parser for the explore functions"""
-
-    usage = '%(prog)s [options] server'
-    desc = 'Explore WBEM servers in the defined database for general ' \
-           'information about each server.'
-    epilog = """
-Examples:
-  %s -u 10.1.134.25
-  %s -T 4
-  %s        # explores all servers in the base
-
-""" % (prog, prog, prog)
-
-    argparser = _argparse.ArgumentParser(
-        prog=prog, usage=usage, description=desc, epilog=epilog,
-        formatter_class=_SmartFormatter)
-
-    pos_arggroup = argparser.add_argument_group(
-        'Positional arguments')
-
-    server_arggroup = argparser.add_argument_group(
-        'Server related options',
-        'Specify the server either by host address or database targetID')
-    pos_arggroup.add_argument(
-        '-u', '--uri', metavar='URI', nargs='?',
-        help='Optional host name or ip address of wbem servers to explore '
-             'schema:address:')
-    server_arggroup.add_argument(
-        '-T', '--target_id', dest='target_id',
-        metavar='TargetId',
-        type=int,
-        help='R|If this argument is set, the value is a user id\n'
-             'instead of an server url as the source for the test. In\n'
-             'this case, namespace, user, and password arguments are\n'
-             'derived from the user data rather than cli input')
-    server_arggroup.add_argument(
-        '-t', '--timeout', dest='timeout', metavar='timeout', type=int,
-        default=20,
-        help='R|Timeout of the completion of WBEM Server operation\n'
-             'in seconds(integer between 0 and 300).\n'
-             'Default: 20 seconds')
-
-    general_arggroup = argparser.add_argument_group(
-        'General options')
-    argparser.add_argument(
-        '-f', '--config_file', metavar='CONFIG_FILE',
-        default=DEFAULT_CONFIG_FILE,
-        help=('Configuration file to use for config information. '
-              'Default=%s' % DEFAULT_CONFIG_FILE))
-    general_arggroup.add_argument(
-        '--no_ping', '-n', action='store_true', default=False,
-        help='R|Do not ping for server as first test. Executing the\n'
-             'ping often shortens the total response time.')
-    general_arggroup.add_argument(
-        '--threaded', action='store_true', default=False,
-        help='If set use threaded code to explore in parallel')
-    general_arggroup.add_argument(
-        '--verbose', '-v', action='store_true', default=False,
-        help='Verbosity level')
-    general_arggroup.add_argument(
-        '--debug', '-d', action='store_true',
-        help='Display detailed connection information')
-
-    return argparser
-
-
-def main(prog):
-    """ Main call during test. Creates logger, executes explore and
-        table generate
-    """
-
-    argparser = create_explore_parser(prog)
-    args = argparser.parse_args()
-
-    if args.verbose:
-        print('args %s' % args)
-
-    logfile = '%s.log' % prog
-    # logger = create_explore_logger(prog, logfile)
-
-    target_data = TargetsData.factory(args.config_file, 'csv', args.verbose)
-
-    # create list of valid hosts and filter by wbemserver arg.
-    hosts = target_data.get_hostid_list()
-
-    filtered_hosts = []
-
-    # TODO make this list comprehension
-    if args.wbemserver is not None:
-        for host in hosts:
-            if host == args.wbemserver:
-                filtered_hosts.append(host)
-        if len(filtered_hosts) == 0:
-            raise ValueError('Ip address %s not in data base' % args.wbemserver)
-    else:
-        filtered_hosts = hosts
-
-    targets = []
-    for host in filtered_hosts:
-        targets.append()
-
-    # Now map hosts back to target_ids.
-
-    ping = False if args.no_ping else True
-
-    explore = Explorer(prog, target_data, logfile=logfile,
-                       verbose=args.verbose, ping=ping, debug=args.debug,
-                       threaded=args.threaded)
-
-    servers = explore.explore_servers(targets)
-
-    # print results
-    explore.report_server_info(servers, target_data)
-
-    return 0
-
-
-if __name__ == '__main__':
-    prog_name = os.path.basename(_sys.argv[0])
-    _sys.exit(main(prog_name))
+            ch = logging.StreamHandler()
+            ch.setLevel(logging.DEBUG)
+            ch.setFormatter(formatter)
+            self.logger.addHandler(ch)

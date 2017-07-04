@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-
 # (C) Copyright 2017 Inova Development Inc.
 # All Rights Reserved
 #
@@ -32,19 +31,16 @@ https port so the choices of test are limited.
 from __future__ import print_function, absolute_import
 import sys
 import time
-import argparse as _argparse
 from threading import Thread
 import Queue
 import itertools
 import six
 
-from ._cliutils import SmiSmartFormatter
-from ._cliutils import check_negative_int
-from .config import DEFAULT_SWEEP_PORT, MAX_THREADS
-from ._utilities import display_argparser_args
+from .config import MAX_THREADS
 from ._scanport import check_port_syn
+from ._asciitable import print_ascii_table
 
-__all__ = ['ServerSweep', 'create_sweep_argparser', 'parse_sweep_args']
+__all__ = ['ServerSweep']
 
 
 class ServerSweep(object):
@@ -65,7 +61,8 @@ class ServerSweep(object):
           in the scan
 
           provider_data (todo) The provider data  that defines the known
-          providers.  This is Optional.
+          providers.  This is optional. If not provided, it is not included
+          in the output report.
 
           no_threads (bool): Flag to indicate whether the threaded
             implementation is to be used
@@ -114,6 +111,19 @@ class ServerSweep(object):
         check_result = check_port_syn(test_address[0], test_address[1],
                                       self.verbose)  # Test one ip:port
         return check_result
+
+    def list_subnets_to_scan(self):
+        """
+        show the ip addresses and ports to be scanned as a list and count
+        of the totals.  This is primarily a diagnostic tool but helps users
+        determine what all will be scanned.
+        """
+        test_list = [result for result in self.build_test_list()]
+        print('scan list count=%s:' % len(test_list))
+        index = 0
+        for test_addr in test_list:
+            index += 1
+            print(' %4s %s' % (index, test_addr))
 
     def scan_subnets(self):
         """
@@ -182,12 +192,19 @@ class ServerSweep(object):
         self.total_pings = test_count
 
         # Start worker threads.
-        for i in range(num_threads):
-            worker = Thread(target=self.process_queue, args=(queue, results))
-            worker.daemon = True    # allows main program to exit.
-            worker.start()
+        threads = []
+        for i in range(num_threads):  # pylint: disable=unused-variable
+            t = Thread(target=self.process_queue, args=(queue, results))
+            t.daemon = True    # allows main program to exit.
+            threads.append(t)
+            t.start()
 
-        queue.join()
+        try:
+            queue.join()
+        except KeyboardInterrupt:
+            print("Ctrl-c received! Sending kill to threads...")
+            for t in threads:
+                t.kill_received = True
 
         # returns list of ip addresses that were were found
         return results
@@ -329,7 +346,6 @@ class ServerSweep(object):
         Product, etc.
         """
         print('\n')
-        print("=" * 50)
         execution_time = ''
         if self.total_sweep_time <= 60:
             execution_time = "%.2f sec" % (round(self.total_sweep_time, 1))
@@ -337,47 +353,58 @@ class ServerSweep(object):
             execution_time = "%.2f min" % (self.total_sweep_time / 60)
 
         range_txt = '%s:%s' % (self.min_octet_val, self.max_octet_val)
-
+        table = []
         if len(open_hosts) != 0:
-            print('Open WBEMServers:subnet(s)=%s port(s)=%s range %s, time %s'
-                  ' total_pings %s count %s'
-                  % (self.net_defs, self.ports, range_txt, execution_time,
-                     self.total_pings, len(open_hosts)))
+            title = 'Open WBEMServers:subnet(s)=%s\n    port(s)=%s range %s,' \
+                    ' time %s\n    total pings=%s pings answered=%s' \
+                    % (self.net_defs, self.ports, range_txt, execution_time,
+                       self.total_pings, len(open_hosts))
             # open_hosts.sort(key=lambda ip: map(int, ip.split('.')))
             # TODO this probably requires ordered dict rather than dictionary to
             # keep order. We are not outputing in full order. Note that
             # ip address itself is not good ordering since not all octets are
             # 3 char
+            headers = ['IPAddress', 'CompanyName', 'Product',
+                       'SMIVersion']
+            table = []
+            unknown = 0
+            known = 0
             for host_data in open_hosts:
+                ip_address = '%s:%s' % (host_data[0], host_data[1])
                 if self.provider_data is not None:
                     record_list = self.provider_data.get_targets_host(host_data)
                     if record_list:
                         # TODO this should be a list since there may be
-                        # multiples # for single ip address
+                        # multiples for single ip address
                         entry = self.provider_data.get_dict_record(
                             record_list[0])
                         if entry is not None:
-                            print(
-                                '%s:%s %-20s %-18s %-18s' %
-                                (host_data[0],
-                                 host_data[1],
-                                 entry['CompanyName'],
-                                 entry['Product'],
-                                 entry['SMIVersion']))
+                            known += 1
+                            table.append([ip_address,
+                                          entry['CompanyName'],
+                                          entry['Product'],
+                                          entry['SMIVersion']])
                         else:
-                            print('Invalid entry %s %s:%s %s' % (
-                                record_list[0], host_data[0], host_data[1],
+                            unknown += 1
+                            print('Invalid entry %s %s %s' % (
+                                record_list[0], ip_address,
                                 "Not in user data"))
+                            table.append([ip_address, "Not in base", "", ""])
                     else:
-                        print('%s:%s %s' % (host_data[0], host_data[1],
-                                            "UnknownServer"))
-
+                        unknown += 1
+                        table.append([ip_address, "Unknown"])
+                # no host info requested.
                 else:
-                    print('%s, %s' % (host_data[0], host_data[1]))
+                    table.append([ip_address])
         else:
             print('No WBEM Servers found:subnet(s)=%s port(s)=%s range %s, %s' %
                   (self.net_defs, self.ports, range_txt, execution_time))
-        print("=" * 50)
+
+        if table:
+            print_ascii_table(headers, table, title)
+
+        print('\nResults: Found=%s, Unknown=%s, Total=%s' % (known, unknown,
+                                                             known + unknown))
 
     def sweep_servers(self):
         """
@@ -411,113 +438,3 @@ class ServerSweep(object):
         self.total_sweep_time = time.time() - start_time
 
         return(open_hosts)
-
-
-def create_sweep_argparser(prog_name):
-    """
-    Create the argument parser for server sweep cmd line.
-
-    Returns the created parser.
-    """
-    prog = prog_name  # Name of the script file invoking this module
-    usage = '%(prog)s [options] subnet [subnet] ...'
-    desc = 'Sweep possible WBEMServer ports across a range of IP subnets '\
-           'and ports to find existing running WBEM servers.'
-    epilog = """
-Examples:
-  %s 10.1.132:134
-        The above example will scan the subnets 10.1.134, 10.1.133, and
-        10.1.134 from 1 to 254 for the 4 the octet of ip addresses. This
-        is explicitly defined by 10.1.132:124.1:254
-  %s 10.1.134
-        Scan a complete Class C subnet, 10.1.134 for the default port (5989)
-  %s 10.1.132,134 -p 5989 -p 5988
-        Scan 10.1.132.1:254 and 10.1.134.1:254 for ports 5988 and 5989
-
-""" % (prog, prog, prog)
-
-    argparser = _argparse.ArgumentParser(
-        prog=prog, usage=usage, description=desc, epilog=epilog,
-        formatter_class=SmiSmartFormatter)
-
-    pos_arggroup = argparser.add_argument_group(
-        'Positional arguments')
-    pos_arggroup.add_argument(
-        'subnet', metavar='subnet', nargs='+',
-        help='R|IP subnets to scan (ex. 10.1.132). Multiple subnets\n '
-             'allowed. Each subnet string is itself a definition that\n'
-             'consists of period separated octets that are used to\n'
-             'create the individual ip addresses to be tested:\n'
-             '  * Integers: Each integer is in the range 0-255\n'
-             '      ex. 10.1.2.9\n'
-             '  * Octet range definitions: A range expansion is in the\n'
-             '     form: int:int which defines the mininum and maximum\n'
-             '      values for that octet (ex 10.1.132:134) or\n'
-             '  * Integer lists: A list expansion is in the form:\n'
-             '     int,int,int\n'
-             '     that defines the set of values for that octet.\n'
-             'Missing octet definitions are expanded to the value\n'
-             'range defined by the min and max octet value parameters\n'
-             'All octets of the ip address can use any of the 3\n'
-             'definitions.\n'
-             'Examples: 10.1.132,134 expands to addresses in 10.1.132\n'
-             'and 10.1.134. where the last octet is the range 1 to 254')
-
-    subnet_arggroup = argparser.add_argument_group(
-        'Scan related options',
-        'Specify parameters of the subnet scan')
-    subnet_arggroup.add_argument(
-        '--min_octet_val', '-s', metavar='Min', nargs='?', default=1,
-        type=check_negative_int,
-        help='Minimum expanded value for any octet that is not specifically '
-             ' included in a net definition. Default = 1')
-    subnet_arggroup.add_argument(
-        '--max_octet_val', '-e', metavar='Max', nargs='?', default=254,
-        type=check_negative_int,
-        help='Minimum expanded value for any octet that is not specifically '
-             ' included in a net definition. Default = 254')
-    subnet_arggroup.add_argument(
-        '--port', '-p', nargs='?', action='append', type=int,
-        help='Port(s) to test. This argument may be repeated to test '
-             'multiple ports')
-
-    general_arggroup = argparser.add_argument_group(
-        'General options')
-    general_arggroup.add_argument(
-        '--config_file', '-c',
-        help='Use config file to determine if server is in database')
-    general_arggroup.add_argument(
-        '--no_threads', action='store_true', default=False,
-        help='If set, uses non-threaded implementation for pings. The '
-             'non-threaded implementation takes MUCH longer to execute but'
-             'is provided in case threading causes issues in a particular '
-             'user environment.')
-    general_arggroup.add_argument(
-        '--verbose', '-v', action='store_true', default=False,
-        help='If set output detail displays as test proceeds')
-
-    return argparser
-
-
-def parse_sweep_args(argparser):
-    """
-    Process the cmdline arguments including any default substitution.
-
-    This is based on the argparser defined by the create... function.
-
-    Either returns the args or executes argparser.error
-    """
-    args = argparser.parse_args()
-
-    if not args.subnet:
-        argparser.error('No Subnet specified. At least one subnet required.')
-
-    # set default port if none provided.
-    if args.port is None:
-        # This is from a variable in config.py
-        args.port = [DEFAULT_SWEEP_PORT]
-
-    if args.verbose:
-        display_argparser_args(args)
-
-    return args

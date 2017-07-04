@@ -28,22 +28,24 @@ import unittest
 
 from smipyping import TargetsData
 from smipyping._csvtable import write_csv_table
+from smipyping._configfile import read_config
 
 # unimplemented = pytest.mark.skipif(True, reason="test not implemented")
 
 TEST_CONFIG_FILE_NAME = 'testconfig.ini'
 SCRIPT_DIR = os.path.dirname(__file__)
 
-DB_TYPE = 'csv'
+DBTYPE = 'csv'
+
 
 class CSVOutputTestsSetup(unittest.TestCase):
     """ Setup class for cvs file tests"""
     def setUp(self):
         test_config_file = os.path.join(SCRIPT_DIR, TEST_CONFIG_FILE_NAME)
         print('test_config_file %s' % test_config_file)
-        db_config = read_config(test_config_file, DB_TYPE)
+        db_config = read_config(test_config_file, DBTYPE)
         db_config['directory'] = os.path.dirname(test_config_file)
-        self.target_table = TargetsData.factory(test_config_file, DB_TYPE,
+        self.target_table = TargetsData.factory(test_config_file, DBTYPE,
                                                 False)
 
     def read_csv_file(self, file_name):

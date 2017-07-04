@@ -4,11 +4,13 @@ Scan port function.  This scans a single port to determine if it is open
 This is the code that is privilege aware.
 """
 # required to turn off  IP v6 warning message from scapy in import
+import sys
 import logging
+from scapy.all import IP, TCP, sr1, sr, conf, RandShort
 SCPY_LOG = logging.getLogger("scapy.runtime")
 SCPY_LOG.setLevel(49)
 
-from scapy.all import *  # noqa: E402, F403
+
 __all__ = ['check_port_syn']
 
 
@@ -36,7 +38,7 @@ def check_port_syn(dst_ip, dst_port, verbose):
     elif resp.haslayer(TCP):
         if resp.getlayer(TCP).flags == SYNACK:
             send_rst = sr(IP(dst=dst_ip) / TCP(sport=src_port, dport=dst_port,
-                                             flags='AR'), timeout=1)
+                          flags='AR'), timeout=1)
             port_open = True
             if verbose:
                 print('check_port:%s:%s Open' % (dst_ip, dst_port))

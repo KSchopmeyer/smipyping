@@ -86,9 +86,3 @@ def ping_host(hostname, timeout=None):
         return False
 
     return
-
-    # p = subprocess.Popen(shelex.split(command), stdin=PIPE, stdout=PIPE,
-    #                      stderr=PIPE)
-    # output, err = p.communicate(b"input data that is passed to subprocess' stdin")
-    # rc = p.returncode
-    # if rc != 0:

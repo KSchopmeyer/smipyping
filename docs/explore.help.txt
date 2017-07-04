@@ -5,9 +5,6 @@ each server.
 
 optional arguments:
   -h, --help            show this help message and exit
-  -f CONFIG_FILE, --config_file CONFIG_FILE
-                        Configuration file to use for config information.
-                        Default=localconfig.ini
 
 Positional arguments:
   -u [URI], --uri [URI]
@@ -28,6 +25,11 @@ Server related options:
                         Default: 20 seconds
 
 General options:
+  -f CONFIG_FILE, --config_file CONFIG_FILE
+                        Configuration file to use for config information.
+                        Default=localconfig.ini
+  -D DBTYPE, --dbtype DBTYPE
+                        DBTYPE to use. Default=mysql
   --no_ping, -n         Do not ping for server as first test. Executing the
                         ping often shortens the total response time.
   --threaded            If set use threaded code to explore in parallel

@@ -20,10 +20,9 @@ tools.  It will be replaced with the common config for the click based tools
 from __future__ import print_function, absolute_import
 
 from configparser import ConfigParser
-# ##from smipyping._terminaltable import print_terminal_table, fold_cell
 
 
-def read_config(filename, section):
+def read_config(filename, section, verbose=False):
     """
     Read configuration file for section and return a dictionary object if that
     section is found. If the section is not found, a TypeError is raised
@@ -36,6 +35,8 @@ def read_config(filename, section):
 
     """
     # create parser and read ini configuration file
+    if verbose:
+        print('read_configfile name %s, section %s' % (filename, section))
     parser = ConfigParser()
     parser.read(filename)
 
@@ -47,5 +48,5 @@ def read_config(filename, section):
             result[item[0]] = item[1]
     else:
         raise ValueError('{0} not found in the {1} file'.format(section,
-                                                               filename))
+                                                                filename))
     return result

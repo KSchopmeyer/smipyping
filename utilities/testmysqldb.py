@@ -28,7 +28,7 @@ try:
     results = cursor.fetchall()
     for row in results:
         name = row[1]
-        print("table %s %s" % (row[0], row[1]))
+        print("companies table %s %s" % (row[0], row[1]))
 except:
     print "Error"
 

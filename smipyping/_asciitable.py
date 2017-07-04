@@ -24,20 +24,27 @@ import six
 from terminaltables import SingleTable
 
 
-def print_terminal_table(title, table_data, inner_border=False,
-                         outer_border=False):
+def print_ascii_table(table_header, table_data, title=None, inner_border=False,
+                      outer_border=False):
     """ Print table data as an ascii table. The input is a dictionary
         of table data in the format used by terminaltable package.
 
-        title: list of strings defining the row titles
+
+        table_header:
+            list of strings defining the column names
 
         table data:
            List of lists of strings. Each list of strings represents the
            data for a single row in the table
+        title:
+            Title that is applied above table output if it is not None
 
-        inner_border
+        inner_border:
+            optional flag that tells table builder to create inner borders
 
-        outer_border
+        outer_border:
+            Optional flag that tells table builder to create border around
+            complete table
 
         NOTE: Currently this outputs in the terminatable SingleTable format
         It may be extended in the future to allow other formats such as the
@@ -45,6 +52,9 @@ def print_terminal_table(title, table_data, inner_border=False,
         boundary character representation
     """
 
+    if not outer_border and title:  # terminaltable does not print title if no
+        print(title)
+    table_data = [table_header] + table_data
     table_instance = SingleTable(table_data, title)
     table_instance.inner_column_border = inner_border
     table_instance.outer_border = outer_border

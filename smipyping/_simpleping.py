@@ -32,14 +32,15 @@ from collections import namedtuple
 
 from pywbem import WBEMConnection, ConnectionError, Error, TimeoutError, \
     CIMError
+
+from smipyping._configfile import read_config
 from ._cliutils import SmiSmartFormatter
 
 from ._ping import ping_host
 
 from .config import PING_TEST_CLASS, PING_TIMEOUT, DEFAULT_CONFIG_FILE, \
-    DB_TYPE
+    DEFAULT_DBTYPE
 
-from smipyping._configfile import read_config
 
 from ._targetdata import TargetsData
 
@@ -193,8 +194,7 @@ class SimplePing(object):
             print('Ping network address %s' % target_address[0])
         if ping_host(target_address[0], PING_TIMEOUT):
             return(True, 'running')
-        else:
-            return(False, 'Ping Fail')
+        return(False, 'Ping Fail')
 
     def connect_server(self, url, verify_cert=False):
         """
@@ -254,7 +254,7 @@ class SimplePing(object):
             rtn_code = ("TimeoutError", to)
         except Error as er:
             rtn_code = ("PyWBEM Error", er)
-        except Exception as ex:
+        except Exception as ex:  # pylint: disable=broad-except
             rtn_code = ("General Error", ex)
 
         if self.debug:
@@ -399,6 +399,10 @@ Examples:\n
             default=DEFAULT_CONFIG_FILE,
             help=('Configuration file to use for config information. '
                   'Default=%s' % DEFAULT_CONFIG_FILE))
+        argparser.add_argument(
+            '-D', '--dbtype', metavar='DBTYPE',
+            default=DEFAULT_DBTYPE,
+            help=('DBTYPE to use. Default=%s' % DEFAULT_DBTYPE))
         general_arggroup.add_argument(
             '-v', '--verbose', dest='verbose',
             action='store_true', default=False,
@@ -459,8 +463,9 @@ Examples:\n
             self.password = opts.password
         if opts.target_id:
             # TODO is there optionality on the config_file here
-            db_config = read_config(opts.config_file, DB_TYPE)
-            target_data = TargetsData.factory(db_config, DB_TYPE, opts.verbose)
+            db_config = read_config(opts.config_file, opts.dbtype, self.verbose)
+            target_data = TargetsData.factory(db_config, opts.dbtype,
+                                              opts.verbose)
             if opts.target_id in target_data:
                 self.set_from_userrecord(opts.target_id, target_data)
             else:

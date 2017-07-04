@@ -19,8 +19,8 @@ data file.
 """
 from __future__ import print_function, absolute_import
 
-import click
 from pprint import pprint as pp  # noqa: F401
+import click
 
 from .smicli import cli, CMD_OPTS_TXT
 from ._explore import Explorer
@@ -44,10 +44,12 @@ def explorer_group():
 
 
 @explorer_group.command('all', options_metavar=CMD_OPTS_TXT)
-@click.option('--ping', '--no_ping', default=True,
-              help='Ping the the provider as initial step in test.')
-@click.option('--thread', '--no_thread', default=True,
-              help='Run test multithreaded.  Much faster.')
+@click.option('--ping/--no-ping', default=True,
+              help='Ping the the provider as initial step in test. '
+                   'Default: ping')
+@click.option('--thread/--no-thread', default=True,
+              help='Run test multithreaded.  Much faster. '
+                   'Default: thread')
 @click.pass_obj
 def explore_all(context, **options):
     """
@@ -67,17 +69,27 @@ def cmd_explore_all(context, **options):
     """Explore all of the providers defined in the current database and
     report results.
     """
-    db_config = read_config(args.config_file, DB_TYPE)
-    db_config['directory'] = os.path.dirname(args.config_file)
-    target_data = TargetsData.factory(args.config_file, DB_TYPE, args.verbose)
-    
-    explore = Explorer('smicli', target_data, logfile=logfile,
-                       verbose=args.verbose,
-                       ping=context['ping'], threaded=True)
+    print('cmd_explorer options %s' % options)
+    # print('context %s' % context)
 
-    servers = explore.explore_servers(targets)
+    # TODO configure logging
+    explorer = Explorer('smicli', context.target_data, logfile=None,
+                        verbose=context.verbose,
+                        ping=options['ping'], threaded=options['thread'])
+
+    hosts = context.target_data.get_hostid_list()
+    targets = []
+    for host in hosts:
+        if context.verbose:
+            print('targest extend host %s, rtns %s' %
+                  (host, context.target_data.get_target_for_host(host)))
+
+        targets.extend(context.target_data.get_target_for_host(host))
+
+    targets = set(targets)
+
+    servers = explorer.explore_servers(targets)
 
     # print results
-    explore.print_server_info(servers, target_data)
-
-
+    # TODO make this part of normal print services
+    explorer.report_server_info(servers, context.target_data)

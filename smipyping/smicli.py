@@ -23,38 +23,39 @@ from __future__ import print_function, absolute_import
 import os
 import click_repl
 import click
+
 from prompt_toolkit.history import FileHistory
 
 from smipyping import TargetsData
-from smipyping import DEFAULT_CONFIG_FILE
+from smipyping import DEFAULT_DBTYPE, DB_POSSIBLE_TYPES
 from ._click_context import ClickContext
 
 from .config import SMICLI_PROMPT, SMICLI_HISTORY_FILE
-from ._cmd_configfile import CONTEXT_SETTINGS
-
-# TODO TEMP
-from ._configfile import read_config
+from ._click_configfile import CONTEXT_SETTINGS
 
 
 # Display of options in usage line
 GENERAL_OPTIONS_METAVAR = '[GENERAL-OPTIONS]'
 CMD_OPTS_TXT = '[COMMAND-OPTIONS]'
 
-DBTYPE = 'csv'
-
 __all__ = ['cli']
 
 
 @click.group(invoke_without_command=True,
-             options_metavar=GENERAL_OPTIONS_METAVAR,
-             context_settings=CONTEXT_SETTINGS)
+             context_settings=CONTEXT_SETTINGS,
+             options_metavar=GENERAL_OPTIONS_METAVAR)
 @click.option('-c', '--config_file', type=str, envvar='SMI_CONFIG_FILE',
               help="Configuration file to use for config information.")
-@click.option('-v', '--verbose', type=str, is_flag=True,
+# TODO set up default support
+@click.option('-d', '--db_type', type=click.Choice(DB_POSSIBLE_TYPES),
+              envvar='SMI_DB_TYPE',
+              help="Database type. May be defined on cmd line, config file, "
+                   " or through default. Default is %s." % DEFAULT_DBTYPE)
+@click.option('-v', '--verbose', is_flag=True,
               help='Display extra information about the processing.')
 @click.version_option(help="Show the version of this command and exit.")
 @click.pass_context
-def cli(ctx, config_file, verbose, provider_data=None):
+def cli(ctx, config_file, db_type, verbose, provider_data=None, db_info=None):
     """
     General command line script for smicli.  This script executes a number
     of subcommands to:
@@ -68,41 +69,63 @@ def cli(ctx, config_file, verbose, provider_data=None):
           of the data base, sql database and csv file.
 
     """
+
     # TODO add for noverify, etc.
-    print('CONTEXT_SETTINGS %s ' % CONTEXT_SETTINGS)
-    # for data_key in ctx.default_map.keys():
-    #    print('ctx default map data key %s' % data_key)
+    if verbose:
+        if ctx and ctx.default_map:
+            for data_key in ctx.default_map.keys():
+                print('ctx default map data key %s' % data_key)
 
     if ctx.obj is None:
         # We are in command mode or are processing the command line options in
         # interactive mode.
-        # We apply the documented option defaults.
-        if ctx.default_map['dbtype']:
+        # Apply the documented option defaults.
+
+        # get the db_type. Order is cmd line, config file, default
+        if db_type:
+            db_type = db_type
+        elif ctx.default_map and 'dbtype' in ctx.default_map:
             db_type = ctx.default_map['dbtype']
         else:
-            db_type = 'csv'
-        print('dbtype %s' % db_type)
+            db_type = DEFAULT_DBTYPE
+        if verbose:
+            print('dbtype %s' % db_type)
 
-        db_info = ctx.default_map[db_type]
+        if ctx.default_map:
+            db_info = ctx.default_map[db_type]
+        else:
+            # NEED DEFAULT for dbinfo
+            db_info = {}
+            print('WARNING: No Database info provided for database type %s'
+                  % db_type)
         config_file_dir = os.path.dirname(os.getcwd())
         db_info['directory'] = config_file_dir
-        print('db_info %s' % db_info)
+        if verbose:
+            print('db_info %s' % db_info)
 
+        # TODO: Why not glue db_type into db_info itself in context.
+
+        # use db info to get target info.
         try:
-            print('csv config config_file %s' % config_file)
-            csv_config = read_config(config_file, 'csv')
-            filename = csv_config['filename']
-            if not os.path.dirname(filename):
-                filename = os.path.join(config_file_dir, filename)
-            target_data = TargetsData.factory(db_info, DBTYPE, verbose)
+            # print('csv config config_file %s' % config_file)
+            # csv_config = read_config(config_file, 'csv')
+            # filename = csv_config['filename']
+            # if not os.path.dirname(filename):
+            #    filename = os.path.join(config_file_dir, filename)
+            target_data = TargetsData.factory(db_info, db_type, verbose)
         except ValueError as ve:
             raise click.ClickException("%s: %s" % (ve.__class__.__name__, ve))
 
     else:
         # We are processing an interactive command.
         # We apply the option defaults from the command line options.
+        # Move info from the inherited context to the current context.
         if config_file is None:
             config_file = ctx.obj.config_file
+        if db_type is None:
+            db_type = ctx.obj.db_type
+        if db_info is None:
+            db_info = ctx.obj.db_info
         if provider_data is None:
             target_data = ctx.obj.target_data
         if verbose is None:
@@ -111,7 +134,8 @@ def cli(ctx, config_file, verbose, provider_data=None):
     # Create a command context for each command: An interactive command has
     # its own command context different from the command context for the
     # command line.
-    ctx.obj = ClickContext(ctx, config_file, target_data, verbose)
+    ctx.obj = ClickContext(ctx, config_file, db_type, db_info, target_data,
+                           verbose)
 
     # Invoke default command
     if ctx.invoked_subcommand is None:

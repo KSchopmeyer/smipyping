@@ -20,6 +20,8 @@ optional arguments:
   -f CONFIG_FILE, --config_file CONFIG_FILE
                         Configuration file to use for config information.
                         Default=localconfig.ini
+  -D DBTYPE, --dbtype DBTYPE
+                        DBTYPE to use. Default=mysql
 
 Positional arguments:
   server                Host name or url of the WBEM server in this format:

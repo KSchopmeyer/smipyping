@@ -4,14 +4,17 @@
 Introduction
 ============
 
-TODO add the overview
-
 .. _`Functionality`:
 
 Functionality
 -------------
 
-TODO - Add the functionality overview
+This python package provides the functionality to maintain information on the
+status of a number of servers in a WBEM Server environment and to explore
+the details of the WBEM Servers in that environment.
+
+It includes several command line tools and a database of the WBEM Servers
+in the environment.
 
 
 .. _`Installation`:
