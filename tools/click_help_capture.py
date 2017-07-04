@@ -44,7 +44,7 @@ else:
     def indent(text, amount, ch=' '):  # pylint: disable=invalid-name
         """Wrap textwrap function"""
         return textwrap.indent(text, amount * ch)
-from pprint import pprint as pp  # noqa: F401
+
 import six
 
 # name of the script to be scraped for help displays.
@@ -72,12 +72,14 @@ def rst_headline(title, level):
     except IndexError:
         level_char = '='
 
+    # output anchor in form .. _`smicli subcommands`:
+    anchor = '.. _`%s`:lt' % title
     if level == 0:
-        return '\n%s\n%s\n%s\n' % (level_char * len(title),
-                                   title,
-                                   (level_char * len(title)))
+        return '\n%s\n\n%s\n%s\n%s\n' % (anchor, level_char * len(title),
+                                       title,
+                                       (level_char * len(title)))
     else:
-        return '\n%s\n%s\n' % (title, (level_char * len(title)))
+        return '\n%s\n%s\n%s\n' % (anchor, title, (level_char * len(title)))
 
 
 def print_rst_verbatum_text(text_str):
@@ -176,14 +178,14 @@ def create_help_cmd_list():
         command = '%s %s --help' % (SCRIPT_NAME, name)
         out = HELP_DICT[name]
         if USE_RST:
-            print(rst_headline("Help Command details", 2))
+            print(rst_headline("Help Command Details", 2))
             print('\n%s\n' % 'This section defines the help output for '
-                  'each smicli group and subcommand')
+                  'each smicli group and subcommand.')
             level = len(command.split()) - 1
             print(rst_headline(command, level))
             print_rst_verbatum_text(out)
         else:
-            print('%s\n%s COMMAND: %s' % (('=' * 50), (SCRIPT_NAME, command)))
+            print('%s\n%s COMMAND: %s' % (('=' * 50), SCRIPT_NAME, command))
             print(out)
 
     return help_groups_result

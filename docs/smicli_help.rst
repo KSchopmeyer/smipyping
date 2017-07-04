@@ -1,4 +1,5 @@
 
+.. _`Help Command details`
 Help Command details
 ====================
 
@@ -6,6 +7,7 @@ Help Command details
 This section defines the help output for each smicli group and subcommand
 
 
+.. _`smicli  --help`
 smicli  --help
 **************
 
@@ -43,6 +45,7 @@ smicli  --help
 
 
 
+.. _`Help Command details`
 Help Command details
 ====================
 
@@ -50,6 +53,7 @@ Help Command details
 This section defines the help output for each smicli group and subcommand
 
 
+.. _`smicli explorer --help`
 smicli explorer --help
 ======================
 
@@ -76,6 +80,7 @@ smicli explorer --help
 
 
 
+.. _`Help Command details`
 Help Command details
 ====================
 
@@ -83,6 +88,7 @@ Help Command details
 This section defines the help output for each smicli group and subcommand
 
 
+.. _`smicli explorer all --help`
 smicli explorer all --help
 --------------------------
 
@@ -103,6 +109,7 @@ smicli explorer all --help
 
 
 
+.. _`Help Command details`
 Help Command details
 ====================
 
@@ -110,6 +117,7 @@ Help Command details
 This section defines the help output for each smicli group and subcommand
 
 
+.. _`smicli help --help`
 smicli help --help
 ==================
 
@@ -126,6 +134,7 @@ smicli help --help
 
 
 
+.. _`Help Command details`
 Help Command details
 ====================
 
@@ -133,6 +142,7 @@ Help Command details
 This section defines the help output for each smicli group and subcommand
 
 
+.. _`smicli provider --help`
 smicli provider --help
 ======================
 
@@ -165,6 +175,7 @@ smicli provider --help
 
 
 
+.. _`Help Command details`
 Help Command details
 ====================
 
@@ -172,6 +183,7 @@ Help Command details
 This section defines the help output for each smicli group and subcommand
 
 
+.. _`smicli provider info --help`
 smicli provider info --help
 ---------------------------
 
@@ -195,6 +207,7 @@ smicli provider info --help
 
 
 
+.. _`Help Command details`
 Help Command details
 ====================
 
@@ -202,6 +215,7 @@ Help Command details
 This section defines the help output for each smicli group and subcommand
 
 
+.. _`smicli provider interop --help`
 smicli provider interop --help
 ------------------------------
 
@@ -225,6 +239,7 @@ smicli provider interop --help
 
 
 
+.. _`Help Command details`
 Help Command details
 ====================
 
@@ -232,6 +247,7 @@ Help Command details
 This section defines the help output for each smicli group and subcommand
 
 
+.. _`smicli provider namespaces --help`
 smicli provider namespaces --help
 ---------------------------------
 
@@ -255,6 +271,7 @@ smicli provider namespaces --help
 
 
 
+.. _`Help Command details`
 Help Command details
 ====================
 
@@ -262,6 +279,7 @@ Help Command details
 This section defines the help output for each smicli group and subcommand
 
 
+.. _`smicli provider ping --help`
 smicli provider ping --help
 ---------------------------
 
@@ -286,6 +304,7 @@ smicli provider ping --help
 
 
 
+.. _`Help Command details`
 Help Command details
 ====================
 
@@ -293,6 +312,7 @@ Help Command details
 This section defines the help output for each smicli group and subcommand
 
 
+.. _`smicli provider profiles --help`
 smicli provider profiles --help
 -------------------------------
 
@@ -319,6 +339,7 @@ smicli provider profiles --help
 
 
 
+.. _`Help Command details`
 Help Command details
 ====================
 
@@ -326,6 +347,7 @@ Help Command details
 This section defines the help output for each smicli group and subcommand
 
 
+.. _`smicli repl --help`
 smicli repl --help
 ==================
 
@@ -343,6 +365,7 @@ smicli repl --help
 
 
 
+.. _`Help Command details`
 Help Command details
 ====================
 
@@ -350,6 +373,7 @@ Help Command details
 This section defines the help output for each smicli group and subcommand
 
 
+.. _`smicli targets --help`
 smicli targets --help
 =====================
 
@@ -380,6 +404,7 @@ smicli targets --help
 
 
 
+.. _`Help Command details`
 Help Command details
 ====================
 
@@ -387,6 +412,7 @@ Help Command details
 This section defines the help output for each smicli group and subcommand
 
 
+.. _`smicli targets disable --help`
 smicli targets disable --help
 -----------------------------
 
@@ -404,6 +430,7 @@ smicli targets disable --help
 
 
 
+.. _`Help Command details`
 Help Command details
 ====================
 
@@ -411,6 +438,7 @@ Help Command details
 This section defines the help output for each smicli group and subcommand
 
 
+.. _`smicli targets fields --help`
 smicli targets fields --help
 ----------------------------
 
@@ -427,6 +455,7 @@ smicli targets fields --help
 
 
 
+.. _`Help Command details`
 Help Command details
 ====================
 
@@ -434,6 +463,7 @@ Help Command details
 This section defines the help output for each smicli group and subcommand
 
 
+.. _`smicli targets get --help`
 smicli targets get --help
 -------------------------
 
@@ -450,6 +480,7 @@ smicli targets get --help
 
 
 
+.. _`Help Command details`
 Help Command details
 ====================
 
@@ -457,6 +488,7 @@ Help Command details
 This section defines the help output for each smicli group and subcommand
 
 
+.. _`smicli targets info --help`
 smicli targets info --help
 --------------------------
 
@@ -473,6 +505,7 @@ smicli targets info --help
 
 
 
+.. _`Help Command details`
 Help Command details
 ====================
 
@@ -480,6 +513,7 @@ Help Command details
 This section defines the help output for each smicli group and subcommand
 
 
+.. _`smicli targets list --help`
 smicli targets list --help
 --------------------------
 
