@@ -50,18 +50,20 @@ def main(prog):
 
     if test_result.code != 0:
         print('%s Error Response, Exit code %s %s %s' % (simpleping.url,
-                                                      test_result.code,
-                                                      test_result.type,
-                                                      test_result.exception))
+                                                         test_result.code,
+                                                         test_result.type,
+                                                         test_result.exception))
     else:
         if opts.verbose:
-            print('%s Return code = %s:%s in %s sec' % (simpleping.url,
-                                                     test_result.type,
-                                                     test_result.code,
-                                                     test_result.execution_time))
+            print('%s Return code = %s:%s in %s sec' %
+                  (simpleping.url,
+                   test_result.type,
+                   test_result.code,
+                   test_result.execution_time))
         print('Running')     # print the word 'Running' to match javaping
 
     return test_result.code
+
 
 if __name__ == '__main__':
     sys.exit(main(os.path.basename(sys.argv[0])))

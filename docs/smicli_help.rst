@@ -1,13 +1,13 @@
 
-.. _`Help Command details`
-Help Command details
+.. _`Help Command Details`:lt
+Help Command Details
 ====================
 
 
-This section defines the help output for each smicli group and subcommand
+This section defines the help output for each smicli group and subcommand.
 
 
-.. _`smicli  --help`
+.. _`smicli  --help`:lt
 smicli  --help
 **************
 
@@ -45,22 +45,20 @@ smicli  --help
 
 
 
-.. _`Help Command details`
-Help Command details
+.. _`Help Command Details`:lt
+Help Command Details
 ====================
 
 
-This section defines the help output for each smicli group and subcommand
+This section defines the help output for each smicli group and subcommand.
 
 
-.. _`smicli explorer --help`
+.. _`smicli explorer --help`:lt
 smicli explorer --help
 ======================
 
 ::
 
-    SQL Database type {'directory': '/home/kschopmeyer/Dropbox/work', 'host': u'localhost', 'password': u'test8play', 'user': u'kschopmeyer', 'database': u'SMIStatus'}  verbose=False
-    sql db connection established. host localhost, db SMIStatus
     Usage: smicli explorer [COMMAND-OPTIONS] COMMAND [ARGS]...
     
       Command group for general provider explore.
@@ -80,22 +78,20 @@ smicli explorer --help
 
 
 
-.. _`Help Command details`
-Help Command details
+.. _`Help Command Details`:lt
+Help Command Details
 ====================
 
 
-This section defines the help output for each smicli group and subcommand
+This section defines the help output for each smicli group and subcommand.
 
 
-.. _`smicli explorer all --help`
+.. _`smicli explorer all --help`:lt
 smicli explorer all --help
 --------------------------
 
 ::
 
-    SQL Database type {'directory': '/home/kschopmeyer/Dropbox/work', 'host': u'localhost', 'password': u'test8play', 'user': u'kschopmeyer', 'database': u'SMIStatus'}  verbose=False
-    sql db connection established. host localhost, db SMIStatus
     Usage: smicli explorer all [COMMAND-OPTIONS]
     
       Execute the general explorer on the enabled providers in the database
@@ -109,22 +105,20 @@ smicli explorer all --help
 
 
 
-.. _`Help Command details`
-Help Command details
+.. _`Help Command Details`:lt
+Help Command Details
 ====================
 
 
-This section defines the help output for each smicli group and subcommand
+This section defines the help output for each smicli group and subcommand.
 
 
-.. _`smicli help --help`
+.. _`smicli help --help`:lt
 smicli help --help
 ==================
 
 ::
 
-    SQL Database type {'directory': '/home/kschopmeyer/Dropbox/work', 'host': u'localhost', 'password': u'test8play', 'user': u'kschopmeyer', 'database': u'SMIStatus'}  verbose=False
-    sql db connection established. host localhost, db SMIStatus
     Usage: smicli help [OPTIONS]
     
       Show help message for interactive mode.
@@ -134,22 +128,20 @@ smicli help --help
 
 
 
-.. _`Help Command details`
-Help Command details
+.. _`Help Command Details`:lt
+Help Command Details
 ====================
 
 
-This section defines the help output for each smicli group and subcommand
+This section defines the help output for each smicli group and subcommand.
 
 
-.. _`smicli provider --help`
+.. _`smicli provider --help`:lt
 smicli provider --help
 ======================
 
 ::
 
-    SQL Database type {'directory': '/home/kschopmeyer/Dropbox/work', 'host': u'localhost', 'password': u'test8play', 'user': u'kschopmeyer', 'database': u'SMIStatus'}  verbose=False
-    sql db connection established. host localhost, db SMIStatus
     Usage: smicli provider [COMMAND-OPTIONS] COMMAND [ARGS]...
     
       Command group for simple operations on providers.
@@ -175,22 +167,20 @@ smicli provider --help
 
 
 
-.. _`Help Command details`
-Help Command details
+.. _`Help Command Details`:lt
+Help Command Details
 ====================
 
 
-This section defines the help output for each smicli group and subcommand
+This section defines the help output for each smicli group and subcommand.
 
 
-.. _`smicli provider info --help`
+.. _`smicli provider info --help`:lt
 smicli provider info --help
 ---------------------------
 
 ::
 
-    SQL Database type {'directory': '/home/kschopmeyer/Dropbox/work', 'host': u'localhost', 'password': u'test8play', 'user': u'kschopmeyer', 'database': u'SMIStatus'}  verbose=False
-    sql db connection established. host localhost, db SMIStatus
     Usage: smicli provider info [COMMAND-OPTIONS]
     
       Display the brand information for the providers defined by the options.
@@ -207,22 +197,20 @@ smicli provider info --help
 
 
 
-.. _`Help Command details`
-Help Command details
+.. _`Help Command Details`:lt
+Help Command Details
 ====================
 
 
-This section defines the help output for each smicli group and subcommand
+This section defines the help output for each smicli group and subcommand.
 
 
-.. _`smicli provider interop --help`
+.. _`smicli provider interop --help`:lt
 smicli provider interop --help
 ------------------------------
 
 ::
 
-    SQL Database type {'directory': '/home/kschopmeyer/Dropbox/work', 'host': u'localhost', 'password': u'test8play', 'user': u'kschopmeyer', 'database': u'SMIStatus'}  verbose=False
-    sql db connection established. host localhost, db SMIStatus
     Usage: smicli provider interop [COMMAND-OPTIONS]
     
       Display the brand information for the providers defined by the options.
@@ -239,22 +227,20 @@ smicli provider interop --help
 
 
 
-.. _`Help Command details`
-Help Command details
+.. _`Help Command Details`:lt
+Help Command Details
 ====================
 
 
-This section defines the help output for each smicli group and subcommand
+This section defines the help output for each smicli group and subcommand.
 
 
-.. _`smicli provider namespaces --help`
+.. _`smicli provider namespaces --help`:lt
 smicli provider namespaces --help
 ---------------------------------
 
 ::
 
-    SQL Database type {'directory': '/home/kschopmeyer/Dropbox/work', 'host': u'localhost', 'password': u'test8play', 'user': u'kschopmeyer', 'database': u'SMIStatus'}  verbose=False
-    sql db connection established. host localhost, db SMIStatus
     Usage: smicli provider namespaces [COMMAND-OPTIONS]
     
       Display the brand information for the providers defined by the options.
@@ -271,22 +257,20 @@ smicli provider namespaces --help
 
 
 
-.. _`Help Command details`
-Help Command details
+.. _`Help Command Details`:lt
+Help Command Details
 ====================
 
 
-This section defines the help output for each smicli group and subcommand
+This section defines the help output for each smicli group and subcommand.
 
 
-.. _`smicli provider ping --help`
+.. _`smicli provider ping --help`:lt
 smicli provider ping --help
 ---------------------------
 
 ::
 
-    SQL Database type {'directory': '/home/kschopmeyer/Dropbox/work', 'host': u'localhost', 'password': u'test8play', 'user': u'kschopmeyer', 'database': u'SMIStatus'}  verbose=False
-    sql db connection established. host localhost, db SMIStatus
     Usage: smicli provider ping [COMMAND-OPTIONS]
     
       Ping the provider defined by targetid.
@@ -304,22 +288,20 @@ smicli provider ping --help
 
 
 
-.. _`Help Command details`
-Help Command details
+.. _`Help Command Details`:lt
+Help Command Details
 ====================
 
 
-This section defines the help output for each smicli group and subcommand
+This section defines the help output for each smicli group and subcommand.
 
 
-.. _`smicli provider profiles --help`
+.. _`smicli provider profiles --help`:lt
 smicli provider profiles --help
 -------------------------------
 
 ::
 
-    SQL Database type {'directory': '/home/kschopmeyer/Dropbox/work', 'host': u'localhost', 'password': u'test8play', 'user': u'kschopmeyer', 'database': u'SMIStatus'}  verbose=False
-    sql db connection established. host localhost, db SMIStatus
     Usage: smicli provider profiles [COMMAND-OPTIONS]
     
       profile information
@@ -339,22 +321,20 @@ smicli provider profiles --help
 
 
 
-.. _`Help Command details`
-Help Command details
+.. _`Help Command Details`:lt
+Help Command Details
 ====================
 
 
-This section defines the help output for each smicli group and subcommand
+This section defines the help output for each smicli group and subcommand.
 
 
-.. _`smicli repl --help`
+.. _`smicli repl --help`:lt
 smicli repl --help
 ==================
 
 ::
 
-    SQL Database type {'directory': '/home/kschopmeyer/Dropbox/work', 'host': u'localhost', 'password': u'test8play', 'user': u'kschopmeyer', 'database': u'SMIStatus'}  verbose=False
-    sql db connection established. host localhost, db SMIStatus
     Usage: smicli repl [OPTIONS]
     
       Enter interactive (REPL) mode (default) and load any existing history
@@ -365,22 +345,20 @@ smicli repl --help
 
 
 
-.. _`Help Command details`
-Help Command details
+.. _`Help Command Details`:lt
+Help Command Details
 ====================
 
 
-This section defines the help output for each smicli group and subcommand
+This section defines the help output for each smicli group and subcommand.
 
 
-.. _`smicli targets --help`
+.. _`smicli targets --help`:lt
 smicli targets --help
 =====================
 
 ::
 
-    SQL Database type {'directory': '/home/kschopmeyer/Dropbox/work', 'host': u'localhost', 'password': u'test8play', 'user': u'kschopmeyer', 'database': u'SMIStatus'}  verbose=False
-    sql db connection established. host localhost, db SMIStatus
     Usage: smicli targets [COMMAND-OPTIONS] COMMAND [ARGS]...
     
       Command group for managing targets data.
@@ -404,22 +382,20 @@ smicli targets --help
 
 
 
-.. _`Help Command details`
-Help Command details
+.. _`Help Command Details`:lt
+Help Command Details
 ====================
 
 
-This section defines the help output for each smicli group and subcommand
+This section defines the help output for each smicli group and subcommand.
 
 
-.. _`smicli targets disable --help`
+.. _`smicli targets disable --help`:lt
 smicli targets disable --help
 -----------------------------
 
 ::
 
-    SQL Database type {'directory': '/home/kschopmeyer/Dropbox/work', 'host': u'localhost', 'password': u'test8play', 'user': u'kschopmeyer', 'database': u'SMIStatus'}  verbose=False
-    sql db connection established. host localhost, db SMIStatus
     Usage: smicli targets disable [COMMAND-OPTIONS] TargetID
     
       Disable a provider from scanning.
@@ -430,22 +406,20 @@ smicli targets disable --help
 
 
 
-.. _`Help Command details`
-Help Command details
+.. _`Help Command Details`:lt
+Help Command Details
 ====================
 
 
-This section defines the help output for each smicli group and subcommand
+This section defines the help output for each smicli group and subcommand.
 
 
-.. _`smicli targets fields --help`
+.. _`smicli targets fields --help`:lt
 smicli targets fields --help
 ----------------------------
 
 ::
 
-    SQL Database type {'directory': '/home/kschopmeyer/Dropbox/work', 'host': u'localhost', 'password': u'test8play', 'user': u'kschopmeyer', 'database': u'SMIStatus'}  verbose=False
-    sql db connection established. host localhost, db SMIStatus
     Usage: smicli targets fields [COMMAND-OPTIONS]
     
       Display the names of fields in the providers base.
@@ -455,23 +429,21 @@ smicli targets fields --help
 
 
 
-.. _`Help Command details`
-Help Command details
+.. _`Help Command Details`:lt
+Help Command Details
 ====================
 
 
-This section defines the help output for each smicli group and subcommand
+This section defines the help output for each smicli group and subcommand.
 
 
-.. _`smicli targets get --help`
+.. _`smicli targets get --help`:lt
 smicli targets get --help
 -------------------------
 
 ::
 
-    SQL Database type {'directory': '/home/kschopmeyer/Dropbox/work', 'host': u'localhost', 'password': u'test8play', 'user': u'kschopmeyer', 'database': u'SMIStatus'}  verbose=False
-    sql db connection established. host localhost, db SMIStatus
-    Usage: smicli targets get [COMMAND-OPTIONS] TargetaID
+    Usage: smicli targets get [COMMAND-OPTIONS] TargetID
     
       Get the details of a single record from the database and display.
     
@@ -480,22 +452,20 @@ smicli targets get --help
 
 
 
-.. _`Help Command details`
-Help Command details
+.. _`Help Command Details`:lt
+Help Command Details
 ====================
 
 
-This section defines the help output for each smicli group and subcommand
+This section defines the help output for each smicli group and subcommand.
 
 
-.. _`smicli targets info --help`
+.. _`smicli targets info --help`:lt
 smicli targets info --help
 --------------------------
 
 ::
 
-    SQL Database type {'directory': '/home/kschopmeyer/Dropbox/work', 'host': u'localhost', 'password': u'test8play', 'user': u'kschopmeyer', 'database': u'SMIStatus'}  verbose=False
-    sql db connection established. host localhost, db SMIStatus
     Usage: smicli targets info [COMMAND-OPTIONS]
     
       get and display a list of classnames.
@@ -505,29 +475,28 @@ smicli targets info --help
 
 
 
-.. _`Help Command details`
-Help Command details
+.. _`Help Command Details`:lt
+Help Command Details
 ====================
 
 
-This section defines the help output for each smicli group and subcommand
+This section defines the help output for each smicli group and subcommand.
 
 
-.. _`smicli targets list --help`
+.. _`smicli targets list --help`:lt
 smicli targets list --help
 --------------------------
 
 ::
 
-    SQL Database type {'directory': '/home/kschopmeyer/Dropbox/work', 'host': u'localhost', 'password': u'test8play', 'user': u'kschopmeyer', 'database': u'SMIStatus'}  verbose=False
-    sql db connection established. host localhost, db SMIStatus
     Usage: smicli targets list [COMMAND-OPTIONS]
     
       Display the entries in the provider database.
     
     Options:
       -f, --fields TEXT  Define specific fields for output. It always includes
-                         TargetID. Ex. -f TargetID -f CompanyName
+                         TargetID. Ex. -f TargetID -f CompanyName Default: a
+                         Standard list of fields
       -o, --order TEXT   sort by the defined field name. NOT IMPLEMENTED
       --help             Show this message and exit.
 

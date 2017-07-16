@@ -24,7 +24,7 @@ import StringIO
 import sys
 import re
 
-from smipyping._asciitable import print_ascii_table, fold_cell
+from smipyping._asciitable import print_table, fold_cell
 
 
 class AsciiTableTests(unittest.TestCase):
@@ -39,7 +39,7 @@ class AsciiTableTests(unittest.TestCase):
         row2 = ['row2col1', 'row2col2', 'row2col3']
         table_data = [row1, row2]
         title = 'test_simple_table'
-        print_ascii_table(header, table_data, title)
+        print_table(header, table_data, title)
         sys.stdout = sys.__stdout__                   # Reset redirect.
         print('Captured\n%s' % capturedOutput.getvalue())  # Now works as before
 
@@ -54,7 +54,17 @@ class AsciiTableTests(unittest.TestCase):
         self.assertIsNotNone(search_result, 'Expected match')
 
     # TODO we do not know how to test tables with borders.
-    def test_simple_table_borders(self):
+    def test_none_table_borders(self):
+        """Test a simple table with header"""
+        header = ['col1', 'col2', 'col3']
+        row1 = ['row1col1', 'row2col2', 'row3col3']
+        row2 = ['row2col1', 'row2col2', 'row2col3']
+        table_data = [row1, row2]
+        title = 'test_none_table'
+        print("")
+        print_table(header, table_data, title)
+
+    def test_plain_table_borders(self):
         """Test a simple table with header"""
         header = ['col1', 'col2', 'col3']
         row1 = ['row1col1', 'row2col2', 'row3col3']
@@ -62,7 +72,17 @@ class AsciiTableTests(unittest.TestCase):
         table_data = [row1, row2]
         title = 'test_bordered_table'
         print("")
-        print_ascii_table(header, table_data, title, True, True)
+        print_table(header, table_data, title, table_type='plain')
+
+    def test_grid_table_borders(self):
+        """Test a simple table with header"""
+        header = ['col1', 'col2', 'col3']
+        row1 = ['row1col1', 'row2col2', 'row3col3']
+        row2 = ['row2col1', 'row2col2', 'row2col3']
+        table_data = [row1, row2]
+        title = 'test_grid_table'
+        print("")
+        print_table(header, table_data, title, table_type='grid')
 
     def test_folded_cell(self):
         """Test a simple table with header"""
@@ -73,11 +93,38 @@ class AsciiTableTests(unittest.TestCase):
         table_data = [row1, row2]
         title = 'test_folded_table'
         print("")
-        print_ascii_table(header, table_data, title)
+        print_table(header, table_data, title)
         # TODO add asserts for this
         # row1col1   row2col2  this is a
         #                      folded
         #                      cell
+
+
+class HtmlTableTests(unittest.TestCase):
+    """Tests on the asciitable module"""
+    def test_simple_table(self):
+        """Test a simple table with header"""
+
+        capturedOutput = StringIO.StringIO()          # Create StringIO object
+        sys.stdout = capturedOutput                   # and redirect stdout.
+        header = ['col1', 'col2', 'col3']
+        row1 = ['row1col1', 'row2col2', 'row3col3']
+        row2 = ['row2col1', 'row2col2', 'row2col3']
+        table_data = [row1, row2]
+        title = 'test_HTML_table'
+        print_table(header, table_data, title, table_type='html')
+        sys.stdout = sys.__stdout__                   # Reset redirect.
+        print('Captured\n%s' % capturedOutput.getvalue())  # Now works as before
+
+        match_result = re.search(r' col1      col2      col3',
+                                 capturedOutput.getvalue())
+        self.assertIsNotNone(match_result, 'Expected match %s to %s' %
+                             (' col1      col2      col3',
+                              capturedOutput.getvalue()))
+
+        search_result = re.search(r' row1col1  row2col2  row3col3',
+                                  capturedOutput.getvalue())
+        self.assertIsNotNone(search_result, 'Expected match')
 
 
 if __name__ == '__main__':

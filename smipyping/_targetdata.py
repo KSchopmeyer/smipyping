@@ -28,7 +28,7 @@ import re
 from collections import OrderedDict
 import six
 from mysql.connector import MySQLConnection
-from ._asciitable import print_ascii_table, fold_cell
+from ._asciitable import print_table, fold_cell
 from ._configfile import read_config
 
 __all__ = ['TargetsData']
@@ -310,7 +310,7 @@ class TargetsData(object):
             if self.disabled_record(self.targets_dict[record_id]):
                 table_data.append(self.tbl_record(record_id, col_list))
 
-        print_ascii_table(col_list, table_data, 'Disabled hosts')
+        print_table(col_list, table_data, 'Disabled hosts')
 
     def display_cols(self, column_list):
         """
@@ -336,7 +336,7 @@ class TargetsData(object):
         for record_id in sorted(self.targets_dict.iterkeys()):
             table_data.append(self.tbl_record(record_id, column_list, fold))
 
-        print_ascii_table(table_header, table_data, 'Target Systems Overview')
+        print_table(table_header, table_data, 'Target Systems Overview')
 
     def display_all(self, fields=None, company=None):
         """Display all entries in the base."""

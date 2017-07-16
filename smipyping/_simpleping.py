@@ -123,7 +123,7 @@ class SimplePing(object):
 
         Returns url including scheme and saves it in the class object
 
-        Exception: argparser Error if url scheme is invalid
+        Exception: ValueError Error if url scheme is invalid
         """
         if server[0] == '/':
             url = server
@@ -132,8 +132,8 @@ class SimplePing(object):
             url = server
 
         elif re.match(r"^[a-zA-Z0-9]+://", server) is not None:
-            self.argparser.error('Invalid scheme on server argument.'
-                                 ' Use "http" or "https"')
+            raise ValueError('SimplePing: Invalid scheme on server argument %s.'
+                             ' Use "http" or "https"', server)
 
         else:
             url = '%s://%s' % ('https', server)
