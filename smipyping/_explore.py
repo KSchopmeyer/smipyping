@@ -30,7 +30,7 @@ import threading
 
 from pywbem import WBEMConnection, WBEMServer, ValueMapping, Error, \
     ConnectionError, TimeoutError
-from ._asciitable import print_ascii_table, fold_cell
+from ._asciitable import print_table, fold_cell
 from ._csvtable import write_csv_table
 from ._ping import ping_host
 from .config import PING_TIMEOUT
@@ -94,8 +94,8 @@ class Explorer(object):
                     cell_str = ", ". join(sorted(versions))
                     line.append(fold_cell(cell_str, 14))
                 table_data.append(line)
-        print_ascii_table(table_hdr, table_data,
-                          "Display SMI Profile Information")
+        print_table(table_hdr, table_data,
+                    "Display SMI Profile Information")
 
     def report_server_info(self, servers, user_data, table_type='report'):
         """ Display a table of info from the server scan
@@ -142,8 +142,7 @@ class Explorer(object):
             table_data.append(line)
 
         if table_type == 'report':
-            print_ascii_table(tbl_hdr, table_data,
-                              "Server Basic Information")
+            print_table(tbl_hdr, table_data, "Server Basic Information")
         elif table_type == 'csv':
             write_csv_table(table_data)
         else:

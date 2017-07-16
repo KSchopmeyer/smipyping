@@ -21,6 +21,8 @@ from __future__ import absolute_import, unicode_literals
 
 import prompt_toolkit
 
+TABLE_FORMATS = ['plain', 'simple', 'grid', 'html']
+
 
 def prompt(txt):
     """ single function for prompt. Aids mock tests"""

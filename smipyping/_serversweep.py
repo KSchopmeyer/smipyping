@@ -38,7 +38,7 @@ import six
 
 from .config import MAX_THREADS
 from ._scanport import check_port_syn
-from ._asciitable import print_ascii_table
+from ._asciitable import print_table
 
 __all__ = ['ServerSweep']
 
@@ -48,7 +48,7 @@ class ServerSweep(object):
     Class to define the functionality to execute port sweeps of
     IP address and ports to find potential WBEM Servers.
     """
-    def __init__(self, net_defs, ports, provider_data=None, no_threads=False,
+    def __init__(self, net_defs, ports, targets_data=None, no_threads=False,
                  min_octet_val=1, max_octet_val=254, verbose=False):
         """
         Parameters:
@@ -60,7 +60,7 @@ class ServerSweep(object):
           ports:(list of integer or integer) one or more ports to be included
           in the scan
 
-          provider_data (todo) The provider data  that defines the known
+          targets_data (todo) The provider data  that defines the known
           providers.  This is optional. If not provided, it is not included
           in the output report.
 
@@ -85,7 +85,7 @@ class ServerSweep(object):
         self.max_octet_val = max_octet_val
         self.ports = ports
         self.no_threads = no_threads
-        self.provider_data = provider_data
+        self.targets_data = targets_data
         self.verbose = verbose
         self.total_sweep_time = None
         self.total_pings = None
@@ -355,8 +355,9 @@ class ServerSweep(object):
         range_txt = '%s:%s' % (self.min_octet_val, self.max_octet_val)
         table = []
         if len(open_hosts) != 0:
-            title = 'Open WBEMServers:subnet(s)=%s\n    port(s)=%s range %s,' \
-                    ' time %s\n    total pings=%s pings answered=%s' \
+            title = 'Open WBEMServers:subnet(s)=%s\n' \
+                    'port(s)=%s range %s, time %s\n' \
+                    '    total pings=%s pings answered=%s' \
                     % (self.net_defs, self.ports, range_txt, execution_time,
                        self.total_pings, len(open_hosts))
             # open_hosts.sort(key=lambda ip: map(int, ip.split('.')))
@@ -371,12 +372,12 @@ class ServerSweep(object):
             known = 0
             for host_data in open_hosts:
                 ip_address = '%s:%s' % (host_data[0], host_data[1])
-                if self.provider_data is not None:
-                    record_list = self.provider_data.get_targets_host(host_data)
+                if self.targets_data is not None:
+                    record_list = self.targets_data.get_targets_host(host_data)
                     if record_list:
                         # TODO this should be a list since there may be
                         # multiples for single ip address
-                        entry = self.provider_data.get_dict_record(
+                        entry = self.targets_data.get_dict_record(
                             record_list[0])
                         if entry is not None:
                             known += 1
@@ -401,7 +402,7 @@ class ServerSweep(object):
                   (self.net_defs, self.ports, range_txt, execution_time))
 
         if table:
-            print_ascii_table(headers, table, title)
+            print_table(headers, table, title)
 
         print('\nResults: Found=%s, Unknown=%s, Total=%s' % (known, unknown,
                                                              known + unknown))
