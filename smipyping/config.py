@@ -62,7 +62,7 @@ PING_TIMEOUT = 2
 SIMPLEPING_OPERATION_DEFAULT_TIMEOUT = 20
 
 #: Default configuration file for smipyping cli
-DEFAULT_CONFIG_FILE = 'localconfig.ini'
+DEFAULT_CONFIG_FILE = 'smicli.ini'
 
 #: Default smi cli configuration file for smipyping cli
 #: These are the default names for the smicli config files
