@@ -46,7 +46,7 @@ Server related options:
 
   -n Namespace, --namespace Namespace
                         Namespace in the WBEM server for the test request.
-                        Default: None
+                        Default: root/cimv2
   -t timeout, --timeout timeout
                         Timeout of the completion of WBEM Server operation
                         in seconds(integer between 0 and 300).

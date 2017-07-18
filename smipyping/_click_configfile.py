@@ -62,8 +62,9 @@ class ConfigSectionSchema(object):
     @matches_section("log")
     class Log(SectionSchema):
         """ Log config section schema"""
-        name = Param(type=str)
-        loglevel = Param(type=str)
+        # name = Param(type=str)
+        log_file = Param(type=str)
+        log_level = Param(type=str)
 
 
 class ConfigFileProcessor(ConfigFileReader):

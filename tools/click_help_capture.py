@@ -47,8 +47,6 @@ else:
 
 import six
 
-# name of the script to be scraped for help displays.
-SCRIPT_NAME = 'smicli'
 # Flag that allows displaying the data as pure text rather than markdown
 # format
 USE_RST = True
@@ -73,13 +71,13 @@ def rst_headline(title, level):
         level_char = '='
 
     # output anchor in form .. _`smicli subcommands`:
-    anchor = '.. _`%s`:lt' % title
+    anchor = '.. _`%s`:' % title
+    title_marker = level_char * len(title)
     if level == 0:
-        return '\n%s\n\n%s\n%s\n%s\n' % (anchor, level_char * len(title),
-                                       title,
-                                       (level_char * len(title)))
-    else:
-        return '\n%s\n%s\n%s\n' % (anchor, title, (level_char * len(title)))
+        return '\n%s\n\n%s\n%s\n%s\n' % (anchor, title_marker, title,
+                                         title_marker)
+
+    return '\n%s\n\n%s\n%s\n' % (anchor, title, title_marker)
 
 
 def print_rst_verbatum_text(text_str):
@@ -98,14 +96,14 @@ def print_rst_verbatum_text(text_str):
 HELP_DICT = {}
 
 
-def get_subcmd_group_names(cmd):
+def get_subcmd_group_names(cmd, script_name):
     """
     Execute the script with defined subcommand and help and get the
     groups defined for that help.
 
     returns list of subcommands/groups
     """
-    command = '%s %s --help' % (SCRIPT_NAME, cmd)
+    command = '%s %s --help' % (script_name, cmd)
     # Disable python warnings for script call.
     command = 'export PYTHONWARNINGS="" && %s' % command
     if VERBOSE:
@@ -122,10 +120,10 @@ def get_subcmd_group_names(cmd):
 
     if exitcode:
         raise RuntimeError('Error, unexpected non-zero exit code %s'
-                           ' from %s call' % (SCRIPT_NAME, exitcode))
+                           ' from %s call' % (script_name, exitcode))
     if len(std_err):
         raise RuntimeError('Error. expected stderr (%s)returned from '
-                           '%s call.' % (SCRIPT_NAME, std_err))
+                           '%s call.' % (script_name, std_err))
 
     # Split stdout int list of lines
     lines = std_out.split('\n')
@@ -145,17 +143,17 @@ def get_subcmd_group_names(cmd):
     return group_list
 
 
-def get_subgroup_names(group_name):
+def get_subgroup_names(group_name, script_name):
     """
     Get all the subcommands for the help_group_name defined on input.
     Executes script and extracts groups after line with 'Commands'
     """
-    subcmds_list = get_subcmd_group_names(group_name)
+    subcmds_list = get_subcmd_group_names(group_name, script_name)
     space = ' ' if group_name else ''
     return ['%s%s%s' % (group_name, space, name) for name in subcmds_list]
 
 
-def create_help_cmd_list():
+def create_help_cmd_list(script_name):
     """
     Create the command list.
     """
@@ -168,28 +166,34 @@ def create_help_cmd_list():
 
     help_groups_result.extend(group_names)
     for name in group_names:
-        return_cmds = get_subgroup_names(name)
+        return_cmds = get_subgroup_names(name, script_name)
         help_groups_result.extend(return_cmds)
         # extend input list with returned assembled groups
         group_names.extend(return_cmds)
     # sort to match order of click
     help_groups_result.sort()
+    if USE_RST:
+        print(rst_headline("%s Help Command Details" % script_name, 2))
+        print('\nThis section defines the help output for each %s '
+              'command group and subcommand.\n' % script_name)
+
     for name in help_groups_result:
-        command = '%s %s --help' % (SCRIPT_NAME, name)
+        command = '%s %s --help' % (script_name, name)
         out = HELP_DICT[name]
         if USE_RST:
-            print(rst_headline("Help Command Details", 2))
-            print('\n%s\n' % 'This section defines the help output for '
-                  'each smicli group and subcommand.')
-            level = len(command.split()) - 1
-            print(rst_headline(command, level))
+            level = len(command.split())
+            # Don't put the top level in a separate section
+            if level > 2:
+                print(rst_headline(command, level))
+            print('\n%s\n' % '\nThe following defines the help output for the '
+                  '`%s` subcommand\n' % command)
             print_rst_verbatum_text(out)
         else:
-            print('%s\n%s COMMAND: %s' % (('=' * 50), SCRIPT_NAME, command))
+            print('%s\n%s COMMAND: %s' % (('=' * 50), script_name, command))
             print(out)
 
     return help_groups_result
 
 
 if __name__ == '__main__':
-    create_help_cmd_list()
+    create_help_cmd_list('smicli')

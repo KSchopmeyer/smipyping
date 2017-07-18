@@ -137,7 +137,7 @@ def main(prog):
     targets = []
     for host in filtered_hosts:
         if args.verbose:
-            print('targest extend host %s, rtns %s' %
+            print('targets extend host %s, rtns %s' %
                   (host, target_data.get_target_for_host(host)))
 
         targets.extend(target_data.get_target_for_host(host))

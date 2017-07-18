@@ -16,13 +16,13 @@
 # limitations under the License.
 
 """
-    SMIWBEMServer class extends WBEMServer class
+    Defines an explorer that does a general inspection of wbem servers
+    to determine information like namespace, etc.
 """
 
 from __future__ import print_function, absolute_import
 
 import traceback
-import logging
 import time
 from collections import namedtuple
 from urlparse import urlparse
@@ -33,7 +33,8 @@ from pywbem import WBEMConnection, WBEMServer, ValueMapping, Error, \
 from ._asciitable import print_table, fold_cell
 from ._csvtable import write_csv_table
 from ._ping import ping_host
-from .config import PING_TIMEOUT
+from .config import PING_TIMEOUT, DEFAULT_USERNAME, DEFAULT_PASSWORD
+from ._logging import EXPLORE_LOGGER_NAME, get_logger, SmiPypingLoggers
 
 __all__ = ['Explorer', ]
 
@@ -48,8 +49,8 @@ RESULTS = []
 
 class Explorer(object):
 
-    def __init__(self, prog, target_data, logfile=None, debug=None, ping=None,
-                 verbose=None, threaded=False):
+    def __init__(self, prog, target_data, logfile=None, log_level=None,
+                 debug=None, ping=None, verbose=None, threaded=False):
         """Initialize instance attributes."""
 
         self.verbose = verbose
@@ -57,11 +58,14 @@ class Explorer(object):
         self.target_data = target_data
         self.timeout = None
         self.prog = prog
-        self.logfile = logfile
         self.debug = debug
         self.threaded = threaded
-        self.create_logger(self.prog, self.logfile)
         self.explore_time = None
+        SmiPypingLoggers.create_logger(log_component='explore',
+                                       log_dest='file',
+                                       log_filename=logfile,
+                                       log_level=log_level)
+        self.logger = get_logger(EXPLORE_LOGGER_NAME)
 
     def print_smi_profile_info(self, servers, user_data):
         """
@@ -263,8 +267,15 @@ class Explorer(object):
         cmd_time = 0
         start_time = time.time()   # Scan start time
         target_id = target['TargetID']
-        credential = target['Credential']
-        principal = target['Principal']
+        if 'Credential' in target:
+            credential = target['Credential']
+        else:
+            credential = DEFAULT_USERNAME
+        if 'Principal' in target:
+            credential = target['Principal']
+        else:
+            principal = DEFAULT_PASSWORD
+
         log_info = 'id=%s Url=%s Product=%s Company=%s' \
             % (target['TargetID'], url,
                target['Product'],
@@ -319,8 +330,8 @@ class Explorer(object):
 
         except TimeoutError as to:
             cmd_time = time.time() - start_time
-            self.logger.error('Timeout Error exception:%s %s time %.2f s',
-                              to, log_info, cmd_time)
+            self.logger.error('Pywbem Client Timeout Error exception:%s %s '
+                              'time %.2f s', to, log_info, cmd_time)
 
             err = 'Timeout'
             svr_tuple = ServerInfoTuple(url, server, target_id, err,
@@ -449,38 +460,3 @@ class Explorer(object):
             for ip in ci_paths:
                 self.logger.info("  %s", str(ip))
         return server
-
-    def create_logger(self, prog, logfile):
-        """ Build logger instance"""
-
-        # logging.basicConfig(stream=sys.stderr, level=logging.INFO,
-        # format='%(asctime)s %(levelname)s %(message)s)')
-
-        if logfile:
-            self.logger = logging.getLogger(prog)
-            hdlr = logging.FileHandler(logfile)
-            formatter = logging.Formatter(
-                '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-            hdlr.setFormatter(formatter)
-            self.logger.addHandler(hdlr)
-            self.logger.setLevel(logging.INFO)
-
-            ch = logging.StreamHandler()
-            ch.setLevel(logging.DEBUG)
-            ch.setFormatter(formatter)
-            self.logger.addHandler(ch)
-        else:
-            self.logger = logging.getLogger(prog)
-            hdlr = logging.NullHandler()
-            formatter = logging.Formatter(
-                '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-            hdlr.setFormatter(formatter)
-            self.logger.addHandler(hdlr)
-            self.logger.setLevel(logging.INFO)
-
-            ch = logging.StreamHandler()
-            ch.setLevel(logging.DEBUG)
-            ch.setFormatter(formatter)
-            self.logger.addHandler(ch)

@@ -70,7 +70,6 @@ def print_ascii_table(table_header, table_data, title=None, table_type='plain'):
         asciitable format, etc.  However these only differ in the table
         boundary character representation
     """
-    print('asciitable type %s' % table_type)
     # terminaltable does not print title if no  borders.
     if table_type is None or table_type == 'plain':
         print(title)

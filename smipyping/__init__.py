@@ -60,6 +60,7 @@ from ._csvtable import *  # noqa: F401, F403
 from ._asciitable import *  # noqa: F401, F403
 from ._targetdata import *  # noqa: F401, F403
 from ._common import *  # noqa: F401, F403
+from ._logging import *  # noqa: F401, F403
 
 # TODO should _cliutils
 from ._cliutils import *  # noqa: F401, F403
@@ -78,6 +79,7 @@ from ._click_context import *  # noqa: F401, F403
 from ._cmd_targets import *  # noqa: F401, F403
 from ._cmd_provider import *  # noqa: F401, F403
 from ._cmd_explorer import *  # noqa: F401, F403
+from ._cmd_cimping import *  # noqa: F401, F403
 
 from ._click_configfile import *  # noqa: F401, F403
 

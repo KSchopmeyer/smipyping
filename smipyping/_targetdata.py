@@ -237,7 +237,8 @@ class TargetsData(object):
         # TODO clean up for python 3
 
         for _id, value in self.targets_dict.items():
-            print('get_hostid_list value %s' % (value,))
+            if self.verbose:
+                print('get_hostid_list value %s' % (value,))
             output_list.append(value['IPAddress'])
         return output_list
 
@@ -492,7 +493,6 @@ class CsvTargetsData(TargetsData):
                                (fn, db_dict['directory']))
                 else:
                     self.filename = full_fn
-        print('CSV database type ' % self)
 
         with open(self.filename) as input_file:
             reader = csv.DictReader(input_file)

@@ -43,7 +43,7 @@ good_config_data = [
     'filename = targetdata_example.csv',
 
     '[logging]',
-    'loglevel = debug']
+    'log_level = debug']
 
 
 class ValidConfigFileTests(unittest.TestCase):

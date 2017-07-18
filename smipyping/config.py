@@ -34,7 +34,8 @@ the variables.
 __all__ = ['ENFORCE_INTEGER_RANGE', 'DEFAULT_SWEEP_PORT', 'USERDATA_FILE',
            'PING_TEST_CLASS', 'SIMPLEPING_OPERATION_DEFAULT_TIMEOUT',
            'DEFAULT_CONFIG_FILE', 'DEFAULT_NAMESPACE', 'DEFAULT_DBTYPE',
-           'DEFAULT_SMICLI_CONFIG_FILES', 'DB_POSSIBLE_TYPES']
+           'DEFAULT_SMICLI_CONFIG_FILES', 'DB_POSSIBLE_TYPES',
+           'DEFAULT_OPERATION_TIMEOUT', 'DEFAULT_USERNAME', 'DEFAULT_PASSWORD']
 
 #: Enforce the value range in CIM integer types (e.g. :class:`~pywbem.Uint8`).
 #:
@@ -92,3 +93,12 @@ SMICLI_PROMPT = u'smicli> '
 #: the file system), it is properly expanded.
 
 SMICLI_HISTORY_FILE = '~/.smicli_history'
+
+#: Default operation timeout in seconds if none is specified.
+DEFAULT_OPERATION_TIMEOUT = 10
+
+#: Default user name if not specified.
+#: Used primarily to set user names the same across a number of servers.
+DEFAULT_USERNAME = 'smilab'
+
+DEFAULT_PASSWORD = 'F00sb4ll'

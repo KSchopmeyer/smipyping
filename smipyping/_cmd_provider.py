@@ -32,11 +32,11 @@ from .config import PING_TIMEOUT
 @cli.group('provider', options_metavar=CMD_OPTS_TXT)
 def provider_group():
     """
-    Command group for simple operations on providers.
+    Command group for simple provider operations.
 
 
     This group of commands provides commands to query the providers defined
-    by entries in the targets database.  this includes commands like ping,
+    by entries in the targets database.  This includes commands like ping,
     get basic info, get namespace info, get profile information. for
     individual providers.
 

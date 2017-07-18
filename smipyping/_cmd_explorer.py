@@ -59,6 +59,23 @@ def explore_all(context, **options):
     context.execute_cmd(lambda: cmd_explore_all(context, **options))
 
 
+@explorer_group.command('id', options_metavar=CMD_OPTS_TXT)
+@click.argument('ID', type=int, metavar='TargetID', required=True)
+@click.option('--ping/--no-ping', default=True,
+              help='Ping the the provider as initial step in test. '
+                   'Default: ping')
+@click.option('--thread/--no-thread', default=True,
+              help='Run test multithreaded.  Much faster. '
+                   'Default: thread')
+@click.pass_obj
+def explore_id(context, id, **options):
+    """
+    Execute the general explorer on the enabled providers in the database
+
+    """
+    context.execute_cmd(lambda: cmd_explore_id(context, id, **options))
+
+
 ######################################################################
 #
 #  Action functions
@@ -69,19 +86,23 @@ def cmd_explore_all(context, **options):
     """Explore all of the providers defined in the current database and
     report results.
     """
-    print('cmd_explorer options %s' % options)
-    # print('context %s' % context)
+
+    print('context %r' % context)
 
     # TODO configure logging
-    explorer = Explorer('smicli', context.target_data, logfile=None,
+    explorer = Explorer('smicli', context.target_data,
+                        logfile=context.log_file,
+                        log_level=context.log_level,
                         verbose=context.verbose,
                         ping=options['ping'], threaded=options['thread'])
 
+    # TODO: ks I beleive that the following is irrelevent. It maps between
+    # hosts and targets and so does not gain much
     hosts = context.target_data.get_hostid_list()
     targets = []
     for host in hosts:
         if context.verbose:
-            print('targest extend host %s, rtns %s' %
+            print('targets extend host %s, rtns %s' %
                   (host, context.target_data.get_target_for_host(host)))
 
         targets.extend(context.target_data.get_target_for_host(host))
@@ -92,4 +113,23 @@ def cmd_explore_all(context, **options):
 
     # print results
     # TODO make this part of normal print services
+    explorer.report_server_info(servers, context.target_data)
+
+
+def cmd_explore_id(context, id, **options):
+    """
+    Explore the wbem server defined by the Id provided
+    """
+    try:
+        target_record = context.target_data.get_dict_record(id)
+    except Exception as ex:
+        raise click.ClickException('Invalid TargetID=%s. Not in database. '
+                                   '%s: %s' % (id, ex.__class__.__name__, ex))
+
+    explorer = Explorer('smicli', context.target_data,
+                        verbose=context.verbose,
+                        ping=options['ping'], threaded=options['thread'],
+                        logfile=context.log_file, log_level=context.log_level)
+
+    servers = explorer.explore_servers([id])
     explorer.report_server_info(servers, context.target_data)
