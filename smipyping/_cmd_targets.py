@@ -18,7 +18,6 @@ data file.
 """
 from __future__ import print_function, absolute_import
 
-# from pprint import pprint as pp  # noqa: F401
 import click
 
 from .smicli import cli, CMD_OPTS_TXT
@@ -108,7 +107,7 @@ def targets_disable(context, targetid, enable, **options):
 
 
 def cmd_targets_disable(context, targetid, enable, options):
-    """Display the information fields for the providers dictionary."""
+    """Display the information fields for the targets dictionary."""
 
     try:
         target_record = context.target_data.get_dict_record(targetid)

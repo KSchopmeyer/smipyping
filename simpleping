@@ -28,9 +28,223 @@ This script:
 """
 from __future__ import absolute_import
 
+import argparse as _argparse
 import sys
 import os
 from smipyping import SimplePing
+
+from smipyping._configfile import read_config
+from smipyping._cliutils import SmiSmartFormatter
+from smipyping._targetdata import TargetsData
+
+from smipyping.config import DEFAULT_CONFIG_FILE, DEFAULT_DBTYPE, \
+    DEFAULT_NAMESPACE
+
+
+class SimplePingArgParser(object):
+    """ argparser for the simpleping function."""
+
+    def __init__(self, prog):
+        self.prog = prog
+        self.target_id = None
+        self.target_data = None
+        self.opts = None
+
+    def create_parser(self):
+        """Create the parser to parse cmd line arguments."""
+        usage = '%(prog)s [options] server'
+        desc = """
+Script for doing a simple CIM ping against a WBEM server defined by
+the input parameters. This script connects to the server and test for the
+existence of a single class. If the  test fails it exists with non-zero exit
+code. It includes an option to ping the server before connecting.
+
+Return:
+    Success: return code 0 with empty string
+    Failure: return code 1 - 6 and outputs string with error text:
+        1. CIMError
+        2. PyWBEM Error
+        3. General Error
+        4. Timeout Error
+        5. ConnectionError
+        6. Ping error (only return if ping is executed)
+    """
+        epilog = """
+Examples:\n
+  %s https://localhost:15345 -n interop -u sheldon -p penny
+          - (https localhost, port=15345, namespace=i user=sheldon
+         password=penny)
+
+  % s -T 4
+
+  test providerid 4 from the default provider database
+
+  %s http://[2001:db8::1234-eth0] -n interop -(http port 5988 ipv6, zone id eth0)
+    """ % (self.prog, self.prog, self.prog)  # noqa: E501
+
+        argparser = _argparse.ArgumentParser(
+            prog=self.prog, usage=usage, description=desc, epilog=epilog,
+            add_help=False, formatter_class=SmiSmartFormatter)
+
+        pos_arggroup = argparser.add_argument_group(
+            'Positional arguments')
+        pos_arggroup.add_argument(
+            'server', metavar='server', nargs='?',
+            help='R|Host name or url of the WBEM server in this format:\n'
+                 '    [{scheme}://]{host}[:{port}]\n'
+                 '- scheme: Defines the protocol to use;\n'
+                 '    - "https" for HTTPs protocol\n'
+                 '    - "http" for HTTP protocol.\n'
+                 '  Default: "https".\n'
+                 '- host: Defines host name as follows:\n'
+                 '     - short or fully qualified DNS hostname,\n'
+                 '     - literal IPV4 address(dotted)\n'
+                 '     - literal IPV6 address (RFC 3986) with zone\n'
+                 '       identifier extensions(RFC 6874)\n'
+                 '       supporting "-" or %%25 for the delimiter.\n'
+                 '- port: Defines the WBEM server port to be used\n'
+                 '  Defaults:\n'
+                 '     - HTTP  - 5988\n'
+                 '     - HTTPS - 5989\n')
+
+        server_arggroup = argparser.add_argument_group(
+            'Server related options',
+            'Specify the WBEM server namespace and timeout')
+        server_arggroup.add_argument(
+            '-n', '--namespace', dest='namespace', metavar='Namespace',
+            default=DEFAULT_NAMESPACE,
+            help='R|Namespace in the WBEM server for the test request.\n'
+            'Default: {ns}'.format(ns=DEFAULT_NAMESPACE))
+        server_arggroup.add_argument(
+            '-t', '--timeout', dest='timeout', metavar='timeout', type=int,
+            default=20,
+            help='R|Timeout of the completion of WBEM Server operation\n'
+                 'in seconds(integer between 0 and 300).\n'
+                 'Default: 20 seconds')
+        server_arggroup.add_argument(
+            '-T', '--target_id', dest='target_id',
+            metavar='TargetUserId',
+            type=int,
+            help='R|If this argument is set, the value is a user id\n'
+                 'instead of an server url as the source for the test. In\n'
+                 'this case, namespace, user, and password arguments are\n'
+                 'derived from the user data rather than cli input')
+
+        security_arggroup = argparser.add_argument_group(
+            'Connection security related options',
+            'Specify user name and password or certificates and keys')
+        security_arggroup.add_argument(
+            '-u', '--user', dest='user', metavar='user',
+            help='R|User name for authenticating with the WBEM server.\n'
+                 'Default: No user name.')
+        security_arggroup.add_argument(
+            '-p', '--password', dest='password', metavar='password',
+            help='R|Password for authenticating with the WBEM server.\n'
+                 'Default: Will be prompted for, if user name\nspecified.')
+        security_arggroup.add_argument(
+            '-V', '--verify-cert', dest='verify_cert',
+            action='store_true',
+            help='R|Client will verify certificate returned by the WBEM\n'
+                 'server (see cacerts). This forces the client-side\n'
+                 'verification of the server identity, Normally it would\n'
+                 'smi be important to verify the server certificate but in\n'
+                 'the test environment where certificates are largely\n'
+                 'unknown the default is to not verify.')
+        security_arggroup.add_argument(
+            '--cacerts', dest='ca_certs', metavar='cacerts',
+            help='R|File or directory containing certificates that will be\n'
+                 'matched against a certificate received from the WBEM\n'
+                 'server. Set the --no-verify-cert option to bypass\n'
+                 'client verification of the WBEM server certificate.\n')
+        security_arggroup.add_argument(
+            '--certfile', dest='cert_file', metavar='certfile',
+            help='R|Client certificate file for authenticating with the\n'
+                 'WBEM server. If option specified the client attempts\n'
+                 'to execute mutual authentication.\n'
+                 'Default: Simple authentication.')
+        security_arggroup.add_argument(
+            '--keyfile', dest='key_file', metavar='keyfile',
+            help='R|Client private key file for authenticating with the\n'
+                 'WBEM server. Not required if private key is part of the\n'
+                 'certfile option. Not allowed if no certfile option.\n'
+                 'Default: No client key file. Client private key should\n'
+                 'then be part  of the certfile')
+
+        general_arggroup = argparser.add_argument_group(
+            'General options')
+        general_arggroup.add_argument(
+            '--no_ping', '-x', action='store_true', default=False,
+            help='R|Do not ping for server as first test. Executing the\n'
+                 'ping often shortens the total response time.')
+        argparser.add_argument(
+            '-f', '--config_file', metavar='CONFIG_FILE',
+            default=DEFAULT_CONFIG_FILE,
+            help=('Configuration file to use for config information. '
+                  'Default=%s' % DEFAULT_CONFIG_FILE))
+        argparser.add_argument(
+            '-D', '--dbtype', metavar='DBTYPE',
+            default=DEFAULT_DBTYPE,
+            help=('DBTYPE to use. Default=%s' % DEFAULT_DBTYPE))
+        general_arggroup.add_argument(
+            '-v', '--verbose', dest='verbose',
+            action='store_true', default=False,
+            help='Print more messages while processing')
+        general_arggroup.add_argument(
+            '-d', '--debug', dest='debug',
+            action='store_true', default=False,
+            help='Display XML for request and response')
+        general_arggroup.add_argument(
+            '-h', '--help', action='help',
+            help='Show this help message and exit')
+
+        return argparser  # used for unittests
+
+    def parse_cmdline(self, argparser, input_params=None):
+        """
+        Parse the command line.
+
+        This function  creates the argparser and uses it to parse the
+        command line or the list of arguments in input_params
+
+        It returns the parsed options or generates an exception.
+        """
+        if input_params:
+            opts = argparser.parse_args(input_params)
+        else:
+            opts = argparser.parse_args()
+
+        self.opts = opts
+
+        # save cli options for use in subsequent functions.
+
+        opts.ping = False if opts.no_ping else True
+        opts.namespace = opts.namespace if opts.namespace else 'None'
+
+        if not opts.server:
+            if opts.target_id is None:
+                argparser.error('No WBEM server specified and no '
+                                'target_id')
+            else:
+                if (opts.user is not None or opts.password is not None or
+                        opts.namespace is not None):
+                    argparser.error('-u, -n, or -p not used with'
+                                    '-i option')
+        elif opts.server and opts.target_id:
+            argparser.error('Server argument and -T option are mutually '
+                            'exclusive. Chose one or the other')
+        elif opts.server and not opts.namespace:
+            argparser.error('Namespace required when server specified')
+        # else:
+        #    self.server = opts.server
+        #    self.namespace = opts.namespace
+        #    self.user = opts.user
+        #    self.password = opts.password
+
+        if opts.timeout is not None:
+            if opts.timeout < 0 or opts.timeout > 300:
+                argparser.error('timeout option(%s) out of range' %
+                                opts.timeout)
+        return opts
 
 
 def main(prog):
@@ -41,11 +255,35 @@ def main(prog):
 
     Returns with either exit code = 0 if OK or exit_code = 1 if error
     """
-    simpleping = SimplePing(prog)
-    simpleping.create_parser()
+    s = SimplePingArgParser(prog)
+    arg_parser = s.create_parser()
 
-    opts = simpleping.parse_cmdline()
+    opts = s.parse_cmdline(arg_parser)
 
+    if opts.verbose:
+        print('Command Line Options %s' % opts)
+
+    # create the SimplePing object.
+
+    simpleping = SimplePing(server=opts.server, namespace=opts.namespace,
+                            user=opts.user,
+                            password=opts.password, timeout=opts.timeout,
+                            ping=opts.ping, debug=opts.debug,
+                            verbose=opts.verbose,
+                            logfile='simpleping.log',
+                            log_level='info')
+
+    if opts.target_id:
+        # TODO is there optionality on the config_file here
+        db_config = read_config(opts.config_file, opts.dbtype, opts.verbose)
+        target_data = TargetsData.factory(db_config, opts.dbtype,
+                                          opts.verbose)
+
+        if opts.target_id in target_data:
+            simpleping.set_param_from_targetdata(opts.target_id, target_data)
+        else:
+            arg_parser.error('Id %s not in user data base' %
+                             opts.target_id)
     test_result = simpleping.test_server(verify_cert=opts.verify_cert)
 
     if test_result.code != 0:

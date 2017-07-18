@@ -24,23 +24,32 @@ import click_spinner
 import click
 
 
+def xstr(s):
+    return 'None' if s is None else s
+
+
 class ClickContext(object):
     """
         Manage the click context object
     """
 
-    def __init__(self, ctx, config_file, db_type, db_info, target_data,
-                 verbose):
+    def __init__(self, ctx, config_file, db_type, db_info, log_level, log_file,
+                 target_data, verbose):
         self._config_file = config_file
         self._db_type = db_type
         self._db_info = db_info
         self._verbose = verbose
+        self._log_level = log_level
+        self._log_file = log_file
         self._target_data = target_data
         self._spinner = click_spinner.Spinner()
 
     def __repr__(self):
-        print('config_file %s, verbose %s, db_type %s, db_info %s' %
-              (self.config_file, self.db_type, self.db_info, self.verbose))
+        return 'config_file=%s, db_type=%s, db_info=%s log_level=%s ' \
+               'log_file=%s verbose=%s' % \
+               (xstr(self.config_file), xstr(self.db_type), self.db_info,
+                xstr(self.log_level), xstr(self.log_file),
+                self.verbose)
 
     @property
     def config_file(self):
@@ -69,6 +78,20 @@ class ClickContext(object):
         :term:`bool`: verbose display flag
         """
         return self._verbose
+
+    @property
+    def log_level(self):
+        """
+        :term:`bool`: verbose display flag
+        """
+        return self._log_level
+
+    @property
+    def log_file(self):
+        """
+        :term:`bool`: verbose display flag
+        """
+        return self._log_file
 
     @property
     def target_data(self):

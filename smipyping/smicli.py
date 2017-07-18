@@ -32,6 +32,7 @@ from ._click_context import ClickContext
 
 from .config import SMICLI_PROMPT, SMICLI_HISTORY_FILE
 from ._click_configfile import CONTEXT_SETTINGS
+from ._logging import LOG_LEVELS
 
 
 # Display of options in usage line
@@ -51,11 +52,17 @@ __all__ = ['cli']
               envvar='SMI_DB_TYPE',
               help="Database type. May be defined on cmd line, config file, "
                    " or through default. Default is %s." % DEFAULT_DBTYPE)
+@click.option('-l', '--log_level', type=str,
+              envvar='Log_Level', required=False, default=None,
+              help="Optional option to enable logging for the level "
+                   " defined, by the parameter. Choices are: "
+                   " " + "%s" % LOG_LEVELS)
 @click.option('-v', '--verbose', is_flag=True,
               help='Display extra information about the processing.')
 @click.version_option(help="Show the version of this command and exit.")
 @click.pass_context
-def cli(ctx, config_file, db_type, verbose, provider_data=None, db_info=None):
+def cli(ctx, config_file, db_type, log_level, verbose, provider_data=None,
+        db_info=None):
     """
     General command line script for smicli.  This script executes a number
     of subcommands to:
@@ -64,7 +71,7 @@ def cli(ctx, config_file, db_type, verbose, provider_data=None, db_info=None):
         * Explore one or more smi servers for basic WBEM information and
           additional information specific to SMI.
 
-     \b
+    \b
         * Manage a database that defines smi servers. It supports two forms
           of the data base, sql database and csv file.
 
@@ -90,6 +97,22 @@ def cli(ctx, config_file, db_type, verbose, provider_data=None, db_info=None):
             db_type = DEFAULT_DBTYPE
         if verbose:
             print('dbtype %s' % db_type)
+
+        if log_level:
+            log_level = log_level
+        elif ctx.default_map and 'log_level' in ctx.default_map:
+            log_level = ctx.default_map['log_level']
+        else:
+            log_level = None
+        print('log_level %s' % log_level)
+
+        if log_level:
+            if ctx.default_map and 'log_file' in ctx.default_map:
+                log_file = ctx.default_map['log_file']
+            else:
+                log_file = 'smicli.log'
+        else:
+            log_file = None
 
         if ctx.default_map:
             db_info = ctx.default_map[db_type]
@@ -126,6 +149,10 @@ def cli(ctx, config_file, db_type, verbose, provider_data=None, db_info=None):
             db_type = ctx.obj.db_type
         if db_info is None:
             db_info = ctx.obj.db_info
+        if log_file is None:
+            log_file = ctx.obj.log_file
+        if log_level is None:
+            log_level = ctx.obj.log_level
         if provider_data is None:
             target_data = ctx.obj.target_data
         if verbose is None:
@@ -134,8 +161,10 @@ def cli(ctx, config_file, db_type, verbose, provider_data=None, db_info=None):
     # Create a command context for each command: An interactive command has
     # its own command context different from the command context for the
     # command line.
-    ctx.obj = ClickContext(ctx, config_file, db_type, db_info, target_data,
-                           verbose)
+    print('log_level %s log_file %s' % (log_level, log_file))
+
+    ctx.obj = ClickContext(ctx, config_file, db_type, db_info, log_level,
+                           log_file, target_data, verbose)
 
     # Invoke default command
     if ctx.invoked_subcommand is None:
@@ -170,10 +199,12 @@ The following can be entered in interactive mode:
 @click.pass_context
 def repl(ctx):
     """
-    Enter interactive (REPL) mode (default) and load any existing
+    Enter interactive (REPL) mode (default).
+
+    This subcommand enters the interactive mode where subcommands can be
+    executed without exiting the progarm and loads any existing command
     history file.
     """
-    print('repl start')
     history_file = SMICLI_HISTORY_FILE
     if history_file.startswith('~'):
         history_file = os.path.expanduser(history_file)
