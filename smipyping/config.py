@@ -35,7 +35,8 @@ __all__ = ['ENFORCE_INTEGER_RANGE', 'DEFAULT_SWEEP_PORT', 'USERDATA_FILE',
            'PING_TEST_CLASS', 'SIMPLEPING_OPERATION_DEFAULT_TIMEOUT',
            'DEFAULT_CONFIG_FILE', 'DEFAULT_NAMESPACE', 'DEFAULT_DBTYPE',
            'DEFAULT_SMICLI_CONFIG_FILES', 'DB_POSSIBLE_TYPES',
-           'DEFAULT_OPERATION_TIMEOUT', 'DEFAULT_USERNAME', 'DEFAULT_PASSWORD']
+           'DEFAULT_OPERATION_TIMEOUT', 'DEFAULT_USERNAME', 'DEFAULT_PASSWORD',
+           'DEFAULT_DB_CONFIG']
 
 #: Enforce the value range in CIM integer types (e.g. :class:`~pywbem.Uint8`).
 #:
@@ -73,7 +74,12 @@ DEFAULT_SMICLI_CONFIG_FILES = ['smicli.ini', 'smicli.cfg']
 DEFAULT_NAMESPACE = 'root/cimv2'
 
 #: type of database to use. Possible types are in DB_TYPES
-DEFAULT_DBTYPE = 'mysql'
+DEFAULT_DBTYPE = 'csv'
+
+#: Dictionary that defines a default database configuration
+#: if no database is defined in config file or cmd line input
+#: This is a csv file and corresponses to the DEFAULT_DBTYPE above
+DEFAULT_DB_CONFIG = {'filename' : 'targetdata_example.csv'}
 
 #: Possible db types
 DB_POSSIBLE_TYPES = ['csv', 'mysql', 'sqlite']

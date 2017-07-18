@@ -110,11 +110,11 @@ def main(prog):
     db_config['directory'] = os.path.dirname(args.config_file)
     target_data = TargetsData.factory(db_config, args.dbtype, args.verbose)
 
-    print('target_data %r' % target_data)
+    # print('target_data %r' % target_data)
 
     hosts = target_data.get_hostid_list()
 
-    print('hosts %s' % hosts)
+    # print('hosts %s' % hosts)
 
     filtered_hosts = []
 
