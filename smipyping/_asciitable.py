@@ -26,21 +26,32 @@ from terminaltables import SingleTable
 
 def print_table(table_header, table_data, title=None, table_type=None):
     """
-        General print table function
+        General print table function. This is temporary while the world
+        gets the tabulate python package capable of supporting multiline
+        cells.
     """
     if table_type == 'html':
-        print_html_table(table_header, table_data, title=None)
+        print_html_table(header_row=table_header, rows=table_data, title=None)
     else:
         print_ascii_table(table_header, table_data, title=title,
                           table_type=table_type)
 
 
-def print_html_table(table_header, table_data, title=None):
+def print_html_table(header_row=None, rows=None, title=None):
     """
     Print a table and header in html format.
     """
-    html = HtmlTable(table_data,
-                     table_header)
+    # TODO: implement the title display for HTML
+    # Very inefficent but recreates the table with NL replaced by
+    # html break.
+    new_rows = []
+    for row in rows:
+        new_row = []
+        for cell in row:
+            cell = cell.replace('\n', '<br />')
+            new_row.append(cell)
+        new_rows.append(new_row)
+    html = HtmlTable(rows=new_rows, header_row=header_row)
     print(html)
 
 
@@ -120,7 +131,7 @@ TABLE_STYLE_THINBORDER = "border: 1px solid #000000; border-collapse: collapse;"
 # TABLE_STYLE_THINBORDER = "border: 1px solid #000000;"
 
 
-class TableCell (object):
+class TableCell(object):  # pylint: disable=too-few-public-methods
     """
     a TableCell object is used to create a cell in a HTML table. (TD or TH)
 
@@ -187,11 +198,11 @@ class TableCell (object):
             text = '&nbsp;'
         if self.header:
             return '  <TH%s>%s</TH>\n' % (attribs_str, text)
-        else:
-            return '  <TD%s>%s</TD>\n' % (attribs_str, text)
+
+        return '  <TD%s>%s</TD>\n' % (attribs_str, text)
 
 
-class TableRow (object):
+class TableRow(object):  # pylint: disable=too-few-public-methods
     """
     a TableRow object is used to create a row in a HTML table. (TR tag)
 
@@ -251,7 +262,7 @@ class TableRow (object):
         return result
 
 
-class HtmlTable (object):
+class HtmlTable(object):  # pylint: disable=too-few-public-methods
     """
     a Table object is used to create a HTML table. (TABLE tag)
 
@@ -339,32 +350,7 @@ class HtmlTable (object):
         if self.col_width:
             for width in self.col_width:
                 result += '  <COL width="%s">\n' % width
-        # The following code would also generate column attributes for style
-        # and alignement according to HTML4 specs,
-        # BUT it is not supported completely (only width) on Mozilla Firefox:
-        # see https://bugzilla.mozilla.org/show_bug.cgi?id=915
-# #        n_cols = max(len(self.col_styles), len(self.col_width),
-# #                     len(self.col_align), len(self.col_valign))
-# #        for i in range(n_cols):
-# #            col = ''
-# #            try:
-# #                if self.col_styles[i]:
-# #                    col += ' style="%s"' % self.col_styles[i]
-# #            except: pass
-# #            try:
-# #                if self.col_width[i]:
-# #                    col += ' width="%s"' % self.col_width[i]
-# #            except: pass
-# #            try:
-# #                if self.col_align[i]:
-# #                    col += ' align="%s"' % self.col_align[i]
-# #            except: pass
-# #            try:
-# #                if self.col_valign[i]:
-# #                    col += ' valign="%s"' % self.col_valign[i]
-# #            except: pass
-# #            result += '<COL%s>\n' % col
-        # First insert a header row if specified:
+
         if self.header_row:
             if not isinstance(self.header_row, TableRow):
                 result += str(TableRow(self.header_row, header=True))
