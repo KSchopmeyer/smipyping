@@ -38,7 +38,7 @@ from smipyping._cliutils import SmiSmartFormatter
 from smipyping._targetdata import TargetsData
 
 from smipyping.config import DEFAULT_CONFIG_FILE, DEFAULT_DBTYPE, \
-    DEFAULT_NAMESPACE
+    DEFAULT_NAMESPACE, DEFAULT_DB_CONFIG
 
 
 class SimplePingArgParser(object):
@@ -123,7 +123,7 @@ Examples:\n
                  'Default: 20 seconds')
         server_arggroup.add_argument(
             '-T', '--target_id', dest='target_id',
-            metavar='TargetUserId',
+            metavar='TARGETID',
             type=int,
             help='R|If this argument is set, the value is a user id\n'
                  'instead of an server url as the source for the test. In\n'
@@ -176,15 +176,19 @@ Examples:\n
             '--no_ping', '-x', action='store_true', default=False,
             help='R|Do not ping for server as first test. Executing the\n'
                  'ping often shortens the total response time.')
-        argparser.add_argument(
+        general_arggroup.add_argument(
             '-f', '--config_file', metavar='CONFIG_FILE',
             default=DEFAULT_CONFIG_FILE,
             help=('Configuration file to use for config information. '
                   'Default=%s' % DEFAULT_CONFIG_FILE))
-        argparser.add_argument(
+        general_arggroup.add_argument(
             '-D', '--dbtype', metavar='DBTYPE',
-            default=DEFAULT_DBTYPE,
+            default=None,
             help=('DBTYPE to use. Default=%s' % DEFAULT_DBTYPE))
+        general_arggroup.add_argument(
+            '-l', '--log_level', metavar='LOG_LEVEL',
+            default=None,
+            help=('Log level. Default=%s' % 'None'))
         general_arggroup.add_argument(
             '-v', '--verbose', dest='verbose',
             action='store_true', default=False,
@@ -196,7 +200,6 @@ Examples:\n
         general_arggroup.add_argument(
             '-h', '--help', action='help',
             help='Show this help message and exit')
-
         return argparser  # used for unittests
 
     def parse_cmdline(self, argparser, input_params=None):
@@ -215,30 +218,27 @@ Examples:\n
 
         self.opts = opts
 
+        print('opts %s' % opts)
+
         # save cli options for use in subsequent functions.
 
         opts.ping = False if opts.no_ping else True
-        opts.namespace = opts.namespace if opts.namespace else 'None'
 
         if not opts.server:
             if opts.target_id is None:
                 argparser.error('No WBEM server specified and no '
                                 'target_id')
             else:
-                if (opts.user is not None or opts.password is not None or
-                        opts.namespace is not None):
-                    argparser.error('-u, -n, or -p not used with'
-                                    '-i option')
+                if (opts.user is not None or opts.password is not None):
+                    argparser.error('--user, --namespace, or --passowrd not '
+                                    'used with --TARGETID option')
         elif opts.server and opts.target_id:
             argparser.error('Server argument and -T option are mutually '
                             'exclusive. Chose one or the other')
         elif opts.server and not opts.namespace:
             argparser.error('Namespace required when server specified')
-        # else:
-        #    self.server = opts.server
-        #    self.namespace = opts.namespace
-        #    self.user = opts.user
-        #    self.password = opts.password
+
+        opts.namespace = opts.namespace if opts.namespace else 'None'
 
         if opts.timeout is not None:
             if opts.timeout < 0 or opts.timeout > 300:
@@ -263,20 +263,35 @@ def main(prog):
     if opts.verbose:
         print('Command Line Options %s' % opts)
 
+    logfile = 'simpleping.log'
+
     # create the SimplePing object.
 
     simpleping = SimplePing(server=opts.server, namespace=opts.namespace,
                             user=opts.user,
+                            target_id=opts.target_id,
                             password=opts.password, timeout=opts.timeout,
                             ping=opts.ping, debug=opts.debug,
                             verbose=opts.verbose,
-                            logfile='simpleping.log',
-                            log_level='info')
+                            logfile=logfile,
+                            log_level=opts.log_level)
 
+    # if target_id exists, get db data from a) cmd line, b) config file,
+    # c) defaults
     if opts.target_id:
-        # TODO is there optionality on the config_file here
-        db_config = read_config(opts.config_file, opts.dbtype, opts.verbose)
-        target_data = TargetsData.factory(db_config, opts.dbtype,
+        if opts.dbtype:
+            db_type = opts.dbtype
+            db_config = read_config(opts.config_file, db_type, opts.verbose)
+        else:
+            general = read_config(opts.config_file, "general", opts.verbose)           
+            db_type = general.get('dbtype', None)
+            db_config = read_config(opts.config_file, db_type, opts.verbose)
+            
+        if not db_type:
+            db_type = DEFAULT_DBTYPE
+            db_config = DEFAULT_DB_CONFIG
+
+        target_data = TargetsData.factory(db_config, db_type,
                                           opts.verbose)
 
         if opts.target_id in target_data:
@@ -284,6 +299,7 @@ def main(prog):
         else:
             arg_parser.error('Id %s not in user data base' %
                              opts.target_id)
+
     test_result = simpleping.test_server(verify_cert=opts.verify_cert)
 
     if test_result.code != 0:
