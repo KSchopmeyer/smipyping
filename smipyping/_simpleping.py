@@ -70,7 +70,7 @@ class SimplePing(object):
         else:
             self.url = None
         if server is None and target_id is None:
-            raise ValueError('SimplePing must include server or target_id')
+            raise ValueError('SimplePing must define server or target_id')
         self.namespace = namespace
         self.timeout = timeout
         self.user = user

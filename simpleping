@@ -176,15 +176,19 @@ Examples:\n
             '--no_ping', '-x', action='store_true', default=False,
             help='R|Do not ping for server as first test. Executing the\n'
                  'ping often shortens the total response time.')
-        argparser.add_argument(
+        general_arggroup.add_argument(
             '-f', '--config_file', metavar='CONFIG_FILE',
             default=DEFAULT_CONFIG_FILE,
             help=('Configuration file to use for config information. '
                   'Default=%s' % DEFAULT_CONFIG_FILE))
-        argparser.add_argument(
+        general_arggroup.add_argument(
             '-D', '--dbtype', metavar='DBTYPE',
             default=DEFAULT_DBTYPE,
             help=('DBTYPE to use. Default=%s' % DEFAULT_DBTYPE))
+        general_arggroup.add_argument(
+            '-l', '--log_level', metavar='LOG_LEVEL',
+            default=None,
+            help=('Log level. Default=%s' % 'None'))
         general_arggroup.add_argument(
             '-v', '--verbose', dest='verbose',
             action='store_true', default=False,
@@ -263,6 +267,13 @@ def main(prog):
     if opts.verbose:
         print('Command Line Options %s' % opts)
 
+    if opts.log_level:
+        logfile='simpleping.log'
+        log_level = opts.log_level
+    else:
+        log_level = None
+        logfile = None
+
     # create the SimplePing object.
 
     simpleping = SimplePing(server=opts.server, namespace=opts.namespace,
@@ -270,8 +281,8 @@ def main(prog):
                             password=opts.password, timeout=opts.timeout,
                             ping=opts.ping, debug=opts.debug,
                             verbose=opts.verbose,
-                            logfile='simpleping.log',
-                            log_level='info')
+                            logfile=logfile,
+                            log_level=log_level)
 
     if opts.target_id:
         # TODO is there optionality on the config_file here
