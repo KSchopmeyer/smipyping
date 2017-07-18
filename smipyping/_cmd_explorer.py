@@ -91,7 +91,7 @@ def cmd_explore_all(context, **options):
 
     # TODO configure logging
     explorer = Explorer('smicli', context.target_data,
-                        logfile='smicli.log',
+                        logfile=context.log_file,
                         log_level=context.log_level,
                         verbose=context.verbose,
                         ping=options['ping'], threaded=options['thread'])
@@ -129,7 +129,7 @@ def cmd_explore_id(context, id, **options):
     explorer = Explorer('smicli', context.target_data,
                         verbose=context.verbose,
                         ping=options['ping'], threaded=options['thread'],
-                        logfile='smicli.py', log_level=context.log_level)
+                        logfile=context.log_file, log_level=context.log_level)
 
     servers = explorer.explore_servers([id])
     explorer.report_server_info(servers, context.target_data)

@@ -12,6 +12,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+Common functions to implement logging and logginf configuration using the
+python logging module.
+
+This code uses named loggers to separate logging into separate functionality
+Each component can implement a separate logger with separate logging
+capabilities.
+
+"""
 from __future__ import print_function, absolute_import
 
 import logging
@@ -20,8 +29,8 @@ from decorator import decorate
 
 # from ._constants import API_LOGGER_NAME
 API_LOGGER_NAME = 'smipyping.api'
-EXPLORE_LOGGER_NAME = 'smipyping.explore'
-CIMPING_LOGGER_NAME = 'smipyping.cimping'
+EXPLORE_LOGGER_NAME = 'smicli.explore'
+CIMPING_LOGGER_NAME = 'smicli.cimping'
 
 LOG_COMPONENTS = ['explore', 'cimping', 'all']
 
@@ -55,6 +64,7 @@ class SmiPypingLoggers(object):
     Create named loggers for smipyping
     """
     loggers = {}
+    prog = 'smicli'
 
     @classmethod
     def __repr__(cls):
@@ -68,7 +78,23 @@ class SmiPypingLoggers(object):
     @classmethod
     def create_logger(cls, log_component, log_dest='file',
                       log_filename=None, log_level='debug'):
+        """
+        Create a named logger
 
+        parameters:
+          log_component - Name of the logging component. The logger is
+          created with smipyping/log_component as its name
+
+          log_dest - For now only file is allowed
+
+          log_filename - name of the log output file
+
+          log_level - Log level at which this named component is to be
+          logged
+
+          Exceptions:
+            ValueError if there is an issue with any of the input parameters
+        """
         if log_dest == 'stderr':
             handler = logging.StreamHandler()
             format_string = '%(asctime)s-%(name)s-%(message)s'
@@ -94,7 +120,7 @@ class SmiPypingLoggers(object):
         else:
             handler = None
 
-        logger_name = 'smipyping' + log_component
+        logger_name = '%s.%s' % (cls.prog, log_component)
         # create named logger
         if handler:
             handler.setFormatter(logging.Formatter(format_string))

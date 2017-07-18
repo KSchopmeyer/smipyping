@@ -104,7 +104,6 @@ def cli(ctx, config_file, db_type, log_level, verbose, provider_data=None,
             log_level = ctx.default_map['log_level']
         else:
             log_level = None
-        print('log_level %s' % log_level)
 
         if log_level:
             if ctx.default_map and 'log_file' in ctx.default_map:
@@ -161,8 +160,6 @@ def cli(ctx, config_file, db_type, log_level, verbose, provider_data=None,
     # Create a command context for each command: An interactive command has
     # its own command context different from the command context for the
     # command line.
-    print('log_level %s log_file %s' % (log_level, log_file))
-
     ctx.obj = ClickContext(ctx, config_file, db_type, db_info, log_level,
                            log_file, target_data, verbose)
 

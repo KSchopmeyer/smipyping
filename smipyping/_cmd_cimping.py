@@ -54,8 +54,8 @@ def cimping_group():
     pass
 
 
-@cimping_group.command('hostname', options_metavar=CMD_OPTS_TXT)
-@click.argument('hostname', type=str, metavar='HOST anme', required=True)
+@cimping_group.command('host', options_metavar=CMD_OPTS_TXT)
+@click.argument('host', type=str, metavar='HOST NAME', required=True)
 @click.option('-n', '--namespace', type=str, default=DEFAULT_NAMESPACE,
               help='Namespace for the operation.'
                    ' ' + '(Default: %s.' % DEFAULT_NAMESPACE)
@@ -73,7 +73,8 @@ def cimping_group():
                    'the cim request.'
                    ' ' + '(Default: %s.' % True)
 @click.option('-d' '--debug', default=False, type=bool, required=False,
-              help='Set the debug parameter for the pywbem call.'
+              help='Set the debug parameter for the pywbem call. Displays '
+                   'detailed information on the call and response.'
                    ' ' + '(Default: %s.' % False)
 @click.option('-c' '--verify_cert', type=bool, required=False, default=False,
               help='Request that the client verify the server cert.'
@@ -90,7 +91,7 @@ def cimping_group():
                    'Default: No client key file. Client private key should '
                    'then be part  of the certfile')
 @click.pass_obj
-def cimping_hostname(context, hostname, **options):
+def cimping_host(context, host, **options):
     """
     Execute a cimping on the wbem server defined by hostname.
 
@@ -111,8 +112,7 @@ def cimping_hostname(context, hostname, **options):
                - HTTP  - 5988\n
                - HTTPS - 5989\n
     """
-    context.execute_cmd(lambda: cmd_cimping_hostname(context, hostname,
-                                                     options))
+    context.execute_cmd(lambda: cmd_cimping_hostname(context, host, options))
 
 
 # TODO. Should we consider cert verify, etc. as part of this
@@ -128,7 +128,8 @@ def cimping_hostname(context, hostname, **options):
                    'the cim request.'
                    ' ' + '(Default: %s.' % True)
 @click.option('-d' '--debug', default=False, type=bool, required=False,
-              help='Set the debug parameter for the pywbem call.'
+              help='Set the debug parameter for the pywbem call. Displays '
+                   'detailed information on the call and response.'
                    ' ' + '(Default: %s.' % False)
 @click.pass_obj
 def cimping_id(context, id, **options):
@@ -162,17 +163,17 @@ def print_ping_result(simpleping, test_result, verbose):
         print('Running')     # print the word 'Running' to match javaping
 
 
-def cmd_cimping_hostname(context, hostname, options):
+def cmd_cimping_host(context, host, options):
     """
     Execute a simple ping for the host defined by the input parameters.
     """
-    simpleping = SimplePing(server=hostname, namespace=options['namespace'],
+    simpleping = SimplePing(server=host, namespace=options['namespace'],
                             user=options['user'],
                             password=options['password'],
                             timeout=options['timeout'],
                             ping=not options['no_ping'],
                             debug=options['d__debug'],
-                            logfile='smpcli.log',
+                            logfile=context.log_file,
                             log_level=context.log_level,
                             verbose=context.verbose)
 
@@ -192,12 +193,10 @@ def cmd_cimping_id(context, id, options):
         raise click.ClickException('Invalid TargetID=%s. Not in database. '
                                    '%s: %s' % (id, ex.__class__.__name__, ex))
 
-    print('options %s' % options)
-
     # TODO add other setup parameters, ping, timeout
     simpleping = SimplePing(target_id=id, timeout=options['timeout'],
                             ping=not options['no_ping'],
-                            logfile='smpcli.log',
+                            logfile=context.log_file,
                             log_level=context.log_level)
 
     # TODO: Move the requirement for all target data up and

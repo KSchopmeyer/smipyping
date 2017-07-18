@@ -1,3 +1,17 @@
+# (C) Copyright 2017 Inova Development Inc.
+# All Rights Reserved
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """
 Provides the components for a utility to test a WBEM server.
 
@@ -172,8 +186,10 @@ class SimplePing(object):
             if ping_result is False:
                 result_code = self.get_result_code(result)
                 exception = 'Ping failed'
+        self.logger.debug('ping result=%s' % (result_code))
         if ping_result:
-            print('test_server: %r' % self)
+            print('cimping url=%s, ns=%s, principal=%s, cred=%s' %
+                  (self.url, self.namespace, self.user, self.password))
             # connect to the server and execute the cim operation test
             conn = self.connect_server(self.url, verify_cert=verify_cert)
 
@@ -183,6 +199,8 @@ class SimplePing(object):
         if self.verbose:
             print('result=%s, exception=%s, resultCode %s'
                   % (result, exception, result_code))
+        self.logger.debug('result=%s, exception=%s, resultCode %s'
+                          % (result, exception, result_code))
 
         # Return namedtuple with results
         return TestResult(
@@ -262,7 +280,8 @@ class SimplePing(object):
             rtn_reason = '%s:%s:%s:%s' % (ce, ce.status_code,
                                           ce.status_code_name,
                                           ce.status_description)
-            rtn_code = ("WBEMException", ce.status_code_name)
+            rtn_code = ("WBEMException", ce, ce.status_code_name,
+                        ce.status_description)
         except ConnectionError as co:
             rtn_code = ("ConnectionError", co)
         except TimeoutError as to:
@@ -282,6 +301,7 @@ class SimplePing(object):
         rtn_tuple = tuple(rtn_code)
         if self.verbose:
             print('rtn_tuple %s' % (rtn_tuple,))
+        self.logger.info('SimplePing Result %s' % (rtn_tuple,))
         return rtn_tuple
 
     def set_param_from_targetdata(self, target_id, target_data):

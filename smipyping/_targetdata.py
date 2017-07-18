@@ -493,7 +493,6 @@ class CsvTargetsData(TargetsData):
                                (fn, db_dict['directory']))
                 else:
                     self.filename = full_fn
-        print('CSV database type ' % self)
 
         with open(self.filename) as input_file:
             reader = csv.DictReader(input_file)
