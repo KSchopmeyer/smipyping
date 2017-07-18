@@ -1,9 +1,9 @@
 .. _`Smicli Command line interface`:
 
-Smicli Command line interface
-================================
+``smicli`` Command line interface
+=================================
 
-This package provides a command line interface (CLI) in the smicli tool
+This package provides a command line interface (``smicli``) tool
 that supports communication with a WBEM server through the pywbem client
 api and shell scripting.
 
@@ -46,29 +46,26 @@ General options may be specified on the ``smicli`` command, and they serve as
 defaults for the smicli commands that can be typed in the smicli shell and
 as the definition of the connection to a WBEM Server.
 
-The smicli commands that can be typed in the smicli shell are simply the command
+The ``smicli`` commands that can be typed in the ``smicli`` shell are simply the command
 line arguments that would follow the ``smicli`` command when used in
 `command mode`_::
 
-    $ smicli -c smli2.ini
+    $ smicli targets all
+    
     Enter password: <password>
-    > class enumerate -o
-    . . . <Enumeration of the names of classes in the defined namespace>
-    > class get CIM_System
-    . . . <MOF output of the class CIM_System from the WBEM Server>
+    > targets id 4
+    . . . display of the definition of target with id = 4
+    > targets id 5
+    . . . display of the definition of target with id = 5
     > :q
 
-For example, the smicli shell command ``class get CIM_System`` in the example
+For example, the smicli shell command ``targets id 4`` in the example
 above has the same effect as the standalone command::
 
-    $ smicli -c smli2.ini
-    Enter password: <password>
-    . . . <MOF formated display of the CIM_System class>
+    $ smicli targets id 4
 
-TODO: This one is incorrect today
-However, the smicli shell will prompt for a password only once during its
-invocation, while the standalone command will prompt for a password every time
-it is executed
+    . . . display of the definition of target with id = 4
+
 .
 See also `Environment variables and avoiding password prompts`_.
 
@@ -127,10 +124,10 @@ smicli shell, the ``smicli`` word is ommitted and the remainder is typed in.
 Typing ``COMMAND --help`` in the smicli shell displays help information for the
 specified smicli command, for example::
 
-    > c --help
-    Usage: smicli  database [COMMAND-OPTIONS] COMMAND [ARGS]...
+    > provider --help
+    Usage: smicli  provider [COMMAND-OPTIONS] COMMAND [ARGS]...
 
-      Command group to manage CIM Classes.
+      Command group to inspect providers.
 
     Options:
       --help  Show this message and exit.
@@ -169,8 +166,7 @@ This mode is used when the ``smicli`` command is invoked with a (sub-)command::
 
 Examples::
 
-    $ smicli -s http://localhost -n root/cimv2 -u username class get
-    Enter password: <password>
+    $ smicli cimping http://localhost -n root/cimv2 -u username
     . . . <TODO>
 
 TODO: Need to sort this one out
@@ -192,13 +188,13 @@ Bash tab completion for ``smicli`` is used like any other bash tab completion::
 
 .. _`Environment variables and avoiding password prompts`:
 
-Environment variables and avoiding password prompts
----------------------------------------------------
+Environment variables
+---------------------
 
 The smicli CLI has  environment variable options corresponding to the
 command line options for specifying the general options to be used including:
 
-TODO add the SMICLI environment variables
+**TODO:** add the SMICLI environment variables
 
 If these environment variables are set, the corresponding general option on the
 command line is not required and the value of the environment variable is
@@ -207,59 +203,24 @@ used.
 Thus, in the following example, the second line accesses the server
 http://localhost::
 
-      $ export PYWBEMCLI_SERVER=http://localhost
-      $ smicli class get CIM_Managed element
+      $ export SMICLI_SERVER=http://localhost
+      $ smicli TODO
 
-If the WBEM operations performed by a particular smicli command require a
-password, the password is prompted for if the --user option is set (in both
-modes of operation) and the --pasword option is not set::
+Passwords
+---------
+The current `` smicli`` implementation does not support encrypted, hidden, etc. passwords.
+Passwords (credentials) are defined in:
 
-      $ smicli -s http://localhost -n root/cimv2 -u user class get
-      Enter password: <password>
-      . . . <The display output from get class>
+1. The options for some of the subcommands (ex. ``smicli cimping host``)
 
-If both the --user and --password options are set, the command is executed
-without a password prompt::
+2. The targets database column for credentials. There is a specific column
+in the database for users(prinicpals) and passwords(credentials)
 
-      $ smicli -s http://localhost -n root/cimv2 -u user -p blah class get
-      . . . <The display output from get class>
-
-If the operations performed by a particular smicli command do not
-require a password or no user is supplied, no password is prompted for::
-
-      $ smicli --help
-      . . . <help output>
-
-For script integration, it is important to have a way to avoid the interactive
-password prompt. This can be done by storing the password string in an
-environment variable or entering it on the command line.
+3. A standard default credential and user name that will be used if none are
+provided. This allows simplification of the database if the targets can all
+be defined to use a standard user name and password.
 
 
-The ``smicli`` command supports a ``connection export`` (sub-)command that
-outputs the (bash) shell commands to set all needed environment variables::
+FUTURE; We may elect to protect credentials in the future but that is an
+open question today.
 
-      $ smicli -s http://localhost -n root/cimv2 -u fred
-      Enter password: <password>
-      export PYWBEMCLI_SERVER=http://localhost
-      export PYWBEMCLI_NAMESPACE=root/cimv2
-
-
-This ability can be used to set those environment variables and thus to persist
-the connection name in the shell environment, from where it will be used in
-any subsequent smicli commands::
-
-      $ eval $(smicli -s http://localhost -u username -n namespace)
-      Enter password: <password>
-
-      $ env |grep SMICLI
-      TODO - Correct the following
-      export PYWBEMCLI_SERVER=http://localhost
-      export PYWBEMCLI_NAMESPACE=root/cimv2
-
-      $ smicli instance server namespaces
-      . . . <list of namespaces for the defined server>
-
-The password is only prompted for when creating the connection, and the
-connection info stored in the shell environment is utilized in the
-``smicli instance server namespaces`` command, avoiding
-another password prompt.

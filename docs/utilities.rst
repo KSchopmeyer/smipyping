@@ -12,7 +12,12 @@ therefore automatically be available in the command search path.
 
 The following commands are provided:
 
-* :ref:`serversweep`
+* :ref:`smicli script`
+
+  This utility is the general utility that will provide commands and subcommands
+  to replace all of the other simple scripts.
+  
+* :ref:`serversweep script`
 
   This utility sweeps a range of ip addresses looking for WBEM Servers.
   It outputs a file defining any found servers.  The input parameters
@@ -23,7 +28,7 @@ The following commands are provided:
   NOTE: This is being maintained as a separate utility because it requires
   admin privileges to execute (a python limitation with the scanner used)
 
-* :ref:`simpleping`
+* :ref:`simpleping script`
 
   Runs a simple test against a defined WBEMServer to determine if it is
   operational.  The server to be tested is defined either by the targetId
@@ -36,7 +41,7 @@ The following commands are provided:
   in smicli.
 
 
-* :ref:`targets`
+* :ref:`targets script`
 
   This utility displays information on the WBEM Servers in the database and
   allows enabling and disabling particular servers.  Servers that are disabled
@@ -45,7 +50,7 @@ The following commands are provided:
   *NOTE:* This utility has been obsoleted now in favor of the same functionality
   in smicli.
 
-* :ref:`explore`
+* :ref:`explore script`
 
   This utility sweeps the entire database and generates a report on the all
   of the servers in the database showing status and relevant information about
@@ -54,22 +59,24 @@ The following commands are provided:
   *NOTE:* This utility is being obsoleted now in favor of the same functionality
   in smicli.
 
-.. _`smicli`:
+.. _`smicli script`:
 
-smicli
-------
+smicli script
+-------------
 
-The ``smicli`` command is the common interface that will be used for a
-single utility to replace the multiple tools in the early release
+The smicli command is the common interface that will be used for a
+single utility to replace the multiple tools in the early release.  All of the
+other individual scripts are being obsoleted as their functionality is
+integrated into `smicli'.
 
-smicli is to replace all of the separate utilities above and to be able to
+``smicli`` will replace all of the separate utilities above and to be able to
 operation on a single configuration file.  It includes a number of subcommand
 groups each of which includes one or more subcommands (ie. in the manner of many
 newer cmd line tools).
 
-smicli is more completely defined in subsequent sections of this documentation.
+``smicli`` is more completely defined in subsequent sections of this documentation.
 
-Thus, the groups include:
+Thus, the subcommand groups include:
 
 * database  Command group for operations on provider data in the database
 * explorer  Command group for general provider explore.
@@ -77,10 +84,15 @@ Thus, the groups include:
 * provider  Command group for simple operations on the individual wbem servers
 * repl      Enter interactive (REPL) mode (default) and...
 
+NOTE: There may be more subcommand groups an any specific release.
+
+Details on the use of ``smicli`` are in sections 
 
 
-serversweep
------------
+.. _`serversweep script`:
+
+serversweep script
+------------------
 
 The ``serversweep`` command is a command line interface (CLI). It is
 implemented as an interactive shell.
@@ -136,8 +148,10 @@ The following is an example of executing this command:
   #        10.2  100 THROUGH 117      octet 4(1 through 50)
   sudo ./serversweep 10.1.132,134,136 10.2.100:117.1:50 -c $CONFIG_FILE -p 5988 -p 5989
 
-simpleping
-----------
+.. _`simpleping script`:
+
+simpleping script
+-----------------
 
 The ``simpleping`` command is a WBEM client command line interface (CLI). It is
 implemented as an interactive shell.  It executes a predefined request
@@ -153,30 +167,12 @@ Here is the help text of the command:
 .. include:: simpleping.help.txt
    :literal:
 
+.. _`targets script`:
 
-simplepingall
--------------
+targets script
+--------------
 
-The ``simplepingall`` command is a WBEM client command line interface (CLI). It is
-implemented as an interactive shell.
-
-This utility is an extension of the simpleping utility that executes
-a predefined command against all of the WBEM servers defined in the
-SMIStatus database
-
-Usage
-^^^^^
-
-Here is the help text of the command:
-
-.. include:: simplepingall.help.txt
-   :literal:
-
-
-targets
--------
-
-NOTE: Obsoleted by smicli app
+NOTE: Obsoleted by ``smicli targets`` command/subcommand
 
 The ``targets`` command is a WBEM client command line interface (CLI). It is
 implemented as an interactive shell.
@@ -198,8 +194,12 @@ Global functions
 .. automodule:: targets
    :members:
 
-explore
--------
+.. _`explore script`:
+
+explore script
+--------------
+
+NOTE: Obsolete and replaced by ``smicli explorer`` command/subcommand.
 
 The ``explore`` command is a WBEM client command line interface (CLI). That
 explores the capabilities of a set of servers defined by the servers defined
@@ -210,7 +210,7 @@ report on the overall status of each server including:
 
 * TargetId, The id of the server in the database
 * Company name
-* 
+* WBEM Server information such as smiprofiles, etc.
 
 
 

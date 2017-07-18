@@ -367,7 +367,7 @@ $(test_log_file): Makefile $(package_name)/*.py tests/*.py .coveragerc
 	mv -f $@.tmp $@
 	@echo 'Done: Created test log file: $@'
 
-# Create the help text files for each separate script
+# Create the help text.rst files for each separate script
 $(doc_conf_dir)/serversweep.help.txt: serversweep $(package_name)/_serversweep.py
 	./serversweep --help >$@
 	@echo 'Done: Created serversweep script help message file: $@'
