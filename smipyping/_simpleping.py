@@ -65,12 +65,15 @@ class SimplePing(object):
                  certfile=None, keyfile=None, verify_cert=False,
                  debug=False, verbose=None, logfile=None, log_level=None):
         """Initialize instance attributes."""
+        print('SimplePing server %s, target_id %s' % (server, target_id))
         if server:
             self.url = self.server_url_validate(server)
         else:
             self.url = None
         if server is None and target_id is None:
             raise ValueError('SimplePing must define server or target_id')
+        if server and target_id:
+            raise ValueError('Use either server or target_id, not both')
         self.namespace = namespace
         self.timeout = timeout
         self.user = user
@@ -82,8 +85,9 @@ class SimplePing(object):
         self.keyfile = keyfile
         self.verify_cert = verify_cert
         self.target_id = target_id
+        log_dest = 'file' if log_level else None
         SmiPypingLoggers.create_logger(log_component='cimping',
-                                       log_dest='file',
+                                       log_dest=log_dest,
                                        log_filename=logfile,
                                        log_level=log_level)
         self.logger = get_logger(CIMPING_LOGGER_NAME)

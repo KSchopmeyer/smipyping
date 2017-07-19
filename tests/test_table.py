@@ -32,8 +32,8 @@ class AsciiTableTests(unittest.TestCase):
     def test_simple_table(self):
         """Test a simple table with header"""
 
-        capturedOutput = StringIO.StringIO()          # Create StringIO object
-        sys.stdout = capturedOutput                   # and redirect stdout.
+        captured_output = StringIO.StringIO()          # Create StringIO object
+        sys.stdout = captured_output                   # and redirect stdout.
         header = ['col1', 'col2', 'col3']
         row1 = ['row1col1', 'row2col2', 'row3col3']
         row2 = ['row2col1', 'row2col2', 'row2col3']
@@ -41,24 +41,24 @@ class AsciiTableTests(unittest.TestCase):
         title = 'test_simple_table'
         print_table(header, table_data, title)
         sys.stdout = sys.__stdout__                   # Reset redirect.
-        print('Captured\n%s' % capturedOutput.getvalue())  # Now works as before
+        print('Captured\n%s' % captured_output.getvalue())  # Restored
 
         match_result = re.search(r' col1      col2      col3',
-                                 capturedOutput.getvalue())
+                                 captured_output.getvalue())
         self.assertIsNotNone(match_result, 'Expected match %s to %s' %
                              (' col1      col2      col3',
-                              capturedOutput.getvalue()))
+                              captured_output.getvalue()))
 
         search_result = re.search(r' row1col1  row2col2  row3col3',
-                                  capturedOutput.getvalue())
+                                  captured_output.getvalue())
         self.assertIsNotNone(search_result, 'Expected match')
 
-    # TODO we do not know how to test tables with borders.
+    # TODO: ks we do not know how to test tables with borders.
     def test_none_table_borders(self):
         """Test a none table borders with header"""
 
-        capturedOutput = StringIO.StringIO()          # Create StringIO object
-        sys.stdout = capturedOutput                   # and redirect stdout.
+        captured_output = StringIO.StringIO()          # Create StringIO object
+        sys.stdout = captured_output                   # and redirect stdout.
 
         header = ['col1', 'col2', 'col3']
         row1 = ['row1col1', 'row2col2', 'row3col3']
@@ -69,15 +69,15 @@ class AsciiTableTests(unittest.TestCase):
         print_table(header, table_data, title)
         sys.stdout = sys.__stdout__                   # Reset redirect.
         match_result = re.search(r' col1      col2      col3',
-                                 capturedOutput.getvalue())
+                                 captured_output.getvalue())
         self.assertIsNotNone(match_result, 'Expected match %s to %s' %
                              (' col1      col2      col3',
-                              capturedOutput.getvalue()))
+                              captured_output.getvalue()))
 
     def test_plain_table_borders(self):
         """Test a plain table with borders and header"""
-        capturedOutput = StringIO.StringIO()          # Create StringIO object
-        sys.stdout = capturedOutput                   # and redirect stdout.
+        captured_output = StringIO.StringIO()          # Create StringIO object
+        sys.stdout = captured_output                   # and redirect stdout.
 
         header = ['col1', 'col2', 'col3']
         row1 = ['row1col1', 'row2col2', 'row2col3']
@@ -88,15 +88,15 @@ class AsciiTableTests(unittest.TestCase):
         print_table(header, table_data, title, table_type='plain')
         sys.stdout = sys.__stdout__                   # Reset redirect.
         match_result = re.search(r' col1      col2      col3',
-                                 capturedOutput.getvalue())
+                                 captured_output.getvalue())
         self.assertIsNotNone(match_result, 'Expected match %s to %s' %
                              (' col1      col2      col3',
-                              capturedOutput.getvalue()))
+                              captured_output.getvalue()))
 
     def test_grid_table_borders(self):
         """Test a grid table with borders andheader"""
-        capturedOutput = StringIO.StringIO()          # Create StringIO object
-        sys.stdout = capturedOutput                   # and redirect stdout.
+        captured_output = StringIO.StringIO()          # Create StringIO object
+        sys.stdout = captured_output                   # and redirect stdout.
         header = ['col1', 'col2', 'col3']
         row1 = ['row1col1', 'row2col2', 'row3col3']
         row2 = ['row2col1', 'row2col2', 'row2col3']
@@ -106,16 +106,16 @@ class AsciiTableTests(unittest.TestCase):
         print_table(header, table_data, title, table_type='grid')
 
         match_result = re.search(r' col1      col2      col3',
-                                 capturedOutput.getvalue())
-                                 
+                                 captured_output.getvalue())
+
         self.assertIsNotNone(match_result, 'Expected match %s to %s' %
                              (' col1      col2      col3',
-                              capturedOutput.getvalue()))
+                              captured_output.getvalue()))
 
     def test_folded_cell(self):
         """Test a folded cell table with header"""
-        capturedOutput = StringIO.StringIO()          # Create StringIO object
-        sys.stdout = capturedOutput                   # and redirect stdout.
+        captured_output = StringIO.StringIO()          # Create StringIO object
+        sys.stdout = captured_output                   # and redirect stdout.
 
         header = ['col1', 'col2', 'col3']
         folded = fold_cell('this is a folded cell', 10)
@@ -127,16 +127,16 @@ class AsciiTableTests(unittest.TestCase):
         print_table(header, table_data, title)
 
         match_result = re.search(r' col1       col2      col3',
-                                 capturedOutput.getvalue())
+                                 captured_output.getvalue())
         self.assertIsNotNone(match_result, 'Expected match %s to %s' %
                              (' col1       col2      col3',
-                              capturedOutput.getvalue()))
+                              captured_output.getvalue()))
 
         match_result = re.search(r' this is a  row2col2  row2col3',
-                                 capturedOutput.getvalue())
+                                 captured_output.getvalue())
         self.assertIsNotNone(match_result, 'Expected match %s to %s' %
                              (' this is a  row2col2  row2col3',
-                              capturedOutput.getvalue()))
+                              captured_output.getvalue()))
 
 
 class HtmlTableTests(unittest.TestCase):
@@ -144,8 +144,8 @@ class HtmlTableTests(unittest.TestCase):
     def test_simple_table(self):
         """Test a simple table with header"""
 
-        capturedOutput = StringIO.StringIO()          # Create StringIO object
-        sys.stdout = capturedOutput                   # and redirect stdout.
+        captured_output = StringIO.StringIO()          # Create StringIO object
+        sys.stdout = captured_output                   # and redirect stdout.
         header = ['col1', 'col2', 'col3']
         row1 = ['row1col1', 'row1col2', 'row1col3']
         row2 = ['row2col1', 'row2col2', 'row2col3']
@@ -153,23 +153,23 @@ class HtmlTableTests(unittest.TestCase):
         title = 'test_HTML_table'
         print_table(header, table_data, title, table_type='html')
         sys.stdout = sys.__stdout__                   # Reset redirect.
-        # print('Captured\n%s' % capturedOutput.getvalue())
+        # print('Captured\n%s' % captured_output.getvalue())
 
         match_result = re.search(r'<TH>col1</TH>',
-                                 capturedOutput.getvalue())
+                                 captured_output.getvalue())
         self.assertIsNotNone(match_result, 'Expected match %s to %s' %
                              ('<TH>col3</TH>',
-                              capturedOutput.getvalue()))
+                              captured_output.getvalue()))
 
         search_result = re.search(r'<TD>row1col1</TD>',
-                                  capturedOutput.getvalue())
+                                  captured_output.getvalue())
         self.assertIsNotNone(search_result, 'Expected match')
 
     def test_complex_table(self):
         """Test a simple table with header"""
 
-        capturedOutput = StringIO.StringIO()          # Create StringIO object
-        sys.stdout = capturedOutput                   # and redirect stdout.
+        captured_output = StringIO.StringIO()          # Create StringIO object
+        sys.stdout = captured_output                   # and redirect stdout.
         header = ['col1', 'col2', 'col3']
         row1 = ['row1col1', 'row1col2', 'row1col3']
         row2 = ['row2col1', 'row2col2', 'row2col3']
@@ -181,16 +181,16 @@ class HtmlTableTests(unittest.TestCase):
         title = 'test_HTML_table'
         print_table(header, table_data, title, table_type='html')
         sys.stdout = sys.__stdout__                   # Reset redirect.
-        # print('Captured\n%s' % capturedOutput.getvalue())
+        # print('Captured\n%s' % captured_output.getvalue())
 
         match_result = re.search(r'<TH>col1</TH>',
-                                 capturedOutput.getvalue())
+                                 captured_output.getvalue())
         self.assertIsNotNone(match_result, 'Expected match %s to %s' %
                              ('<TH>col3</TH>',
-                              capturedOutput.getvalue()))
+                              captured_output.getvalue()))
 
         search_result = re.search(r'<TD>row1col1</TD>',
-                                  capturedOutput.getvalue())
+                                  captured_output.getvalue())
         self.assertIsNotNone(search_result, 'Expected match')
 
 

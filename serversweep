@@ -33,11 +33,12 @@ import sys
 import os
 import argparse as _argparse
 from smipyping import ServerSweep, TargetsData, DEFAULT_DBTYPE, \
-    DEFAULT_SWEEP_PORT
+    DEFAULT_SWEEP_PORT, DEFAULT_CONFIG_FILE
 
 from smipyping._configfile import read_config
 from smipyping._cliutils import SmiSmartFormatter, check_negative_int
 from smipyping._utilities import display_argparser_args
+
 
 def create_sweep_argparser(prog_name):
     """
@@ -112,6 +113,7 @@ Examples:
         'General options')
     general_arggroup.add_argument(
         '--config_file', '-c',
+        default=DEFAULT_CONFIG_FILE,
         help='Use config file to determine if server is in database')
     general_arggroup.add_argument(
         '-D', '--dbtype', metavar='DBTYPE',
@@ -156,6 +158,7 @@ def parse_sweep_args(argparser):
 
     return args
 
+
 def main(prog_name):
     """
         Port sweep demo program
@@ -168,15 +171,17 @@ def main(prog_name):
         db_config = read_config(args.config_file, args.dbtype)
         db_config['directory'] = os.path.dirname(args.config_file)
         print('db info  type %s, details %s' % (args.dbtype, db_config))
-        provider_data = TargetsData.factory(db_config, args.dbtype,
+        target_data = TargetsData.factory(db_config, args.dbtype,
                                             args.verbose)
     else:
-        provider_data = None
+        target_data = None
 
     # Sweep the servers and display result
     print('Start sweep for subnets %s, port %s, range %s:%s' %
           (args.subnet, args.port, args.min_octet_val, args.max_octet_val))
-    sweep = ServerSweep(args.subnet, args.port, provider_data=provider_data,
+    sweep = ServerSweep(args.subnet,
+                        args.port,
+                        target_data=target_data,
                         no_threads=args.no_threads,
                         min_octet_val=args.min_octet_val,
                         max_octet_val=args.max_octet_val,

@@ -79,7 +79,7 @@ DEFAULT_DBTYPE = 'csv'
 #: Dictionary that defines a default database configuration
 #: if no database is defined in config file or cmd line input
 #: This is a csv file and corresponses to the DEFAULT_DBTYPE above
-DEFAULT_DB_CONFIG = {'filename' : 'targetdata_example.csv'}
+DEFAULT_DB_CONFIG = {'filename': 'targetdata_example.csv'}
 
 #: Possible db types
 DB_POSSIBLE_TYPES = ['csv', 'mysql', 'sqlite']

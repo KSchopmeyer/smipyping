@@ -125,7 +125,7 @@ def get_subcmd_group_names(cmd, script_name):
         raise RuntimeError('Error. expected stderr (%s)returned from '
                            '%s call.' % (script_name, std_err))
 
-    # Split stdout int list of lines
+    # Split stdout into list of lines
     lines = std_out.split('\n')
 
     # get first word of all lines after line containing 'Commands:'
@@ -150,6 +150,7 @@ def get_subgroup_names(group_name, script_name):
     """
     subcmds_list = get_subcmd_group_names(group_name, script_name)
     space = ' ' if group_name else ''
+    
     return ['%s%s%s' % (group_name, space, name) for name in subcmds_list]
 
 

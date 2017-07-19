@@ -22,7 +22,7 @@ from __future__ import absolute_import, print_function
 import os
 import unittest
 import logging
-from testfixtures import log_capture
+# from testfixtures import log_capture
 
 from smipyping._logging import get_logger, SmiPypingLoggers
 
@@ -33,6 +33,8 @@ SCRIPT_DIR = os.path.dirname(__file__)
 
 LOG_FILE_NAME = 'test_logging.log'
 TEST_OUTPUT_LOG = '%s/%s' % (SCRIPT_DIR, LOG_FILE_NAME)
+
+# TODO add test of actual logging.
 
 
 class BaseLoggingTests(unittest.TestCase):
@@ -63,6 +65,7 @@ class BaseLoggingTests(unittest.TestCase):
                 return lines
         return None
 
+
 class TestGetLogger(unittest.TestCase):
     """All test cases for get_logger()."""
 
@@ -92,6 +95,7 @@ class TestGetLogger(unittest.TestCase):
                         "Unexpected list of logging handlers: %r" %
                         my_logger.handlers)
 
+
 class TestLoggerCreate(BaseLoggingTests):
     """ Test the SmipypingLoggers.create_logger method."""
     def test_create_single_logger1(self):
@@ -104,7 +108,7 @@ class TestLoggerCreate(BaseLoggingTests):
                                        log_level='debug')
 
         if VERBOSE:
-            print('smipyping_loggers dict %s' % PywbemLoggers.loggers)
+            print('smipyping_loggers dict %s' % SmiPypingLoggers.loggers)
         expected_result = \
             {'test_logging.testlogger': ('debug', 'file',
                                          TEST_OUTPUT_LOG)}

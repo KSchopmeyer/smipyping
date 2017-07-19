@@ -20,8 +20,8 @@
 
 from __future__ import absolute_import, print_function
 
-import shlex
 import unittest
+import re
 
 from smipyping import SimplePing
 
@@ -30,62 +30,55 @@ class CommandLineTestCase(unittest.TestCase):
     """
     Base TestCase class, sets up a CLI parser
     """
-    def setUp(self):
-        """Setup the SimplePing instance and parser"""
-        # create an instance of SimplePing named test
-        self.simpleping = SimplePing("test")
-        self.simpleping.create_parser()
+    # TODO extend these tests. In particular test setting from target data.
 
-    def parse(self, args):
-        """Call the simpleping parser with input list of arguments"""
-        print('test parse %s' % args)
-        arg_list = shlex.split(args)
-        opts = self.simpleping.parse_cmdline(input_params=arg_list)
-        return opts
+    
+class SimplePingTestCase(CommandLineTestCase):
 
-    def parse_with_exception(self, args):
-        """Call the simpleping parser with input list of arguments.
-        Expects an exception
-        """
+    def test_server0(self):
+        """Test with valid server param"""
+        sp = SimplePing('http://localhost')
+        self.assertEqual(sp.url, 'http://localhost')
+        conn = sp.connect_server(sp.url, verify_cert=False)
+        print(sp.get_connection_info(conn))
+
+    def test_server1(self):
+        """Test with valid server param"""
+        sp = SimplePing('https://localhost')
+        self.assertEqual(sp.url, 'https://localhost')
+
+    def test_server2(self):
+        """Test with valid server param"""
+        sp = SimplePing(server='http://localhost', user='fred', password='xx',
+                        timeout=10, ping=False)
+        self.assertEqual(sp.url, 'http://localhost')
+        self.assertEqual(sp.timeout, 10)
+        self.assertEqual(sp.ping, False)
+        self.assertEqual(sp.user, 'fred')
+        self.assertEqual(sp.password, 'xx')
+        conn = sp.connect_server(sp.url, verify_cert=False)
+        self.assertEqual(conn.url, 'http://localhost')
+        banner = sp.get_connection_info(conn)
+        match_result = re.match(r'Connection: http://localhost', banner)
+        self.assertIsNotNone(match_result)
+
+    def test_target_id(self):
+        sp = SimplePing(target_id=4)
+        self.assertEqual(sp.target_id, 4)
+
+    def test_invalid_server(self):
         try:
-            arg_list = shlex.split(args)
-            print('Split args %s' % arg_list)
-            self.simpleping.parse_cmdline(input_params=arg_list)
-        except Exception as ex:
-            print('exception %s' % ex)
-        except SystemExit as se:
-            print('argparse error %s' % se)
-        else:
+            SimplePing(server='httpx://localhost')
             self.fail('Exception expected')
+        except ValueError:
+            pass
 
-
-class PingTestCase(CommandLineTestCase):
-    def test_with_empty_args(self):
-        """
-        User passes no args, should fail with SystemExit
-        """
-        self.parse_with_exception("")
-
-    def test_simple(self):
-        args = self.parse('http://localhost -n root')
-        self.assertEqual(args.server, 'http://localhost')
-        self.assertEqual(args.namespace, 'root')
-
-    def test_cmdline_no_ns(self):
-        self.parse_with_exception('http://localhost')
-
-    def test_cmdline2(self):
-        args = self.parse('http://localhost -n root --user fred')
-        print('args %s' % args)
-        self.assertEqual(args.server, 'http://localhost')
-# ./simpleping https://10.1.132.185 -u pureuser -p pureuser -d
-
-    def test_cmdline3(self):
-        """Test parse of legal with user and connect"""
-        args = self.parse('http://localhost -n root -u blah')
-        self.assertEqual(args.server, 'http://localhost')
-        conn = self.simpleping.connect_server(args.server)
-        print('conn %s' % conn)
+    def test_dup_id(self):
+        try:
+            SimplePing(server='http://localhost', target_id=4)
+            self.fail('Expected exception')
+        except ValueError:
+            pass
 
 
 if __name__ == '__main__':

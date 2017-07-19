@@ -33,7 +33,7 @@ class TestPickFromList(unittest.TestCase):
         list_ = ["aaa", "bbb", "ccc"]
         prompt_txt = 'Select an entry by index or enter Ctrl-C to exit >'
         with patch('smipyping._common.prompt', return_value='1') as prompt:
-            ctx = ClickContext(None, None, None, None, None, None)
+            ctx = ClickContext(None, None, None, None, None, None, None, None)
             self.assertEqual(pick_from_list(ctx, list_, prompt_txt), 1)
             prompt.assert_called_once_with(prompt_txt)
 
@@ -45,7 +45,7 @@ class TestPickFromMultiplesList(unittest.TestCase):
         list_ = ["aaa", "bbb", "ccc"]
         prompt_txt = 'Select multiple entries by index or Ctrl-C to exit >'
         with patch('smipyping._common.prompt', return_value='1') as prompt:
-            ctx = ClickContext(None, None, None, None, None, None)
+            ctx = ClickContext(None, None, None, None, None, None, None, None)
             self.assertEqual(pick_multiple_from_list(ctx, list_, prompt_txt),
                              [1])
             prompt.assert_called_once_with(prompt_txt)
@@ -55,7 +55,7 @@ class TestPickFromMultiplesList(unittest.TestCase):
         list_ = ["aaa", "bbb", "ccc"]
         prompt_txt = 'Select multiple entries by index or Ctrl-C to exit >'
         with patch('smipyping._common.prompt', return_value='1 2') as prompt:
-            ctx = ClickContext(None, None, None, None, None, None)
+            ctx = ClickContext(None, None, None, None, None, None, None, None)
             self.assertEqual(pick_multiple_from_list(ctx, list_, prompt_txt),
                              [1, 2])
             prompt.assert_called_once_with(prompt_txt)
