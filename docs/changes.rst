@@ -15,12 +15,11 @@ contains the `master` branch up to this commit:
    :revisions: 1
 
 
-smipyping v0.5.0.dev0
+smipyping v0.6.0.dev139
 -------------------
 
-Released: Not yet
-
-Released: Not yet
+This is the first public version of this code.  As such, the following
+categories do not apply.
 
 Deprecations
 ^^^^^^^^^^^^
