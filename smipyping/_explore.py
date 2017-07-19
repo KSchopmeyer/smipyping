@@ -61,8 +61,9 @@ class Explorer(object):
         self.debug = debug
         self.threaded = threaded
         self.explore_time = None
+        log_dest = 'file' if log_level else None
         SmiPypingLoggers.create_logger(log_component='explore',
-                                       log_dest='file',
+                                       log_dest=log_dest,
                                        log_filename=logfile,
                                        log_level=log_level)
         self.logger = get_logger(EXPLORE_LOGGER_NAME)

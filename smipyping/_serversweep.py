@@ -48,7 +48,7 @@ class ServerSweep(object):
     Class to define the functionality to execute port sweeps of
     IP address and ports to find potential WBEM Servers.
     """
-    def __init__(self, net_defs, ports, targets_data=None, no_threads=False,
+    def __init__(self, net_defs, ports, target_data=None, no_threads=False,
                  min_octet_val=1, max_octet_val=254, verbose=False):
         """
         Parameters:
@@ -85,7 +85,7 @@ class ServerSweep(object):
         self.max_octet_val = max_octet_val
         self.ports = ports
         self.no_threads = no_threads
-        self.targets_data = targets_data
+        self.target_data = target_data
         self.verbose = verbose
         self.total_sweep_time = None
         self.total_pings = None
@@ -327,16 +327,16 @@ class ServerSweep(object):
                 for port_ in self.ports:
                     yield test_ip, port_
 
-    def write_results(self, open_hosts, output_file='serversweep.tst',
+    def write_results(self, open_hosts, output_file='serversweep.txt',
                       new_only=True):
         """
         Write the results to an output file for further processing
         """
-        f1 = open(output_file, 'w+')
-        # add code to filter
-        for open_host in open_hosts:
-            # clear the file
-            print('%s' % open_host, file=f1)
+        with open(output_file, 'w+') as f1:
+            # add code to filter
+            for open_host in open_hosts:
+                # clear the file
+                print('%s' % open_host, file=f1)
 
     def print_open_hosts_report(self, open_hosts):
         """
@@ -353,6 +353,8 @@ class ServerSweep(object):
             execution_time = "%.2f min" % (self.total_sweep_time / 60)
 
         range_txt = '%s:%s' % (self.min_octet_val, self.max_octet_val)
+        unknown = 0
+        known = 0
         table = []
         if len(open_hosts) != 0:
             title = 'Open WBEMServers:subnet(s)=%s\n' \
@@ -367,17 +369,15 @@ class ServerSweep(object):
             # 3 char
             headers = ['IPAddress', 'CompanyName', 'Product',
                        'SMIVersion']
-            table = []
-            unknown = 0
-            known = 0
+
             for host_data in open_hosts:
                 ip_address = '%s:%s' % (host_data[0], host_data[1])
-                if self.targets_data is not None:
-                    record_list = self.targets_data.get_targets_host(host_data)
+                if self.target_data is not None:
+                    record_list = self.target_data.get_targets_host(host_data)
                     if record_list:
                         # TODO this should be a list since there may be
                         # multiples for single ip address
-                        entry = self.targets_data.get_dict_record(
+                        entry = self.target_data.get_dict_record(
                             record_list[0])
                         if entry is not None:
                             known += 1

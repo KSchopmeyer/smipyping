@@ -19,7 +19,6 @@ data file.
 """
 from __future__ import print_function, absolute_import
 
-from pprint import pprint as pp  # noqa: F401
 import click
 
 from .smicli import cli, CMD_OPTS_TXT
@@ -120,8 +119,9 @@ def cmd_explore_id(context, id, **options):
     """
     Explore the wbem server defined by the Id provided
     """
+    # TODO: ks redo this code to use the record once it is acquired.
     try:
-        target_record = context.target_data.get_dict_record(id)
+        target_record = context.target_data.get_dict_record(id)  # noqa: F841
     except Exception as ex:
         raise click.ClickException('Invalid TargetID=%s. Not in database. '
                                    '%s: %s' % (id, ex.__class__.__name__, ex))

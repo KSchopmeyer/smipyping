@@ -11,16 +11,16 @@ There are two ways to do this:
 1. Clone Install - clone the repository into your local system and then install
    from that clone.
 
-2. pip install from the git repository. NOTE: For some reason this is not
+2. pip install from the git repository. NOTE: This is not
    working right now.
 
-Clone install
--------------
+git Clone install
+-----------------
 
 In this installation you first clone the git repository and then install
 the actual running smipyping from that clone.
 
-0. Go to directory where you want to clone smipyping.
+1. Go to directory where you want to clone smipyping.
 
 1. Clone the repository. Note that you only have to clone once. From
 then on you can merge in new changes.
@@ -28,22 +28,28 @@ then on you can merge in new changes.
     >git clone https://kschopmeyer@bitbucket.org/kschopmeyer/smipyping.git
 
 you will now have a directory smipyping that is the complete development
-environment including all prerequisits, etc.
+environment including all prerequisites, etc.
 
   cd smipyping
   sudo make install
 
+You must use sudo (or otherwise be in admin mode because a normally the
+required packages are installed in protected directories.)
+
 NOTE: to make this work I did su - and then went back to the smipyping dir.
 
-This should install the smipyping package
+This should install the smipyping package and its prerequisite packages.
+
+This should be the only time you need to be in admin user mode. Subsequent
+updates require only normal user mode.
 
 Updating Clone install with new smipyping code
 ----------------------------------------------
 
-To update the installation when the package is updated, you simple refresh
-the local clone from the repository
+To update the installation when the smppyping package is updated, you simple
+refresh the local clone from the repository
 
-1. go to smipyping directory that was installed with the clone command earlier
+1. Go to smipyping directory that was installed with the clone command earlier
 
 2. update with
 
@@ -60,8 +66,8 @@ command.  The git pull will merge new code into the current base.
 pip install
 -----------
 
-NOTE: Having problems with this right now. Says it installs but the installion
-is incomplete when finished.
+NOTE: Having problems with pip install from bitbucket.  The fix for that is on
+the work list.
 
 Python packages can also be directly installed from git with pip.  That can
 be done with the command:

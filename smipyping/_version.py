@@ -39,5 +39,5 @@ _PYTHON_M = sys.version_info[0]
 _PYTHON_N = sys.version_info[1]
 if _PYTHON_M == 2 and _PYTHON_N < 7:
     raise RuntimeError('On Python 2, smipyping requires Python 2.7')
-elif _PYTHON_M == 3 and _PYTHON_N < 4:
-    raise RuntimeError('On Python 3, smipyping requires Python 3.4 or higher')
+elif _PYTHON_M == 3:
+    raise RuntimeError('smipyping does not run on Python 3.')

@@ -1,3 +1,0 @@
-export PYTHONPATH=/home/.virtualenvs/smipyping27
-CONFIG_FILE=$PWD/localdbconfig.ini
-sudo ./serversweep 10.1.132 -c $CONFIG_FILE -p 5988 -p 5989
