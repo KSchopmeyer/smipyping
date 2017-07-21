@@ -30,8 +30,7 @@ import threading
 
 from pywbem import WBEMConnection, WBEMServer, ValueMapping, Error, \
     ConnectionError, TimeoutError
-from ._asciitable import print_table, fold_cell
-from ._csvtable import write_csv_table
+from ._tableoutput import print_table, fold_cell
 from ._ping import ping_host
 from .config import PING_TIMEOUT, DEFAULT_USERNAME, DEFAULT_PASSWORD
 from ._logging import EXPLORE_LOGGER_NAME, get_logger, SmiPypingLoggers
@@ -48,6 +47,15 @@ RESULTS = []
 
 
 class Explorer(object):
+    """
+    The Explorer class provides a general capability to explore providers
+    defined in a database including getting information on server branding,
+    namespaces, interop namespaces, profiles, etc.
+
+    It is designed to explore a number of servers and provide a report of
+    the results with logging to capture information on each individual
+    WBEM Server
+    """
 
     def __init__(self, prog, target_data, logfile=None, log_level=None,
                  debug=None, ping=None, verbose=None, threaded=False):
@@ -99,10 +107,10 @@ class Explorer(object):
                     cell_str = ", ". join(sorted(versions))
                     line.append(fold_cell(cell_str, 14))
                 table_data.append(line)
-        print_table(table_hdr, table_data,
-                    "Display SMI Profile Information")
+        print_table(table_data, headers=table_hdr,
+                    title="Display SMI Profile Information")
 
-    def report_server_info(self, servers, user_data, table_type='report'):
+    def report_server_info(self, servers, user_data, table_format='table'):
         """ Display a table of info from the server scan
         """
 
@@ -146,12 +154,8 @@ class Explorer(object):
 
             table_data.append(line)
 
-        if table_type == 'report':
-            print_table(tbl_hdr, table_data, "Server Basic Information")
-        elif table_type == 'csv':
-            write_csv_table(table_data)
-        else:
-            TypeError('table type invalid %s' % table_type)
+        print_table(table_data, table_header=tbl_hdr, table_format=table_format,
+                    title="Server Basic Information")
 
     def explore_servers(self, target_list):
         """

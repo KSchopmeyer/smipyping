@@ -23,6 +23,11 @@ import prompt_toolkit
 
 TABLE_FORMATS = ['plain', 'simple', 'grid', 'html']
 
+# TABLE_FORMATS = ['table', 'plain', 'simple', 'psql', 'rst', 'mediawiki',
+#                 'html', 'mof', 'xml']
+
+DEFAULT_OUTPUT_FORMAT = 'simple'
+
 
 def prompt(txt):
     """ single function for prompt. Aids mock tests"""
@@ -128,3 +133,24 @@ def pick_multiple_from_list(context, options, title):
         print('%s Invalid. Input list of integers between 0 and %s or Ctrl-C '
               'to exit.' % (selection_txt, index))
     context.spinner.start()
+
+
+def set_input_variable(ctx, var_, config_file_name, default_value):
+    """
+    Set the variable defined by var_ to one of the following:
+        - Itself if it has a value
+        - The value from the config file if that exists
+        - The default define default_value
+
+    This sets the order for inputs to:
+        1. definition on the command line or env
+        2. Definition in the config file
+        3. Default value
+    """
+    if var_:
+        rtn_value = var_
+    elif ctx.default_map and config_file_name in ctx.default_map:
+        rtn_value = ctx.default_map[config_file_name]
+    else:
+        rtn_value = default_value
+    return rtn_value

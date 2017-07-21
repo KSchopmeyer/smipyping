@@ -28,7 +28,7 @@ import re
 from collections import OrderedDict
 import six
 from mysql.connector import MySQLConnection
-from ._asciitable import print_table, fold_cell
+from ._tableoutput import print_table, fold_cell
 from ._configfile import read_config
 
 __all__ = ['TargetsData']
@@ -44,7 +44,7 @@ class TargetsData(object):
     environment.
     """
 
-    def __init__(self, db_dict, db_type, verbose):
+    def __init__(self, db_dict, db_type, verbose, output_format='simple'):
         """Initialize the abstract Targets instance.
 
         This controls all other
@@ -61,6 +61,7 @@ class TargetsData(object):
         self.targets_dict = {}
         self.db_dict = db_dict
         self.verbose = verbose
+        self.outputformat = output_format
         # # Defines each record for the data base and outputs.
         # # The Name is the database name for the property
         # # The value tuple is display name and max width for the record
@@ -310,8 +311,7 @@ class TargetsData(object):
         for record_id in sorted(self.targets_dict.iterkeys()):
             if self.disabled_record(self.targets_dict[record_id]):
                 table_data.append(self.tbl_record(record_id, col_list))
-
-        print_table(col_list, table_data, 'Disabled hosts')
+        print_table(table_data, headers=col_list, title='Disabled hosts')
 
     def display_cols(self, column_list):
         """
@@ -328,8 +328,7 @@ class TargetsData(object):
         """
         table_data = []
 
-        # asciitables creates the table headers from
-        table_header = self.tbl_hdr(column_list)
+        headers = self.tbl_hdr(column_list)
 
         table_width = self.get_output_width(column_list) + len(column_list)
         fold = False if table_width < 80 else True
@@ -337,7 +336,8 @@ class TargetsData(object):
         for record_id in sorted(self.targets_dict.iterkeys()):
             table_data.append(self.tbl_record(record_id, column_list, fold))
 
-        print_table(table_header, table_data, 'Target Systems Overview')
+        print_table(table_data, headers=headers,
+                    title='Target Systems Overview')
 
     def display_all(self, fields=None, company=None):
         """Display all entries in the base."""
@@ -346,7 +346,7 @@ class TargetsData(object):
             col_list = STANDARD_FIELDS_DISPLAY_LIST
         else:
             col_list = fields
-
+        print('call display cols %s' % col_list)
         self.display_cols(col_list)
 
 

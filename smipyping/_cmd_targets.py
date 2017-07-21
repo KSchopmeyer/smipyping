@@ -174,7 +174,9 @@ def cmd_targets_list(context, fields, options):
 
     show = list(fields)
     show.append('TargetID')  # always show TargetID
+    print('show %s' % show)
     try:
+        print('display %s' % show)
         context.target_data.display_all(list(fields), company=None)
 
     except Exception as ex:

@@ -38,7 +38,7 @@ import six
 
 from .config import MAX_THREADS
 from ._scanport import check_port_syn
-from ._asciitable import print_table
+from ._tableoutput import print_table
 
 __all__ = ['ServerSweep']
 

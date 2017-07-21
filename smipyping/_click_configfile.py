@@ -43,6 +43,7 @@ class ConfigSectionSchema(object):
         # numbers = Param(type=int, multiple=True)
         # filenames = Param(type=click.Path(), multiple=True)
         dbtype = Param(type=str)
+        output_format= Param(type=str)
 
     @matches_section("csv")
     class Csv(SectionSchema):
