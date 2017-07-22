@@ -21,34 +21,42 @@ format (iterable of iterables).
 
 from __future__ import print_function, absolute_import
 
+import os
 from textwrap import wrap
+import csv
 import six
 from terminaltables import AsciiTable
 import tabulate
-import csv
+
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 
 
-def write_csv_table(table_data, headers=None, csv_file=None, dialect=None):
+def build_csv_table(table_data, headers, title=None, dialect=None):
     """
-    Output a list of lists as csv formatted data to a file.
+    Output a list of lists and optional header as csv formatted data to a file.
     """
-    with open(csv_file, 'wb') as resultFile:
-        wr = csv.writer(resultFile, dialect=dialect)
-        wr.writerows(table_data)
+    # TODO: should I be writing this with 'wb' ???
+    output = StringIO()
+    writer = csv.writer(output, dialect=dialect, lineterminator=os.linesep,
+                        delimiter=',', quotechar='"',
+                        quoting=csv.QUOTE_NONNUMERIC)
+    if headers:
+        writer.writerow(headers)
+    writer.writerows(table_data)
+    return output.getvalue()
 
 
 def print_table(table_data, headers, title=None, table_format='simple',
-                folded=None, output_file=None):
+                output_file=None):
     """
     Output a table to either stdout or a file. Defaults to simple ascii
     format.
     """
-    # TODO we handle csv output only on the print function, not the build
-    if table_format == 'csv':
-        write_csv_table(table_data, headers=None, output_file=None)
-
     result = build_table(table_data, headers, title=None,
-                         table_format=table_format, folded=None)
+                         table_format=table_format)
 
     # TODO handling utf on output for both python 2 and 3
     if output_file:
@@ -60,8 +68,7 @@ def print_table(table_data, headers, title=None, table_format='simple',
         print()
 
 
-def build_table(table_data, headers, title=None, table_format=None,
-                folded=None, output_file=None):
+def build_table(table_data, headers, title=None, table_format=None):
     """
         General print table function. This is temporary while the world
         gets the tabulate python package capable of supporting multiline
@@ -84,41 +91,42 @@ def build_table(table_data, headers, title=None, table_format=None,
             Output format defined by the string and limited to one of the
             choice of table formats defined in TABLE_FORMATS list
 
-          folded (:term: 'bool') - Flag defines whether this table has
-            columns that are folded into multiline cells.
-            NOTE: This is temporary because of limitations in the table
-            display package.  A second package is used for these table outputs.
-
           output_file (:term: 'string')
             If not None, a file name to which the output formatted data
             is sent.
 
     """
-    # test if there is a EOL in any cell.
-    if folded is None:
-        for row in table_data:
-            for cell in row:
-                if '\n' in cell:
-                    folded = True
+    # test if there is a EOL in any cell and mark for folded processing
+    folded = False
+    for row in table_data:
+        for cell in row:
+
+            if isinstance(cell, six.string_types) and'\n' in cell:
+                folded = True
     # If a cell is folded, use the terminal_table print
     result = ""
-    if folded:
-        if table_format == 'html':
-            result = build_html_table(table_data, headers, title=title)
-        else:
+    if table_format == 'csv':
+        result = build_csv_table(table_data, headers, title=title)
+    elif table_format == 'html':
+        result = build_html_table(table_data, headers, title=title)
+    else:
+        if folded:
+            #if table_format == 'html':
+            #    result = build_html_table(table_data, headers, title=title)
+            #else:
             result = build_terminal_table(table_data, headers,
                                           title=title,
                                           table_format=table_format)
 
-    # Else use tabulate package as the base for the table
-    else:
-        # Prints dictionaries if header='keys'
-        result = tabulate.tabulate(table_data, headers,
-                                   tablefmt=table_format)
+        # Else use tabulate package as the base for the table
+        else:
+            # Prints dictionaries if header='keys'
+            result = tabulate.tabulate(table_data, headers,
+                                       tablefmt=table_format)
     return result
 
 
-def build_html_table(rows, headers, title=None, output_file=None):
+def build_html_table(rows, headers, title=None):
     """
     Print a table and header in html format.
     """
@@ -129,10 +137,15 @@ def build_html_table(rows, headers, title=None, output_file=None):
     for row in rows:
         new_row = []
         for cell in row:
-            cell = cell.replace('\n', '<br />')
+            if isinstance(cell, six.string_types):
+                cell = cell.replace('\n', '<br />')
             new_row.append(cell)
         new_rows.append(new_row)
-    result = HtmlTable(rows=new_rows, header_row=headers)
+    use_tabulate = False
+    if use_tabulate:
+        result = tabulate.tabulate(new_rows, headers, tablefmt='html')
+    else:
+        result = HtmlTable(rows=new_rows, header_row=headers)
 
     return result
 
@@ -182,7 +195,8 @@ def build_terminal_table(table_data, headers, title=None,
         table.inner_row_border = True
         table.inner_heading_row_border = True
     else:
-        raise ValueError('Invalid table type %s' % table_format)
+        raise ValueError('Invalid table type %s. Folded tables have '
+                         ' limited formatting.' % table_format)
 
     return(table.table)
 
