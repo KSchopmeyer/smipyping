@@ -38,7 +38,7 @@ import six
 
 from .config import MAX_THREADS
 from ._scanport import check_port_syn
-from ._tableoutput import print_table
+from ._tableoutput import TableFormatter
 
 __all__ = ['ServerSweep']
 
@@ -355,20 +355,20 @@ class ServerSweep(object):
         range_txt = '%s:%s' % (self.min_octet_val, self.max_octet_val)
         unknown = 0
         known = 0
-        table = []
+        rows = []
+        headers = ['IPAddress', 'CompanyName', 'Product',
+                   'SMIVersion']
+        title = 'Open WBEMServers:subnet(s)=%s\n' \
+                'port(s)=%s range %s, time %s\n' \
+                '    total pings=%s pings answered=%s' \
+                % (self.net_defs, self.ports, range_txt, execution_time,
+                   self.total_pings, len(open_hosts))
         if len(open_hosts) != 0:
-            title = 'Open WBEMServers:subnet(s)=%s\n' \
-                    'port(s)=%s range %s, time %s\n' \
-                    '    total pings=%s pings answered=%s' \
-                    % (self.net_defs, self.ports, range_txt, execution_time,
-                       self.total_pings, len(open_hosts))
             # open_hosts.sort(key=lambda ip: map(int, ip.split('.')))
             # TODO this probably requires ordered dict rather than dictionary to
             # keep order. We are not outputing in full order. Note that
             # ip address itself is not good ordering since not all octets are
             # 3 char
-            headers = ['IPAddress', 'CompanyName', 'Product',
-                       'SMIVersion']
 
             for host_data in open_hosts:
                 ip_address = '%s:%s' % (host_data[0], host_data[1])
@@ -381,29 +381,31 @@ class ServerSweep(object):
                             record_list[0])
                         if entry is not None:
                             known += 1
-                            table.append([ip_address,
-                                          entry['CompanyName'],
-                                          entry['Product'],
-                                          entry['SMIVersion']])
+                            rows.append([ip_address,
+                                         entry['CompanyName'],
+                                         entry['Product'],
+                                         entry['SMIVersion']])
                         else:
                             unknown += 1
                             print('Invalid entry %s %s %s' % (
                                 record_list[0], ip_address,
                                 "Not in user data"))
-                            table.append([ip_address, "Not in base", "", ""])
+                            rows.append([ip_address, "Not in base", "", ""])
                     else:
                         unknown += 1
-                        table.append([ip_address, "Unknown"])
+                        rows.append([ip_address, "Unknown"])
                 # no host info requested.
                 else:
-                    table.append([ip_address])
+                    rows.append([ip_address])
         else:
             print('No WBEM Servers found:subnet(s)=%s port(s)=%s range %s, %s' %
                   (self.net_defs, self.ports, range_txt, execution_time))
 
-        if table:
-            print_table(headers, table, title)
-
+        if rows:
+            table = TableFormatter(rows, headers=headers,
+                                   title='Server Basic Information')
+            table.print_table()
+        # TODO: Should we be showing execution time here. Put in title.
         print('\nResults: Found=%s, Unknown=%s, Total=%s' % (known, unknown,
                                                              known + unknown))
 

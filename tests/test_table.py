@@ -29,14 +29,14 @@ try:
 except ImportError:
     from io import StringIO
 
-from smipyping._tableoutput import print_table, build_table, fold_cell
+from smipyping._tableoutput import TableFormatter
 
 VERBOSE = True
 
 
 class TableTests(unittest.TestCase):
     """Base class for testing table output"""
-    def create_simple_table(self):
+    def create_simple_table(self, table_format=None, title=True):
         """Create a standard table"""
         headers = ['col1', 'col2', 'col3']
         rows = [['row1col1', 'row1col2', 'row1col3'],
@@ -44,17 +44,21 @@ class TableTests(unittest.TestCase):
                 ['row3 col1', 'row3  col2', 'row3   col3'],
                 [0, 999, 9999999],
                 [1.1432, 1.2, 0]]
-        title = 'test_table'
-        return (rows, headers, title)
+        title_txt = 'test simple table' if title else None
+        table = TableFormatter(rows, headers, title=title_txt,
+                               table_format=table_format)
+        return table
 
-    def create_folded_table(self):
+    def create_folded_table(self, table_format, title=True):
         """Create a table with folded cells"""
         headers = ['col1', 'col2', 'col3']
-        folded = fold_cell('this is a folded cell', 10)
+        folded = TableFormatter.fold_cell('this is a folded cell', 10)
         rows = [['row1col1', 'row2col2', folded],
                 [folded, 'row2col2', 'row2col3']]
-        title = 'test_folded_table'
-        return (rows, headers, title)
+        title_txt = 'test folded table' if title else None
+        table = TableFormatter(rows, headers, title=title_txt,
+                               table_format=table_format)
+        return table
 
     def compare_results(self, actual, expected):
         """Compare two multiline strings to find differences. Helpful to
@@ -79,13 +83,39 @@ class TableTests(unittest.TestCase):
 
 class AsciiTableTests(TableTests):
     """Tests on the asciitable module"""
-    def test_table_simple(self):
+    def test_table_simple_print(self):
         """Test a simple table with header"""
 
         captured_output = StringIO()          # Create StringIO object
         sys.stdout = captured_output                   # and redirect stdout.
-        rows, headers, title = self.create_simple_table()
-        print_table(rows, headers, title=title, table_format='simple')
+        table = self.create_simple_table(table_format='simple', title=True)
+        table.print_table()
+        sys.stdout = sys.__stdout__  # pylint: disable=redefined-variable-type
+        actual = captured_output.getvalue()
+        if VERBOSE:
+            print(actual)
+
+        expected = ('test simple table\n'
+                    'col1       col2        col3\n'
+                    '---------  ----------  -----------\n'
+                    'row1col1   row1col2    row1col3\n'
+                    'row2col1   row2col2    row2col3\n'
+                    'row3 col1  row3  col2  row3   col3\n'
+                    '0          999         9999999\n'
+                    '1.1432     1.2         0\n\n')
+
+        self.compare_results(actual, expected)
+
+        self.assertEqual(actual, expected,
+                         'Actual:\n%s\nExpected:\n%s\n' % (actual, expected))
+
+    def test_table_simple_print_no_header(self):
+        """Test print a simple table no header"""
+
+        captured_output = StringIO()          # Create StringIO object
+        sys.stdout = captured_output                   # and redirect stdout.
+        table = self.create_simple_table(table_format='simple', title=False)
+        table.print_table()
         sys.stdout = sys.__stdout__  # pylint: disable=redefined-variable-type
         actual = captured_output.getvalue()
         if VERBOSE:
@@ -107,40 +137,40 @@ class AsciiTableTests(TableTests):
     def test_table_simple_build(self):
         """Test a simple table with header build function"""
 
-        rows, headers, title = self.create_simple_table()
-        actual = build_table(rows, headers, title=title, table_format='simple')
+        table = self.create_simple_table(table_format='simple', title=True)
+        actual = table.build_table()
         if VERBOSE:
             print(actual)
 
-        expected = ('col1       col2        col3\n'
+        expected = ('test simple table\n'
+                    'col1       col2        col3\n'
                     '---------  ----------  -----------\n'
                     'row1col1   row1col2    row1col3\n'
                     'row2col1   row2col2    row2col3\n'
                     'row3 col1  row3  col2  row3   col3\n'
                     '0          999         9999999\n'
                     '1.1432     1.2         0')
-                    
 
         self.compare_results(actual, expected)
         self.assertEqual(actual, expected,
                          'Actual:\n%s\nExpected:\n%s\n' % (actual, expected))
 
-    def test_table_plain(self):
+    def test_table_plain_print(self):
         """Test a none table borders with header"""
 
         captured_output = StringIO()          # Create StringIO object
         sys.stdout = captured_output                   # and redirect stdout.
 
-        rows, headers, title = self.create_simple_table()
-
-        print_table(rows, headers, title=title, table_format='plain')
+        table = self.create_simple_table(table_format='plain', title=True)
+        table.print_table()
 
         sys.stdout = sys.__stdout__  # pylint: disable=redefined-variable-type
         actual = captured_output.getvalue()
         if VERBOSE:
             print(actual)
 
-        expected = ('col1       col2        col3\n'
+        expected = ('test simple table\n'
+                    'col1       col2        col3\n'
                     'row1col1   row1col2    row1col3\n'
                     'row2col1   row2col2    row2col3\n'
                     'row3 col1  row3  col2  row3   col3\n'
@@ -151,20 +181,21 @@ class AsciiTableTests(TableTests):
         self.assertEqual(actual, expected,
                          'Actual:\n%s\nExpected:\n%s\n' % (actual, expected))
 
-    def test_table_grid(self):
-        """Test a plain table with borders and header"""
+    def test_table_grid_print(self):
+        """Test printing a plain table with borders and header"""
         captured_output = StringIO()          # Create StringIO object
         sys.stdout = captured_output                   # and redirect stdout.
 
-        rows, headers, title = self.create_simple_table()
+        table = self.create_simple_table(table_format='grid', title=True)
+        table.print_table()
 
-        print_table(rows, headers, title=title, table_format='grid')
         sys.stdout = sys.__stdout__  # pylint: disable=redefined-variable-type
         actual = captured_output.getvalue()
         if VERBOSE:
             print(actual)
 
-        expected = ('+-----------+------------+-------------+\n'
+        expected = ('test simple table\n'
+                    '+-----------+------------+-------------+\n'
                     '| col1      | col2       | col3        |\n'
                     '+===========+============+=============+\n'
                     '| row1col1  | row1col2   | row1col3    |\n'
@@ -178,27 +209,25 @@ class AsciiTableTests(TableTests):
                     '| 1.1432    | 1.2        | 0           |\n'
                     '+-----------+------------+-------------+\n\n')
 
-
-
-
         self.compare_results(actual, expected)
         self.assertEqual(actual, expected,
                          'Actual:\n%s\nExpected:\n%s\n' % (actual, expected))
 
-    def test_table_default(self):
+    def test_table_default_print(self):
         """Test a table with default format"""
         captured_output = StringIO()          # Create StringIO object
         sys.stdout = captured_output                   # and redirect stdout.
 
-        rows, headers, title = self.create_simple_table()
+        table = self.create_simple_table(title=True)
+        table.print_table()
 
-        print_table(rows, headers, title=title)
         sys.stdout = sys.__stdout__  # pylint: disable=redefined-variable-type
         actual = captured_output.getvalue()
         if VERBOSE:
             print(actual)
 
-        expected = ('col1       col2        col3\n'
+        expected = ('test simple table\n'
+                    'col1       col2        col3\n'
                     '---------  ----------  -----------\n'
                     'row1col1   row1col2    row1col3\n'
                     'row2col1   row2col2    row2col3\n'
@@ -210,23 +239,22 @@ class AsciiTableTests(TableTests):
         self.assertEqual(actual, expected,
                          'Actual:\n%s\nExpected:\n%s\n' % (actual, expected))
 
-    def test_folded_cell_plain(self):
-        """Test a folded cell table plain with header"""
+    def test_folded_cell_plain_build(self):
+        """Test building a folded cell table plain with header"""
+        table = self.create_folded_table(table_format='plain', title=True)
+        actual = table.build_table()
 
-        rows, headers, title = self.create_folded_table()
-
-        actual = build_table(rows, headers, title=title, table_format='plain')
         if VERBOSE:
             print(actual)
 
-        expected = (
-            ' col1       col2      col3      \n'
-            ' row1col1   row2col2  this is a \n'
-            '                      folded    \n'
-            '                      cell      \n'
-            ' this is a  row2col2  row2col3  \n'
-            ' folded                         \n'
-            ' cell                           ')
+        expected = ('test folded table\n'
+                    ' col1       col2      col3      \n'
+                    ' row1col1   row2col2  this is a \n'
+                    '                      folded    \n'
+                    '                      cell      \n'
+                    ' this is a  row2col2  row2col3  \n'
+                    ' folded                         \n'
+                    ' cell                           ')
 
         self.compare_results(actual, expected)
         self.assertEqual(actual, expected,
@@ -237,39 +265,38 @@ class AsciiTableTests(TableTests):
         captured_output = StringIO()          # Create StringIO object
         sys.stdout = captured_output                   # and redirect stdout.
 
-        rows, headers, title = self.create_folded_table()
+        table = self.create_folded_table(table_format='simple', title=True)
+        table.print_table()
 
-        print_table(rows, headers, title=title, table_format='simple')
         sys.stdout = sys.__stdout__  # pylint: disable=redefined-variable-type
         actual = captured_output.getvalue()
         if VERBOSE:
             print(actual)
 
-        expected = (
-            ' col1       col2      col3      \n'
-            '--------------------------------\n'
-            ' row1col1   row2col2  this is a \n'
-            '                      folded    \n'
-            '                      cell      \n'
-            ' this is a  row2col2  row2col3  \n'
-            ' folded                         \n'
-            ' cell                           \n\n')
+        expected = ('test folded table\n'
+                    ' col1       col2      col3      \n'
+                    '--------------------------------\n'
+                    ' row1col1   row2col2  this is a \n'
+                    '                      folded    \n'
+                    '                      cell      \n'
+                    ' this is a  row2col2  row2col3  \n'
+                    ' folded                         \n'
+                    ' cell                           \n\n')
 
         self.compare_results(actual, expected)
         self.assertEqual(actual, expected,
                          'Actual:\n%s\nExpected:\n%s\n' % (actual, expected))
 
-    def test_folded_cell_grid(self):
+    def test_folded_cell_grid_build(self):
         """Test a folded cell table with header"""
-
-        rows, headers, title = self.create_folded_table()
-
-        actual = build_table(rows, headers, title=None, table_format='grid')
+        table = self.create_folded_table(table_format='grid', title=True)
+        actual = table.build_table()
 
         if VERBOSE:
             print(actual)
 
-        expected = ('+-----------+----------+-----------+\n'
+        expected = ('test folded table\n'
+                    '+-----------+----------+-----------+\n'
                     '| col1      | col2     | col3      |\n'
                     '+-----------+----------+-----------+\n'
                     '| row1col1  | row2col2 | this is a |\n'
@@ -288,14 +315,15 @@ class AsciiTableTests(TableTests):
 
 class HtmlTableTests(TableTests):
     """Tests on the asciitable module"""
-    def test_simple_table(self):
+    def test_folded_table(self):
         """Test a simple table with header"""
 
         captured_output = StringIO()          # Create StringIO object
         sys.stdout = captured_output                   # and redirect stdout.
-        rows, headers, title = self.create_simple_table()
 
-        print_table(rows, headers, title=title, table_format='html')
+        table = self.create_folded_table(table_format='html', title=True)
+        table.print_table()
+
         sys.stdout = sys.__stdout__  # pylint: disable=redefined-variable-type
         print('Captured\n%s' % captured_output.getvalue())
 
@@ -311,7 +339,11 @@ class HtmlTableTests(TableTests):
                 ['row4col1LongCol', 'row4col2', 'row4col3'],
                 ['row5col1', 'row5col2', 'row5col3\nSecondRow']]
         title = 'test_HTML_table'
-        print_table(rows, headers, title=title, table_format='html')
+
+        table = TableFormatter(rows, headers, title=title,
+                               table_format='html')
+        table.print_table()
+
         sys.stdout = sys.__stdout__  # pylint: disable=redefined-variable-type
         print('Captured\n%s' % captured_output.getvalue())
 
@@ -331,12 +363,13 @@ class CsvTableTests(TableTests):
 
     def test_table_simple_build(self):
         """Test a simple table csv with header"""
-        rows, headers, title = self.create_simple_table()
-        actual = build_table(rows, headers, title=title, table_format='csv')
+        table = self.create_simple_table(table_format='csv')
+        actual = table.build_table()
         if VERBOSE:
             print(actual)
 
-        expected = ('"col1","col2","col3"\n'
+        expected = ('test simple table\n'
+                    '"col1","col2","col3"\n'
                     '"row1col1","row1col2","row1col3"\n'
                     '"row2col1","row2col2","row2col3"\n'
                     '"row3 col1","row3  col2","row3   col3"\n'

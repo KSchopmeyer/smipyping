@@ -30,7 +30,7 @@ import threading
 
 from pywbem import WBEMConnection, WBEMServer, ValueMapping, Error, \
     ConnectionError, TimeoutError
-from ._tableoutput import print_table, fold_cell
+from ._tableoutput import TableFormatter
 from ._ping import ping_host
 from .config import PING_TIMEOUT, DEFAULT_USERNAME, DEFAULT_PASSWORD
 from ._logging import EXPLORE_LOGGER_NAME, get_logger, SmiPypingLoggers
@@ -105,10 +105,11 @@ class Explorer(object):
                         entry['Product']]
                 if versions is not None:
                     cell_str = ", ". join(sorted(versions))
-                    line.append(fold_cell(cell_str, 14))
+                    line.append(TableFormatter.fold_cell(cell_str, 14))
                 table_data.append(line)
-        print_table(table_data, headers=table_hdr,
-                    title="Display SMI Profile Information")
+        table = TableFormatter(table_data, headers=col_list,
+                               title='Display SMI Profile Information')
+        table.print_table()
 
     def report_server_info(self, servers, user_data, table_format='table'):
         """ Display a table of info from the server scan
@@ -154,8 +155,10 @@ class Explorer(object):
 
             table_data.append(line)
 
-        print_table(table_data, table_header=tbl_hdr, table_format=table_format,
-                    title="Server Basic Information")
+        table = TableFormatter(table_data, headers=col_list,
+                               title='Server Basic Information')
+        table.print_table()
+
 
     def explore_servers(self, target_list):
         """
