@@ -27,6 +27,7 @@ from pywbem import WBEMServer, WBEMConnection, Error, ValueMapping
 from .smicli import cli, CMD_OPTS_TXT
 from ._ping import ping_host
 from .config import PING_TIMEOUT
+from ._tableoutput import TableFormatter
 
 
 @cli.group('provider', options_metavar=CMD_OPTS_TXT)
@@ -169,28 +170,36 @@ def cmd_provider_ping(context, options):
     click.echo('ping %s %s' % (ip_address, status))
 
 
-def print_profile_info(org_vm, inst):
-    """Print the registered org, name, version for the profile defined by
-       inst
+def get_profile_info(org_vm, inst):
+    """
+    Get the org, name, and version from the profile instance and
+    return them as a tuple.
     """
     org = org_vm.tovalues(inst['RegisteredOrganization'])
     name = inst['RegisteredName']
     vers = inst['RegisteredVersion']
-    click.echo("  %s %s Profile %s" % (org, name, vers))
+    return org, name, vers
 
 
 def cmd_provider_profiles(context, options):
-    """Display list of autonomous profiles for this server"""
+    """return tuple of info of autonomous profiles for this server"""
     targets = context.target_data
     target_id = options['targetid']
     server = connect_target(targets, target_id)
 
-    click.echo("Advertised management profiles:")
     org_vm = ValueMapping.for_property(server, server.interop_ns,
                                        'CIM_RegisteredProfile',
                                        'RegisteredOrganization')
+    rows = []
     for inst in server.profiles:
-        print_profile_info(org_vm, inst)
+        row = get_profile_info(org_vm, inst)
+        rows.append(row)
+    headers = ['Organization', 'Registered Name', 'Version']
+
+    table = TableFormatter(rows, headers,
+                           title='Advertised management profiles:',
+                           table_format=context.output_format)
+    table.print_table()
 
 
 def connect_target(targets, target_id):
@@ -224,10 +233,17 @@ def cmd_provider_namespaces(context, options):
     server = connect_target(targets, target_id)
     try:
         # execute the namespaces just to get the data
-        server.namespaces  # pylint: disable=pointless-statement
+        namespaces = server.namespaces
         context.spinner.stop()
 
-        click.echo("Interop namespace:\n  %s" % server.interop_ns)
+        rows = []
+        for ns in namespaces:
+            rows.append([ns])
+        table = TableFormatter(rows, 'Namespace Name',
+                               title='Server Namespaces:',
+                               table_format=context.output_format)
+        table.print_table()
+
     except Error as er:
         raise click.ClickException("%s: %s" % (er.__class__.__name__, er))
 
@@ -238,13 +254,17 @@ def cmd_provider_interop(context, options):
     target_id = options['targetid']
     server = connect_target(targets, target_id)
     try:
-        # execute the namespace cmd just to force the server connect
-        namespaces = server.namespaces
+        # execute the interop request before stopping spinner
+        interop_ns = server.interop_ns
         context.spinner.stop()
 
-        click.echo("All namespaces:")
-        for ns in namespaces:
-            click.echo("  %s" % ns)
+        rows = []
+        rows.append([interop_ns])
+        table = TableFormatter(rows, 'Namespace Name',
+                               title='Server Interop Namespace:',
+                               table_format=context.output_format)
+        table.print_table()
+
     except Error as er:
         raise click.ClickException("%s: %s" % (er.__class__.__name__, er))
 
@@ -261,12 +281,18 @@ def cmd_provider_info(context, options):
         server.namespaces  # pylint: disable=pointless-statement
         context.spinner.stop()
 
-        click.echo("Brand:\n  %s" % server.brand)
-        click.echo("Version:\n  %s" % server.version)
-        click.echo("Interop namespace:\n  %s" % server.interop_ns)
+        rows = []
+        headers = ['Brand', 'version', 'Interop Namespace', 'Namespaces']
+        if len(server.namespaces) > 50:
+            namespaces = '\n'.join(server.namespaces)
+        else:
+            namespaces = ', '.join(server.namespaces)
+        rows.append([server.brand, server.version, server.interop_ns,
+                     namespaces])
+        table = TableFormatter(rows, headers,
+                               title='Server General Information',
+                               table_format=context.output_format)
+        table.print_table()
 
-        click.echo("All namespaces:")
-        for ns in server.namespaces:
-            click.echo("  %s" % ns)
     except Error as er:
         raise click.ClickException("%s: %s" % (er.__class__.__name__, er))

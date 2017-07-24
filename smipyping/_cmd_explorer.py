@@ -93,7 +93,8 @@ def cmd_explore_all(context, **options):
                         logfile=context.log_file,
                         log_level=context.log_level,
                         verbose=context.verbose,
-                        ping=options['ping'], threaded=options['thread'])
+                        ping=options['ping'], threaded=options['thread'],
+                        output_format=context.output_format)
 
     # TODO: ks I beleive that the following is irrelevent. It maps between
     # hosts and targets and so does not gain much
@@ -129,7 +130,8 @@ def cmd_explore_id(context, id, **options):
     explorer = Explorer('smicli', context.target_data,
                         verbose=context.verbose,
                         ping=options['ping'], threaded=options['thread'],
-                        logfile=context.log_file, log_level=context.log_level)
+                        logfile=context.log_file, log_level=context.log_level,
+                        output_format=context.output_format)
 
     servers = explorer.explore_servers([id])
     explorer.report_server_info(servers, context.target_data)

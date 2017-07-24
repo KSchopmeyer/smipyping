@@ -58,7 +58,8 @@ class Explorer(object):
     """
 
     def __init__(self, prog, target_data, logfile=None, log_level=None,
-                 debug=None, ping=None, verbose=None, threaded=False):
+                 debug=None, ping=None, verbose=None, threaded=False,
+                 output_format='simple'):
         """Initialize instance attributes."""
 
         self.verbose = verbose
@@ -69,6 +70,7 @@ class Explorer(object):
         self.debug = debug
         self.threaded = threaded
         self.explore_time = None
+        self.output_format = output_format
         log_dest = 'file' if log_level else None
         SmiPypingLoggers.create_logger(log_component='explore',
                                        log_dest=log_dest,
@@ -108,7 +110,8 @@ class Explorer(object):
                     line.append(TableFormatter.fold_cell(cell_str, 14))
                 table_data.append(line)
         table = TableFormatter(table_data, headers=col_list,
-                               title='Display SMI Profile Information')
+                               title='Display SMI Profile Information',
+                               table_format=self.output_format)
         table.print_table()
 
     def report_server_info(self, servers, user_data, table_format='table'):
@@ -116,7 +119,7 @@ class Explorer(object):
         """
 
         table_data = []
-        tbl_hdr = ['Id', 'Url', 'Brand', 'Company', 'Product', 'Vers',
+        headers = ['Id', 'Url', 'Brand', 'Company', 'Product', 'Vers',
                    'SMI Profiles', 'Interop_ns', 'Status', 'time']
         servers.sort(key=lambda tup: int(tup.target_id))
         for server_tuple in servers:
@@ -155,7 +158,7 @@ class Explorer(object):
 
             table_data.append(line)
 
-        table = TableFormatter(table_data, headers=col_list,
+        table = TableFormatter(table_data, headers=headers,
                                title='Server Basic Information')
         table.print_table()
 

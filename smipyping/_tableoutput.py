@@ -31,6 +31,7 @@ except ImportError:
     from io import StringIO
 from terminaltables import AsciiTable
 import six
+from ._common import TABLE_FORMATS
 
 
 class TableFormatter(object):
@@ -42,10 +43,33 @@ class TableFormatter(object):
     def __init__(self, rows, headers, table_format='simple',
                  title=None, csv_dialect=None):
         """
+          Parameters:
+
+            rows(:term:'list' of lists):
+                A list of lists where each inner list contains the items
+                in a row of the table.
+            headers(:term: 'list'):
+                If not none, a list of strings where each string is a table
+                column header (title for the column), If not Null it is
+                output before the table as a header row.  The exact format
+                depends on the table-output format
+            table_format(:term: 'string'):
+                An optional string defining the output format for the table.
+                If None, the output format simple is assumed.
+
+            title (:term: 'string'):
+                An optional string containing a title that is output on the
+                line before the table output.
+
+            csv_dialect() (:term: 'string'): Future
         """
         self.rows = rows
-        self.headers = headers
+        self.headers = [headers] if isinstance(headers, six.string_types) \
+            else headers
         self.title = title
+        if table_format not in TABLE_FORMATS:
+            raise ValueError('Invalid table format %s passed to '
+                             'TableFormatter' % table_format)
         self.table_format = table_format
         self.csv_dialect = csv_dialect
 
@@ -129,7 +153,7 @@ class TableFormatter(object):
                 # Prints dictionaries if header='keys'
                 result = tabulate.tabulate(self.rows, self.headers,
                                            tablefmt=self.table_format)
-        
+
         if self.title:
             result = '%s\n%s' % (self.title, result)
         return result
@@ -181,10 +205,10 @@ class TableFormatter(object):
             asciitable format, etc.  However these only differ in the table
             boundary character representation
         """
-        # terminaltable does not print title if no  borders.
         if self.headers:
-            all_rows = [self.headers] + self.rows
-        table = AsciiTable(all_rows)
+            self.rows.insert(0, self.headers)
+
+        table = AsciiTable(self.rows)
         if self.table_format is None or self.table_format == 'plain':
             table.inner_column_border = False
             table.inner_heading_row_border = False
