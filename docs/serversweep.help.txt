@@ -43,7 +43,7 @@ General options:
   --config_file CONFIG_FILE, -c CONFIG_FILE
                         Use config file to determine if server is in database
   -D DBTYPE, --dbtype DBTYPE
-                        DBTYPE to use. Default=mysql
+                        DBTYPE to use. Default=csv
   --no_threads          If set, uses non-threaded implementation for pings.
                         The non-threaded implementation takes MUCH longer to
                         execute butis provided in case threading causes issues

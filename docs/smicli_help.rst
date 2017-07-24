@@ -31,10 +31,15 @@ The following defines the help output for the `smicli  --help` subcommand
       -d, --db_type [csv|mysql|sqlite]
                                       Database type. May be defined on cmd line,
                                       config file,  or through default. Default is
-                                      mysql.
+                                      csv.
       -l, --log_level TEXT            Optional option to enable logging for the
                                       level  defined, by the parameter. Choices
                                       are:  ['error', 'warning', 'info', 'debug']
+      -o, --output-format [plain|simple|grid|html]
+                                      Output format (Default: simple). pywbemcli
+                                      may override the format choice depending on
+                                      the operation since not all formats apply to
+                                      all output data types.
       -v, --verbose                   Display extra information about the
                                       processing.
       --version                       Show the version of this command and exit.
@@ -323,11 +328,52 @@ The following defines the help output for the `smicli provider --help` subcomman
       --help  Show this message and exit.
     
     Commands:
+      classes     Find all classes that match CLASSNAME.
       info        Display the brand information for the...
       interop     Display the brand information for the...
       namespaces  Display the brand information for the...
       ping        Ping the provider defined by targetid.
       profiles    profile information The options include...
+
+
+
+.. _`smicli provider classes --help`:
+
+smicli provider classes --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli provider classes --help` subcommand
+
+
+::
+
+    Usage: smicli provider classes [COMMAND-OPTIONS]
+    
+      Find all classes that match CLASSNAME.
+    
+      Find all  class names in the namespace(s) of the defined WBEMServer that
+      match the CLASSNAME regular expression argument. The CLASSNAME argument
+      may be either a complete classname or a regular expression that can be
+      matched to one or more classnames. To limit the filter to a single
+      classname, terminate the classname with $.
+    
+      The regular expression is anchored to the beginning of CLASSNAME and is
+      case insensitive. Thus pywbem_ returns all classes that begin with
+      PyWBEM_, pywbem_, etc.
+    
+      The namespace option limits the search to the defined namespace.
+    
+    Options:
+      -t, --targetid INTEGER          Define a specific target ID from the
+                                      database to  use. Multiple options are
+                                      allowed.
+      -c, --classname CLASSNAME regex
+      -s, --sort                      Sort into alphabetical order by classname.
+      -n, --namespace <name>          Namespace to use for this operation. If not
+                                      defined all namespaces are used
+      --help                          Show this message and exit.
 
 
 

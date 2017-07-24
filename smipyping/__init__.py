@@ -60,6 +60,7 @@ from ._tableoutput import *  # noqa: F401, F403
 from ._targetdata import *  # noqa: F401, F403
 from ._common import *  # noqa: F401, F403
 from ._logging import *  # noqa: F401, F403
+from ._common_options import *  # noqa: F401, F403
 
 # TODO should _cliutils
 from ._cliutils import *  # noqa: F401, F403

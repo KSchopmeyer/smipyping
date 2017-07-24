@@ -28,6 +28,8 @@ from .smicli import cli, CMD_OPTS_TXT
 from ._ping import ping_host
 from .config import PING_TIMEOUT
 from ._tableoutput import TableFormatter
+from ._common_options import add_options, sort_option, namespace_option
+from ._common import filter_namelist
 
 
 @cli.group('provider', options_metavar=CMD_OPTS_TXT)
@@ -145,6 +147,34 @@ def provider_profiles(context, **options):
     base.
     """
     context.execute_cmd(lambda: cmd_provider_profiles(context, options))
+
+
+@provider_group.command('classes', options_metavar=CMD_OPTS_TXT)
+@click.option('-t', '--targetid', type=int, required=False,
+              help='Define a specific target ID from the database to '
+                   ' use. Multiple options are allowed.')
+@click.option('-c', '--classname', type=str, metavar='CLASSNAME regex',
+              required=False)
+@add_options(sort_option)
+@add_options(namespace_option)
+@click.pass_obj
+def provider_classes(context, **options):
+    """
+    Find all classes that match CLASSNAME.
+
+    Find all  class names in the namespace(s) of the defined WBEMServer that
+    match the CLASSNAME regular expression argument. The CLASSNAME argument may
+    be either a complete classname or a regular expression that can be matched
+    to one or more classnames. To limit the filter to a single classname,
+    terminate the classname with $.
+
+    The regular expression is anchored to the beginning of CLASSNAME and
+    is case insensitive. Thus pywbem_ returns all classes that begin with
+    PyWBEM_, pywbem_, etc.
+
+    The namespace option limits the search to the defined namespace.
+    """
+    context.execute_cmd(lambda: cmd_provider_classes(context, options))
 
 #########################################################################
 ##
@@ -289,6 +319,54 @@ def cmd_provider_info(context, options):
             namespaces = ', '.join(server.namespaces)
         rows.append([server.brand, server.version, server.interop_ns,
                      namespaces])
+        table = TableFormatter(rows, headers,
+                               title='Server General Information',
+                               table_format=context.output_format)
+        table.print_table()
+
+    except Error as er:
+        raise click.ClickException("%s: %s" % (er.__class__.__name__, er))
+
+
+def cmd_provider_classes(context, options):
+    """
+    Execute the command for get class and display the result. The result is
+    a list of classes/namespaces
+    """
+    targets = context.target_data
+    target_id = options['targetid']
+    server = connect_target(targets, target_id)
+
+    if options['namespace']:
+        ns_names = options['namespace']
+    else:
+        ns_names = server.namespaces
+        if options['sort']:
+            ns_names.sort()
+
+    classname_regex = options.get('classname', '.*')
+
+    try:
+        names_dict = {}
+        for ns in ns_names:
+            classnames = server.conn.EnumerateClassNames(
+                namespace=ns, DeepInheritance=True)
+            filtered_classnames = filter_namelist(classname_regex, classnames)
+            if options['sort']:
+                filtered_classnames.sort()
+            names_dict[ns] = filtered_classnames
+        context.spinner.stop()
+
+        rows = []
+        headers = ['Namespace', 'Classname']
+        for ns_name in names_dict:
+            ns_rows = []
+            for classname in names_dict[ns_name]:
+                ns_rows.append([ns_name, classname])
+            # sort the result by classname
+            ns_rows.sort(key=lambda x: x[1])
+            rows.extend(ns_rows)
+            
         table = TableFormatter(rows, headers,
                                title='Server General Information',
                                table_format=context.output_format)

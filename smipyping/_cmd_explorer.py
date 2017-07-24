@@ -96,7 +96,7 @@ def cmd_explore_all(context, **options):
                         ping=options['ping'], threaded=options['thread'],
                         output_format=context.output_format)
 
-    # TODO: ks I beleive that the following is irrelevent. It maps between
+    # TODO: ks I believe that the following is irrelevent. It maps between
     # hosts and targets and so does not gain much
     hosts = context.target_data.get_hostid_list()
     targets = []
