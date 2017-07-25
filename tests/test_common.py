@@ -26,6 +26,7 @@ from smipyping._common import pick_from_list, pick_multiple_from_list, \
     filter_namelist
 from smipyping._click_context import ClickContext
 
+
 class FilterNamelistTest(unittest.TestCase):
     """Test the common filter_namelist function."""
 
@@ -53,6 +54,7 @@ class FilterNamelistTest(unittest.TestCase):
         self.assertEqual(filter_namelist(r'.*abc$', name_list), ['CIM_abc',
                                                                  'TST_abc'])
         self.assertEqual(filter_namelist(r'.*def', name_list), ['CIM_def'])
+
 
 class TestPickFromList(unittest.TestCase):
     """Tests for pick_from_list. Mocked response"""

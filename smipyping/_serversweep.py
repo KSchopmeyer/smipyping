@@ -363,7 +363,7 @@ class ServerSweep(object):
                 '    total pings=%s pings answered=%s' \
                 % (self.net_defs, self.ports, range_txt, execution_time,
                    self.total_pings, len(open_hosts))
-        if len(open_hosts) != 0:
+        if open_hosts:    # if open_hosts not zero
             # open_hosts.sort(key=lambda ip: map(int, ip.split('.')))
             # TODO this probably requires ordered dict rather than dictionary to
             # keep order. We are not outputing in full order. Note that
@@ -403,11 +403,11 @@ class ServerSweep(object):
 
         if rows:
             table = TableFormatter(rows, headers=headers,
-                                   title='Server Basic Information')
+                                   title=title)
             table.print_table()
-        # TODO: Should we be showing execution time here. Put in title.
-        print('\nResults: Found=%s, Unknown=%s, Total=%s' % (known, unknown,
-                                                             known + unknown))
+        # TODO: Should the following  be in the report???
+        print('\nResults: Found=%s, Unknown=%s, Total=%s time %s'
+              % (known, unknown, (known + unknown), execution_time))
 
     def sweep_servers(self):
         """

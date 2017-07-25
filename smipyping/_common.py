@@ -34,6 +34,7 @@ def prompt(txt):
     """ single function for prompt. Aids mock tests"""
     return prompt_toolkit.prompt(txt)
 
+
 def filter_namelist(regex, name_list, ignore_case=True):
     """
     Filter out names in name_list that do not match compiled_regex.

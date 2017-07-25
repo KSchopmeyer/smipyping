@@ -20,13 +20,10 @@ of wbem servers.
 """
 from __future__ import print_function, absolute_import
 
-# from pprint import pprint as pp  # noqa: F401
 import click
 
 from smipyping import SimplePing
-
 from .smicli import cli, CMD_OPTS_TXT
-
 from .config import DEFAULT_NAMESPACE, DEFAULT_OPERATION_TIMEOUT, \
     DEFAULT_USERNAME, DEFAULT_PASSWORD
 
@@ -112,11 +109,11 @@ def cimping_host(context, host, **options):
                - HTTP  - 5988\n
                - HTTPS - 5989\n
     """
-    context.execute_cmd(lambda: cmd_cimping_hostname(context, host, options))
+    context.execute_cmd(lambda: cmd_cimping_host(context, host, options))
 
 
 # TODO. Should we consider cert verify, etc. as part of this
-
+# TODO: This differs from pattern. targetid is an argument, not options
 
 @cimping_group.command('id', options_metavar=CMD_OPTS_TXT)
 @click.argument('ID', type=int, metavar='TargetID', required=True)
@@ -132,7 +129,7 @@ def cimping_host(context, host, **options):
                    'detailed information on the call and response.'
                    ' ' + '(Default: %s.' % False)
 @click.pass_obj
-def cimping_id(context, id, **options):
+def cimping_id(context, id, **options):  # pylint: disable=redefined-builtin
     """
     Execute a simple cim ping against the target id defined in the request
     """
@@ -182,13 +179,13 @@ def cmd_cimping_host(context, host, options):
     print_ping_result(simpleping, test_result, context.verbose)
 
 
-def cmd_cimping_id(context, id, options):
+def cmd_cimping_id(context, id, options):  # pylint: disable=redefined-builtin
     """
     Execute a simple ping of a target wbem server based on the target_id
     from the database provided with the input parameters.
     """
     try:
-        target_record = context.target_data.get_dict_record(id)
+        context.target_data.get_dict_record(id)
     except Exception as ex:
         raise click.ClickException('Invalid TargetID=%s. Not in database. '
                                    '%s: %s' % (id, ex.__class__.__name__, ex))

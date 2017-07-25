@@ -27,10 +27,10 @@ from click_configfile import ConfigFileReader, Param, SectionSchema, \
 from .config import DEFAULT_SMICLI_CONFIG_FILES
 
 
-class ConfigSectionSchema(object):
+class ConfigSectionSchema(object):  # pylint: disable=too-few-public-methods
     """Describes all config sections of this configuration file."""
 
-    @matches_section("general")
+    @matches_section("general")  # pylint: disable=too-few-public-methods
     class General(SectionSchema):
         """
         General info Section schema. This is the primary schema and default
@@ -43,16 +43,16 @@ class ConfigSectionSchema(object):
         # numbers = Param(type=int, multiple=True)
         # filenames = Param(type=click.Path(), multiple=True)
         dbtype = Param(type=str)
-        output_format= Param(type=str)
+        output_format = Param(type=str)
 
-    @matches_section("csv")
+    @matches_section("csv")  # pylint: disable=too-few-public-methods
     class Csv(SectionSchema):
         """ Database config section schema. Defines the characteristcs of
             the csv file if that database type is specified
         """
         filename = Param(type=str)    # filename for the csv file
 
-    @matches_section("mysql")
+    @matches_section("mysql")  # pylint: disable=too-few-public-methods
     class Mysql(SectionSchema):
         """ Database config section schema for a mysql database """
         host = Param(type=str)        # host name
@@ -60,7 +60,7 @@ class ConfigSectionSchema(object):
         user = Param(type=str)        # user name for db access
         password = Param(type=str)    # user password for db access
 
-    @matches_section("log")
+    @matches_section("log")  # pylint: disable=too-few-public-methods
     class Log(SectionSchema):
         """ Log config section schema"""
         # name = Param(type=str)
@@ -69,6 +69,11 @@ class ConfigSectionSchema(object):
 
 
 class ConfigFileProcessor(ConfigFileReader):
+    """
+    Subclass of ConfigFileReader specializes superclass for items like:
+        -- section definitions
+        -- config file locations
+    """
     config_files = DEFAULT_SMICLI_CONFIG_FILES
     config_section_schemas = [
         ConfigSectionSchema.General,     # PRIMARY SCHEMA
@@ -84,7 +89,6 @@ class ConfigFileProcessor(ConfigFileReader):
 
         Replaces the original config files defined with the class of
         DEFAULT_SMICLI_CONFIG_FILES.
-
         """
         cls.config_files = config_files
 
@@ -97,11 +101,6 @@ class ConfigFileProcessor(ConfigFileReader):
         ["."]
         """
         cls.config_searchpath = search_path
-
-    # -- ALTERNATIVES: Override ConfigFileReader methods:
-    #  * process_config_section(config_section, storage)
-    #  * get_storage_name_for(section_name)
-    #  * get_storage_for(section_name, storage)
 
 
 def get_config_dict():
@@ -123,14 +122,3 @@ def get_config_dict():
 
 # -- COMMAND:
 CONTEXT_SETTINGS = get_config_dict()
-
-# @click.command(context_settings=CONTEXT_SETTINGS)
-# @click.option("-n", "--number", "numbers", type=int, multiple=True)
-# @click.pass_context
-# def command_with_config(ctx, numbers):
-#     # -- ACCESS ADDITIONAL DATA FROM CONFIG FILES: Using ctx.default_map
-#     for person_data_key in ctx.default_map.keys():
-#         if not person_data_key.startswith("person."):
-#             continue
-#         person_data = ctx.default_map[person_data_key]
-#         process_person_data(person_data)    # as dict.

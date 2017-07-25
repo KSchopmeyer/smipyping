@@ -35,7 +35,7 @@ class PingTable(object):
     `Status` varchar(255) NOT NULL,
     """
 
-    def __init__(self,  db_dict, db_type, verbose):
+    def __init__(self, db_dict, db_type, verbose):
         """Constructor for PingTable"""
         self.db_dict = db_dict
         self.verbose = verbose
@@ -78,7 +78,6 @@ class PingTable(object):
                 (self.db_type, self.db_dict))
 
 
-
 class CsvPingTable(PingTable):
     """
         Ping Table functions for csv based table
@@ -102,13 +101,15 @@ class CsvPingTable(PingTable):
         ping_id = self.get_last_ping_id()
         with open(self.filename, 'a') as ping_file:
             print("%s,%s,%s,'%s'" % (ping_id, target_id,
-                                    datetime.datetime.now(),
-                                    status), file=ping_file)
+                                     datetime.datetime.now(),
+                                     status), file=ping_file)
 
 
 class SQLPingTable(PingTable):
     def __init(self, filename, args):
         super(CsvPingTable, self).__init__(filename, args)
+
+        self.connection = None
 
     def __init__(self, db_dict, dbtype, verbose):
         """Read the input file into a dictionary."""
@@ -129,11 +130,11 @@ class SQLPingTable(PingTable):
                 print('SQL database connection failed. host %s, db %s' %
                       (db_dict['host'], db_dict['database']))
                 raise ValueError('Connection to database failed')
+            self.connection = connection
         except Exception as ex:
             raise ValueError('Could not connect to sql database %r. '
                              ' Exception: %r'
                              % (db_dict, ex))
-
 
     def get_last_ping_id(self):
         return 9999
@@ -142,17 +143,18 @@ class SQLPingTable(PingTable):
         """
         Write a new record to the database
         """
-    cur = conn.cursor()
-    try:
-       ts = time.time()
-       timestamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
-       add_record = ("Insert INOT Pings "
-                    "(TargetID, Timestamp, Status) "
-                    "VALUES (%s %s %s")
-       data = (target_id, timestamp, status)
-       cur.execute(add_record, data)
-       # cur.execute("INSERT INTO Pings VALUES (%s,%s)",(188,90))
-       conn.commit()
-    except:
-       conn.rollback()
-    cur.close()
+        cursor = self.connection.cursor()
+        try:
+            ts = time.time()
+            timestamp = \
+                datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+            add_record = ("Insert INOT Pings "
+                          "(TargetID, Timestamp, Status) "
+                          "VALUES (%s %s %s")
+            data = (target_id, timestamp, status)
+            cursor.execute(add_record, data)
+            # cur.execute("INSERT INTO Pings VALUES (%s,%s)",(188,90))
+            self.connection.commit()
+        except:
+            self.connection.rollback()
+        cursor.close()

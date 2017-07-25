@@ -21,6 +21,7 @@ from __future__ import print_function, absolute_import
 
 # from pprint import pprint as pp  # noqa: F401
 import click
+import six
 
 from pywbem import WBEMServer, WBEMConnection, Error, ValueMapping
 
@@ -28,7 +29,7 @@ from .smicli import cli, CMD_OPTS_TXT
 from ._ping import ping_host
 from .config import PING_TIMEOUT
 from ._tableoutput import TableFormatter
-from ._common_options import add_options, sort_option, namespace_option
+from ._common_options import add_options, namespace_option
 from ._common import filter_namelist
 
 
@@ -154,8 +155,14 @@ def provider_profiles(context, **options):
               help='Define a specific target ID from the database to '
                    ' use. Multiple options are allowed.')
 @click.option('-c', '--classname', type=str, metavar='CLASSNAME regex',
-              required=False)
-@add_options(sort_option)
+              required=False,
+              help='Regex that filters the classnames to return only those '
+                   'that match the regex. This is a case insensitive, '
+                   'anchored regex. Thus, "CIM_" returns all classnames that '
+                   'start with "CIM_". To return an exact classname append '
+                   '"$" to the classname')
+@click.option('-s', '--summary', is_flag=True, default=False, required=False,
+              help='Return only the count of classes in the namespace(s)')
 @add_options(namespace_option)
 @click.pass_obj
 def provider_classes(context, **options):
@@ -339,36 +346,49 @@ def cmd_provider_classes(context, options):
 
     if options['namespace']:
         ns_names = options['namespace']
+        if ns_names not in server.namespaces:
+            raise click.ClickException('Namespace %s not in server namespaces '
+                                       '%s' % (ns_names, server.namespaces))
+        ns_names = [ns_names]
     else:
         ns_names = server.namespaces
-        if options['sort']:
-            ns_names.sort()
+        ns_names.sort()
 
-    classname_regex = options.get('classname', '.*')
+    classname_regex = options['classname']
 
     try:
         names_dict = {}
-        for ns in ns_names:
+        for ns_name in ns_names:
             classnames = server.conn.EnumerateClassNames(
-                namespace=ns, DeepInheritance=True)
-            filtered_classnames = filter_namelist(classname_regex, classnames)
-            if options['sort']:
-                filtered_classnames.sort()
-            names_dict[ns] = filtered_classnames
-        context.spinner.stop()
+                namespace=ns_name, DeepInheritance=True)
+            if classname_regex:
+                classnames = filter_namelist(classname_regex, classnames)
+            classnames.sort()
+            names_dict[ns_name] = classnames
 
         rows = []
-        headers = ['Namespace', 'Classname']
-        for ns_name in names_dict:
-            ns_rows = []
-            for classname in names_dict[ns_name]:
-                ns_rows.append([ns_name, classname])
-            # sort the result by classname
-            ns_rows.sort(key=lambda x: x[1])
-            rows.extend(ns_rows)
-            
+        if options['summary']:
+            headers = ['Namespace', 'Class count']
+            title = 'Server Class count'
+            for ns_name in sorted(names_dict):
+                rows.append((ns_name, len(names_dict[ns_name])))
+
+        else:
+            headers = ['Namespace', 'Classname']
+            title = 'Server Classes'
+            for ns_name, classes in sorted(six.iteritems(names_dict)):
+                ns_rows = []
+                for classname in classes:
+                    ns_rows.append([ns_name, classname])
+                # sort the result by classname
+                ns_rows.sort(key=lambda x: x[1])
+                rows.extend(ns_rows)
+
+        context.spinner.stop()
+        title += ' (filter=%s):' % classname_regex if classname_regex else ':'
+
         table = TableFormatter(rows, headers,
-                               title='Server General Information',
+                               title='Server Classes:',
                                table_format=context.output_format)
         table.print_table()
 
