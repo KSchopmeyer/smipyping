@@ -14,8 +14,8 @@
 # activate_this = os.path.join(base_dir, 'venv/bin/activate_this.py')
 # execfile(activate_this, dict(__file__=activate_this))
 
-export PYTHONPATH=/home/.virtualenvs/smipyping27
+export PYTHONPATH=/home/.virtualenvs/smipyping
 CONFIG_FILE=$PWD/smicli.ini
 # sweeps 10.1  132, 134, 136 all in octet 4(1 through 254)
 #        10.2  100 THROUGH 117      octet 4(1 through 50)
-sudo ./serversweep 10.1.132,134,136 10.2.100:117.1:50 -c $CONFIG_FILE -p 5988 5989
+sudo ./serversweep 10.1.132,134,136 10.2.100-117.1-50 -c $CONFIG_FILE -p 5988 5989

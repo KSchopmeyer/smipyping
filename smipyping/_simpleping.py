@@ -190,7 +190,7 @@ class SimplePing(object):
             if ping_result is False:
                 result_code = self.get_result_code(result)
                 exception = 'Ping failed'
-        self.logger.debug('ping result=%s' % (result_code))
+        self.logger.debug('ping result=%s', result_code)
         if ping_result:
             print('cimping url=%s, ns=%s, principal=%s, cred=%s' %
                   (self.url, self.namespace, self.user, self.password))
@@ -203,8 +203,8 @@ class SimplePing(object):
         if self.verbose:
             print('result=%s, exception=%s, resultCode %s'
                   % (result, exception, result_code))
-        self.logger.debug('result=%s, exception=%s, resultCode %s'
-                          % (result, exception, result_code))
+        self.logger.debug('result=%s, exception=%s, resultCode %s',
+                          result, exception, result_code)
 
         # Return namedtuple with results
         return TestResult(
@@ -266,9 +266,9 @@ class SimplePing(object):
                 print('Test server %s namespace %s creds %s class %s' %
                       (conn.url, conn.default_namespace, conn.creds,
                        PING_TEST_CLASS))
-            self.logger.info('Test server %s namespace %s creds %s class %s' %
-                             (conn.url, conn.default_namespace, conn.creds,
-                              PING_TEST_CLASS))
+            self.logger.info('Test server %s namespace %s creds %s class %s',
+                             conn.url, conn.default_namespace, conn.creds,
+                             PING_TEST_CLASS)
             insts = conn.EnumerateInstances(PING_TEST_CLASS)
 
             if self.verbose:
@@ -281,9 +281,7 @@ class SimplePing(object):
                                             ce.status_code,
                                             ce.status_code_name,
                                             ce.status_description))
-            rtn_reason = '%s:%s:%s:%s' % (ce, ce.status_code,
-                                          ce.status_code_name,
-                                          ce.status_description)
+            # TODO add status_code
             rtn_code = ("WBEMException", ce, ce.status_code_name,
                         ce.status_description)
         except ConnectionError as co:

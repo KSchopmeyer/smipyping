@@ -113,13 +113,18 @@ class Explorer(object):
                                table_format=self.output_format)
         table.print_table()
 
-    def report_server_info(self, servers, target_data, table_format='table'):
+    def report_server_info(self, servers, target_data, table_format='table',
+                           columns=None, report='full'):
         """ Display a table of info from the server scan
         """
 
         rows = []
-        headers = ['Id', 'Url', 'Company', 'Product', 'Vers',
-                   'SMI Profiles', 'Interop_ns', 'Status', 'time']
+        if report == 'full':
+            headers = ['Id', 'Url', 'Company', 'Product', 'Vers',
+                       'SMI Profiles', 'Interop_ns', 'Status', 'time']
+        else:
+            headers = ['Id', 'Url', 'Company', 'Product',
+                       'Status', 'time']
         servers.sort(key=lambda tup: int(tup.target_id))
         for server_tuple in servers:
             url = server_tuple.url
@@ -142,17 +147,27 @@ class Explorer(object):
                 disp_time = "%.2f s" % (round(server_tuple.time, 1))
             else:
                 disp_time = "%.2f m" % (server_tuple.time / 60)
-            line = [target_id,
-                    url,
-                    TableFormatter.fold_cell(target['CompanyName'], 11),
-                    TableFormatter.fold_cell(target['Product'], 8),
-                    version,
-                    smi_profiles,
-                    interop_ns,
-                    server_tuple.status,
-                    disp_time]
+            row = []
+            if 'Id' in headers:
+                row.append(target_id)
+            if 'Url' in headers:
+                row.append(url)
+            if 'Company' in headers:
+                row.append(TableFormatter.fold_cell(target['CompanyName'], 11),)
+            if 'Product' in headers:
+                row.append(TableFormatter.fold_cell(target['Product'], 8),)
+            if 'Vers' in headers:
+                row.append(version)
+            if 'SMI Profiles' in headers:
+                row.append(smi_profiles)
+            if 'Interop_ns' in headers:
+                row.append(interop_ns)
+            if 'Status' in headers:
+                row.append(server_tuple.status)
+            if 'time' in headers:
+                row.append(disp_time)
 
-            rows.append(line)
+            rows.append(row)
 
         table = TableFormatter(rows, headers=headers,
                                title='Server Explorer Report:',

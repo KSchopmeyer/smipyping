@@ -52,7 +52,7 @@ def create_sweep_argparser(prog_name):
            'and ports to find existing running WBEM servers.'
     epilog = """
 Examples:
-  %s 10.1.132:134
+  %s 10.1.132-134
         The above example will scan the subnets 10.1.134, 10.1.133, and
         10.1.134 from 1 to 254 for the 4 the octet of ip addresses. This
         is explicitly defined by 10.1.132:124.1:254
@@ -78,8 +78,8 @@ Examples:
              '  * Integers: Each integer is in the range 0-255\n'
              '      ex. 10.1.2.9\n'
              '  * Octet range definition: A range expansion is in the\n'
-             '     form: int:int which defines the mininum and maximum\n'
-             '      values for that octet (ex 10.1.132:134) or\n'
+             '     form: int-int which defines the mininum and maximum\n'
+             '      values for that octet (ex 10.1.132-134) or\n'
              '  * Integer lists: A range list is in the form:\n'
              '     int,int,int\n'
              '     and defines the set of values for that octet.\n'
