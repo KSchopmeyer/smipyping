@@ -156,6 +156,8 @@ class TableFormatter(object):
 
         if self.title:
             result = '\n%s\n%s' % (self.title, result)
+        else:
+            result = '\n%s' % result
         return result
 
     def build_html_table(self):

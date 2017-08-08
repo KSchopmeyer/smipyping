@@ -98,7 +98,8 @@ class AsciiTableTests(TableTests):
         if VERBOSE:
             print(actual)
 
-        expected = ('test simple table\n'
+        expected = ('\n'
+                    'test simple table\n'
                     'col1       col2        col3\n'
                     '---------  ----------  -----------\n'
                     'row1col1   row1col2    row1col3\n'
@@ -124,7 +125,8 @@ class AsciiTableTests(TableTests):
         if VERBOSE:
             print(actual)
 
-        expected = ('col1       col2        col3\n'
+        expected = ('\n'
+                    'col1       col2        col3\n'
                     '---------  ----------  -----------\n'
                     'row1col1   row1col2    row1col3\n'
                     'row2col1   row2col2    row2col3\n'
@@ -145,7 +147,8 @@ class AsciiTableTests(TableTests):
         if VERBOSE:
             print(actual)
 
-        expected = ('test simple table\n'
+        expected = ('\n'
+                    'test simple table\n'
                     'col1       col2        col3\n'
                     '---------  ----------  -----------\n'
                     'row1col1   row1col2    row1col3\n'
@@ -172,7 +175,8 @@ class AsciiTableTests(TableTests):
         if VERBOSE:
             print(actual)
 
-        expected = ('test simple table\n'
+        expected = ('\n'
+                    'test simple table\n'
                     'col1       col2        col3\n'
                     'row1col1   row1col2    row1col3\n'
                     'row2col1   row2col2    row2col3\n'
@@ -197,7 +201,8 @@ class AsciiTableTests(TableTests):
         if VERBOSE:
             print(actual)
 
-        expected = ('test simple table\n'
+        expected = ('\n'
+                    'test simple table\n'
                     '+-----------+------------+-------------+\n'
                     '| col1      | col2       | col3        |\n'
                     '+===========+============+=============+\n'
@@ -229,7 +234,8 @@ class AsciiTableTests(TableTests):
         if VERBOSE:
             print(actual)
 
-        expected = ('test simple table\n'
+        expected = ('\n'
+                    'test simple table\n'
                     'col1       col2        col3\n'
                     '---------  ----------  -----------\n'
                     'row1col1   row1col2    row1col3\n'
@@ -250,7 +256,8 @@ class AsciiTableTests(TableTests):
         if VERBOSE:
             print(actual)
 
-        expected = ('test folded table\n'
+        expected = ('\n'
+                    'test folded table\n'
                     ' col1       col2      col3      \n'
                     ' row1col1   row2col2  this is a \n'
                     '                      folded    \n'
@@ -276,7 +283,8 @@ class AsciiTableTests(TableTests):
         if VERBOSE:
             print(actual)
 
-        expected = ('test folded table\n'
+        expected = ('\n'
+                    'test folded table\n'
                     ' col1       col2      col3      \n'
                     '--------------------------------\n'
                     ' row1col1   row2col2  this is a \n'
@@ -298,7 +306,8 @@ class AsciiTableTests(TableTests):
         if VERBOSE:
             print(actual)
 
-        expected = ('test folded table\n'
+        expected = ('\n'
+                    'test folded table\n'
                     '+-----------+----------+-----------+\n'
                     '| col1      | col2     | col3      |\n'
                     '+-----------+----------+-----------+\n'
@@ -371,7 +380,8 @@ class CsvTableTests(TableTests):
         if VERBOSE:
             print(actual)
 
-        expected = ('test simple table\n'
+        expected = ('\n'
+                    'test simple table\n'
                     '"col1","col2","col3"\n'
                     '"row1col1","row1col2","row1col3"\n'
                     '"row2col1","row2col2","row2col3"\n'
