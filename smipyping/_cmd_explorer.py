@@ -49,6 +49,9 @@ def explorer_group():
 @click.option('--thread/--no-thread', default=True,
               help='Run test multithreaded.  Much faster. '
                    'Default: thread')
+@click.option('-r', '--report', type=click.Choice(['full', 'brief']),
+              default='full',
+              help='Generate full or brief (fewer columns) report')
 @click.pass_obj
 def explore_all(context, **options):
     """
@@ -59,20 +62,24 @@ def explore_all(context, **options):
 
 
 @explorer_group.command('id', options_metavar=CMD_OPTS_TXT)
-@click.argument('ID', type=int, metavar='TargetID', required=True)
+@click.argument('IDs', type=int, metavar='TargetIDs', required=True, nargs=-1)
 @click.option('--ping/--no-ping', default=True,
               help='Ping the the provider as initial step in test. '
                    'Default: ping')
 @click.option('--thread/--no-thread', default=True,
               help='Run test multithreaded.  Much faster. '
                    'Default: thread')
+@click.option('-r', '--report', type=click.Choice(['full', 'brief']),
+              default='full',
+              help='Generate full or brief (fewer columns) report')
 @click.pass_obj
-def explore_id(context, id, **options):
+def explore_id(context, ids, **options):
     """
-    Execute the general explorer on the enabled providers in the database
+    Execute the general explorer on the providers defined by id.  Multiple
+    ids may be supplied (ex. id 5 6 7)
 
     """
-    context.execute_cmd(lambda: cmd_explore_id(context, id, **options))
+    context.execute_cmd(lambda: cmd_explore_id(context, ids, **options))
 
 
 ######################################################################
@@ -113,19 +120,23 @@ def cmd_explore_all(context, **options):
 
     # print results
     # TODO make this part of normal print services
-    explorer.report_server_info(servers, context.target_data)
+    context.spinner.stop()
+    explorer.report_server_info(servers, context.target_data,
+                                report=options['report'])
 
 
-def cmd_explore_id(context, id, **options):
+def cmd_explore_id(context, ids, **options):
     """
     Explore the wbem server defined by the Id provided
     """
     # TODO: ks redo this code to use the record once it is acquired.
-    try:
-        target_record = context.target_data.get_dict_record(id)  # noqa: F841
-    except Exception as ex:
-        raise click.ClickException('Invalid TargetID=%s. Not in database. '
-                                   '%s: %s' % (id, ex.__class__.__name__, ex))
+    for id_ in ids:
+        try:
+            targ_rec = context.target_data.get_dict_record(id_)  # noqa: F841
+        except Exception as ex:
+            raise click.ClickException('Invalid TargetID=%s. Not in database. '
+                                       '%s: %s' % (id,
+                                                   ex.__class__.__name__, ex))
 
     explorer = Explorer('smicli', context.target_data,
                         verbose=context.verbose,
@@ -133,5 +144,7 @@ def cmd_explore_id(context, id, **options):
                         logfile=context.log_file, log_level=context.log_level,
                         output_format=context.output_format)
 
-    servers = explorer.explore_servers([id])
-    explorer.report_server_info(servers, context.target_data)
+    servers = explorer.explore_servers(ids)
+    context.spinner.stop()
+    explorer.report_server_info(servers, context.target_data,
+                                report=options['report'])
