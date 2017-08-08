@@ -219,7 +219,7 @@ def get_profile_info(org_vm, inst):
 
 
 def cmd_provider_profiles(context, options):
-    """return tuple of info of autonomous profiles for this server"""
+    """Return tuple of info of autonomous profiles for this server"""
     targets = context.target_data
     target_id = options['targetid']
     server = connect_target(targets, target_id)
