@@ -22,4 +22,5 @@ decorator>=4.0.10 # new BSD
 pbr>=1.10.0 # Apache-2.0
 prompt_toolkit>=1.0.9 # BSD, from click-repl
 six>=1.10.0 # MIT
+tabulate>=0.7.7 # MIT
 wcwidth>=0.1.7 # MIT, from prompt_toolkit

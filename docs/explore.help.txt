@@ -27,9 +27,9 @@ Server related options:
 General options:
   -f CONFIG_FILE, --config_file CONFIG_FILE
                         Configuration file to use for config information.
-                        Default=localconfig.ini
+                        Default=smicli.ini
   -D DBTYPE, --dbtype DBTYPE
-                        DBTYPE to use. Default=mysql
+                        DBTYPE to use. Default=csv
   --no_ping, -n         Do not ping for server as first test. Executing the
                         ping often shortens the total response time.
   --threaded            If set use threaded code to explore in parallel

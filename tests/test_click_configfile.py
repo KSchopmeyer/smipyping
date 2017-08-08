@@ -22,14 +22,15 @@ from __future__ import absolute_import, print_function
 
 import os
 import unittest
-from smipyping._click_configfile import get_config_dict
-
-TEST_CONFIG_FILE_NAME = 'smicli.ini'
+from smipyping._click_configfile import get_config_dict, ConfigFileProcessor
 
 SCRIPT_DIR = os.path.dirname(__file__)
 
+VERBOSE = False
+
 # test for config file with good data
 good_config_data = [
+    '#Test config file created by test_click_configfile.py',
     '[general]',
     'dbtype = mysql',
 
@@ -47,24 +48,34 @@ good_config_data = [
 
 
 class ValidConfigFileTests(unittest.TestCase):
+    """
+    Tests for valid components in config file.
+    Setup a config file and test validate
+    """
 
     def setUp(self):
-        test_config_file = os.path.join(SCRIPT_DIR, TEST_CONFIG_FILE_NAME)
+        """Setup for standard config file in tests  dir"""
         self.configfile = None
 
     def create_file(self, file_name, file_data):
         """
-        Create a config file from the defined file data
+        Create a config file from the defined file data in the tests
+        directory
         """
         test_config_file = os.path.join(SCRIPT_DIR, file_name)
         with open(test_config_file, 'w') as file_handle:
             for line in file_data:
                 file_handle.write(line)
                 file_handle.write('\n')
-        self.configfile = file_name
+        self.configfile = test_config_file
+        ConfigFileProcessor.set_search_path([SCRIPT_DIR])
+        # print('test_config_file %s' % test_config_file)
+        ConfigFileProcessor.set_config_files([file_name])
 
     def tearDown(self):
-        if self.configfile:
+        """Remove config file if it exists"""
+        if self.configfile and os.path.exists(self.configfile):
+            # print('remove %s' % self.configfile)
             os.remove(self.configfile)
 
 
@@ -73,28 +84,31 @@ class ConfigFileTest(ValidConfigFileTests):
 
     def test_valid_data(self):
         """Test a single data file"""
-        self.create_file('smicli.cfg', good_config_data)
+        self.create_file('smicliblah.ini', good_config_data)
 
         config_dict = get_config_dict()
 
-        print(config_dict)
+        default_map = config_dict['default_map']
 
-        for data_key in config_dict:
-            print(' %s=%s' % (data_key, config_dict[data_key]))
+        if VERBOSE:
+            for data_key in default_map:
+                print(' %s=%s' % (data_key, default_map[data_key]))
 
-        self.assertEqual(config_dict['dbtype'], 'mysql')
+        self.assertEqual(default_map['dbtype'], 'mysql')
 
-        mysql = config_dict['mysql']
+        mysql = default_map['mysql']
 
         self.assertEqual(mysql['host'], 'localhost')
-        csv = config_dict['csv']
+        csv = default_map['csv']
         self.assertEqual(csv['filename'], 'targetdata_example.csv')
 
     def test_no_config_file(self):
         """Test where no file exists."""
-
+        ConfigFileProcessor.set_config_files('blah.blah')
         config_dict = get_config_dict()
-        self.assertEqual(config_dict, {})
+        expected = {'default_map': {}}
+        self.assertEqual(config_dict, expected, 'Error: Expected:\n%s, '
+                         '\nActual:\n%s' % (expected, config_dict))
 
     # TODO add more tests.
 

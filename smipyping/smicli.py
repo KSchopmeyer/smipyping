@@ -33,6 +33,7 @@ from ._click_context import ClickContext
 from .config import SMICLI_PROMPT, SMICLI_HISTORY_FILE
 from ._click_configfile import CONTEXT_SETTINGS
 from ._logging import LOG_LEVELS
+from ._common import TABLE_FORMATS, DEFAULT_OUTPUT_FORMAT, set_input_variable
 
 
 # Display of options in usage line
@@ -57,12 +58,18 @@ __all__ = ['cli']
               help="Optional option to enable logging for the level "
                    " defined, by the parameter. Choices are: "
                    " " + "%s" % LOG_LEVELS)
+@click.option('-o', '--output-format',
+              type=click.Choice(TABLE_FORMATS),
+              help="Output format (Default: {of}). pywbemcli may override "
+                   "the format choice depending on the operation since not "
+                   "all formats apply to all output data types."
+              .format(of=DEFAULT_OUTPUT_FORMAT))
 @click.option('-v', '--verbose', is_flag=True,
               help='Display extra information about the processing.')
 @click.version_option(help="Show the version of this command and exit.")
 @click.pass_context
-def cli(ctx, config_file, db_type, log_level, verbose, provider_data=None,
-        db_info=None):
+def cli(ctx, config_file, db_type, log_level, output_format, verbose,
+        provider_data=None, db_info=None):
     """
     General command line script for smicli.  This script executes a number
     of subcommands to:
@@ -89,21 +96,13 @@ def cli(ctx, config_file, db_type, log_level, verbose, provider_data=None,
         # Apply the documented option defaults.
 
         # get the db_type. Order is cmd line, config file, default
-        if db_type:
-            db_type = db_type
-        elif ctx.default_map and 'dbtype' in ctx.default_map:
-            db_type = ctx.default_map['dbtype']
-        else:
-            db_type = DEFAULT_DBTYPE
-        if verbose:
-            print('dbtype %s' % db_type)
 
-        if log_level:
-            log_level = log_level
-        elif ctx.default_map and 'log_level' in ctx.default_map:
-            log_level = ctx.default_map['log_level']
-        else:
-            log_level = None
+        output_format = set_input_variable(ctx, output_format, 'output_format',
+                                           DEFAULT_OUTPUT_FORMAT)
+
+        db_type = set_input_variable(ctx, db_type, 'dbtype', DEFAULT_DBTYPE)
+
+        log_level = set_input_variable(ctx, log_level, 'log_level', None)
 
         if log_level:
             if ctx.default_map and 'log_file' in ctx.default_map:
@@ -134,7 +133,8 @@ def cli(ctx, config_file, db_type, log_level, verbose, provider_data=None,
             # filename = csv_config['filename']
             # if not os.path.dirname(filename):
             #    filename = os.path.join(config_file_dir, filename)
-            target_data = TargetsData.factory(db_info, db_type, verbose)
+            target_data = TargetsData.factory(db_info, db_type, verbose,
+                                              output_format=output_format)
         except ValueError as ve:
             raise click.ClickException("%s: %s" % (ve.__class__.__name__, ve))
 
@@ -154,6 +154,8 @@ def cli(ctx, config_file, db_type, log_level, verbose, provider_data=None,
             log_level = ctx.obj.log_level
         if provider_data is None:
             target_data = ctx.obj.target_data
+        if output_format is None:
+            output_format = ctx.obj.output_format
         if verbose is None:
             verbose = ctx.obj.verbose
 
@@ -161,7 +163,7 @@ def cli(ctx, config_file, db_type, log_level, verbose, provider_data=None,
     # its own command context different from the command context for the
     # command line.
     ctx.obj = ClickContext(ctx, config_file, db_type, db_info, log_level,
-                           log_file, target_data, verbose)
+                           log_file, target_data, output_format, verbose)
 
     # Invoke default command
     if ctx.invoked_subcommand is None:

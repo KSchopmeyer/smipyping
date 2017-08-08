@@ -16,13 +16,6 @@ Return:
         6. Ping error (only return if ping is executed)
     
 
-optional arguments:
-  -f CONFIG_FILE, --config_file CONFIG_FILE
-                        Configuration file to use for config information.
-                        Default=localconfig.ini
-  -D DBTYPE, --dbtype DBTYPE
-                        DBTYPE to use. Default=mysql
-
 Positional arguments:
   server                Host name or url of the WBEM server in this format:
                             [{scheme}://]{host}[:{port}]
@@ -51,7 +44,7 @@ Server related options:
                         Timeout of the completion of WBEM Server operation
                         in seconds(integer between 0 and 300).
                         Default: 20 seconds
-  -T TargetUserId, --target_id TargetUserId
+  -T TARGETID, --target_id TARGETID
                         If this argument is set, the value is a user id
                         instead of an server url as the source for the test. In
                         this case, namespace, user, and password arguments are
@@ -89,6 +82,13 @@ Connection security related options:
 General options:
   --no_ping, -x         Do not ping for server as first test. Executing the
                         ping often shortens the total response time.
+  -f CONFIG_FILE, --config_file CONFIG_FILE
+                        Configuration file to use for config information.
+                        Default=smicli.ini
+  -D DBTYPE, --dbtype DBTYPE
+                        DBTYPE to use. Default=csv
+  -l LOG_LEVEL, --log_level LOG_LEVEL
+                        Log level. Default=None
   -v, --verbose         Print more messages while processing
   -d, --debug           Display XML for request and response
   -h, --help            Show this help message and exit

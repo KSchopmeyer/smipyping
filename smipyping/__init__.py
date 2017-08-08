@@ -56,11 +56,11 @@ from __future__ import absolute_import
 from .config import *  # noqa: F401, F403
 # core classes and functions
 from ._ping import *  # noqa: F401, F403
-from ._csvtable import *  # noqa: F401, F403
-from ._asciitable import *  # noqa: F401, F403
+from ._tableoutput import *  # noqa: F401, F403
 from ._targetdata import *  # noqa: F401, F403
 from ._common import *  # noqa: F401, F403
 from ._logging import *  # noqa: F401, F403
+from ._common_options import *  # noqa: F401, F403
 
 # TODO should _cliutils
 from ._cliutils import *  # noqa: F401, F403

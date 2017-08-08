@@ -21,12 +21,16 @@ from __future__ import print_function, absolute_import
 
 # from pprint import pprint as pp  # noqa: F401
 import click
+import six
 
 from pywbem import WBEMServer, WBEMConnection, Error, ValueMapping
 
 from .smicli import cli, CMD_OPTS_TXT
 from ._ping import ping_host
 from .config import PING_TIMEOUT
+from ._tableoutput import TableFormatter
+from ._common_options import add_options, namespace_option
+from ._common import filter_namelist
 
 
 @cli.group('provider', options_metavar=CMD_OPTS_TXT)
@@ -145,6 +149,40 @@ def provider_profiles(context, **options):
     """
     context.execute_cmd(lambda: cmd_provider_profiles(context, options))
 
+
+@provider_group.command('classes', options_metavar=CMD_OPTS_TXT)
+@click.option('-t', '--targetid', type=int, required=False,
+              help='Define a specific target ID from the database to '
+                   ' use. Multiple options are allowed.')
+@click.option('-c', '--classname', type=str, metavar='CLASSNAME regex',
+              required=False,
+              help='Regex that filters the classnames to return only those '
+                   'that match the regex. This is a case insensitive, '
+                   'anchored regex. Thus, "CIM_" returns all classnames that '
+                   'start with "CIM_". To return an exact classname append '
+                   '"$" to the classname')
+@click.option('-s', '--summary', is_flag=True, default=False, required=False,
+              help='Return only the count of classes in the namespace(s)')
+@add_options(namespace_option)
+@click.pass_obj
+def provider_classes(context, **options):
+    """
+    Find all classes that match CLASSNAME.
+
+    Find all  class names in the namespace(s) of the defined WBEMServer that
+    match the CLASSNAME regular expression argument. The CLASSNAME argument may
+    be either a complete classname or a regular expression that can be matched
+    to one or more classnames. To limit the filter to a single classname,
+    terminate the classname with $.
+
+    The regular expression is anchored to the beginning of CLASSNAME and
+    is case insensitive. Thus pywbem_ returns all classes that begin with
+    PyWBEM_, pywbem_, etc.
+
+    The namespace option limits the search to the defined namespace.
+    """
+    context.execute_cmd(lambda: cmd_provider_classes(context, options))
+
 #########################################################################
 ##
 #########################################################################
@@ -169,28 +207,36 @@ def cmd_provider_ping(context, options):
     click.echo('ping %s %s' % (ip_address, status))
 
 
-def print_profile_info(org_vm, inst):
-    """Print the registered org, name, version for the profile defined by
-       inst
+def get_profile_info(org_vm, inst):
+    """
+    Get the org, name, and version from the profile instance and
+    return them as a tuple.
     """
     org = org_vm.tovalues(inst['RegisteredOrganization'])
     name = inst['RegisteredName']
     vers = inst['RegisteredVersion']
-    click.echo("  %s %s Profile %s" % (org, name, vers))
+    return org, name, vers
 
 
 def cmd_provider_profiles(context, options):
-    """Display list of autonomous profiles for this server"""
+    """Return tuple of info of autonomous profiles for this server"""
     targets = context.target_data
     target_id = options['targetid']
     server = connect_target(targets, target_id)
 
-    click.echo("Advertised management profiles:")
     org_vm = ValueMapping.for_property(server, server.interop_ns,
                                        'CIM_RegisteredProfile',
                                        'RegisteredOrganization')
+    rows = []
     for inst in server.profiles:
-        print_profile_info(org_vm, inst)
+        row = get_profile_info(org_vm, inst)
+        rows.append(row)
+    headers = ['Organization', 'Registered Name', 'Version']
+
+    table = TableFormatter(rows, headers,
+                           title='Advertised management profiles:',
+                           table_format=context.output_format)
+    table.print_table()
 
 
 def connect_target(targets, target_id):
@@ -224,10 +270,17 @@ def cmd_provider_namespaces(context, options):
     server = connect_target(targets, target_id)
     try:
         # execute the namespaces just to get the data
-        server.namespaces  # pylint: disable=pointless-statement
+        namespaces = server.namespaces
         context.spinner.stop()
 
-        click.echo("Interop namespace:\n  %s" % server.interop_ns)
+        rows = []
+        for ns in namespaces:
+            rows.append([ns])
+        table = TableFormatter(rows, 'Namespace Name',
+                               title='Server Namespaces:',
+                               table_format=context.output_format)
+        table.print_table()
+
     except Error as er:
         raise click.ClickException("%s: %s" % (er.__class__.__name__, er))
 
@@ -238,13 +291,17 @@ def cmd_provider_interop(context, options):
     target_id = options['targetid']
     server = connect_target(targets, target_id)
     try:
-        # execute the namespace cmd just to force the server connect
-        namespaces = server.namespaces
+        # execute the interop request before stopping spinner
+        interop_ns = server.interop_ns
         context.spinner.stop()
 
-        click.echo("All namespaces:")
-        for ns in namespaces:
-            click.echo("  %s" % ns)
+        rows = []
+        rows.append([interop_ns])
+        table = TableFormatter(rows, 'Namespace Name',
+                               title='Server Interop Namespace:',
+                               table_format=context.output_format)
+        table.print_table()
+
     except Error as er:
         raise click.ClickException("%s: %s" % (er.__class__.__name__, er))
 
@@ -261,12 +318,79 @@ def cmd_provider_info(context, options):
         server.namespaces  # pylint: disable=pointless-statement
         context.spinner.stop()
 
-        click.echo("Brand:\n  %s" % server.brand)
-        click.echo("Version:\n  %s" % server.version)
-        click.echo("Interop namespace:\n  %s" % server.interop_ns)
+        rows = []
+        headers = ['Brand', 'version', 'Interop Namespace', 'Namespaces']
+        if len(server.namespaces) > 50:
+            namespaces = '\n'.join(server.namespaces)
+        else:
+            namespaces = ', '.join(server.namespaces)
+        rows.append([server.brand, server.version, server.interop_ns,
+                     namespaces])
+        table = TableFormatter(rows, headers,
+                               title='Server General Information',
+                               table_format=context.output_format)
+        table.print_table()
 
-        click.echo("All namespaces:")
-        for ns in server.namespaces:
-            click.echo("  %s" % ns)
+    except Error as er:
+        raise click.ClickException("%s: %s" % (er.__class__.__name__, er))
+
+
+def cmd_provider_classes(context, options):
+    """
+    Execute the command for get class and display the result. The result is
+    a list of classes/namespaces
+    """
+    targets = context.target_data
+    target_id = options['targetid']
+    server = connect_target(targets, target_id)
+
+    if options['namespace']:
+        ns_names = options['namespace']
+        if ns_names not in server.namespaces:
+            raise click.ClickException('Namespace %s not in server namespaces '
+                                       '%s' % (ns_names, server.namespaces))
+        ns_names = [ns_names]
+    else:
+        ns_names = server.namespaces
+        ns_names.sort()
+
+    classname_regex = options['classname']
+
+    try:
+        names_dict = {}
+        for ns_name in ns_names:
+            classnames = server.conn.EnumerateClassNames(
+                namespace=ns_name, DeepInheritance=True)
+            if classname_regex:
+                classnames = filter_namelist(classname_regex, classnames)
+            classnames.sort()
+            names_dict[ns_name] = classnames
+
+        rows = []
+        if options['summary']:
+            headers = ['Namespace', 'Class count']
+            title = 'Server Class count'
+            for ns_name in sorted(names_dict):
+                rows.append((ns_name, len(names_dict[ns_name])))
+
+        else:
+            headers = ['Namespace', 'Classname']
+            title = 'Server Classes'
+            for ns_name, classes in sorted(six.iteritems(names_dict)):
+                ns_rows = []
+                for classname in classes:
+                    ns_rows.append([ns_name, classname])
+                # sort the result by classname
+                ns_rows.sort(key=lambda x: x[1])
+                rows.extend(ns_rows)
+
+        context.spinner.stop()
+        title += ' (filter=%s):' % classname_regex if classname_regex else ':'
+
+        table = TableFormatter(rows, headers,
+                               title='Server Classes:',
+                               table_format=context.output_format)
+        table.print_table()
+
     except Error as er:
         raise click.ClickException("%s: %s" % (er.__class__.__name__, er))

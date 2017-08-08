@@ -28,7 +28,7 @@ import re
 from collections import OrderedDict
 import six
 from mysql.connector import MySQLConnection
-from ._asciitable import print_table, fold_cell
+from ._tableoutput import TableFormatter
 from ._configfile import read_config
 
 __all__ = ['TargetsData']
@@ -42,9 +42,12 @@ class TargetsData(object):
 
     This base contains information on the targets, host systems, etc. in the
     environment.
+
+    The factory method should be used to construct a new TargetsData object
+    since that creates the correct object for the defined database type.
     """
 
-    def __init__(self, db_dict, db_type, verbose):
+    def __init__(self, db_dict, db_type, verbose, output_format):
         """Initialize the abstract Targets instance.
 
         This controls all other
@@ -52,15 +55,27 @@ class TargetsData(object):
         including field names, and common methods.
 
         Parameters:
-          filename
-            Name of file to be used
+          db_dict (:term: `dictionary')
+            Dictionary containing all of the parameters to open the database
+            defined by the db_dict attribute.
 
-          args:
-            argparse arguments to be saved in the instance
+          db_type (:term: `string`)
+            String defining one of the allowed database types for the
+            target database.
+
+          verbose (:term: `bool`)
+            Boolean. If true detailed info is displayed on the processing
+            of the TargetData class
+
+          output_format (:term:`string`)
+            String defining one of the legal report output formats.  If not
+            provided, the default is a simple report format.
+
         """
         self.targets_dict = {}
         self.db_dict = db_dict
         self.verbose = verbose
+        self.output_format = output_format
         # # Defines each record for the data base and outputs.
         # # The Name is the database name for the property
         # # The value tuple is display name and max width for the record
@@ -84,8 +99,8 @@ class TargetsData(object):
         self.db_type = db_type
 
     @classmethod
-    def factory(cls, db_dict, db_type, verbose):
-        """Factory method to select subclass based on database type.
+    def factory(cls, db_dict, db_type, verbose, output_format='simple'):
+        """Factory method to select subclass based on database type (db_type).
            Currently the types sql and csv are supported.
 
            Returns instance object of the defined provider type.
@@ -98,10 +113,12 @@ class TargetsData(object):
                      db_type,
                      verbose))
         if db_type == ('csv'):
-            inst = CsvTargetsData(db_dict, db_type, verbose)
+            inst = CsvTargetsData(db_dict, db_type, verbose,
+                                  output_format=output_format)
 
         elif db_type == ('mysql'):
-            inst = SQLTargetsData(db_dict, db_type, verbose)
+            inst = SQLTargetsData(db_dict, db_type, verbose,
+                                  output_format=output_format)
         else:
             ValueError('Invalid target factory db_type %s' % db_type)
 
@@ -215,7 +232,7 @@ class TargetsData(object):
 
         the filters may be exact matches or regex string
         """
-
+        # TODO: ks fix this code. It is broken
         rtn = OrderedDict()
         for key, value in self.targets_dict.items():
             if ip_filter and re.match(ip_filter, value['IPAddress']):
@@ -267,7 +284,7 @@ class TargetsData(object):
             field_type = value[2]
             if field_type is str and field_str:
                 if max_width < len(field_str):
-                    line.append(fold_cell(field_str, max_width))
+                    line.append(TableFormatter.fold_cell(field_str, max_width))
                 else:
                     line.append('%s' % record[name])
             else:
@@ -310,8 +327,10 @@ class TargetsData(object):
         for record_id in sorted(self.targets_dict.iterkeys()):
             if self.disabled_record(self.targets_dict[record_id]):
                 table_data.append(self.tbl_record(record_id, col_list))
-
-        print_table(col_list, table_data, 'Disabled hosts')
+        table = TableFormatter(table_data, headers=col_list,
+                               title='Disabled hosts',
+                               table_format=self.output_format)
+        table.print_table()
 
     def display_cols(self, column_list):
         """
@@ -328,8 +347,7 @@ class TargetsData(object):
         """
         table_data = []
 
-        # asciitables creates the table headers from
-        table_header = self.tbl_hdr(column_list)
+        col_list = self.tbl_hdr(column_list)
 
         table_width = self.get_output_width(column_list) + len(column_list)
         fold = False if table_width < 80 else True
@@ -337,7 +355,9 @@ class TargetsData(object):
         for record_id in sorted(self.targets_dict.iterkeys()):
             table_data.append(self.tbl_record(record_id, column_list, fold))
 
-        print_table(table_header, table_data, 'Target Systems Overview')
+        table = TableFormatter(table_data, headers=col_list,
+                               title='Target Systems Overview')
+        table.print_table()
 
     def display_all(self, fields=None, company=None):
         """Display all entries in the base."""
@@ -346,7 +366,7 @@ class TargetsData(object):
             col_list = STANDARD_FIELDS_DISPLAY_LIST
         else:
             col_list = fields
-
+        print('call display cols %s' % col_list)
         self.display_cols(col_list)
 
 
@@ -360,11 +380,12 @@ class SQLTargetsData(TargetsData):
     for targets
     """
     # TODO filename is config file name, not actual file name.
-    def __init__(self, db_dict, dbtype, verbose):
+    def __init__(self, db_dict, dbtype, verbose, output_format):
         """Read the input file into a dictionary."""
         if verbose:
             print('SQL Database type %s  verbose=%s' % (db_dict, verbose))
-        super(SQLTargetsData, self).__init__(db_dict, dbtype, verbose)
+        super(SQLTargetsData, self).__init__(db_dict, dbtype, verbose,
+                                             output_format)
 
         try:
             connection = MySQLConnection(host=db_dict['host'],
@@ -467,9 +488,10 @@ class SQLTargetsData(TargetsData):
 class CsvTargetsData(TargetsData):
     """Comma Separated Values form of the Target base."""
 
-    def __init__(self, db_dict, dbtype, verbose):
+    def __init__(self, db_dict, dbtype, verbose, output_format):
         """Read the input file into a dictionary."""
-        super(CsvTargetsData, self).__init__(db_dict, dbtype, verbose)
+        super(CsvTargetsData, self).__init__(db_dict, dbtype, verbose,
+                                             output_format)
 
         fn = db_dict['filename']
         self.filename = fn

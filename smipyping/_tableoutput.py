@@ -13,117 +13,243 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Internal module with utilities to write to ascii outputs.
+Internal module with utilities to write to table formatted outputs in
+multiple formats.  The table outputs all depend on a common table definition
+format (iterable of iterables).
 
 """
 
 from __future__ import print_function, absolute_import
 
+import os
 from textwrap import wrap
+import csv
+import tabulate
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
+from terminaltables import AsciiTable
 import six
-from terminaltables import SingleTable
+from ._common import TABLE_FORMATS
 
 
-def print_table(table_header, table_data, title=None, table_type=None):
+class TableFormatter(object):
     """
-        General print table function. This is temporary while the world
-        gets the tabulate python package capable of supporting multiline
-        cells.
+        Class that sets up the properties for creating tables.
+        It includes the methods for building and printing the tables
     """
-    if table_type == 'html':
-        print_html_table(header_row=table_header, rows=table_data, title=None)
-    else:
-        print_ascii_table(table_header, table_data, title=title,
-                          table_type=table_type)
 
+    def __init__(self, rows, headers, table_format='simple',
+                 title=None, csv_dialect=None):
+        """
+          Parameters:
 
-def print_html_table(header_row=None, rows=None, title=None):
-    """
-    Print a table and header in html format.
-    """
-    # TODO: implement the title display for HTML
-    # Very inefficent but recreates the table with NL replaced by
-    # html break.
-    new_rows = []
-    for row in rows:
-        new_row = []
-        for cell in row:
-            cell = cell.replace('\n', '<br />')
-            new_row.append(cell)
-        new_rows.append(new_row)
-    html = HtmlTable(rows=new_rows, header_row=header_row)
-    print(html)
+            rows(:term:'list' of lists):
+                A list of lists where each inner list contains the items
+                in a row of the table.
+            headers(:term: 'list'):
+                If not none, a list of strings where each string is a table
+                column header (title for the column), If not Null it is
+                output before the table as a header row.  The exact format
+                depends on the table-output format
+            table_format(:term: 'string'):
+                An optional string defining the output format for the table.
+                If None, the output format simple is assumed.
 
+            title (:term: 'string'):
+                An optional string containing a title that is output on the
+                line before the table output.
 
-def print_ascii_table(table_header, table_data, title=None, table_type='plain'):
-    """ Print table data as an ascii table. The input is a dictionary
-        of table data in the format used by terminaltable package.
+            csv_dialect() (:term: 'string'): Future
+        """
+        self.rows = rows
+        self.headers = [headers] if isinstance(headers, six.string_types) \
+            else headers
+        self.title = title
+        if table_format not in TABLE_FORMATS:
+            raise ValueError('Invalid table format %s passed to '
+                             'TableFormatter' % table_format)
+        self.table_format = table_format
+        self.csv_dialect = csv_dialect
 
+    def build_csv_table(self):
+        """
+        Output a list of lists and optional header as csv formatted data
+        to a file.
+        """
+        # TODO: should I be writing this with 'wb' ???
+        output = StringIO()
+        writer = csv.writer(output, dialect=self.csv_dialect,
+                            lineterminator=os.linesep,
+                            delimiter=',', quotechar='"',
+                            quoting=csv.QUOTE_NONNUMERIC)
+        if self.headers:
+            writer.writerow(self.headers)
+        writer.writerows(self.rows)
+        return output.getvalue()
 
-        table_header:
-            list of strings defining the column names
+    def print_table(self, output_file=None):
+        """
+        Output a table to either stdout or a file. Defaults to simple ascii
+        format.
+        """
+        result = self.build_table()
 
-        table data:
-           List of lists of strings. Each list of strings represents the
-           data for a single row in the table
-        title:
-            Title that is applied above table output if it is not None
+        # TODO handling utf on output for both python 2 and 3
+        if output_file:
+            with open(output_file, 'w') as f:
+                print(result, file=f)
+                print("", file=f)
+        else:
+            print(result)
+            print()
 
-        inner_border:
-            optional flag that tells table builder to create inner borders
+    def build_table(self):
+        """
+            General print table function. This is temporary while the world
+            gets the tabulate python package capable of supporting multiline
+            cells.
 
-        outer_border:
-            Optional flag that tells table builder to create border around
-            complete table
+            Parameters:
+              headers (iterable of strings) where each string is a
+               table column name or None if no header is to be attached
 
-        NOTE: Currently this outputs in the terminatable SingleTable format
-        It may be extended in the future to allow other formats such as the
-        asciitable format, etc.  However these only differ in the table
-        boundary character representation
-    """
-    # terminaltable does not print title if no  borders.
-    if table_type is None or table_type == 'plain':
-        print(title)
-        inner_border = False
-        outer_border = False
-    elif table_type == 'simple':
-        inner_border = False
-        outer_border = True
-    elif table_type == 'grid':
-        inner_border = False
-        outer_border = True
-    else:
-        raise ValueError('Invalid table type %s' % table_type)
+              table_data - interable of iterables where:
+                 each the top level iterables represents the list of rows
+                 and each row is an iterable of strings for the data in that
+                 row.
 
-    table_data = [table_header] + table_data
-    table_instance = SingleTable(table_data, title)
-    table_instance.inner_column_border = inner_border
-    table_instance.outer_border = outer_border
+              title (:term: `string`)
+                 Optional title to be places io the output above the table.
+                 No title is output if this parameter is None
 
-    print(table_instance.table)
-    print()
+              table_format (:term: 'string')
+                Output format defined by the string and limited to one of the
+                choice of table formats defined in TABLE_FORMATS list
 
+              output_file (:term: 'string')
+                If not None, a file name to which the output formatted data
+                is sent.
 
-def fold_cell(cell_string, max_cell_width):
-    """ Fold a string within a maximum width to fit within a table entry
+        """
+        # test if there is a EOL in any cell and mark for folded processing
+        folded = False
+        for row in self.rows:
+            for cell in row:
+                if isinstance(cell, six.string_types) and'\n' in cell:
+                    folded = True
+        # If a cell is folded, use the terminal_table print
+        result = ""
+        if self.table_format == 'csv':
+            result = self.build_csv_table()
+        elif self.table_format == 'html':
+            result = self.build_html_table()
+        else:
+            if folded:
+                result = self.build_terminal_table()
+            # Else use tabulate package as the base for the table
+            else:
+                # Prints dictionaries if header='keys'
+                result = tabulate.tabulate(self.rows, self.headers,
+                                           tablefmt=self.table_format)
 
-        Parameters:
+        if self.title:
+            result = '%s\n%s' % (self.title, result)
+        return result
 
-          cell_string:
-            The string of data to go into the cell
-          max_cell_width:
-            Maximum width of cell.  Data is folded into multiple lines to
-            fit into this width.
+    def build_html_table(self):
+        """
+        Print a table and header in html format.
+        """
+        # Very inefficent but recreates the table with NL replaced by
+        # html break.
+        new_rows = []
+        for row in self.rows:
+            new_row = []
+            for cell in row:
+                if isinstance(cell, six.string_types):
+                    cell = cell.replace('\n', '<br />')
+                new_row.append(cell)
+            new_rows.append(new_row)
+        use_tabulate = False
+        if self.title:
+            print('<p>%s<\\p>' % self.title)
+        if use_tabulate:
+            result = tabulate.tabulate(new_rows, self.headers, tablefmt='html')
+        else:
+            result = HtmlTable(rows=new_rows, header_row=self.headers)
 
-        Return:
-            String representing the folded string
-    """
-    new_cell = cell_string
-    if isinstance(cell_string, six.string_types):
-        if max_cell_width < len(cell_string):
-            new_cell = '\n'.join(wrap(cell_string, max_cell_width))
+        return result
 
-    return new_cell
+    def build_terminal_table(self):
+        """ Build table with data as an ascii table using the terminal table
+            package.  This is used only for multiline tables because it has
+            fewer table format options than the tabulate package.
+
+            Parameters:
+              table data:
+                 List of lists of strings. Each list of strings represents the
+                 data for a single row in the table
+
+              headers:
+                  list of strings defining the column names
+
+              title:
+                  Title that is applied above table output if it is not None
+
+              table_format: (:term: String) keyword defining table format
+
+            NOTE: Currently this outputs in the terminatable AsciiTable format
+            It may be extended in the future to allow other formats such as the
+            asciitable format, etc.  However these only differ in the table
+            boundary character representation
+        """
+        if self.headers:
+            self.rows.insert(0, self.headers)
+
+        table = AsciiTable(self.rows)
+        if self.table_format is None or self.table_format == 'plain':
+            table.inner_column_border = False
+            table.inner_heading_row_border = False
+            table.inner_row_border = False
+            table.outer_border = False
+        elif self.table_format == 'simple':
+            table.inner_heading_row_border = True
+            table.inner_column_border = False
+            table.outer_border = False
+        elif self.table_format == 'grid':
+            table.inner_column_border = True
+            table.outer_border = True
+            table.inner_row_border = True
+            table.inner_heading_row_border = True
+        else:
+            raise ValueError('Invalid table type %s. Folded tables have '
+                             ' limited formatting.' % self.table_format)
+
+        return(table.table)
+
+    @staticmethod
+    def fold_cell(cell_string, max_cell_width):
+        """ Fold a string within a maximum width to fit within a table entry
+
+            Parameters:
+
+              cell_string:
+                The string of data to go into the cell
+              max_cell_width:
+                Maximum width of cell.  Data is folded into multiple lines to
+                fit into this width.
+
+            Return:
+                String representing the folded string
+        """
+        new_cell = cell_string
+        if isinstance(cell_string, six.string_types):
+            if max_cell_width < len(cell_string):
+                new_cell = '\n'.join(wrap(cell_string, max_cell_width))
+
+        return new_cell
 
 
 # Table style to get thin black lines in Mozilla/Firefox instead of 3D borders

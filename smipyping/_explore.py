@@ -29,9 +29,8 @@ from urlparse import urlparse
 import threading
 
 from pywbem import WBEMConnection, WBEMServer, ValueMapping, Error, \
-    ConnectionError, TimeoutError
-from ._asciitable import print_table, fold_cell
-from ._csvtable import write_csv_table
+    ConnectionError, TimeoutError, AuthError
+from ._tableoutput import TableFormatter
 from ._ping import ping_host
 from .config import PING_TIMEOUT, DEFAULT_USERNAME, DEFAULT_PASSWORD
 from ._logging import EXPLORE_LOGGER_NAME, get_logger, SmiPypingLoggers
@@ -48,11 +47,20 @@ RESULTS = []
 
 
 class Explorer(object):
+    """
+    The Explorer class provides a general capability to explore providers
+    defined in a database including getting information on server branding,
+    namespaces, interop namespaces, profiles, etc.
+
+    It is designed to explore a number of servers and provide a report of
+    the results with logging to capture information on each individual
+    WBEM Server
+    """
 
     def __init__(self, prog, target_data, logfile=None, log_level=None,
-                 debug=None, ping=None, verbose=None, threaded=False):
+                 debug=None, ping=None, verbose=None, threaded=False,
+                 output_format='simple'):
         """Initialize instance attributes."""
-
         self.verbose = verbose
         self.ping = ping
         self.target_data = target_data
@@ -61,6 +69,7 @@ class Explorer(object):
         self.debug = debug
         self.threaded = threaded
         self.explore_time = None
+        self.output_format = output_format
         log_dest = 'file' if log_level else None
         SmiPypingLoggers.create_logger(log_component='explore',
                                        log_dest=log_dest,
@@ -97,17 +106,19 @@ class Explorer(object):
                         entry['Product']]
                 if versions is not None:
                     cell_str = ", ". join(sorted(versions))
-                    line.append(fold_cell(cell_str, 14))
+                    line.append(TableFormatter.fold_cell(cell_str, 14))
                 table_data.append(line)
-        print_table(table_hdr, table_data,
-                    "Display SMI Profile Information")
+        table = TableFormatter(table_data, headers=table_hdr,
+                               title='Display SMI Profile Information',
+                               table_format=self.output_format)
+        table.print_table()
 
-    def report_server_info(self, servers, user_data, table_type='report'):
+    def report_server_info(self, servers, target_data, table_format='table'):
         """ Display a table of info from the server scan
         """
 
-        table_data = []
-        tbl_hdr = ['Id', 'Url', 'Brand', 'Company', 'Product', 'Vers',
+        rows = []
+        headers = ['Id', 'Url', 'Company', 'Product', 'Vers',
                    'SMI Profiles', 'Interop_ns', 'Status', 'time']
         servers.sort(key=lambda tup: int(tup.target_id))
         for server_tuple in servers:
@@ -115,19 +126,17 @@ class Explorer(object):
             server = server_tuple.server
             status = server_tuple.status
             target_id = server_tuple.target_id
-            entry = user_data.get_dict_record(target_id)
-            brand = ''
+            target = target_data.get_dict_record(target_id)
             version = ''
             interop_ns = ''
             smi_profiles = ''
             if server is not None and status == 'OK':
-                brand = server.brand
                 version = server.version
                 interop_ns = server.interop_ns
                 smi_profile_list = self.smi_version(server_tuple.server)
                 if smi_profile_list is not None:
                     cell_str = ", ". join(sorted(smi_profile_list))
-                    smi_profiles = (fold_cell(cell_str, 14))
+                    smi_profiles = (TableFormatter.fold_cell(cell_str, 14))
             disp_time = None
             if server_tuple.time <= 60:
                 disp_time = "%.2f s" % (round(server_tuple.time, 1))
@@ -135,23 +144,20 @@ class Explorer(object):
                 disp_time = "%.2f m" % (server_tuple.time / 60)
             line = [target_id,
                     url,
-                    brand,
-                    entry['CompanyName'],
-                    entry['Product'],
+                    TableFormatter.fold_cell(target['CompanyName'], 11),
+                    TableFormatter.fold_cell(target['Product'], 8),
                     version,
                     smi_profiles,
                     interop_ns,
                     server_tuple.status,
                     disp_time]
 
-            table_data.append(line)
+            rows.append(line)
 
-        if table_type == 'report':
-            print_table(tbl_hdr, table_data, "Server Basic Information")
-        elif table_type == 'csv':
-            write_csv_table(table_data)
-        else:
-            TypeError('table type invalid %s' % table_type)
+        table = TableFormatter(rows, headers=headers,
+                               title='Server Explorer Report:',
+                               table_format=self.output_format)
+        table.print_table()
 
     def explore_servers(self, target_list):
         """
@@ -268,14 +274,9 @@ class Explorer(object):
         cmd_time = 0
         start_time = time.time()   # Scan start time
         target_id = target['TargetID']
-        if 'Credential' in target:
-            credential = target['Credential']
-        else:
-            credential = DEFAULT_USERNAME
-        if 'Principal' in target:
-            credential = target['Principal']
-        else:
-            principal = DEFAULT_PASSWORD
+
+        principal = target.get('Principal', DEFAULT_USERNAME)
+        credential = target.get('Credential', DEFAULT_PASSWORD)
 
         log_info = 'id=%s Url=%s Product=%s Company=%s' \
             % (target['TargetID'], url,
@@ -344,6 +345,15 @@ class Explorer(object):
             self.logger.error('PyWBEM Error exception:%s %s time %.2f s',
                               er, log_info, cmd_time)
             err = 'PyWBMEr'
+            svr_tuple = ServerInfoTuple(url, server, target_id, err,
+                                        cmd_time)
+            traceback.format_exc()
+
+        except AuthError as ae:
+            cmd_time = time.time() - start_time
+            self.logger.error('PyWBEM AuthEr exception:%s %s time %.2f s',
+                              ae, log_info, cmd_time)
+            err = 'AuthErr'
             svr_tuple = ServerInfoTuple(url, server, target_id, err,
                                         cmd_time)
             traceback.format_exc()
