@@ -42,10 +42,10 @@ class ExpandSubnetDefTests(unittest.TestCase):
         actual = [x for x in t1.expand_subnet_definition('10.1.1.1,2')]
         self.assertEqual(actual, ['10.1.1.1', '10.1.1.2'])
 
-        actual = [x for x in t1.expand_subnet_definition('10.1.1.1:3')]
+        actual = [x for x in t1.expand_subnet_definition('10.1.1.1-3')]
         self.assertEqual(actual, ['10.1.1.1', '10.1.1.2', '10.1.1.3'])
 
-        actual = [x for x in t1.expand_subnet_definition('10.1.1:2.1')]
+        actual = [x for x in t1.expand_subnet_definition('10.1.1-2.1')]
         self.assertEqual(actual, ['10.1.1.1', '10.1.2.1'])
 
         t2 = ServerSweep('10.1.1', '5988',
@@ -92,7 +92,7 @@ class ExpandSubnetDefTests(unittest.TestCase):
             actual,
             [('10.1.1.1', 5989), ('10.1.1.2', 5989)])
 
-        t5 = ServerSweep('10.1.1.1:3', 5989,
+        t5 = ServerSweep('10.1.1.1-3', 5989,
                          min_octet_val=1, max_octet_val=2)
         actual = [x for x in t5.build_test_list()]
 

@@ -53,34 +53,34 @@ namespace and should be used from there.
 """
 from __future__ import absolute_import
 
-from .config import *  # noqa: F401, F403
+from .config import *  # noqa: F401,F403
 # core classes and functions
-from ._ping import *  # noqa: F401, F403
-from ._tableoutput import *  # noqa: F401, F403
-from ._targetdata import *  # noqa: F401, F403
-from ._common import *  # noqa: F401, F403
-from ._logging import *  # noqa: F401, F403
-from ._common_options import *  # noqa: F401, F403
+from ._ping import *  # noqa: F401,F403
+from ._tableoutput import *  # noqa: F401,F403
+from ._targetdata import *  # noqa: F401,F403
+from ._common import *  # noqa: F401,F403
+from ._logging import *  # noqa: F401,F403
+from ._common_options import *  # noqa: F401,F403
 
-# TODO should _cliutils
-from ._cliutils import *  # noqa: F401, F403
-from ._scanport import *  # noqa: F401, F403
+# TODO should drop _cliutils
+from ._cliutils import *  # noqa: F401,F403
+from ._scanport import *  # noqa: F401,F403
 
 # support for particular script cmds
-from ._simpleping import *  # noqa: F401, F403
-from ._explore import *  # noqa: F401, F403
-from ._serversweep import *  # noqa: F401, F403
-from ._targetdatacli import *  # noqa: F401, F403
+from ._simpleping import *  # noqa: F401,F403
+from ._explore import *  # noqa: F401,F403
+from ._serversweep import *  # noqa: F401,F403
+from ._targetdatacli import *  # noqa: F401,F403
 
 
 # smicli support libraries
-from .smicli import *  # noqa: F401, F403
-from ._click_context import *  # noqa: F401, F403
-from ._cmd_targets import *  # noqa: F401, F403
-from ._cmd_provider import *  # noqa: F401, F403
-from ._cmd_explorer import *  # noqa: F401, F403
-from ._cmd_cimping import *  # noqa: F401, F403
+from .smicli import *  # noqa: F401,F403
+from ._click_context import *  # noqa: F401,F403
+from ._cmd_targets import *  # noqa: F401,F403
+from ._cmd_provider import *  # noqa: F401,F403
+from ._cmd_explorer import *  # noqa: F401,F403
+from ._cmd_cimping import *  # noqa: F401,F403
 
-from ._click_configfile import *  # noqa: F401, F403
+from ._click_configfile import *  # noqa: F401,F403
 
-from ._version import *  # noqa: F401, F403
+from ._version import *  # noqa: F401,F403

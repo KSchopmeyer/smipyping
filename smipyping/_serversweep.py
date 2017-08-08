@@ -221,7 +221,7 @@ class ServerSweep(object):
           Integer representing the octet.
 
           Range definition for the octet defining the range of values in the
-          expansion.  The syntax of the range definition is <nin>:<max> where
+          expansion.  The syntax of the range definition is <nin>-<max> where
           min and max are integers.  Thus, 3:10 expands to all values from 3 to
           10 (inclusive) for that octet of the IP address
 
@@ -253,7 +253,7 @@ class ServerSweep(object):
                 try:
                     octets[index]
                 except IndexError:
-                    octets.append('%d:%d' % (self.min_octet_val,
+                    octets.append('%d-%d' % (self.min_octet_val,
                                              self.max_octet_val))
         except Exception as ex:
             print('Exception subnet %s Exception %s' % (net_def, ex))
@@ -268,8 +268,8 @@ class ServerSweep(object):
                     except Exception as ex:
                         raise ValueError('octet %s not integer' % octet)
                     octet_lists.append([octet])
-                elif ':' in octet:
-                    range_ = octet.split(':')
+                elif '-' in octet:
+                    range_ = octet.split('-')
                     min_ = int(range_[0])
                     max_ = int(range_[1]) + 1    # range is inclusive
                     if len(range_) != 2:

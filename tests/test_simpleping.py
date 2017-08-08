@@ -32,41 +32,43 @@ class CommandLineTestCase(unittest.TestCase):
     """
     # TODO extend these tests. In particular test setting from target data.
 
-    
-class SimplePingTestCase(CommandLineTestCase):
 
+class SimplePingTestCase(CommandLineTestCase):
+    """Unit test for SimplePing Class"""
     def test_server0(self):
         """Test with valid server param"""
-        sp = SimplePing('http://localhost')
-        self.assertEqual(sp.url, 'http://localhost')
-        conn = sp.connect_server(sp.url, verify_cert=False)
-        print(sp.get_connection_info(conn))
+        sim_ping = SimplePing('http://localhost')
+        self.assertEqual(sim_ping.url, 'http://localhost')
+        conn = sim_ping.connect_server(sim_ping.url, verify_cert=False)
+        print(sim_ping.get_connection_info(conn))
 
     def test_server1(self):
         """Test with valid server param"""
-        sp = SimplePing('https://localhost')
-        self.assertEqual(sp.url, 'https://localhost')
+        sim_ping = SimplePing('https://localhost')
+        self.assertEqual(sim_ping.url, 'https://localhost')
 
     def test_server2(self):
         """Test with valid server param"""
-        sp = SimplePing(server='http://localhost', user='fred', password='xx',
-                        timeout=10, ping=False)
-        self.assertEqual(sp.url, 'http://localhost')
-        self.assertEqual(sp.timeout, 10)
-        self.assertEqual(sp.ping, False)
-        self.assertEqual(sp.user, 'fred')
-        self.assertEqual(sp.password, 'xx')
-        conn = sp.connect_server(sp.url, verify_cert=False)
+        sim_ping = SimplePing(server='http://localhost', user='fred',
+                              password='xx', timeout=10, ping=False)
+        self.assertEqual(sim_ping.url, 'http://localhost')
+        self.assertEqual(sim_ping.timeout, 10)
+        self.assertEqual(sim_ping.ping, False)
+        self.assertEqual(sim_ping.user, 'fred')
+        self.assertEqual(sim_ping.password, 'xx')
+        conn = sim_ping.connect_server(sim_ping.url, verify_cert=False)
         self.assertEqual(conn.url, 'http://localhost')
-        banner = sp.get_connection_info(conn)
+        banner = sim_ping.get_connection_info(conn)
         match_result = re.match(r'Connection: http://localhost', banner)
         self.assertIsNotNone(match_result)
 
     def test_target_id(self):
-        sp = SimplePing(target_id=4)
-        self.assertEqual(sp.target_id, 4)
+        """Test with valid target id"""
+        sim_ping = SimplePing(target_id=4)
+        self.assertEqual(sim_ping.target_id, 4)
 
     def test_invalid_server(self):
+        """Test for invalid server schema"""
         try:
             SimplePing(server='httpx://localhost')
             self.fail('Exception expected')
@@ -74,6 +76,7 @@ class SimplePingTestCase(CommandLineTestCase):
             pass
 
     def test_dup_id(self):
+        """Test duplicate ID"""
         try:
             SimplePing(server='http://localhost', target_id=4)
             self.fail('Expected exception')
