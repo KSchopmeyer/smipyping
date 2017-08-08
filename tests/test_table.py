@@ -45,8 +45,11 @@ class TableTests(unittest.TestCase):
                 [0, 999, 9999999],
                 [1.1432, 1.2, 0]]
         title_txt = 'test simple table' if title else None
-        table = TableFormatter(rows, headers, title=title_txt,
-                               table_format=table_format)
+        if table_format:
+            table = TableFormatter(rows, headers, title=title_txt,
+                                   table_format=table_format)
+        else:
+            table = TableFormatter(rows, headers, title=title_txt)
         return table
 
     def create_folded_table(self, table_format, title=True):
@@ -360,7 +363,7 @@ class HtmlTableTests(TableTests):
 
 class CsvTableTests(TableTests):
     """Test generating csv format output tables"""
-
+    @unittest.skip("Bypassed csv format for this release")
     def test_table_simple_build(self):
         """Test a simple table csv with header"""
         table = self.create_simple_table(table_format='csv')

@@ -19,11 +19,12 @@
 
 from __future__ import absolute_import, unicode_literals
 
-import prompt_toolkit
 import re
+import prompt_toolkit
 
 TABLE_FORMATS = ['plain', 'simple', 'grid', 'html']
 
+# TODO: Want to expand to this when we get updated tabulate.
 # TABLE_FORMATS = ['table', 'plain', 'simple', 'psql', 'rst', 'mediawiki',
 #                 'html', 'mof', 'xml']
 

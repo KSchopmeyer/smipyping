@@ -161,7 +161,11 @@ def parse_sweep_args(argparser):
 
 def main(prog_name):
     """
-        Port sweep demo program
+        Port sweep executable main. This function parses the
+        input arguments, gets any required target data and
+        creates an instance of the ServerSweep class.
+        It uses that instance to sweep for open servers and then
+        generate a result report.
     """
     argparser = create_sweep_argparser(prog_name)
     args = parse_sweep_args(argparser)
