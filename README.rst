@@ -268,7 +268,12 @@ Running smicli explorer
     ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────
      04  https://10.1.134.96         Dell/Compellent  Storage Center                                  PyWBMEr  0.40 s
 
+     
+.. code-block:: bash
+
     smicli explorer id 3
+
+::
     
     Server Basic Information
      Id  Url                   Brand  Company  Product  Vers  SMI Profiles  Interop_ns  Status   time   

@@ -65,7 +65,6 @@ class SimplePing(object):
                  certfile=None, keyfile=None, verify_cert=False,
                  debug=False, verbose=None, logfile=None, log_level=None):
         """Initialize instance attributes."""
-        print('SimplePing server %s, target_id %s' % (server, target_id))
         if server:
             self.url = self.server_url_validate(server)
         else:
@@ -74,6 +73,12 @@ class SimplePing(object):
             raise ValueError('SimplePing must define server or target_id')
         if server and target_id:
             raise ValueError('Use either server or target_id, not both')
+
+        if server:
+            print('SimplePing server %s' % self.url)
+        else:
+            print('SimplePing id %s' % target_id)
+
         self.namespace = namespace
         self.timeout = timeout
         self.user = user
@@ -213,7 +218,6 @@ class SimplePing(object):
             exception=exception,
             execution_time=str(datetime.datetime.now() - start_time))
 
-    # TODO: ks move this and corresponding simple_ping into ping iteslf.
     def ping_server(self):
         """
         Get the netloc from the url and ping the server.

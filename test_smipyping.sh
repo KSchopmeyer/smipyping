@@ -40,12 +40,14 @@ do_cmd 'targets list  -f CompanyName -f Credential -f Principal'
 do_cmd_er 'targets list  -f CompanyNamex'
 
 if [[REMOTE == 0]]; then
-    echo "Do not execute against remote system""
+    echo "Do not execute against remote system"
     exit
 #
 # cimping
 #
 # host id
+do_cmd 'cimping ids 4'
+do_cmd 'cimping host http://localhost'
 
 
 #

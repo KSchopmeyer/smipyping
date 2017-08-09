@@ -61,7 +61,7 @@ def explore_all(context, **options):
     context.execute_cmd(lambda: cmd_explore_all(context, **options))
 
 
-@explorer_group.command('id', options_metavar=CMD_OPTS_TXT)
+@explorer_group.command('ids', options_metavar=CMD_OPTS_TXT)
 @click.argument('IDs', type=int, metavar='TargetIDs', required=True, nargs=-1)
 @click.option('--ping/--no-ping', default=True,
               help='Ping the the provider as initial step in test. '
@@ -79,7 +79,7 @@ def explore_id(context, ids, **options):
     ids may be supplied (ex. id 5 6 7)
 
     """
-    context.execute_cmd(lambda: cmd_explore_id(context, ids, **options))
+    context.execute_cmd(lambda: cmd_explore_ids(context, ids, **options))
 
 
 ######################################################################
@@ -92,8 +92,6 @@ def cmd_explore_all(context, **options):
     """Explore all of the providers defined in the current database and
     report results.
     """
-
-    print('context %r' % context)
 
     # TODO configure logging
     explorer = Explorer('smicli', context.target_data,
@@ -125,7 +123,7 @@ def cmd_explore_all(context, **options):
                                 report=options['report'])
 
 
-def cmd_explore_id(context, ids, **options):
+def cmd_explore_ids(context, ids, **options):
     """
     Explore the wbem server defined by the Id provided
     """

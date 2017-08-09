@@ -137,7 +137,7 @@ endif
 # Files the distribution archive depends upon.
 dist_dependent_files := \
     $(package_name)/LICENSE.txt \
-    README.md \
+    README.rst \
     requirements.txt \
     INSTALL.md \
     $(wildcard *.py) \
