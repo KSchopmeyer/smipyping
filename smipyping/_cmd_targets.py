@@ -53,18 +53,18 @@ def targets_group():
               help='sort by the defined field name. NOT IMPLEMENTED')
 # TODO sort by a particular field
 @click.pass_obj
-def targets_list(context, fields, **options):
+def targets_list(context, **options):
     """
-    Display the entries in the provider database.
+    Display the entries in the targets database.
     """
-    context.execute_cmd(lambda: cmd_targets_list(context, fields, options))
+    context.execute_cmd(lambda: cmd_targets_list(context, options))
 
 
 @targets_group.command('info', options_metavar=CMD_OPTS_TXT)
 @click.pass_obj
 def targets_info(context):
     """
-    get and display a list of classnames.
+    Show target database  config information
     """
     context.execute_cmd(lambda: cmd_targets_info(context))
 
@@ -73,7 +73,7 @@ def targets_info(context):
 @click.pass_obj
 def targets_fields(context):
     """
-    Display the names of fields in the providers base.
+    Display field names in targets database.
     """
     context.execute_cmd(lambda: cmd_targets_fields(context))
 
@@ -83,7 +83,7 @@ def targets_fields(context):
 @click.pass_obj
 def targets_get(context, targetid, **options):
     """
-    Get the details of a single record from the database and display.
+    display details of a single record from Targets database.
     """
     context.execute_cmd(lambda: cmd_targets_get(context, targetid, options))
 
@@ -114,10 +114,10 @@ def cmd_targets_disable(context, targetid, enable, options):
 
         # TODO add test to see if already in correct state
         next_state = 'Enabled' if enable else 'Disabled'
-        print('Current Status=%s proposed change=%s'
-              % (target_record['ScanEnabled'], next_state))
+        click.echo('Current Status=%s proposed change=%s'
+                   % (target_record['ScanEnabled'], next_state))
         if target_record['ScanEnabled'] == next_state:
-            print('State already same as proposed change')
+            click.echo('State already same as proposed change')
             return
         return
 
@@ -125,7 +125,7 @@ def cmd_targets_disable(context, targetid, enable, options):
             target_record['ScanEnabled'] = False if enable is True else True
             context.provider_data.write_updated_record(targetid)
         else:
-            print('Id %s invalid or not in table' % targetid)
+            click.echo('Id %s invalid or not in table' % targetid)
 
     except Exception as ex:
         raise click.ClickException("%s: %s" % (ex.__class__.__name__, ex))
@@ -134,21 +134,21 @@ def cmd_targets_disable(context, targetid, enable, options):
 def cmd_targets_info(context):
     """Display information on the targets config and data file."""
 
-    print('DB Info: type=%s config file %s' % (context.target_data.db_type,
-                                               context.config_file))
+    click.echo('\nDB Info:\n  type=%s\n  config_file=%s' %
+               (context.target_data.db_type, context.config_file))
 
     if context.db_info:
         for key in context.db_info:
-            print('  %s=%s' % (key, context.db_info[key]))
+            click.echo('  %s=%s' % (key, context.db_info[key]))
 
     else:
-        print('context %r' % context)
+        click.echo('context %r' % context)
 
 
 def cmd_targets_fields(context):
     """Display the information fields for the providers dictionary."""
 
-    print('\n'.join(context.target_data.get_field_list()))
+    click.echo('\n'.join(context.target_data.get_field_list()))
 
 
 def cmd_targets_get(context, targetid, options):
@@ -159,24 +159,32 @@ def cmd_targets_get(context, targetid, options):
 
         # TODO need to order output.
         for key in target_record:
-            print('%s: %s' % (key, target_record[key]))
+            click.echo('%s: %s' % (key, target_record[key]))
 
     except KeyError as ke:
-        print('TargetID %s not in the database.' % targetid)
+        click.echo('TargetID %s not in the database.' % targetid)
         raise click.ClickException("%s: %s" % (ke.__class__.__name__, ke))
 
     except Exception as ex:
         raise click.ClickException("%s: %s" % (ex.__class__.__name__, ex))
 
 
-def cmd_targets_list(context, fields, options):
-    """ List the smi providers in the database."""
+def cmd_targets_list(context, options):
+    """
+    List the smi providers in the database. Allows listing particular
+    field names and sorting by field name
+    """
+    fields = list(options['fields'])
+    
+    if 'TargetID' not in fields:
+        fields.insert(0,'TargetID')  # always show TargetID
 
-    show = list(fields)
-    show.append('TargetID')  # always show TargetID
-    print('show %s' % show)
     try:
-        print('display %s' % show)
+        context.target_data.test_fieldnames(fields)
+    except KeyError as ke:
+        raise click.ClickException("%s: Invalid field name: %s" %
+                                   (ke.__class__.__name__, ke))
+    try:
         context.target_data.display_all(list(fields), company=None)
 
     except Exception as ex:
