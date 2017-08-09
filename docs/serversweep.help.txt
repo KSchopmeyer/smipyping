@@ -13,8 +13,8 @@ Positional arguments:
                           * Integers: Each integer is in the range 0-255
                               ex. 10.1.2.9
                           * Octet range definition: A range expansion is in the
-                             form: int:int which defines the mininum and maximum
-                              values for that octet (ex 10.1.132:134) or
+                             form: int-int which defines the mininum and maximum
+                              values for that octet (ex 10.1.132-134) or
                           * Integer lists: A range list is in the form:
                              int,int,int
                              and defines the set of values for that octet.
@@ -53,7 +53,7 @@ General options:
                         scan. This is a diagnostic tool
 
 Examples:
-  serversweep 10.1.132:134
+  serversweep 10.1.132-134
         The above example will scan the subnets 10.1.134, 10.1.133, and
         10.1.134 from 1 to 254 for the 4 the octet of ip addresses. This
         is explicitly defined by 10.1.132:124.1:254

@@ -166,6 +166,10 @@ class TargetsData(object):
         for key, val in self.targets_dict.iteritems():
             yield (key, val)
 
+    def keys(self):
+        """get all of the target_ids as a list"""
+        return list(self.targets_dict.keys())
+
     def __getitem__(self, record_id):
         """Return the record for the defined record_id from the targets."""
         return self.targets_dict[record_id]
@@ -272,8 +276,9 @@ class TargetsData(object):
             hdr.append(value[0])
         return hdr
 
-    def tbl_record(self, record_id, field_list, fold=False):
-        """Return the fields defined in field_list for the record_id.
+    def format_record(self, record_id, field_list, fold=False):
+        """Return the fields defined in field_list for the record_id in
+        display format.
         String fields will be folded if their width is greater than the
         specification in the format_dictionary and fold=True
         """
@@ -331,7 +336,7 @@ class TargetsData(object):
         # TODO can we do this with list comprehension
         for record_id in sorted(self.targets_dict.iterkeys()):
             if self.disabled_record(self.targets_dict[record_id]):
-                table_data.append(self.tbl_record(record_id, col_list))
+                table_data.append(self.format_record(record_id, col_list))
         table = TableFormatter(table_data, headers=col_list,
                                title='Disabled hosts',
                                table_format=self.output_format)
@@ -358,13 +363,13 @@ class TargetsData(object):
         fold = False if table_width < 80 else True
 
         for record_id in sorted(self.targets_dict.iterkeys()):
-            table_data.append(self.tbl_record(record_id, fields, fold))
+            table_data.append(self.format_record(record_id, fields, fold))
 
         table = TableFormatter(table_data, headers=col_list,
                                title='Target Systems Overview:')
         table.print_table()
 
-    def display_all(self, fields=None, company=None):
+    def display_all(self, fields=None):
         """Display all entries in the base. If fields does not exist,
            display a standard list of fields from the database.
         """

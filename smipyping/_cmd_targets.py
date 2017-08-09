@@ -178,7 +178,7 @@ def cmd_targets_list(context, options):
 
     if fields:
         if 'TargetID' not in fields:
-            fields.insert(0,'TargetID')  # always show TargetID
+            fields.insert(0, 'TargetID')  # always show TargetID
 
     try:
         context.target_data.test_fieldnames(fields)

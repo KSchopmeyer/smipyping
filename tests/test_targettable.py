@@ -60,6 +60,12 @@ class TargetTableTest(ValidTargetTableTests):
         self.assertIn(42, self.target_table)
         self.assertIn(1, self.target_table)
 
+    def test_keys(self):
+        print('keys %s' % self.target_table.keys())
+        self.assertIn(42, self.target_table.keys())
+        for key in self.target_table.keys():
+            self.assertIn(key, self.target_table)
+
     def test_get_data_record(self):
         """Test get one record"""
         self.assertIn(42, self.target_table)

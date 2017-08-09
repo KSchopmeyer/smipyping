@@ -115,8 +115,8 @@ def cimping_host(context, host, **options):
 # TODO. Should we consider cert verify, etc. as part of this
 # TODO: This differs from pattern. targetid is an argument, not options
 
-@cimping_group.command('id', options_metavar=CMD_OPTS_TXT)
-@click.argument('ID', type=int, metavar='TargetID', required=True)
+@cimping_group.command('ids', options_metavar=CMD_OPTS_TXT)
+@click.argument('IDs', type=int, metavar='TargetIDs', required=True, nargs=-1)
 @click.option('-t', '--timeout', type=int, default=DEFAULT_OPERATION_TIMEOUT,
               help='Namespace for the operation.'
                    ' ' + '(Default: %s.' % DEFAULT_OPERATION_TIMEOUT)
@@ -129,11 +129,36 @@ def cimping_host(context, host, **options):
                    'detailed information on the call and response.'
                    ' ' + '(Default: %s.' % False)
 @click.pass_obj
-def cimping_id(context, id, **options):  # pylint: disable=redefined-builtin
+def cimping_ids(context, ids, **options):  # pylint: disable=redefined-builtin
     """
-    Execute a simple cim ping against the target id defined in the request
+    Execute a simple cim ping against all wbem servers in the target
+    database.
+
     """
-    context.execute_cmd(lambda: cmd_cimping_id(context, id, options))
+    context.execute_cmd(lambda: cmd_cimping_ids(context, ids, options))
+
+
+@cimping_group.command('all', options_metavar=CMD_OPTS_TXT)
+@click.option('-t', '--timeout', type=int, default=DEFAULT_OPERATION_TIMEOUT,
+              help='Namespace for the operation.'
+                   ' ' + '(Default: %s.' % DEFAULT_OPERATION_TIMEOUT)
+@click.option('--no-ping', default=False, type=bool, required=False,
+              help='Disable network ping ofthe wbem server before executing '
+                   'the cim request.'
+                   ' ' + '(Default: %s.' % True)
+@click.option('-d' '--debug', default=False, type=bool, required=False,
+              help='Set the debug parameter for the pywbem call. Displays '
+                   'detailed information on the call and response.'
+                   ' ' + '(Default: %s.' % False)
+@click.pass_obj
+def cimping_all(context, **options):  # pylint: disable=redefined-builtin
+    """
+    Execute a simple cim ping against the target ids defined in the request.
+    One or more ids may be supplied.
+
+    ex. smicli cimping ids 4 5 6
+    """
+    context.execute_cmd(lambda: cmd_cimping_all(context, options))
 
 
 ######################################################################
@@ -179,27 +204,53 @@ def cmd_cimping_host(context, host, options):
     print_ping_result(simpleping, test_result, context.verbose)
 
 
-def cmd_cimping_id(context, id, options):  # pylint: disable=redefined-builtin
+def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
     """
-    Execute a simple ping of a target wbem server based on the target_id
+    Execute a simple ping of a target wbem server based on the target_ids
     from the database provided with the input parameters.
     """
-    try:
-        context.target_data.get_dict_record(id)
-    except Exception as ex:
-        raise click.ClickException('Invalid TargetID=%s. Not in database. '
-                                   '%s: %s' % (id, ex.__class__.__name__, ex))
+
+    ids = context.target_data.keys()
+
+    # TODO create a simpleping report rather than multiple single simplepings.
+    for id_ in ids:
+        simpleping = SimplePing(target_id=id_, timeout=options['timeout'],
+                                ping=not options['no_ping'],
+                                logfile=context.log_file,
+                                log_level=context.log_level)
+
+        simpleping.set_param_from_targetdata(id_, context.target_data)
+
+        test_result = simpleping.test_server(verify_cert=False)
+
+        print_ping_result(simpleping, test_result, context.verbose)
+
+
+def cmd_cimping_ids(context, ids, options):  # pylint: disable=redefined-builtin
+    """
+    Execute a simple ping of a target wbem server based on the target_ids
+    from the database provided with the input parameters.
+    """
+    for id_ in ids:
+        try:
+            targ_rec = context.target_data.get_dict_record(id_)  # noqa: F841
+        except Exception as ex:
+            raise click.ClickException('Invalid TargetID=%s. Not in database. '
+                                       '%s: %s' % (id,
+                                                   ex.__class__.__name__, ex))
 
     # TODO add other setup parameters, ping, timeout
-    simpleping = SimplePing(target_id=id, timeout=options['timeout'],
-                            ping=not options['no_ping'],
-                            logfile=context.log_file,
-                            log_level=context.log_level)
+    for id_ in ids:
+        simpleping = SimplePing(target_id=id_, timeout=options['timeout'],
+                                ping=not options['no_ping'],
+                                logfile=context.log_file,
+                                log_level=context.log_level)
 
-    # TODO: Move the requirement for all target data up and
-    # set from record get the target_record
-    simpleping.set_param_from_targetdata(id, context.target_data)
+        # TODO: Move the requirement for all target data up and
+        # set from record get the target_record
+        # TODO create ping for multiple IDs
+        simpleping.set_param_from_targetdata(id_, context.target_data)
 
-    test_result = simpleping.test_server(verify_cert=False)
+        test_result = simpleping.test_server(verify_cert=False)
 
-    print_ping_result(simpleping, test_result, context.verbose)
+        print_ping_result(simpleping, test_result, context.verbose)
