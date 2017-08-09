@@ -1,0 +1,33 @@
+#!/bin/bash
+
+CMD=smicli
+function do_cmd {
+    echo CMD: $CMD$1
+    $CMD $1
+    error=$?
+    if ((error > 0)); then
+        echo ERROR: %1 Error $error
+        exit
+    fi
+}
+
+function do_cmd_er {
+    echo CMD: $CMD$1
+    $CMD $1
+    error=$?
+    if ((error == 0)); then
+        echo ERROR: Non zero code expected: %1 Error $error
+        exit
+    fi
+}    
+
+do_cmd '--help'
+
+# targets
+do_cmd 'targets fields'
+do_cmd 'targets info'
+do_cmd 'targets get 4'
+do_cmd 'targets list'
+do_cmd 'targets list  -f CompanyName -f Credential -f Principal'
+do_cmd_er 'targets list  -f CompanyNamex'
+
