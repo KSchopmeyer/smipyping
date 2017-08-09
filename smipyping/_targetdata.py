@@ -98,6 +98,11 @@ class TargetsData(object):
 
         self.db_type = db_type
 
+    def test_fieldnames(self, fields):
+        """Test a list of field names"""
+        for field in fields:
+            self.table_format_dict[field]
+
     @classmethod
     def factory(cls, db_dict, db_type, verbose, output_format='simple'):
         """Factory method to select subclass based on database type (db_type).
@@ -117,8 +122,8 @@ class TargetsData(object):
                                   output_format=output_format)
 
         elif db_type == ('mysql'):
-            inst = SQLTargetsData(db_dict, db_type, verbose,
-                                  output_format=output_format)
+            inst = MySQLTargetsData(db_dict, db_type, verbose,
+                                    output_format=output_format)
         else:
             ValueError('Invalid target factory db_type %s' % db_type)
 
@@ -332,9 +337,9 @@ class TargetsData(object):
                                table_format=self.output_format)
         table.print_table()
 
-    def display_cols(self, column_list):
+    def display_cols(self, fields):
         """
-        Display the columns of data defined by the col_list.
+        Display the columns of data defined by the fields parameter.
 
         This gets the
         data from the targets data based on the col_list and prepares a table
@@ -347,30 +352,72 @@ class TargetsData(object):
         """
         table_data = []
 
-        col_list = self.tbl_hdr(column_list)
+        col_list = self.tbl_hdr(fields)
 
-        table_width = self.get_output_width(column_list) + len(column_list)
+        table_width = self.get_output_width(fields) + len(fields)
         fold = False if table_width < 80 else True
 
         for record_id in sorted(self.targets_dict.iterkeys()):
-            table_data.append(self.tbl_record(record_id, column_list, fold))
+            table_data.append(self.tbl_record(record_id, fields, fold))
 
         table = TableFormatter(table_data, headers=col_list,
-                               title='Target Systems Overview')
+                               title='Target Systems Overview:')
         table.print_table()
 
     def display_all(self, fields=None, company=None):
-        """Display all entries in the base."""
+        """Display all entries in the base. If fields does not exist,
+           display a standard list of fields from the database.
+        """
         if not fields:
             # list of default fields for display
-            col_list = STANDARD_FIELDS_DISPLAY_LIST
+            fields = STANDARD_FIELDS_DISPLAY_LIST
         else:
-            col_list = fields
-        print('call display cols %s' % col_list)
-        self.display_cols(col_list)
+            fields = fields
+        self.display_cols(fields)
 
 
 class SQLTargetsData(TargetsData):
+    """
+    Subclass of Targets data for all SQL databases.  Subclasses of this class
+    support specialized sql databases.
+    """
+    def __init__(self, db_dict, dbtype, verbose, output_format):
+        """Pass through to SQL"""
+        if verbose:
+            print('MySQL Database type %s  verbose=%s' % (db_dict, verbose))
+        super(SQLTargetsData, self).__init__(db_dict, dbtype, verbose,
+                                             output_format)
+
+    def db_info(self):
+        """
+        Display the db info and Return info on the database used as a
+        dictionary.
+        """
+        try:
+            print('database characteristics')
+            for key in self.db_dict:
+                print('%s: %s' % key, self.db_dict[key])
+        except ValueError as ve:
+            print('Invalid database configuration exception %s' % ve)
+        return self.db_dict
+
+    def write_updated_record(self, recordid):
+        """
+        Update the database record
+        """
+        pass
+        # TODO this untested.
+        # cursor.execute ("""
+        #   UPDATE tblTableName
+        #   SET Year=%s, Month=%s, Day=%s, Hour=%s, Minute=%s
+        #   WHERE Server=%s
+        # """,
+        # (Year, Month, Day, Hour, Minute, ServerID))
+
+        # connect.commit()
+
+
+class MySQLTargetsData(SQLTargetsData):
     """
     This subclass of TargetsData process targets infromation from an sql
     database.
@@ -383,10 +430,11 @@ class SQLTargetsData(TargetsData):
     def __init__(self, db_dict, dbtype, verbose, output_format):
         """Read the input file into a dictionary."""
         if verbose:
-            print('SQL Database type %s  verbose=%s' % (db_dict, verbose))
-        super(SQLTargetsData, self).__init__(db_dict, dbtype, verbose,
-                                             output_format)
+            print('MySQL Database type %s  verbose=%s' % (db_dict, verbose))
+        super(MySQLTargetsData, self).__init__(db_dict, dbtype, verbose,
+                                               output_format)
 
+        # Connect to database
         try:
             connection = MySQLConnection(host=db_dict['host'],
                                          database=db_dict['database'],
@@ -455,34 +503,6 @@ class SQLTargetsData(TargetsData):
         except Exception as ex:
             raise ValueError('Error: putting Company Name in table %r error %s'
                              % (db_dict, ex))
-
-    def db_info(self):
-        """
-        Display the db info and Return info on the database used as a
-        dictionary.
-        """
-        try:
-            print('database characteristics')
-            for key in self.db_dict:
-                print('%s: %s' % key, self.db_dict[key])
-        except ValueError as ve:
-            print('Invalid database configuration exception %s' % ve)
-        return self.db_dict
-
-    def write_updated_record(self, recordid):
-        """
-        Update the database record
-        """
-        pass
-        # TODO this untested.
-        # cursor.execute ("""
-        #   UPDATE tblTableName
-        #   SET Year=%s, Month=%s, Day=%s, Hour=%s, Minute=%s
-        #   WHERE Server=%s
-        # """,
-        # (Year, Month, Day, Hour, Minute, ServerID))
-
-        # connect.commit()
 
 
 class CsvTargetsData(TargetsData):

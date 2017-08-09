@@ -8,18 +8,19 @@ import pprint
 
 import argparse
 from configparser import ConfigParser
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-# from mysql.connector import MySQLConnection, Error
-from sqlalchemy import Column, ForeignKey, Integer, String
-from sqlalchemy.types import Enum, DateTime, Date
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.orm import relationship
 from sqlalchemy import inspect
+import pprint  # noqa: F401
+
 try:
     from sqlalchemy.orm import class_mapper, object_mapper
 except ImportError:
     from sqlalchemy.orm.util import class_mapper, object_mapper
+from _sql_alchemy_decls import create_sqlalchemy_session, \
+    create_sqlalchemy_engine, Company, Target, User, Ping, PreviousScan, \
+    LastScan, Program, Notification, Program
+
+# from mysql.connector import MySQLConnection, Error
+
 
 CONFIG_FILE = 'dbconfig.ini'
 DBTYPE = 'mysql'
@@ -67,171 +68,6 @@ def get_dbconfig(configfile, section=DBTYPE, connector='mysql+mysqlconnector'):
     return db_config
 
 
-def create_sql_engine(configfile, section, echo=None):
-    """
-    Create the sql_alchemy session and return the session.
-
-    Parameters:
-
-        echo: Boolean. Set to true to show sql generated.
-
-    Returns:
-        configured "Session" class
-    """
-    session = sessionmaker()
-    engine = create_engine(get_dbconfig(configfile, section=DBTYPE), echo=echo)
-    session.configure(bind=engine)  # once engine is available
-    return session()
-
-
-def create_sqlalchemy_engine(configfile, section, echo=None):
-    engine = create_engine(get_dbconfig(configfile, section=DBTYPE), echo=echo)
-    return engine
-
-
-Base = declarative_base()
-
-#
-#   Define the tables used which corresponds to the tables in the
-#   database
-#
-
-
-class Company(Base):
-    __tablename__ = 'Companies'
-    CompanyID = Column(Integer(11), primary_key=True)
-    CompanyName = Column(String(30), nullable=False)
-
-    def __repr__(self):
-        return("CompanyID=%s; CompanyName='%s'" % (self.CompanyID,
-                                                   self.CompanyName))
-
-
-class Target(Base):
-    __tablename__ = 'Targets'
-
-    TargetID = Column(Integer(11), primary_key=True)
-    IPAddress = Column(String(15), nullable=False)
-    CompanyID = Column(Integer(11), ForeignKey("Companies.CompanyID"))
-    Namespace = Column(String(30), nullable=False)
-    SMIVersion = Column(String(15), nullable=False)
-    Product = Column(String(30), nullable=False)
-    Principal = Column(String(30), nullable=False)
-    Credential = Column(String(30), nullable=False)
-    CimomVersion = Column(String(30), nullable=False)
-    InteropNamespace = Column(String(30), nullable=False)
-    Notify = Column(Enum('Enabled', 'Disabled'), default='Disabled')
-    NotifyUsers = Column(String(12), nullable=False)
-    ScanEnabled = Column(Enum('Enabled', 'Disabled'), default='Enabled')
-    Protocol = Column(String(10), default='http')
-    Port = Column(String(10), nullable=False)
-
-    # Relationship to company table
-    company = relationship("Company", backref="Targets")
-
-    def __repr__(self):
-        return('TargetID=%s; IPAddress=%s; CompanyID=%s; Namespace=%s;'
-               ' SMIVersion=%s; Product=%s; Principal=%s; Credential=%s;'
-               ' CimomVersion=%s; InteropNamespace=%s; Notify=%s;'
-               ' NotifyUsers=%s; ScanEnabled=%s; Protocol=%s; Port=%s;'
-               ' company=%s' %
-               (self.TargetID, self.IPAddress, self.CompanyID, self.Namespace,
-                self.SMIVersion, self.Product, self.Principal, self.Credential,
-                self.CimomVersion, self.InteropNamespace, self.Notify,
-                self.NotifyUsers, self.ScanEnabled, self.Protocol,
-                self.Port, self.company))
-
-
-class User(Base):
-    __tablename__ = 'Users'
-    UserID = Column(Integer(11), primary_key=True)
-    Firstname = Column(String(30), nullable=False)
-    Lastname = Column(String(30), nullable=False)
-    Email = Column(String(50), nullable=False)
-    CompanyID = Column(Integer, ForeignKey("Companies.CompanyID"))
-    Active = Column(Enum('Active', 'Inactive'), nullable=False)
-    Notify = Column(Enum('Enabled', 'Disabled'), nullable=False)
-
-    # Relationship to Company
-    company = relationship("Company", backref="Users")
-
-    def __repr__(self):
-        return('UserID=%s; Firstname=%s; Lastname=%s; Email=%s;'
-               'CompanyID=%s; Active=%s; Notify=%s' %
-               (self.UserID, self.Firstname, self.Lastname, self.Email,
-                self.CompanyID, self.Active, self.Notify))
-
-
-class Ping(Base):
-    __tablename__ = 'Pings'
-    PingID = Column(Integer(11), primary_key=True)
-    TargetID = Column(Integer(11), ForeignKey("Targets.TargetID"))
-    Timestamp = Column(DateTime, nullable=False)
-    Status = Column(String(255), nullable=False)
-
-    # relationship to the target that caused this ping. Note that we do
-    # not use the backref on this one.
-    target = relationship("Target")
-
-    def __repr__(self):
-        return('PingID=%s; TargetID=%s; Timestamp=%s; Status=%s' %
-               (self.PingID, self.TargetID, self.Timestamp, self.Status))
-
-
-class PreviousScan(Base):
-    __tablename__ = 'PreviousScans'
-    ScanID = Column(Integer, primary_key=True)
-    TimeStamp = Column(DateTime, nullable=False)
-
-    def __repr__(self):
-        return('ScanID=%s, Timestamp=%s' % (self.ScanID, self.TargetID))
-
-
-class LastScan(Base):
-    __tablename__ = 'LastScan'
-    ScanID = Column(Integer, primary_key=True)
-    LastScan = Column(DateTime, nullable=False)
-
-    def __repr__(self):
-        return('ScanID=%s, LastScan=%s' % (self.ScanID, self.LastScan))
-
-
-class Program(Base):
-    __tablename__ = 'Program'
-    ProgramID = Column(Integer, primary_key=True)
-    ProgramName = Column(String(15), nullable=False)
-    StartDate = Column(Date, nullable=False)
-    EndDate = Column(Date, nullable=False)
-
-    def __repr__(self):
-        return('ProgramID=%s; ProgramName=%s; StartDate=%s;  EndDate=%s' %
-               (self.ProgramID,
-                self.ProgramName,
-                self.StartDate,
-                self.EndDate))
-
-
-class Notification(Base):
-    __tablename__ = 'Notifications'
-    NotificationID = Column(Integer, primary_key=True)
-    NotifyTime = Column(DateTime, nullable=False)
-    UserID = Column(Integer, ForeignKey("Users.UserID"))
-    TargetID = Column(Integer(11), ForeignKey("Targets.TargetID"))
-    Message = Column(String(100), nullable=False)
-
-    # target = relationship("Target", backref="Notifications")
-    # user = relationship("User", backref="Notifications")
-
-    def __repr__(self):
-        return(
-            'NotificationID=%s, NotificationID=%s; UserID=%s; '
-            ' TargetID=%s; Message=%s' % (self.NotificationID,
-                                          self.NotificationID,
-                                          self.UserID,
-                                          self.TargetID,
-                                          self.Message))
-
-
 def print_table_info(session, table, verbose):
     print('Table %s; count = %s' % (table.__table__,
                                     session.query(table).count()))
@@ -242,7 +78,7 @@ def print_companies(session, verbose=False):
     if verbose:
         for row in session.query(Company, Company.CompanyID).all():
             print(row.Company)
-            for target in row.Company.targets_:
+            for target in row.Company.Targets:
                 print(' TargetID=%s, IP=%s product=%s' % (target.TargetID,
                                                           target.IPAddress,
                                                           target.Product))
@@ -283,7 +119,52 @@ def table2dict(table, session, id_field):
     return d
 
 
-def object_to_dict(obj, found=None):
+# Despite "doog adibies" answer has been accepted and I upvoted it since has
+# been extremely helpful, there are a couple of notable issues in the algorithm:
+
+# The sub-serialization of relationships stops at the first child
+# (because of the premature addition to "found")
+# It also serializes back relationships, which in most cases are not
+#   desiderable (if you have a Father object with a relationship to Son with a
+# configured backref, you will generate an extra Father node for each son in it,
+# with the same data that the main Father object already provides!)
+
+# To fix these issues, I defined another set() to track undesired back
+# relationships and I moved the tracking of visited children later in the code.
+# I also deliberately renamed variables in order to make more clear (of course
+# IMO) what they represents and how the algorithm works and replaced the map()
+# with a cleaner dictionary comprehension.
+
+# The following is my actual working implementation, which has been tested
+# against nested objects of 4 dimensions (User -> UserProject ->
+# UserProjectEntity -> UserProjectEntityField):
+def model_to_dict2(obj, visited_children=None, back_relationships=None):
+    if visited_children is None:
+        visited_children = set()
+    if back_relationships is None:
+        back_relationships = set()
+    serialized_data = {c.key: getattr(obj, c.key) for c in obj.__table__.columns}
+    relationships = class_mapper(obj.__class__).relationships
+    visitable_relationships = [(name, rel) for name, rel in relationships.items() if name not in back_relationships]
+    for name, relation in visitable_relationships:
+        if relation.backref:
+            back_relationships.add(relation.backref)
+        relationship_children = getattr(obj, name)
+        if relationship_children is not None:
+            if relation.uselist:
+                children = []
+                for child in [c for c in relationship_children if c not in visited_children]:
+                    visited_children.add(child)
+                    children.append(model_to_dict(child, visited_children, \
+                        back_relationships))
+                serialized_data[name] = children
+            else:
+                serialized_data[name] = model_to_dict(relationship_children, \
+                    visited_children, back_relationships)
+    return serialized_data
+
+
+def object_to_dict(obj, depth=0, found=None):
     """
     Uses the relationships property of the mapper. The code choices depend
     on how you want to map your data and how your relationships look. If you
@@ -292,8 +173,8 @@ def object_to_dict(obj, found=None):
     recursive loop. You could eliminate the recursion entirely if you only
     plan to go down one in depth, but you did say "and so on".
     """
-    pfound = list(found) if found else 'none'
-    print('object_to_dict %s\nfound: %s' % (obj, pfound))
+    # pfound = list(found) if found else 'none'
+    #print('object_to_dict %s\nfound: %s' % (obj, pfound))
     if found is None:
         found = set()
     mapper = class_mapper(obj.__class__)
@@ -303,56 +184,67 @@ def object_to_dict(obj, found=None):
     # get_key_value = lambda c: (c, getattr(obj, c).isoformat()) if isinstance(getattr(obj, c), DateTime) else (c, getattr(obj, c))
     # out = dict(map(get_key_value, columns))
     out = {c.key: getattr(obj, c.key)
-            for c in inspect(obj).mapper.column_attrs}
-    print('out %s' % out)
+           for c in inspect(obj).mapper.column_attrs}
+    # print('out %s' % out)
+    if depth > 0:
+        return out
+    depth += 1
     x = []
     for name, relation in mapper.relationships.items():
         x.append('%s/%s:%s, ' % (name, relation, (relation in found)))
-    print('mapper.relationship.items %s' % x)
     for name, relation in mapper.relationships.items():
         if relation not in found:
-            print('nameinrelation name %s, relation %s, found %s' % (name, relation, list(found)))
             found.add(relation)
             related_obj = getattr(obj, name)
-            print('related_obj=%s relation=%s use_list=%s' % (related_obj, relation, relation.uselist))
             if related_obj is not None:
                 if relation.uselist:
-                    out[name] = [object_to_dict(child, found) for child in related_obj]
+                    out[name] = [object_to_dict(child, depth, found) for child in related_obj]
                 else:
-                    out[name] = object_to_dict(related_obj, found)
+                    out[name] = object_to_dict(related_obj, depth, found)
+    # print('Returns out %s' % out)
     return out
 
 
 def print_targets(session, verbose=False):
     print_table_info(session, Target, verbose)
-
-    row = session.query(Target).first()
-    print('row: %s' % row)
-    print('ObjectasDict: %s' % row_as_dict(row))
-    print('object_to_dict: %s' % object_to_dict(row))
-    return
-
-    for row in session.query(Target).all():
-        print('row: %s' % row)
-        print('ObjectasDict: %s' % row_as_dict(row))
-        print('object_to_dict: %s' % object_to_dict(row))
-
-    # print('targets_as_dict\n%s' % targets_as_dict(session))
     pp = pprint.PrettyPrinter(indent=4)
 
-    d = table2dict(Target, session, 'TargetID')
-    pp.pprint(d)
+    # row = session.query(Target).first()
+    # print('row: %s' % row)
+    
+    # print('ObjectasDict: %s' % row_as_dict(row))
+    # row_dict = object_to_dict(row)
+    # print('object_to_dict: %s' % object_to_dict(row))
+    # print('id %s comp %s' % (row_dict['TargetID'], row_dict['company']['CompanyName']))
+    # return
 
-    #for row in session.query(Target, Target.TargetID).all():
+    for row in session.query(Target).all():
+        # print('row: %s' % row)
+        # print('ObjectasDict: %s' % row_as_dict(row))
+        row_dict = object_to_dict(row)
+        # print('object_to_dict: %s' % row_dict)
+        pp.pprint(row_dict)
+        print('id %s comp %s' % (row_dict['TargetID'],
+                                 row_dict['company']['CompanyName']))
 
-    return d
+    return
+
+    # print('targets_as_dict\n%s' % targets_as_dict(session))
+
+    #d = table2dict(Target, session, 'TargetID')
+    #pp.pprint(d)
+
+    # for row in session.query(Target, Target.TargetID).all():
+
+    #return d
 
     if verbose:
         print('Targets Dict\n%s' % session)
         for row in session.query(Target, Target.TargetID).all():
             print('Target: %s\nCompany (%s)' % (row.Target, row.Target.company))
             it = row._asdict()
-            print('Dictionary: %s' % row._asdict())
+            row_dict = object_to_dict(row)
+            pp.pprint(row_dict)
             # pp = pprint.PrettyPrinter(indent=4)
             # pp.pprint(it)
             # print('Try target %s' % it[Target])
@@ -403,7 +295,7 @@ def print_programs(session, verbose=False):
     print_table_info(session, Program, verbose)
 
     if verbose:
-        for row in session.query(Program).all():
+        for row in session.query(Program, Program.ProgramID).all():
             print(row)
 
 
@@ -430,35 +322,35 @@ def display_tables(configfile, args):
     """
     Test the defined tables and database
     """
-
-    session = create_sql_engine(configfile, section=DBTYPE)
+    db_config = get_dbconfig(configfile, section=DBTYPE)
+    session = create_sqlalchemy_session(db_config, echo=args.verbose)
 
     for table in args.tables:
         if table == 'Companies':
-            print_companies(session, verbose=args.verbose)
+            print_companies(session, verbose=args.details)
         elif table == 'Targets':
-            print_targets(session, verbose=args.verbose)
+            print_targets(session, verbose=args.details)
         elif table == 'Users':
-            print_users(session, verbose=args.verbose)
+            print_users(session, verbose=args.details)
         elif table == 'PreviousScans':
-            print_previous_scans(session, verbose=args.verbose)
+            print_previous_scans(session, verbose=args.details)
         elif table == 'LastScans':
-            print_lastscan(session, verbose=args.verbose)
+            print_lastscan(session, verbose=args.details)
         elif table == 'Pings':
-            print_pings(session, verbose=args.verbose)
+            print_pings(session, verbose=args.details)
         elif table == 'Programs':
-            print_programs(session, verbose=args.verbose)
+            print_programs(session, verbose=args.details)
 
         elif table == "all":
-            print_companies(session, verbose=args.verbose)
-            print_targets(session, verbose=args.verbose)
-            print_previous_scans(session, verbose=args.verbose)
-            print_lastscan(session, verbose=args.verbose)
-            print_pings(session, verbose=args.verbose)
-            print_users(session, verbose=args.verbose)
+            print_companies(session, verbose=args.details)
+            print_targets(session, verbose=args.details)
+            print_previous_scans(session, verbose=args.details)
+            print_lastscan(session, verbose=args.details)
+            print_pings(session, verbose=args.details)
+            print_users(session, verbose=args.details)
 
         elif table == 'userpw':
-            print_targets_user_pw(session, verbose=args.verbose)
+            print_targets_user_pw(session, verbose=args.details)
 
         else:
             print('Table %s Not found' % table)
@@ -466,7 +358,9 @@ def display_tables(configfile, args):
 
 
 def display_table_names(configfile, args):
-    engine = create_sqlalchemy_engine(configfile, args)
+    
+    db_config = get_dbconfig(configfile, section=DBTYPE)
+    engine = create_sqlalchemy_engine(db_config, echo = args.details)
     print ('Defined Table Names:')
     for name in engine.table_names():
         print('   %s' % name)
@@ -486,9 +380,11 @@ def main():
                              'This option lists names and exits ')
     parser.add_argument('-c', '--showcolumnnames', action='store_true',
                         help='List the names of all columns in each table.')
-    parser.add_argument('-v', '--verbose', action='store_true',
+    parser.add_argument('-d', '--details', action='store_true',
                         help='If false, show only overview info on tables in '
                         '-t and database. If True, list entries in tables')
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help='If True show sql, etc.')
     args = parser.parse_args()
 
     if args.verbose:
