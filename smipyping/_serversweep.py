@@ -29,6 +29,7 @@ https port so the choices of test are limited.
 """
 
 from __future__ import print_function, absolute_import
+import os
 import sys
 import time
 from threading import Thread
@@ -37,7 +38,8 @@ import itertools
 import six
 
 from .config import MAX_THREADS
-from ._scanport import check_port_syn
+from ._scanport_syn import check_port_syn
+from ._scanport_tcp import check_port_tcp
 from ._tableoutput import TableFormatter
 
 __all__ = ['ServerSweep']
@@ -49,7 +51,8 @@ class ServerSweep(object):
     IP address and ports to find potential WBEM Servers.
     """
     def __init__(self, net_defs, ports, target_data=None, no_threads=False,
-                 min_octet_val=1, max_octet_val=254, verbose=False):
+                 min_octet_val=1, max_octet_val=254, verbose=False,
+                 scan_type='both', logger=None):
         """
         Parameters:
           net_defs: list of subnets. Each subnet is defined as a sweep range
@@ -89,8 +92,10 @@ class ServerSweep(object):
         self.verbose = verbose
         self.total_sweep_time = None
         self.total_pings = None
+        self.scan_type = scan_type
+        self.logger = None
 
-    def check_port(self, test_address):
+    def check_port(self, test_address, self.logger):
         """
         Runs defined test against a single ip/port defined as a tuple in
         test_address
@@ -108,9 +113,28 @@ class ServerSweep(object):
         Exceptions:
             TODO
         """
-        check_result = check_port_syn(test_address[0], test_address[1],
-                                      self.verbose)  # Test one ip:port
-        return check_result
+        if self.scan_type == 'syn':
+            result, err = check_port_syn(test_address[0], test_address[1],
+                                          self.verbose)  # Test one ip:port
+        elif self.scan_type == 'tcp':
+            result, err = check_port_tcp(test_address[0], test_address[1],
+                                          self.verbose)  # Test one ip:port
+
+        elif self.scan_type == 'both':
+            result1, errno = check_port_tcp(test_address[0],
+                                                test_address[1],
+                                                self.verbose)
+            result, cd = check_port_syn(test_address[0], test_address[1],
+                                             self.verbose)
+            if result1 != result:
+                print('Error scanner mismatch addr=%s, tcp=%s, syn=%s, cd1=%s errno=%s' %
+                      (test_address, result1, result, errno,
+                       os.strerror(errno)))
+
+        else:
+            raise ValueError('Invalid port checker type %s' % type)
+
+        return result
 
     def list_subnets_to_scan(self):
         """

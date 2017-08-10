@@ -1,7 +1,23 @@
+# (C) Copyright 2017 Inova Development Inc.
+# All Rights Reserved
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """
-Scan port function.  This scans a single port to determine if it is open
+Scan port function using the SYN packet.  This scans a single port to determine
+if it is open
 
-This is the code that is privilege aware.
+This is the code that is privilege aware because it uses raw tcp and that
+requires admin privileges in the Python interpreter.
 """
 # required to turn off  IP v6 warning message from scapy in import
 import sys
@@ -9,12 +25,13 @@ import logging
 from scapy.all import IP, TCP, sr1, sr, conf, RandShort
 SCPY_LOG = logging.getLogger("scapy.runtime")
 SCPY_LOG.setLevel(49)
+import logging
 
 
 __all__ = ['check_port_syn']
 
 
-def check_port_syn(dst_ip, dst_port, verbose):
+def check_port_syn(dst_ip, dst_port, verbose, logger):
     """
     Check a single address with SYN for open port.
 
@@ -23,12 +40,14 @@ def check_port_syn(dst_ip, dst_port, verbose):
 
     Using SYN allows us to test for open port but in Python requires that
     the code execute in admin mode.
+
+    Returns tuple (Boolean result, None)
     """
     SYNACK = 0x12
     RSTACK = 0x14
 
     conf.verb = 0  # Disable verbose in sr(), sr1() methods  #noqa: F405
-    port_open = False
+    result = False
     src_port = RandShort()
     p = IP(dst=dst_ip) / TCP(sport=src_port, dport=dst_port, flags='S')
     resp = sr1(p, timeout=2)  # Sending packet
@@ -39,7 +58,7 @@ def check_port_syn(dst_ip, dst_port, verbose):
         if resp.getlayer(TCP).flags == SYNACK:
             send_rst = sr(IP(dst=dst_ip) / TCP(sport=src_port, dport=dst_port,
                           flags='AR'), timeout=1)
-            port_open = True
+            result = True
             if verbose:
                 print('check_port:%s:%s Open' % (dst_ip, dst_port))
         elif resp.getlayer(TCP).flags == RSTACK:
@@ -50,4 +69,4 @@ def check_port_syn(dst_ip, dst_port, verbose):
             print('%s is Down' % dst_ip)
 
     sys.stdout.flush()
-    return port_open
+    return (result, None)

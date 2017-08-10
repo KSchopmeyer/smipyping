@@ -64,7 +64,8 @@ from ._common_options import *  # noqa: F401,F403
 
 # TODO should drop _cliutils
 from ._cliutils import *  # noqa: F401,F403
-from ._scanport import *  # noqa: F401,F403
+from ._scanport_syn import *  # noqa: F401,F403
+from ._scanport_tcp import *  # noqa: F401,F403
 
 # support for particular script cmds
 from ._simpleping import *  # noqa: F401,F403

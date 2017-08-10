@@ -189,7 +189,8 @@ def main(prog_name):
                         no_threads=args.no_threads,
                         min_octet_val=args.min_octet_val,
                         max_octet_val=args.max_octet_val,
-                        verbose=args.verbose)
+                        verbose=args.verbose,
+                        logger=None)
 
     if args.dryrun:
         sweep.list_subnets_to_scan()
