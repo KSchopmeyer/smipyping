@@ -55,7 +55,7 @@ class ServerSweep(object):
     """
     def __init__(self, net_defs, ports, target_data=None, no_threads=False,
                  min_octet_val=1, max_octet_val=254, verbose=False,
-                 scan_type='all'):
+                 scan_type='tcp'):
         """
         Parameters:
           net_defs: list of subnets. Each subnet is defined as a sweep range
@@ -97,6 +97,7 @@ class ServerSweep(object):
         self.total_pings = None
         self.scan_type = scan_type
         self.logger = get_logger(SWEEP_LOGGER_NAME)
+        self.kill_threads = False
 
     def check_port(self, test_address):
         """
@@ -137,6 +138,7 @@ class ServerSweep(object):
                 resultsyn, cd, bl = check_port_syn(test_address[0],
                                                    test_address[1],
                                                    self.verbose, self.logger)
+                result = resulttcp
                 if resulttcp != resultsyn:
                     self.logger.debug('scanner result differ. addr=%s, syn=%s,'
                                       ' tcp=%s, errno=%s errno=%s',
@@ -146,12 +148,13 @@ class ServerSweep(object):
                           ' errno=%s:%s' %
                           (test_address, resultsyn, resulttcp, errno,
                            os.strerror(errno)))
-                    result = resultsyn
 
             else:
                 raise ValueError('Invalid port checker type %s' % type)
+
         # Just exit program if keyboard interrupt
         except (KeyboardInterrupt, SystemExit):
+            print('KeyboardInterrupt CheckPort')
             raise
 
         return (result, error)
@@ -197,15 +200,19 @@ class ServerSweep(object):
         return open_hosts
 
     def process_queue(self, queue, results):
-        """This is thread function that processes a queue to do check_port.
+        """This is a thread function that processes a queue to do check_port.
         Each queue entry is a tuple of ip_address(with port) and results
-        list where the results are appended)
+        list where the results are appended for each succseful scan.
         """
         while not queue.empty():
+            if self.kill_threads:
+                return
             work = queue.get()
-            results = work[1]
-            check_result = self.check_port(work[0])
+            results = work[1]   # get results list from work
+            check_result, error = self.check_port(work[0])
+            # TODO not passing on error information
             if check_result is True:
+                # append address info to the results list
                 results.append(work[0])
             queue.task_done()
         return
@@ -241,7 +248,8 @@ class ServerSweep(object):
         try:
             queue.join()
         except KeyboardInterrupt:
-            print("Ctrl-c received! Sending kill to threads...")
+            print("Ctrl-C received! Sending kill to threads...")
+            self.kill_threads = True
             for t in threads:
                 t.kill_received = True
 
@@ -397,7 +405,7 @@ class ServerSweep(object):
         rows = []
         headers = ['IPAddress', 'CompanyName', 'Product', 'Error']
         title = 'Open WBEMServers:subnet(s)=%s\n' \
-                'port(s)=%s range=%s, Scan=%s time=%s\n' \
+                'port(s)=%s range=%s, scan_type=%s time=%s\n' \
                 '    total pings=%s pings answered=%s' \
                 % (self.net_defs, self.ports, range_txt, self.scan_type,
                    execution_time, self.total_pings, len(open_hosts))
@@ -458,6 +466,11 @@ class ServerSweep(object):
               defined range of subnets and ports input
         """
         start_time = time.time()   # Scan start time
+
+        range_txt = '%s:%s' % (self.min_octet_val, self.max_octet_val)
+        self.logger.info('Serversweep Scan WBEMServers: subnet(s)=%s '
+                         'port(s)=%s range=%s, scan_type=%s ',
+                         self.net_defs, self.ports, range_txt, self.scan_type)
 
         try:
             open_hosts = []
