@@ -24,10 +24,10 @@ TargetID,CompanyName,Namespace,SMIVersion,Product,Principal,Credential,CimomVers
 23,Hewlett Packard,/root/smis/current,,HP P9500 (Proxy),system,manager,,10.1.132.93,/interop,https,5989,Enabled
 24,Hewlett Packard,root/hpvls,1.3,HP VLS 6500,cimom_administrator,administrator,Pegasus 2.5.1,10.1.134.77,root/pg_interop,http,5988,Enabled
 25,Hewlett Packard,root/hpq,1.5,P2000 G3 MSA,smilab6,F00sb4ll,SFCB 1.3.11,10.1.134.147,root/interop,https,5989,Enabled
-26,Hitachi Data Systems,root/smis/current,1.5,VSP Array,smilab,F00sb4ll,J WBEM Server 3.9.3,10.1.134.226,interop,https,5989,Enabled
-27,Hitachi Data Systems,root/hitachi/smis,1.5/1.6,VSP Array (embedded),smilab,F00sb4ll,,10.1.134.252,interop,https,5989,Enabled
+26,Hitachi Data Systems,root/smis/current,1.5,VSP Array,smilab,F00sb4ll,J WBEM Server 3.9.3,10.2.103.11,interop,https,5989,Enabled
+27,Hitachi Data Systems,root/hitachi/smis,1.5/1.6,VSP Array (embedded),smilab,F00sb4ll,,10.2.103.3,interop,https,5989,Enabled
 28,Hitachi Data Systems,root/smis/current,1.4,9570V Array,smilab,F00sb4ll,,10.1.134.225,interop,http,5988,Enabled
-29,Hitachi Data Systems,root/smis/current,1.5,AMS2100 Array,smilab,F00sb4ll,,10.1.134.227,interop,https,5989,Enabled
+29,Hitachi Data Systems,root/smis/current,1.5,AMS2100 Array,smilab,F00sb4ll,,10.2.103.12,interop,https,5989,Enabled
 30,Hitachi Data Systems,root/smis/current,1.5,VSP Array,smilab,F00sb4ll,,10.1.134.165,interop,https,5989,Enabled
 31,HP/3PARData,root/tpd,,InServ F400,smilab6,F00sb4ll,,10.1.134.160,root/PG_InterOp,http,5988,Enabled
 32,Huawei,root/huawei,1.4,OceanStor S5500T (V2),admin,Admin@storage,,10.1.134.238,interop,https,5989,Enabled
@@ -47,6 +47,6 @@ TargetID,CompanyName,Namespace,SMIVersion,Product,Principal,Credential,CimomVers
 46,NetApp/LSI,root/lsiarray13,1.2/1.3,7900 Array,smilab6,Foosb4ll,Pegasus,10.1.134.106,interop,http,5988,Enabled
 47,Nimble Storage,interop,,CS Array,smilab6,F00sb4ll,,10.1.134.212,interop,https,5989,Enabled
 48,PMC-Sierra,root/pmc/maxraid/smi_14,1.4,maxRaid 8250,smilab6,f00sb4ll,Pegasus 2.10,10.1.134.172,root/PG_InterOp,https,5989,Enabled
-50,Pure Storage,purestorage,1.6.1,FA-420,pureuser,pureuser,2.44.1,10.1.132.185,interop,https,5989,Enabled
+50,Pure Storage,purestorage,1.6.1,FA-420,pureuser,pureuser,2.44.1,10.2.117.3,interop,https,5989,Enabled
 51,SNIA,interop,0,SNIA Dummy Provider Entry,smilab,F00sb4ll,0,10.1.70.1,interop,http,5988,Disabled
 52,Tintri,TODO,0,VMStore,smilab,F00sb4ll,0,10.1.132.86,interop,https,5989,Enabled

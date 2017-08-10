@@ -369,7 +369,7 @@ class TargetsData(object):
                                title='Target Systems Overview:')
         table.print_table()
 
-    def display_all(self, fields=None):
+    def display_all(self, fields=None, company=None):
         """Display all entries in the base. If fields does not exist,
            display a standard list of fields from the database.
         """

@@ -31,8 +31,9 @@ import logging
 API_LOGGER_NAME = 'smipyping.api'
 EXPLORE_LOGGER_NAME = 'smicli.explore'
 CIMPING_LOGGER_NAME = 'smicli.cimping'
+SWEEP_LOGGER_NAME = 'smicli.sweep'
 
-LOG_COMPONENTS = ['explore', 'cimping', 'all']
+LOG_COMPONENTS = ['explore', 'cimping', 'sweep', 'all']
 
 # possible log output destinations
 LOG_DESTINATIONS = ['file', 'stderr', 'none']
@@ -41,7 +42,7 @@ DEFAULT_LOG_LEVEL = 'debug'
 LOG_LEVELS = ['error', 'warning', 'info', 'debug']
 __all__ = ['SmiPypingLoggers', 'LOG_DESTINATIONS', 'LOG_LEVELS',
            'API_LOGGER_NAME', 'EXPLORE_LOGGER_NAME', 'CIMPING_LOGGER_NAME',
-           'DEFAULT_LOG_LEVEL']
+           'DEFAULT_LOG_LEVEL', 'SWEEP_LOGGER_NAME']
 
 
 def get_logger(name):

@@ -74,10 +74,11 @@ class SimplePing(object):
         if server and target_id:
             raise ValueError('Use either server or target_id, not both')
 
-        if server:
-            print('SimplePing server %s' % self.url)
-        else:
-            print('SimplePing id %s' % target_id)
+        if verbose:
+            if server:
+                print('SimplePing server %s' % self.url)
+            else:
+                print('SimplePing id %s' % target_id)
 
         self.namespace = namespace
         self.timeout = timeout
@@ -197,8 +198,7 @@ class SimplePing(object):
                 exception = 'Ping failed'
         self.logger.debug('ping result=%s', result_code)
         if ping_result:
-            print('cimping url=%s, ns=%s, principal=%s, cred=%s' %
-                  (self.url, self.namespace, self.user, self.password))
+            print('cimping url=%s, ns=%s' % (self.url, self.namespace))
             # connect to the server and execute the cim operation test
             conn = self.connect_server(self.url, verify_cert=verify_cert)
 
@@ -208,15 +208,18 @@ class SimplePing(object):
         if self.verbose:
             print('result=%s, exception=%s, resultCode %s'
                   % (result, exception, result_code))
-        self.logger.debug('result=%s, exception=%s, resultCode %s',
-                          result, exception, result_code)
+        execution_time = datetime.datetime.now() - start_time
+        execution_time = execution_time.total_seconds()
+        self.logger.info('result=%s, exception=%s, resultCode=%s, time=%s',
+                         result, exception, result_code,
+                         str(execution_time))
 
         # Return namedtuple with results
         return TestResult(
             code=result_code,
             type=result,
             exception=exception,
-            execution_time=str(datetime.datetime.now() - start_time))
+            execution_time=str(execution_time))
 
     def ping_server(self):
         """
@@ -278,7 +281,7 @@ class SimplePing(object):
             if self.verbose:
                 print('Running host=%s. Returned %s instance(s)' %
                       (conn.url, len(insts)))
-            rtn_code = ("Running", "")
+            rtn_tuple = ("Running", "")
 
         except CIMError as ce:
             print('CIMERROR %r %s %s %s' % (ce,
@@ -286,16 +289,17 @@ class SimplePing(object):
                                             ce.status_code_name,
                                             ce.status_description))
             # TODO add status_code
-            rtn_code = ("WBEMException", ce, ce.status_code_name,
-                        ce.status_description)
+            # TODO make this a named tuple for clarity
+            rtn_tuple = ("WBEMException", ce, ce.status_code_name,
+                         ce.status_description)
         except ConnectionError as co:
-            rtn_code = ("ConnectionError", co)
+            rtn_tuple = ("ConnectionError", co)
         except TimeoutError as to:
-            rtn_code = ("TimeoutError", to)
+            rtn_tuple = ("TimeoutError", to)
         except Error as er:
-            rtn_code = ("PyWBEM Error", er)
+            rtn_tuple = ("PyWBEM Error", er)
         except Exception as ex:  # pylint: disable=broad-except
-            rtn_code = ("General Error", ex)
+            rtn_tuple = ("General Error", ex)
 
         if self.debug:
             last_request = conn.last_request or conn.last_raw_request
@@ -304,7 +308,7 @@ class SimplePing(object):
             print('Reply:\n\n%s\n' % last_reply)
 
         # rtn_tuple = [rtn_code[0], rtn_code[1]]
-        rtn_tuple = tuple(rtn_code)
+        # rtn_tuple = tuple(rtn_code)
         if self.verbose:
             print('rtn_tuple %s' % (rtn_tuple,))
         self.logger.info('SimplePing Result %s' % (rtn_tuple,))

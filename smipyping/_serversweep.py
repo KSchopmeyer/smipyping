@@ -29,6 +29,7 @@ https port so the choices of test are limited.
 """
 
 from __future__ import print_function, absolute_import
+import os
 import sys
 import time
 from threading import Thread
@@ -37,10 +38,14 @@ import itertools
 import six
 
 from .config import MAX_THREADS
-from ._scanport import check_port_syn
+from ._scanport_syn import check_port_syn
+from ._scanport_tcp import check_port_tcp
 from ._tableoutput import TableFormatter
+from ._logging import SWEEP_LOGGER_NAME, get_logger
 
-__all__ = ['ServerSweep']
+__all__ = ['ServerSweep', 'SCAN_TYPES']
+
+SCAN_TYPES = ['tcp', 'syn', 'all']
 
 
 class ServerSweep(object):
@@ -49,7 +54,8 @@ class ServerSweep(object):
     IP address and ports to find potential WBEM Servers.
     """
     def __init__(self, net_defs, ports, target_data=None, no_threads=False,
-                 min_octet_val=1, max_octet_val=254, verbose=False):
+                 min_octet_val=1, max_octet_val=254, verbose=False,
+                 scan_type='tcp'):
         """
         Parameters:
           net_defs: list of subnets. Each subnet is defined as a sweep range
@@ -89,6 +95,9 @@ class ServerSweep(object):
         self.verbose = verbose
         self.total_sweep_time = None
         self.total_pings = None
+        self.scan_type = scan_type
+        self.logger = get_logger(SWEEP_LOGGER_NAME)
+        self.kill_threads = False
 
     def check_port(self, test_address):
         """
@@ -106,11 +115,49 @@ class ServerSweep(object):
             True if port OK
 
         Exceptions:
-            TODO
+            ValueError if self.scan_type invalid
         """
-        check_result = check_port_syn(test_address[0], test_address[1],
-                                      self.verbose)  # Test one ip:port
-        return check_result
+        error = None
+        try:
+            if self.scan_type == 'syn':
+                result, err, str_ = check_port_syn(test_address[0],
+                                                   test_address[1],
+                                                   self.verbose,
+                                                   self.logger)
+            elif self.scan_type == 'tcp':
+                result, err, str_ = check_port_tcp(test_address[0],
+                                                   test_address[1],
+                                                   self.verbose,
+                                                   self.logger)
+                error = str_
+            elif self.scan_type == 'all':
+                resulttcp, errno, str_ = check_port_tcp(test_address[0],
+                                                        test_address[1],
+                                                        self.verbose,
+                                                        self.logger)
+                resultsyn, cd, bl = check_port_syn(test_address[0],
+                                                   test_address[1],
+                                                   self.verbose, self.logger)
+                result = resulttcp
+                if resulttcp != resultsyn:
+                    self.logger.debug('scanner result differ. addr=%s, syn=%s,'
+                                      ' tcp=%s, errno=%s errno=%s',
+                                      test_address, resultsyn, resulttcp, errno,
+                                      os.strerror(errno))
+                    print('Error scanner mismatch addr=%s, syn=%s, tcp=%s,'
+                          ' errno=%s:%s' %
+                          (test_address, resultsyn, resulttcp, errno,
+                           os.strerror(errno)))
+
+            else:
+                raise ValueError('Invalid port checker type %s' % type)
+
+        # Just exit program if keyboard interrupt
+        except (KeyboardInterrupt, SystemExit):
+            print('KeyboardInterrupt CheckPort')
+            raise
+
+        return (result, error)
 
     def list_subnets_to_scan(self):
         """
@@ -139,17 +186,12 @@ class ServerSweep(object):
         test_count = 0
         for test_addr in self.build_test_list():
             test_count += 1
-            result = self.check_port(test_addr)  # Test one ip:port
-
+            result, error = self.check_port(test_addr)  # Test one ip:port
+            response_txt = 'Exists' if result else ('None: %s' % error)
+            self.logger.info('SCAN Result ip=%s, result=%s',
+                             (test_addr,), response_txt)
             if self.verbose:
-                response_txt = 'Exists' if result else 'None'
                 print('test address=%s, %s' % ((test_addr,), response_txt))
-            # else:
-            #    sys.stdout.flush()
-            #    addr_ = "%s:%s" % (test_addr[0], test_addr[1])
-            #    sys.stdout.write(addr_)
-            #    if not test_ip == end_ip:
-            #        sys.stdout.write('\b' * (len(addr_) + 4))
 
             if result:  # Port exists
                 open_hosts.append(test_addr)  # Append to list
@@ -158,15 +200,19 @@ class ServerSweep(object):
         return open_hosts
 
     def process_queue(self, queue, results):
-        """This is thread function that processes a queue to do check_port.
+        """This is a thread function that processes a queue to do check_port.
         Each queue entry is a tuple of ip_address(with port) and results
-        list where the results are appended)
+        list where the results are appended for each succseful scan.
         """
         while not queue.empty():
+            if self.kill_threads:
+                return
             work = queue.get()
-            results = work[1]
-            check_result = self.check_port(work[0])
+            results = work[1]   # get results list from work
+            check_result, error = self.check_port(work[0])
+            # TODO not passing on error information
             if check_result is True:
+                # append address info to the results list
                 results.append(work[0])
             queue.task_done()
         return
@@ -202,7 +248,8 @@ class ServerSweep(object):
         try:
             queue.join()
         except KeyboardInterrupt:
-            print("Ctrl-c received! Sending kill to threads...")
+            print("Ctrl-C received! Sending kill to threads...")
+            self.kill_threads = True
             for t in threads:
                 t.kill_received = True
 
@@ -356,13 +403,12 @@ class ServerSweep(object):
         unknown = 0
         known = 0
         rows = []
-        headers = ['IPAddress', 'CompanyName', 'Product',
-                   'SMIVersion']
+        headers = ['IPAddress', 'CompanyName', 'Product', 'Error']
         title = 'Open WBEMServers:subnet(s)=%s\n' \
-                'port(s)=%s range %s, time %s\n' \
+                'port(s)=%s range=%s, scan_type=%s time=%s\n' \
                 '    total pings=%s pings answered=%s' \
-                % (self.net_defs, self.ports, range_txt, execution_time,
-                   self.total_pings, len(open_hosts))
+                % (self.net_defs, self.ports, range_txt, self.scan_type,
+                   execution_time, self.total_pings, len(open_hosts))
         if open_hosts:    # if open_hosts not zero
             # open_hosts.sort(key=lambda ip: map(int, ip.split('.')))
             # TODO this probably requires ordered dict rather than dictionary to
@@ -406,7 +452,7 @@ class ServerSweep(object):
                                    title=title)
             table.print_table()
         # TODO: Should the following  be in the report???
-        print('\nResults: Found=%s, Unknown=%s, Total=%s time %s'
+        print('\nScan Results: Found=%s, Unknown=%s, Total=%s Time=%s'
               % (known, unknown, (known + unknown), execution_time))
 
     def sweep_servers(self):
@@ -416,10 +462,15 @@ class ServerSweep(object):
 
           Returns:
               List of hosts results with each entry in the list a tuple
-              of (ip, port) for hosts with open ports in the defined range
-              of subnets and ports input
+              of (ip, port, error_info) for hosts with open ports in the
+              defined range of subnets and ports input
         """
         start_time = time.time()   # Scan start time
+
+        range_txt = '%s:%s' % (self.min_octet_val, self.max_octet_val)
+        self.logger.info('Serversweep Scan WBEMServers: subnet(s)=%s '
+                         'port(s)=%s range=%s, scan_type=%s ',
+                         self.net_defs, self.ports, range_txt, self.scan_type)
 
         try:
             open_hosts = []
