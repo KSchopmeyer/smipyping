@@ -33,11 +33,12 @@ import sys
 import os
 import argparse as _argparse
 from smipyping import ServerSweep, TargetsData, DEFAULT_DBTYPE, \
-    DEFAULT_SWEEP_PORT, DEFAULT_CONFIG_FILE
+    DEFAULT_SWEEP_PORT, DEFAULT_CONFIG_FILE, SCAN_TYPES
 
 from smipyping._configfile import read_config
 from smipyping._cliutils import SmiSmartFormatter, check_negative_int
 from smipyping._utilities import display_argparser_args
+from smipyping._logging import SmiPypingLoggers, LOG_LEVELS
 
 
 def create_sweep_argparser(prog_name):
@@ -94,7 +95,7 @@ Examples:
         'Scan related options',
         'Specify parameters of the subnet scan')
     subnet_arggroup.add_argument(
-        '--min_octet_val', '-s', metavar='Min', nargs='?', default=1,
+        '--min_octet_val', '-m', metavar='Min', nargs='?', default=1,
         type=check_negative_int,
         help='Minimum expanded value for any octet that is not specifically '
              ' included in a net definition. Default = 1')
@@ -129,6 +130,12 @@ Examples:
         '--verbose', '-v', action='store_true', default=False,
         help='If set output detail displays as test proceeds')
     general_arggroup.add_argument(
+        '--loglevel', '-l', default='debug', metavar='LOGLEVEL',
+        help=('Set log level: %s' % LOG_LEVELS))
+    general_arggroup.add_argument(
+        '--scantype', '-s', default='all', metavar='SCANTYPE',
+        help=('Set scan type: %s' % SCAN_TYPES))
+    general_arggroup.add_argument(
         '--dryrun', action='store_true', default=False,
         help='Display list of systems/ports to be scanned but do not scan. '
              ' This is a diagnostic tool')
@@ -153,6 +160,10 @@ def parse_sweep_args(argparser):
         # This is from a variable in config.py
         args.port = [DEFAULT_SWEEP_PORT]
 
+    if args.scantype not in SCAN_TYPES:
+        argparser.error('Optional scantype %s must be one of %s' %
+                       args.scantype, SCAN_TYPES)
+
     if args.verbose:
         display_argparser_args(args)
 
@@ -170,15 +181,18 @@ def main(prog_name):
     argparser = create_sweep_argparser(prog_name)
     args = parse_sweep_args(argparser)
 
-    provider_data = None
     if args.config_file is not None:
         db_config = read_config(args.config_file, args.dbtype)
         db_config['directory'] = os.path.dirname(args.config_file)
         print('db info  type %s, details %s' % (args.dbtype, db_config))
         target_data = TargetsData.factory(db_config, args.dbtype,
-                                            args.verbose)
+                                          args.verbose)
     else:
         target_data = None
+
+    SmiPypingLoggers.create_logger('sweep', log_dest='file',
+                                   log_filename='serversweep.log',
+                                   log_level=args.loglevel)
 
     # Sweep the servers and display result
     print('Start sweep for subnets %s, port %s, range %s:%s' %
@@ -190,7 +204,7 @@ def main(prog_name):
                         min_octet_val=args.min_octet_val,
                         max_octet_val=args.max_octet_val,
                         verbose=args.verbose,
-                        logger=None)
+                        scan_type=args.scantype)
 
     if args.dryrun:
         sweep.list_subnets_to_scan()
@@ -198,6 +212,7 @@ def main(prog_name):
         print('The sweep may take several minutes and requires root privileges')
         open_servers = sweep.sweep_servers()
         sweep.print_open_hosts_report(open_servers)
+
 
 if __name__ == '__main__':
     sys.exit(main(os.path.basename(sys.argv[0])))

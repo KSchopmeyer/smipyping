@@ -25,8 +25,6 @@ import logging
 from scapy.all import IP, TCP, sr1, sr, conf, RandShort
 SCPY_LOG = logging.getLogger("scapy.runtime")
 SCPY_LOG.setLevel(49)
-import logging
-
 
 __all__ = ['check_port_syn']
 
@@ -41,7 +39,7 @@ def check_port_syn(dst_ip, dst_port, verbose, logger):
     Using SYN allows us to test for open port but in Python requires that
     the code execute in admin mode.
 
-    Returns tuple (Boolean result, None)
+    Returns tuple (Boolean result, None, None)
     """
     SYNACK = 0x12
     RSTACK = 0x14
@@ -49,24 +47,36 @@ def check_port_syn(dst_ip, dst_port, verbose, logger):
     conf.verb = 0  # Disable verbose in sr(), sr1() methods  #noqa: F405
     result = False
     src_port = RandShort()
+    response = None
     p = IP(dst=dst_ip) / TCP(sport=src_port, dport=dst_port, flags='S')
     resp = sr1(p, timeout=2)  # Sending packet
     if str(type(resp)) == "<type 'NoneType'>":
+        response = 'none'
+        logger.debug('PORTSCAN_SYN: %s Closed. response="none"', dst_ip)
         if verbose:
             print('%s Closed. response="none"' % dst_ip)
     elif resp.haslayer(TCP):
         if resp.getlayer(TCP).flags == SYNACK:
-            send_rst = sr(IP(dst=dst_ip) / TCP(sport=src_port, dport=dst_port,
-                          flags='AR'), timeout=1)
+            # pylint: disable=bad-continuation
+            sr(IP(dst=dst_ip) / TCP(sport=src_port, dport=dst_port,
+               flags='AR'), timeout=1)
             result = True
+            response = 'Open, SYNACK'
+            logger.debug('PORTSCAN_SYN:check_port:%s:%s Open', dst_ip,
+                         dst_port)
             if verbose:
                 print('check_port:%s:%s Open' % (dst_ip, dst_port))
         elif resp.getlayer(TCP).flags == RSTACK:
+            logger.debug('PORTSCAN_SYN: %s:%s Closed. response="RSTACK"',
+                         dst_ip, dst_port)
+            response = 'Closed, RSTACK'
             if verbose:
                 print('%s:%s Closed. response="RSTACK"' % (dst_ip, dst_port))
     else:
+        response = 'Down, no TCP'
         if verbose:
             print('%s is Down' % dst_ip)
 
     sys.stdout.flush()
-    return (result, None)
+    # Returns tuple of
+    return (result, None, response)
