@@ -24,6 +24,7 @@ import click
 
 from smipyping import SimplePing
 from .smicli import cli, CMD_OPTS_TXT
+from ._tableoutput import TableFormatter
 from .config import DEFAULT_NAMESPACE, DEFAULT_OPERATION_TIMEOUT, \
     DEFAULT_USERNAME, DEFAULT_PASSWORD
 
@@ -213,6 +214,7 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
     ids = context.target_data.keys()
 
     # TODO create a simpleping report rather than multiple single simplepings.
+    rows = []
     for id_ in ids:
         simpleping = SimplePing(target_id=id_, timeout=options['timeout'],
                                 ping=not options['no_ping'],
@@ -220,10 +222,26 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
                                 log_level=context.log_level)
 
         simpleping.set_param_from_targetdata(id_, context.target_data)
-
         test_result = simpleping.test_server(verify_cert=False)
 
-        print_ping_result(simpleping, test_result, context.verbose)
+        target = context.target_data.get_dict_record(id_)
+        addr = '%s://%s' % (target['Protocol'], target['IPAddress'])
+        exception = '%s' % test_result.exception        
+
+        rows.append([id_,
+                     ('%s:%s' % (test_result.type, test_result.code)),
+                     TableFormatter.fold_cell(exception, 12),
+                     test_result.execution_time,
+                     addr,
+                     TableFormatter.fold_cell(target['Product'], 8)])
+
+    context.spinner.stop()
+    headers = ['id', 'result', 'exception', 'time', 'addr', 'company']
+
+    table = TableFormatter(rows, headers,
+                           title='cimping all targets:',
+                           table_format=context.output_format)
+    click.echo(table.build_table())
 
 
 def cmd_cimping_ids(context, ids, options):  # pylint: disable=redefined-builtin
