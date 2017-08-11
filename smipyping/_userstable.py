@@ -15,7 +15,13 @@
 
 """
 Define the Users table and provide for import from multiple bases.
-
+    UserID = Column(Integer(11), primary_key=True)
+    Firstname = Column(String(30), nullable=False)
+    Lastname = Column(String(30), nullable=False)
+    Email = Column(String(50), nullable=False)
+    CompanyID = Column(Integer, ForeignKey("Companies.CompanyID"))
+    Active = Column(Enum('Active', 'Inactive'), nullable=False)
+    Notify = Column(Enum('Enabled', 'Disabled'), nullable=False)
 
 """
 
@@ -34,12 +40,16 @@ class UsersTable(object):
     Abstract class for UsersTable
     This table contains a single entry, the last time a scan was executed.
     """
+    key_field = 'UserID'
+    fields = [key_field, 'FirstName', 'Lastname', 'Email', 'CompanyID',
+              'Active', 'Notify']
+    table_name = 'Users'
+
     def __init__(self, db_dict, db_type, verbose):
         self.db_dict = db_dict
         self.db_type = db_type
         self.verbose = verbose
         self.data_dict = {}
-        self.last_scan = None
 
     def __str__(self):
         """String info on Userstable. TODO. Put more info her"""
@@ -47,8 +57,8 @@ class UsersTable(object):
 
     def __repr__(self):
         """Rep of lastscan data"""
-        return ('Users db_type %s db_dict %s' %
-                (self.db_type, self.data_dict))
+        return ('Users db_type %s db_dict len %s' %
+                (self.db_type, len(self.data_dict)))
 
     @classmethod
     def factory(cls, db_dict, db_type, verbose):
@@ -153,7 +163,6 @@ class CsvUsersTable(UsersTable):
                     raise ValueError('Input Error. duplicate Id')
                 else:
                     result[key] = row
-        print('Users %s' % result)
         self.data_dict = result
 
 
@@ -217,10 +226,12 @@ class MySQLUsersTable(UsersTable):
             cursor = connection.cursor(dictionary=True)
 
             # fetchall returns tuple so need index to fields, not names
-            cursor.execute('SELECT CompanyID, CompanyName FROM Users')
+            fields = ', '.join(self.fields)
+            select_statement = 'SELECT %s FROM %s' % (fields, self.table_name)
+            cursor.execute(select_statement)
             rows = cursor.fetchall()
             for row in rows:
-                key = row['CompanyID']
+                key = row[self.key_field]
                 self.data_dict[key] = row
 
         except Exception as ex:

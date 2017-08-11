@@ -48,7 +48,7 @@ from .config import PING_TEST_CLASS, PING_TIMEOUT, DEFAULT_USERNAME, \
 
 from ._logging import CIMPING_LOGGER_NAME, get_logger, SmiPypingLoggers
 
-from ._pingtable import PingTable
+from ._pingstable import PingsTable
 
 
 __all__ = ['SimplePing', 'TestResult']

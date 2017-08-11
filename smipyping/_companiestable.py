@@ -49,9 +49,9 @@ class CompaniesTable(object):
         return ('len %s' % len(self.data_dict))
 
     def __repr__(self):
-        """Rep of lastscan data"""
-        return ('Companies db_type %s db_dict %s' %
-                (self.db_type, self.data_dict))
+        """Rep of Companiestable data"""
+        return ('Companies db_type %s db len %s' %
+                (self.db_type, len(self.data_dict)))
 
     @classmethod
     def factory(cls, db_dict, db_type, verbose):
@@ -63,7 +63,7 @@ class CompaniesTable(object):
 
         inst = None
         if verbose:
-            print('lastscan factory datafile %s dbtype %s verbose %s'
+            print('Companies factory datafile %s dbtype %s verbose %s'
                   % (db_dict,
                      db_type,
                      verbose))
@@ -80,7 +80,7 @@ class CompaniesTable(object):
         return inst
 
     def __contains__(self, record_id):
-        """Determine if record_id is in data dictionary."""
+        """Determine if record_id is in targets dictionary."""
         return record_id in self.data_dict
 
     def __iter__(self):
@@ -119,7 +119,7 @@ class CsvCompaniesTable(CompaniesTable):
     def __init__(self, db_dict, dbtype, verbose):
         super(CsvCompaniesTable, self).__init__(db_dict, dbtype, verbose)
 
-        fn = db_dict['lastscanfilename']
+        fn = db_dict['companiesfilename']
         self.filename = fn
 
         # If the filename is not a full directory, the data file must be
@@ -192,7 +192,6 @@ class MySQLCompaniesTable(CompaniesTable):
     def __init__(self, db_dict, dbtype, verbose):
         """Read the input file into a dictionary."""
 
-        print('MySQL Database type %s  verbose=%s' % (db_dict, verbose))
         super(MySQLCompaniesTable, self).__init__(db_dict, dbtype, verbose)
 
         try:

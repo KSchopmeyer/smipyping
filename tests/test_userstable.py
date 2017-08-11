@@ -22,7 +22,7 @@ from __future__ import print_function, absolute_import
 import os
 import unittest
 
-from smipyping._programstable import ProgramsTable
+from smipyping._userstable import UsersTable
 from smipyping._configfile import read_config
 
 VERBOSE = False
@@ -30,7 +30,7 @@ VERBOSE = False
 SCRIPT_DIR = os.path.dirname(__file__)
 
 
-class ProgramsTests(unittest.TestCase):
+class TableTests(unittest.TestCase):
     def setUp(self):
         self.test_config_file = os.path.join(SCRIPT_DIR, 'testconfig.ini')
 
@@ -65,18 +65,17 @@ class ProgramsTests(unittest.TestCase):
             self.assertTrue(key in test_keys)
 
 
-class MySQLTests(ProgramsTests):
+class MySQLTests(TableTests):
     def test_create(self):
         dbtype = 'mysql'
         db_config = self.get_config(dbtype)
 
-        tbl_inst = ProgramsTable.factory(db_config, dbtype, False)
-
-        self.assertTrue(len(tbl_inst) > 0)
+        tbl_inst = UsersTable.factory(db_config, dbtype, True)
+        self.assertTrue(len(tbl_inst) > 10)
         self.methods_test(tbl_inst)
 
 
-class CsvTests(ProgramsTests):
+class CsvTests(TableTests):
     @unittest.skip("Code not complete")
     def test_create(self):
         dbtype = 'csv'
@@ -84,9 +83,8 @@ class CsvTests(ProgramsTests):
         print('csv Config File db info  dbtype %s, details %s' % (dbtype,
                                                                   db_config))
 
-        tbl_inst = ProgramsTable.factory(db_config, dbtype, True)
-
-        self.assertTrue(len(tbl_inst) > 0)
+        tbl_inst = UsersTable.factory(db_config, dbtype, True)
+        self.assertTrue(len(tbl_inst) > 10)
         self.methods_test(tbl_inst)
 
 

@@ -65,7 +65,7 @@ from ._common_options import *  # noqa: F401,F403
 # Database data sources
 from ._targetdata import *  # noqa: F401,F403
 from ._lastscantable import *  # noqa: F401,F403
-from ._pingtable import *  # noqa: F401,F403
+from ._pingstable import *  # noqa: F401,F403
 from ._companiestable import *  # noqa: F401,F403
 from ._userstable import *  # noqa: F401,F403
 from ._notificationstable import *  # noqa: F401,F403
@@ -82,6 +82,8 @@ from ._simpleping import *  # noqa: F401,F403
 from ._explore import *  # noqa: F401,F403
 from ._serversweep import *  # noqa: F401,F403
 from ._targetdatacli import *  # noqa: F401,F403
+
+from ._cimreport import *  # noqa: F401,F403 
 
 
 # smicli support libraries

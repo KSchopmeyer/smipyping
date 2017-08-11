@@ -28,7 +28,7 @@ Positional arguments:
 Scan related options:
   Specify parameters of the subnet scan
 
-  --min_octet_val [Min], -s [Min]
+  --min_octet_val [Min], -m [Min]
                         Minimum expanded value for any octet that is not
                         specifically included in a net definition. Default = 1
   --max_octet_val [Max], -e [Max]
@@ -43,12 +43,17 @@ General options:
   --config_file CONFIG_FILE, -c CONFIG_FILE
                         Use config file to determine if server is in database
   -D DBTYPE, --dbtype DBTYPE
-                        DBTYPE to use. Default=csv
+                        DBTYPE to use. Overrides config file.
   --no_threads          If set, uses non-threaded implementation for pings.
                         The non-threaded implementation takes MUCH longer to
                         execute butis provided in case threading causes issues
                         in a particular user environment.
   --verbose, -v         If set output detail displays as test proceeds
+  --loglevel LOGLEVEL, -l LOGLEVEL
+                        Set log level: ['error', 'warning', 'info', 'debug']
+  --scantype SCANTYPE, -s SCANTYPE
+                        Set scan type: ['tcp', 'syn', 'all']. Some scan types
+                        requie privilege mode.
   --dryrun              Display list of systems/ports to be scanned but do not
                         scan. This is a diagnostic tool
 

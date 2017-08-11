@@ -25,12 +25,12 @@ import unittest
 from smipyping._companiestable import CompaniesTable
 from smipyping._configfile import read_config
 
-VERBOSE = True
+VERBOSE = False
 
 SCRIPT_DIR = os.path.dirname(__file__)
 
 
-class LastScanTests(unittest.TestCase):
+class TableTests(unittest.TestCase):
     def setUp(self):
         self.test_config_file = os.path.join(SCRIPT_DIR, 'testconfig.ini')
 
@@ -40,17 +40,10 @@ class LastScanTests(unittest.TestCase):
         db_config['directory'] = os.path.dirname(test_config_file)
         return db_config
 
-
-class MySQLTests(LastScanTests):
-    def test_create(self):
-        dbtype = 'mysql'
-        db_config = self.get_config(dbtype)
-
-        tbl_inst = CompaniesTable.factory(db_config, dbtype, True)
+    def methods_test(self, tbl_inst):
         if VERBOSE:
             print('dict %s' % tbl_inst.data_dict)
         test_keys = []
-        self.assertEqual(len(tbl_inst), 21)
         for key in tbl_inst:
             test_keys.append(key)
             self.assertTrue(key in tbl_inst)
@@ -72,7 +65,17 @@ class MySQLTests(LastScanTests):
             self.assertTrue(key in test_keys)
 
 
-class CsvTests(LastScanTests):
+class MySQLTests(TableTests):
+    def test_create(self):
+        dbtype = 'mysql'
+        db_config = self.get_config(dbtype)
+
+        tbl_inst = CompaniesTable.factory(db_config, dbtype, True)
+        self.assertEqual(len(tbl_inst), 21)
+        self.methods_test(tbl_inst)
+
+
+class CsvTests(TableTests):
     @unittest.skip("Code not complete")
     def test_create(self):
         dbtype = 'csv'
@@ -80,13 +83,9 @@ class CsvTests(LastScanTests):
         print('csv Config File db info  dbtype %s, details %s' % (dbtype,
                                                                   db_config))
 
-        lst = CompaniesTable.factory(db_config, dbtype, True)
-
-        self.assertEqual(lst.last_ping, '2016-10-28 09:00:01')
-        self.assertEqual(lst.data_dict['LastPing'], '2016-10-28 09:00:01')
-        print('csv last scan %s' % lst)
-        print('csv last scan %s' % lst.last_ping)
-        print('cvs last scan dict %s' % lst.data_dict)
+        tbl_inst = CompaniesTable.factory(db_config, dbtype, True)
+        self.assertEqual(len(tbl_inst), 21)
+        self.methods_test(tbl_inst)
 
 
 if __name__ == '__main__':

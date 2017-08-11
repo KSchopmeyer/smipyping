@@ -39,7 +39,7 @@ class ProgramsTable(object):
     This table contains a single entry, the last time a scan was executed.
     """
     key_field = 'ProgramID'
-    fields = [key_field, 'NotifyTime', 'ProgramName', 'StartDate', 'EndDate']
+    fields = [key_field, 'ProgramName', 'StartDate', 'EndDate']
     table_name = 'Program'
 
     def __init__(self, db_dict, db_type, verbose):
@@ -53,9 +53,9 @@ class ProgramsTable(object):
         return ('len %s' % len(self.data_dict))
 
     def __repr__(self):
-        """Rep of lastscan data"""
-        return ('Programs db_type %s db_dict %s' %
-                (self.db_type, self.data_dict))
+        """Rep of Companiestable data"""
+        return ('Companies db_type %s db len %s' %
+                (self.db_type, len(self.data_dict)))
 
     @classmethod
     def factory(cls, db_dict, db_type, verbose):

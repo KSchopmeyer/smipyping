@@ -15,7 +15,21 @@
 
 """
 Define the base of targets (i.e. systems to be tested)
-
+    TargetID = Column(Integer(11), primary_key=True)
+    IPAddress = Column(String(15), nullable=False)
+    CompanyID = Column(Integer(11), ForeignKey("Companies.CompanyID"))
+    Namespace = Column(String(30), nullable=False)
+    SMIVersion = Column(String(15), nullable=False)
+    Product = Column(String(30), nullable=False)
+    Principal = Column(String(30), nullable=False)
+    Credential = Column(String(30), nullable=False)
+    CimomVersion = Column(String(30), nullable=False)
+    InteropNamespace = Column(String(30), nullable=False)
+    Notify = Column(Enum('Enabled', 'Disabled'), default='Disabled')
+    NotifyUsers = Column(String(12), nullable=False)
+    ScanEnabled = Column(Enum('Enabled', 'Disabled'), default='Enabled')
+    Protocol = Column(String(10), default='http')
+    Port = Column(String(10), nullable=False)
 """
 
 # TODO change ip_address to hostname where host name is name : port
@@ -46,6 +60,13 @@ class TargetsData(object):
     The factory method should be used to construct a new TargetsData object
     since that creates the correct object for the defined database type.
     """
+
+    key_field = 'TargetID'
+    fields = [key_field, 'targetID', 'IPAddress', 'CompanyID', 'Namespace',
+              'SMIVersion', 'Product', 'Principal', 'Credential',
+              'CimomVersion', 'InteropNamespace', 'Notify', 'NotifyUsers',
+              'ScanEnabled', 'Protocol', 'Port']
+    table_name = 'Targets'
 
     def __init__(self, db_dict, db_type, verbose, output_format):
         """Initialize the abstract Targets instance.
@@ -485,14 +506,17 @@ class MySQLTargetsData(SQLTargetsData):
         try:
             targets_dict = {}
             # fetchall returns tuple so need index to fields, not names
-            cursor.execute('SELECT TargetID, IPAddress, CompanyID, Namespace, '
-                           'SMIVersion, Product, Principal, Credential, '
-                           'CimomVersion, InterOpNamespace, Notify, '
-                           'NotifyUsers, ScanEnabled, Protocol, Port '
-                           'FROM Targets')
+            fields = ', '.join(self.fields)
+            select = 'SELECT %s FROM %s' % (fields, self.table_name)
+            cursor.execute(select)
+            # cursor.execute('SELECT TargetID, IPAddress, CompanyID, Namespace, '
+            #               'SMIVersion, Product, Principal, Credential, '
+            #               'CimomVersion, InterOpNamespace, Notify, '
+            #               'NotifyUsers, ScanEnabled, Protocol, Port '
+            #               'FROM Targets')
             rows = cursor.fetchall()
             for row in rows:
-                key = row['TargetID']
+                key = row[self.key_field]
                 targets_dict[key] = row
 
             # save the combined table for the other functions.

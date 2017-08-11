@@ -15,14 +15,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for functions and classes in smipyping/_tableoutput.py
+Tests for functions and classes in _pingstable.py
 """
 from __future__ import print_function, absolute_import
 
 import os
 import unittest
 
-from smipyping._programstable import ProgramsTable
+from smipyping._pingstable import PingsTable
 from smipyping._configfile import read_config
 
 VERBOSE = False
@@ -30,7 +30,7 @@ VERBOSE = False
 SCRIPT_DIR = os.path.dirname(__file__)
 
 
-class ProgramsTests(unittest.TestCase):
+class TableTests(unittest.TestCase):
     def setUp(self):
         self.test_config_file = os.path.join(SCRIPT_DIR, 'testconfig.ini')
 
@@ -64,30 +64,17 @@ class ProgramsTests(unittest.TestCase):
         for key, value in tbl_inst .iteritems():
             self.assertTrue(key in test_keys)
 
-
-class MySQLTests(ProgramsTests):
+class MySQLTests(TableTests):
     def test_create(self):
         dbtype = 'mysql'
         db_config = self.get_config(dbtype)
 
-        tbl_inst = ProgramsTable.factory(db_config, dbtype, False)
-
-        self.assertTrue(len(tbl_inst) > 0)
-        self.methods_test(tbl_inst)
-
-
-class CsvTests(ProgramsTests):
-    @unittest.skip("Code not complete")
-    def test_create(self):
-        dbtype = 'csv'
-        db_config = self.get_config(dbtype)
-        print('csv Config File db info  dbtype %s, details %s' % (dbtype,
-                                                                  db_config))
-
-        tbl_inst = ProgramsTable.factory(db_config, dbtype, True)
-
-        self.assertTrue(len(tbl_inst) > 0)
-        self.methods_test(tbl_inst)
+        tbl_inst = PingsTable.factory(db_config, dbtype, False)
+        print('pings %s' % tbl_inst.data_dict)
+        self.assertEqual(len(tbl_inst), 0)
+        #self.methods_test(tbl_inst)
+        rows = tbl_inst.get_data_for_day(2016, 8, 5)
+        print('len rows %s' % len(rows))
 
 
 if __name__ == '__main__':
