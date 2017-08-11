@@ -278,9 +278,9 @@ def print_previous_scans(session, verbose=False):
 
 def print_lastscan(session, verbose=False):
     print_table_info(session, LastScan, verbose)
-    if verbose:
-        for row in session.query(LastScan, LastScan.ScanID).all():
-            print(row.LastScan)
+    
+    for row in session.query(LastScan, LastScan.ScanID).all():
+        print(row.LastScan)
 
 
 def print_users(session, verbose=False):
@@ -298,6 +298,13 @@ def print_programs(session, verbose=False):
         for row in session.query(Program, Program.ProgramID).all():
             print(row)
 
+def print_notifications(session, verbose=False):
+    print_table_info(session, Notification, verbose)
+
+    if verbose:
+        for row in session.query(Notification,
+                                 Notification.NotificationID).all():
+            print(row)
 
 def print_pings(session, verbose=False):
     """
@@ -340,6 +347,8 @@ def display_tables(configfile, args):
             print_pings(session, verbose=args.details)
         elif table == 'Programs':
             print_programs(session, verbose=args.details)
+        elif table == 'Notifications':
+            print_notifications(session, verbose=args.details)
 
         elif table == "all":
             print_companies(session, verbose=args.details)

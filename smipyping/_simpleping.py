@@ -48,6 +48,8 @@ from .config import PING_TEST_CLASS, PING_TIMEOUT, DEFAULT_USERNAME, \
 
 from ._logging import CIMPING_LOGGER_NAME, get_logger, SmiPypingLoggers
 
+from ._pingtable import PingTable
+
 
 __all__ = ['SimplePing', 'TestResult']
 
@@ -178,6 +180,18 @@ class SimplePing(object):
     def get_result_code(self, result_type):
         """Get the result code corresponding to the result_type."""
         return self.error_code[result_type]
+
+    def ping_log_result(self, result, db_dict, dbtype):
+        """
+            Write the ping result to the ping_log destination.
+            Uses the PingTable to output the results of a ping to
+            the destination defined by the dbtype.
+
+            The output log consists of the ping target id and status.
+        """
+        pingtable = PingTable(db_dict, dbtype, self.verbose)
+
+        pingtable.append(self.target_id, result)
 
     def test_server(self, verify_cert=False):
         """
@@ -311,7 +325,7 @@ class SimplePing(object):
         # rtn_tuple = tuple(rtn_code)
         if self.verbose:
             print('rtn_tuple %s' % (rtn_tuple,))
-        self.logger.info('SimplePing Result %s' % (rtn_tuple,))
+        self.logger.info('SimplePing Result %s', (rtn_tuple,))
         return rtn_tuple
 
     def set_param_from_targetdata(self, target_id, target_data):

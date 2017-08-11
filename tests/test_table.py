@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for functions in smipyping/_common.py
+Tests for functions and classes in smipyping/_tableoutput.py
 """
 from __future__ import print_function, absolute_import
 

@@ -226,7 +226,7 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
 
         target = context.target_data.get_dict_record(id_)
         addr = '%s://%s' % (target['Protocol'], target['IPAddress'])
-        exception = '%s' % test_result.exception        
+        exception = '%s' % test_result.exception
 
         rows.append([id_,
                      ('%s:%s' % (test_result.type, test_result.code)),

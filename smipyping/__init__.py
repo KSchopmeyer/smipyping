@@ -57,10 +57,20 @@ from .config import *  # noqa: F401,F403
 # core classes and functions
 from ._ping import *  # noqa: F401,F403
 from ._tableoutput import *  # noqa: F401,F403
-from ._targetdata import *  # noqa: F401,F403
+
 from ._common import *  # noqa: F401,F403
 from ._logging import *  # noqa: F401,F403
 from ._common_options import *  # noqa: F401,F403
+
+# Database data sources
+from ._targetdata import *  # noqa: F401,F403
+from ._lastscantable import *  # noqa: F401,F403
+from ._pingtable import *  # noqa: F401,F403
+from ._companiestable import *  # noqa: F401,F403
+from ._userstable import *  # noqa: F401,F403
+from ._notificationstable import *  # noqa: F401,F403
+from ._previousscanstable import *  # noqa: F401,F403
+from ._programstable import *  # noqa: F401,F403
 
 # TODO should drop _cliutils
 from ._cliutils import *  # noqa: F401,F403

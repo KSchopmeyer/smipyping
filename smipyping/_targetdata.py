@@ -254,7 +254,7 @@ class TargetsData(object):
 
     def get_hostid_list(self, ip_filter=None, company_name_filter=None):
         """
-        Get all WBEM Server ids in the targets base.
+        Get all WBEM Server ipaddresses in the targets base.
 
         Returns list of IP addresses:port entries.
            TODO: Does not include port right now.
@@ -389,9 +389,10 @@ class SQLTargetsData(TargetsData):
     def __init__(self, db_dict, dbtype, verbose, output_format):
         """Pass through to SQL"""
         if verbose:
-            print('MySQL Database type %s  verbose=%s' % (db_dict, verbose))
+            print('SQL Database type %s  verbose=%s' % (db_dict, verbose))
         super(SQLTargetsData, self).__init__(db_dict, dbtype, verbose,
                                              output_format)
+        self.connection = None
 
     def db_info(self):
         """
@@ -450,6 +451,7 @@ class MySQLTargetsData(SQLTargetsData):
                 if verbose:
                     print('sql db connection established. host %s, db %s' %
                           (db_dict['host'], db_dict['database']))
+                self.connection = connection
             else:
                 print('SQL database connection failed. host %s, db %s' %
                       (db_dict['host'], db_dict['database']))
@@ -526,7 +528,7 @@ class CsvTargetsData(TargetsData):
         # config file defined by the db_dict entry directory
         if os.path.isabs(fn):
             if not os.path.isfile(fn):
-                ValueError('CSV target data file %s does not exist ' % fn)
+                ValueError('CSV file %s does not exist ' % fn)
             else:
                 self.filename = fn
         else:
@@ -535,7 +537,7 @@ class CsvTargetsData(TargetsData):
             else:
                 full_fn = os.path.join(db_dict['directory'], fn)
                 if not os.path.isfile(full_fn):
-                    ValueError('CSV target data file %s does not exist '
+                    ValueError('CSV file %s does not exist '
                                'in local directory or config directory %s' %
                                (fn, db_dict['directory']))
                 else:

@@ -19,12 +19,13 @@
 # TODO change ip_address to hostname where host name is name : port
 
 from __future__ import print_function, absolute_import
-import time
+
+import os
+import csv
 import datetime
-from smipyping._configfile import read_config
 from mysql.connector import MySQLConnection
 
-__all__ = ['PingTable', 'CsvPingTable']
+__all__ = ['PingTable']
 
 
 class PingTable(object):
@@ -34,12 +35,16 @@ class PingTable(object):
     `Timestamp` datetime NOT NULL,
     `Status` varchar(255) NOT NULL,
     """
+    key_field = 'PingID'
+    fields = [key_field, 'targetID', 'Timestamp', 'Status']
+    table_name = 'Pings'
 
     def __init__(self, db_dict, db_type, verbose):
         """Constructor for PingTable"""
         self.db_dict = db_dict
         self.verbose = verbose
         self.db_type = db_type
+        self.data_dict = {}
 
     @classmethod
     def factory(cls, db_dict, db_type, verbose):
@@ -59,7 +64,7 @@ class PingTable(object):
             inst = CsvPingTable(db_dict, db_type, verbose)
 
         elif db_type == ('mysql'):
-            inst = SQLPingTable(db_dict, db_type, verbose)
+            inst = MySQLPingTable(db_dict, db_type, verbose)
         else:
             ValueError('Invalid pingtable factory db_type %s' % db_type)
 
@@ -70,22 +75,62 @@ class PingTable(object):
 
     def __str__(self):
         """String info on tpingtable. TODO. Put more info her"""
-        return ('count=%s' % len(self.targets_dict))
+        return ('count=%s' % len(self.data_dict))
 
     def __repr__(self):
-        """Rep of target data"""
+        """Rep of pings data. This is really an empty dictionary"""
         return ('Pingtable db_type %s, db_dict %s rep count=%s' %
-                (self.db_type, self.db_dict))
+                (self.db_type, self.db_dict, 0))
 
 
 class CsvPingTable(PingTable):
     """
         Ping Table functions for csv based table
     """
-    def __init(self, filename, args):
-        super(CsvPingTable, self).__init__(filename, args)
+    def __init__(self, db_dict, dbtype, verbose):
+        super(CsvPingTable, self).__init__(db_dict, dbtype, verbose)
+        fn = db_dict['filename']
+        self.filename = fn
 
         print('init csvpingtable %s %s' % (self.filename, self.args))
+        print('init csvlastscantable %s %s' % (self.filename, self.args))
+
+        # If the filename is not a full directory, the data file must be
+        # either in the local directory or the same directory as the
+        # config file defined by the db_dict entry directory
+        if os.path.isabs(fn):
+            if not os.path.isfile(fn):
+                ValueError('CSV lastscan data file %s does not exist ' % fn)
+            else:
+                self.filename = fn
+        else:
+            if os.path.isfile(fn):
+                self.filename = fn
+            else:
+                full_fn = os.path.join(db_dict['directory'], fn)
+                if not os.path.isfile(full_fn):
+                    ValueError('CSV pingtable file %s does not exist '
+                               'in local directory or config directory %s' %
+                               (fn, db_dict['directory']))
+                else:
+                    self.filename = full_fn
+
+        with open(self.filename) as input_file:
+            reader = csv.DictReader(input_file)
+            # create dictionary (id = key) with dictionary for
+            # each set of entries
+            result = {}
+            for row in reader:
+                key = int(row['PingID'])
+                if key in result:
+                    # duplicate row handling
+                    print('ERROR. Duplicate Id in table: %s\nrow=%s' %
+                          (key, row))
+                    raise ValueError('Input Error. duplicate Id')
+                else:
+                    result[key] = row
+
+        self.data_dict = result
 
     def get_last_ping_id(self):
         with open(file, "rb") as f:
@@ -106,16 +151,30 @@ class CsvPingTable(PingTable):
 
 
 class SQLPingTable(PingTable):
-    def __init(self, filename, args):
-        super(CsvPingTable, self).__init__(filename, args)
+    def __init__(self, db_dict, dbtype, verbose):
+        """Init for sqlpingtable class"""
+        super(SQLPingTable, self).__init__(db_dict, dbtype, verbose)
 
         self.connection = None
 
+    def db_info(self):
+        """
+        Display the db info and Return info on the database used as a
+        dictionary.
+        """
+        try:
+            print('database characteristics')
+            for key in self.db_dict:
+                print('%s: %s' % key, self.db_dict[key])
+        except ValueError as ve:
+            print('Invalid database configuration exception %s' % ve)
+        return self.db_dict
+
+
+class MySQLPingTable(PingTable):
     def __init__(self, db_dict, dbtype, verbose):
         """Read the input file into a dictionary."""
-
-        print('SQL Database type %s  verbose=%s' % (db_dict, verbose))
-        super(SQLTargetsData, self).__init__(db_dict, dbtype, verbose)
+        super(MySQLPingTable, self).__init__(db_dict, dbtype, verbose)
 
         try:
             connection = MySQLConnection(host=db_dict['host'],
@@ -126,6 +185,7 @@ class SQLPingTable(PingTable):
             if connection.is_connected():
                 print('sql db connection established. host %s, db %s' %
                       (db_dict['host'], db_dict['database']))
+                self.connection = connection
             else:
                 print('SQL database connection failed. host %s, db %s' %
                       (db_dict['host'], db_dict['database']))
@@ -135,25 +195,54 @@ class SQLPingTable(PingTable):
             raise ValueError('Could not connect to sql database %r. '
                              ' Exception: %r'
                              % (db_dict, ex))
+        # This does not preload the pings table because it is probably too
+        # big and primary functions are to append and select particular
+        # entries
 
     def get_last_ping_id(self):
-        return 9999
-
-    def append(self, target_id, status):
         """
-        Write a new record to the database
+        Get the id of the last inserted record
+        """
+        # TODO this probably gets last inserted, not last in table
+        cursor = self.connection.cursor()
+        last_ping_id = cursor.lastrowid
+        return last_ping_id
+
+    def select_for_timestamp(self, timestamp):
+        #TODO
+        pass
+
+    def append(self, target_id, status, timestamp):
+        """
+        Write a new record to the database containing the target_id,
+        scan status and a timestamp
+
+        Parameters:
+          target_id :term:`integer`
+            The database target_id of the wbem_server for which the
+            status is being reported.
+
+          status (:term:`string`):
+            String containing the status of the last test of the wbem
+            server.
+
+          timestamp (TODO)
+            The time stamp for the scan.  NOTE: This may not be exactly the
+            time at which the last scan was run since the timestamp serves
+            as a gathering point for scans so the same time stamp may be
+            reported for a number of target_ids
         """
         cursor = self.connection.cursor()
         try:
-            ts = time.time()
+
             timestamp = \
-                datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
-            add_record = ("Insert INOT Pings "
+                datetime.datetime.fromtimestamp(timestamp).strftime(
+                    '%Y-%m-%d %H:%M:%S')
+            add_record = ("INSERT INTO Pings "
                           "(TargetID, Timestamp, Status) "
                           "VALUES (%s %s %s")
             data = (target_id, timestamp, status)
             cursor.execute(add_record, data)
-            # cur.execute("INSERT INTO Pings VALUES (%s,%s)",(188,90))
             self.connection.commit()
         except:
             self.connection.rollback()

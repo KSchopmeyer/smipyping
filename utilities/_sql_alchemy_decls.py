@@ -184,7 +184,7 @@ class Program(Base):
 
 class Notification(Base):
     __tablename__ = 'Notifications'
-    NotificationID = Column(Integer, primary_key=True)
+    NotifyID = Column(Integer, primary_key=True)
     NotifyTime = Column(DateTime, nullable=False)
     UserID = Column(Integer, ForeignKey("Users.UserID"))
     TargetID = Column(Integer(11), ForeignKey("Targets.TargetID"))
