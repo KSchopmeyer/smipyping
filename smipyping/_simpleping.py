@@ -34,8 +34,11 @@ from __future__ import print_function, absolute_import
 
 
 import re
+# TODO the following should be standardized in report module
 from textwrap import fill
 import datetime
+from threading import Thread
+import Queue
 
 from urlparse import urlparse
 from collections import namedtuple
@@ -46,6 +49,7 @@ from ._ping import ping_host
 from .config import PING_TEST_CLASS, PING_TIMEOUT, DEFAULT_USERNAME, \
     DEFAULT_PASSWORD
 
+from .config import MAX_THREADS
 from ._logging import CIMPING_LOGGER_NAME, get_logger, SmiPypingLoggers
 
 from ._pingstable import PingsTable
@@ -57,6 +61,77 @@ TestResult = namedtuple('TestResult', ['code',
                                        'type',
                                        'exception',
                                        'execution_time'])
+
+
+class SimplePingAll(object):
+    """
+        Ping a list of target_ids wsing a work queue to speed up the process
+    """
+    def __init__(self, target_ids, target_data, verbose=None, logfile=None,
+                 log_level=None):
+        self.target_ids = target_ids
+        self.verbose = verbose
+        self.logfile = logfile
+        self.log_level = log_level
+        self.target_data = target_data
+
+    def process_queue(self, queue, results):
+        """This is a thread function that processes a queue to do check_port.
+        Each queue entry is a tuple of ip_address(with port) and results
+        list where the results are appended for each succseful scan.
+        """
+        while not queue.empty():
+            if self.kill_threads:
+                return
+            work = queue.get()
+            results = work[1]   # get results list from work
+            target_id = work[0]
+            # check_result, error = self.check_port(work[0])
+            simpleping = SimplePing(work[0],)
+            simpleping.set_param_from_targetdata(target_id, self.target_data)
+            test_result = simpleping.test_server(verify_cert=False)
+            # append target_id and results to results list.
+            results.append(work[0], test_result)
+            queue.task_done()
+        return
+
+    def ping_servers(self):
+        """
+        Threaded scan of IP Addresses for open ports.
+
+        Scan the IP address defined by the input and return a list of open
+        IP addresses. This function creates multiple processes and executes
+        each call in a process for speed.
+        """
+
+        # set up queue to hold all call info
+        queue = Queue.Queue(maxsize=0)
+        num_threads = MAX_THREADS
+
+        results = []
+
+        # put all targets into work queue
+        for target_id in self.target_ids:
+            queue.put((target_id, results))
+
+        # Start worker threads.
+        threads = []
+        for i in range(num_threads):  # pylint: disable=unused-variable
+            t = Thread(target=self.process_queue, args=(queue, results))
+            t.daemon = True    # allows main program to exit.
+            threads.append(t)
+            t.start()
+
+        try:
+            queue.join()
+        except KeyboardInterrupt:
+            print("Ctrl-C received! Sending kill to threads...")
+            self.kill_threads = True
+            for t in threads:
+                t.kill_received = True
+
+        # returns list of ip addresses that were were found
+        return results
 
 
 class SimplePing(object):
@@ -189,9 +264,10 @@ class SimplePing(object):
 
             The output log consists of the ping target id and status.
         """
-        pingtable = PingTable(db_dict, dbtype, self.verbose)
+        pingtable = PingsTable(db_dict, dbtype, self.verbose)
 
         pingtable.append(self.target_id, result)
+        # TODO Finish this
 
     def test_server(self, verify_cert=False):
         """

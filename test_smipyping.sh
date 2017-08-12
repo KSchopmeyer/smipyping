@@ -48,11 +48,12 @@ if [[REMOTE == 0]]; then
 # host id
 do_cmd 'cimping ids 4'
 do_cmd 'cimping host http://localhost'
+do_cmd 'cimping all'
 
 
 #
 # Provider commands
 #
 # classes, info, interop, namespaces, ping profiles
-do_cmd 'provider 
+do_cmd 'provider -t classes 'CIM_ManagedElement'
 

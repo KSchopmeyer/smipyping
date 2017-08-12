@@ -83,7 +83,7 @@ from ._explore import *  # noqa: F401,F403
 from ._serversweep import *  # noqa: F401,F403
 from ._targetdatacli import *  # noqa: F401,F403
 
-from ._cimreport import *  # noqa: F401,F403 
+from ._cimreport import *  # noqa: F401,F403
 
 
 # smicli support libraries

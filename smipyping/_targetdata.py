@@ -347,7 +347,7 @@ class TargetsData(object):
         """get info on the database used"""
         print('Base class. No info')
 
-    def display_disabled(self):
+    def display_disabled(self, output_format):
         """Display diabled entries."""
         col_list = ['Id', 'IPAddress', 'CompanyName', 'Product',
                     'Port', 'Protocol', 'ScanEnabled']
@@ -509,11 +509,6 @@ class MySQLTargetsData(SQLTargetsData):
             fields = ', '.join(self.fields)
             select = 'SELECT %s FROM %s' % (fields, self.table_name)
             cursor.execute(select)
-            # cursor.execute('SELECT TargetID, IPAddress, CompanyID, Namespace, '
-            #               'SMIVersion, Product, Principal, Credential, '
-            #               'CimomVersion, InterOpNamespace, Notify, '
-            #               'NotifyUsers, ScanEnabled, Protocol, Port '
-            #               'FROM Targets')
             rows = cursor.fetchall()
             for row in rows:
                 key = row[self.key_field]
