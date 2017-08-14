@@ -166,10 +166,6 @@ class TargetsData(object):
         """Return a list of the base table file names in the order defined."""
         return list(self.table_format_dict)
 
-    def get_format_dict(self, name):
-        """Return tuple of display name and length for name."""
-        return self.table_format_dict[name]
-
     def __contains__(self, record_id):
         """Determine if record_id is in targets dictionary."""
         return record_id in self.targets_dict
@@ -192,15 +188,37 @@ class TargetsData(object):
         return list(self.targets_dict.keys())
 
     def __getitem__(self, record_id):
-        """Return the record for the defined record_id from the targets."""
+        """Return the record for the defined record_id from the targets.
+
+          Parameters:
+
+            record_id(:term:`integer)
+                Valid key in targets dictionary
+
+          Returns:
+            target record corresponding to the id
+
+          Exceptions:
+            KeyError if record_id not it table
+        """
         return self.targets_dict[record_id]
 
     def __delitem__(self, record_id):
+        """Delete the record_id in the table"""
         del self.targets_dict[record_id]
 
     def __len__(self):
         """Return number of targets"""
         return len(self.targets_dict)
+
+    def get_format_dict(self, name):
+        """Return tuple of display name and length for name."""
+        return self.table_format_dict[name]
+
+    def get_enabled_targetids(self):
+        """Get list of target ids that are marked enabled"""
+        return [x for x in self.targets_dict
+                if not self.disabled_target_id(x)]
 
     # TODO we have multiple of these. See get dict_for_host,get_hostid_list
     def get_targets_host(self, host_id):
@@ -266,10 +284,10 @@ class TargetsData(object):
         rtn = OrderedDict()
         for key, value in self.targets_dict.items():
             if ip_filter and re.match(ip_filter, value['IPAddress']):
-                rtn.append[key] = value
+                rtn[key] = value
             if company_name_filter and \
                     re.match(value['CompanyName'], company_name_filter):
-                rtn.append[key] = value
+                rtn[key] = value
 
         return rtn
 
@@ -323,7 +341,9 @@ class TargetsData(object):
         return line
 
     def disabled_target(self, target_record):
-        """If record disabled, return true, else return false."""
+        """
+        If target_record disabled, return true, else return false.
+        """
         val = target_record['ScanEnabled'].lower()
         if val == 'enabled':
             return False
@@ -332,6 +352,24 @@ class TargetsData(object):
         else:
             ValueError('ScanEnabled field must contain "Enabled" or "Disabled'
                        ' string. %s is invalid.' % val)
+
+    def disabled_target_id(self, target_id):
+        """
+        Return True if target recorded for this target_id marked
+        disabled. Otherwise return True
+
+        Parameters:
+
+            target_id(:term:`integer`)
+                Valid target Id for the Target_Tableue .
+
+        Returns: (:term: `boolean`)
+            True if this target id disabled
+
+        Exceptions:
+            KeyError if target_id not in database
+        """
+        return(self.disabled_target(self.targets_dict[target_id]))
 
     def get_output_width(self, col_list):
         """
@@ -349,14 +387,14 @@ class TargetsData(object):
 
     def display_disabled(self, output_format):
         """Display diabled entries."""
-        col_list = ['Id', 'IPAddress', 'CompanyName', 'Product',
+        col_list = [self.key_field, 'IPAddress', 'CompanyName', 'Product',
                     'Port', 'Protocol', 'ScanEnabled']
 
         table_data = []
 
         # TODO can we do this with list comprehension
         for record_id in sorted(self.targets_dict.iterkeys()):
-            if self.disabled_record(self.targets_dict[record_id]):
+            if self.disabled_target(self.targets_dict[record_id]):
                 table_data.append(self.format_record(record_id, col_list))
         table = TableFormatter(table_data, headers=col_list,
                                title='Disabled hosts',
@@ -591,7 +629,7 @@ class CsvTargetsData(TargetsData):
                                                           ve))
         return db_config
 
-    def write_updated_record(self, recordid):
+    def write_updated_record(self, record_id):
         """Backup the existing file and write the new one.
         with cvs it writes the whole file back
         """
