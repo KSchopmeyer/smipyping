@@ -108,7 +108,6 @@ class TargetTableTest(CsvTableTests):
         self.assertTrue(len(ids) > 0)
         self.assertTrue(4 in ids)
         self.assertTrue(42 not in ids)
-        print('len %s' % len(ids))
 
     def test_display_disabled(self):
         self.target_table.display_disabled('simple')
