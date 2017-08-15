@@ -144,9 +144,9 @@ class Explorer(object):
                     smi_profiles = (TableFormatter.fold_cell(cell_str, 14))
             disp_time = None
             if server_tuple.time <= 60:
-                disp_time = "%.2f s" % (round(server_tuple.time, 1))
+                disp_time = "%.2fs" % (round(server_tuple.time, 1))
             else:
-                disp_time = "%.2f m" % (server_tuple.time / 60)
+                disp_time = "%.2fm" % (server_tuple.time / 60)
             row = []
             if 'Id' in headers:
                 row.append(target_id)

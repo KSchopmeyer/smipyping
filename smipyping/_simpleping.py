@@ -55,7 +55,7 @@ from ._logging import CIMPING_LOGGER_NAME, get_logger, SmiPypingLoggers
 from ._pingstable import PingsTable
 
 
-__all__ = ['SimplePing', 'TestResult']
+__all__ = ['SimplePing', 'SimplePingList', 'TestResult']
 
 TestResult = namedtuple('TestResult', ['code',
                                        'type',
@@ -63,17 +63,38 @@ TestResult = namedtuple('TestResult', ['code',
                                        'execution_time'])
 
 
-class SimplePingAll(object):
+class SimplePingList(object):
     """
-        Ping a list of target_ids wsing a work queue to speed up the process
+        Ping a list of target_ids using a work queue to speed up the process.
+        Uses the SimplePing class to execute pings against a list of servers.
+        If no list is provided, it scans all servers in the database.
+
     """
-    def __init__(self, target_ids, target_data, verbose=None, logfile=None,
+    def __init__(self, target_data, target_ids=None, verbose=None, logfile=None,
                  log_level=None):
-        self.target_ids = target_ids
+        """
+        Parameters:
+
+            target_data:
+
+            target_ids(:term:`list` of :term:`integer`)
+                database Ids of targets that are to be pinged. If this is
+                None, the entire set of enabled targets is pinged.
+
+        Return
+
+        Exceptions:
+            KeyError if a target_id is not in the database.
+        """
+        self.target_data = target_data
+
+        self.target_ids = target_ids if target_ids else \
+            target_data.get_enabled_targetids()
+
         self.verbose = verbose
         self.logfile = logfile
         self.log_level = log_level
-        self.target_data = target_data
+        self.kill_threads = False
 
     def process_queue(self, queue, results):
         """This is a thread function that processes a queue to do check_port.
@@ -85,13 +106,12 @@ class SimplePingAll(object):
                 return
             work = queue.get()
             results = work[1]   # get results list from work
-            target_id = work[0]
             # check_result, error = self.check_port(work[0])
-            simpleping = SimplePing(work[0],)
-            simpleping.set_param_from_targetdata(target_id, self.target_data)
+            simpleping = SimplePing(target_id=work[0],
+                                    target_data=self.target_data)
             test_result = simpleping.test_server(verify_cert=False)
             # append target_id and results to results list.
-            results.append(work[0], test_result)
+            results.append((work[0], test_result))
             queue.task_done()
         return
 
@@ -99,9 +119,9 @@ class SimplePingAll(object):
         """
         Threaded scan of IP Addresses for open ports.
 
-        Scan the IP address defined by the input and return a list of open
-        IP addresses. This function creates multiple processes and executes
-        each call in a process for speed.
+        execute SimplePing on the servers defined. Returns a list of
+        results with the following format:
+
         """
 
         # set up queue to hold all call info
@@ -138,7 +158,7 @@ class SimplePing(object):
     """Simple ping class. Contains all functionality to handle simpleping."""
 
     def __init__(self, server=None, namespace=None, user=None, password=None,
-                 timeout=None, target_id=None, ping=True,
+                 timeout=None, target_id=None, target_data=None, ping=True,
                  certfile=None, keyfile=None, verify_cert=False,
                  debug=False, verbose=None, logfile=None, log_level=None):
         """Initialize instance attributes."""
@@ -150,6 +170,10 @@ class SimplePing(object):
             raise ValueError('SimplePing must define server or target_id')
         if server and target_id:
             raise ValueError('Use either server or target_id, not both')
+        if target_id and not target_data:
+            raise ValueError('target_data required to use target_id')
+        self.target_data = target_data
+        self.target_id = target_id
 
         if verbose:
             if server:
@@ -157,17 +181,26 @@ class SimplePing(object):
             else:
                 print('SimplePing id %s' % target_id)
 
-        self.namespace = namespace
+        if self.target_id:
+            target_record = self.target_data[self.target_id]
+            self.url = '%s://%s' % (target_record['Protocol'],
+                                    target_record['IPAddress'])
+
+            self.namespace = target_record['Namespace']
+            self.user = target_record.get('Principal', DEFAULT_USERNAME)
+            self.password = target_record.get('Credential', DEFAULT_PASSWORD)
+        else:
+            self.namespace = namespace
+            self.user = user
+            self.password = password
+
         self.timeout = timeout
-        self.user = user
-        self.password = password
         self.ping = ping
         self.debug = debug
         self.verbose = verbose
         self.certfile = certfile
         self.keyfile = keyfile
         self.verify_cert = verify_cert
-        self.target_id = target_id
         log_dest = 'file' if log_level else None
         SmiPypingLoggers.create_logger(log_component='cimping',
                                        log_dest=log_dest,
@@ -264,7 +297,7 @@ class SimplePing(object):
 
             The output log consists of the ping target id and status.
         """
-        pingtable = PingsTable(db_dict, dbtype, self.verbose)
+        pingtable = PingsTable.factory(db_dict, dbtype, self.verbose)
 
         pingtable.append(self.target_id, result)
         # TODO Finish this
@@ -288,18 +321,15 @@ class SimplePing(object):
                 exception = 'Ping failed'
         self.logger.debug('ping result=%s', result_code)
         if ping_result:
-            print('cimping url=%s, ns=%s' % (self.url, self.namespace))
             # connect to the server and execute the cim operation test
-            conn = self.connect_server(self.url, verify_cert=verify_cert)
-
+            conn = self.connect_server(verify_cert=verify_cert)
             result, exception = self.execute_cim_test(conn)
-
             result_code = self.get_result_code(result)
         if self.verbose:
             print('result=%s, exception=%s, resultCode %s'
                   % (result, exception, result_code))
         execution_time = datetime.datetime.now() - start_time
-        execution_time = execution_time.total_seconds()
+        execution_time = '%.2fs' % execution_time.total_seconds()
         self.logger.info('result=%s, exception=%s, resultCode=%s, time=%s',
                          result, exception, result_code,
                          str(execution_time))
@@ -327,7 +357,7 @@ class SimplePing(object):
             return(True, 'running')
         return(False, 'Ping Fail')
 
-    def connect_server(self, url, verify_cert=False):
+    def connect_server(self, verify_cert=False):
         """
         Build connection parameters and issue WBEMConnection to the WBEMServer.
 
@@ -335,17 +365,16 @@ class SimplePing(object):
 
         Returns completed connection or exception of connection fails
         """
+
         creds = None
 
         if self.user is not None or self.password is not None:
             creds = (self.user, self.password)
 
-        conn = WBEMConnection(url, creds, default_namespace=self.namespace,
+        conn = WBEMConnection(self.url, creds, default_namespace=self.namespace,
                               no_verification=not verify_cert,
                               timeout=self.timeout)
-
         conn.debug = self.debug
-
         if self.verbose:
             print(self.get_connection_info(conn))
 
@@ -404,18 +433,18 @@ class SimplePing(object):
         self.logger.info('SimplePing Result %s', (rtn_tuple,))
         return rtn_tuple
 
-    def set_param_from_targetdata(self, target_id, target_data):
-        """
-        Set the required fields from data in the target_data base
+    # def set_param_from_targetdata(self, target_id, target_data):
+    #    """
+    #    Set the required fields from data in the target_data base
 
-        Get the connection information from the target_data base and save in
-        the SimplePing instance
-        """
+    #    Get the connection information from the target_data base and save in
+    #    the SimplePing instance
+    #    """
 
-        target_record = target_data[target_id]
-        self. set_param_from_targetrecord(target_record, target_id)
+    #    target_record = target_data[target_id]
+    #    self. set_param_from_targetrecord(target_record, target_id)
 
-    def set_param_from_targetrecord(self, target_record, target_id):
+    def set_connect_from_targetrecord(self, target_record, target_id):
         """
         Set the required fields from the provided target_record in the
         target_database

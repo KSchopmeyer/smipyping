@@ -47,8 +47,8 @@ from ._configfile import read_config
 
 __all__ = ['TargetsData']
 
-STANDARD_FIELDS_DISPLAY_LIST = ['TargetID', 'IPAddress', 'CompanyName',
-                                'Product', 'Port', 'Protocol', 'CimomVersion']
+STANDARD_FIELDS_DISPLAY_LIST = ['TargetID', 'IPAddress', 'Port', 'Protocol',
+                                'CompanyName', 'Product', 'CimomVersion']
 
 
 class TargetsData(object):
@@ -155,7 +155,8 @@ class TargetsData(object):
 
     def __str__(self):
         """String info on targetdata. TODO. Put more info her"""
-        return ('count=%s' % len(self.targets_dict))
+        return ('type=%s db=%s, len=%s' % (self.db_type, self.db_xxx(),
+                                           len(self.targets_dict)))
 
     def __repr__(self):
         """Rep of target data"""
@@ -383,7 +384,7 @@ class TargetsData(object):
 
     def db_info(self):
         """get info on the database used"""
-        print('Base class. No info')
+        pass
 
     def display_disabled(self, output_format):
         """Display diabled entries."""
@@ -401,7 +402,7 @@ class TargetsData(object):
                                table_format=self.output_format)
         table.print_table()
 
-    def display_cols(self, fields):
+    def display_cols(self, fields, show_disabled=True):
         """
         Display the columns of data defined by the fields parameter.
 
@@ -410,8 +411,10 @@ class TargetsData(object):
         based on those target_data colums
 
         Parameters:
-          column_list: list of strings defining the targets_data columns to be
+          fields: list of strings defining the targets_data columns to be
             displayed.
+
+          show_disabled(:term:`boolean`)
 
         """
         table_data = []
@@ -422,13 +425,22 @@ class TargetsData(object):
         fold = False if table_width < 80 else True
 
         for record_id in sorted(self.targets_dict.iterkeys()):
-            table_data.append(self.format_record(record_id, fields, fold))
+            if show_disabled:
+                table_data.append(self.format_record(record_id, fields, fold))
 
+            else:
+                if not self.disabled_target_id(record_id):
+                    table_data.append(self.format_record(record_id, fields,
+                                                         fold))
+
+        title = 'Target Providers Overview:'
+        if show_disabled:
+            title = '%s including disabled' % title
         table = TableFormatter(table_data, headers=col_list,
-                               title='Target Systems Overview:')
+                               title=title)
         table.print_table()
 
-    def display_all(self, fields=None, company=None):
+    def display_all(self, fields=None, company=None, show_disabled=True):
         """Display all entries in the base. If fields does not exist,
            display a standard list of fields from the database.
         """
@@ -437,7 +449,7 @@ class TargetsData(object):
             fields = STANDARD_FIELDS_DISPLAY_LIST
         else:
             fields = fields
-        self.display_cols(fields)
+        self.display_cols(fields, show_disabled=show_disabled)
 
 
 class SQLTargetsData(TargetsData):
@@ -465,6 +477,9 @@ class SQLTargetsData(TargetsData):
         except ValueError as ve:
             print('Invalid database configuration exception %s' % ve)
         return self.db_dict
+
+    def db_xxx(self):
+        return '%s' % self.db_dict
 
     def write_updated_record(self, recordid):
         """
@@ -628,6 +643,9 @@ class CsvTargetsData(TargetsData):
                                                           self.filename,
                                                           ve))
         return db_config
+
+    def db_xxx(self):
+        return '%s' % self.db_dict
 
     def write_updated_record(self, record_id):
         """Backup the existing file and write the new one.
