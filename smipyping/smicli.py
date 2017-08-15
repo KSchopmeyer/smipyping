@@ -69,7 +69,7 @@ __all__ = ['cli']
 @click.version_option(help="Show the version of this command and exit.")
 @click.pass_context
 def cli(ctx, config_file, db_type, log_level, output_format, verbose,
-        provider_data=None, db_info=None):
+        provider_data=None, db_info=None, log_file=None):
     """
     General command line script for smicli.  This script executes a number
     of subcommands to:
