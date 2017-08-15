@@ -117,7 +117,8 @@ def get_config_dict():
         TODO
 
     """
-    return dict(default_map=ConfigFileProcessor.read_config())
+    return dict(help_option_names=['-h', '--help'],
+                default_map=ConfigFileProcessor.read_config())
 
 
 # -- COMMAND:
