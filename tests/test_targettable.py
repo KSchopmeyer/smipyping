@@ -25,7 +25,6 @@ import unittest
 import six
 
 from smipyping import TargetsData
-
 from smipyping._configfile import read_config
 
 # unimplemented = pytest.mark.skipif(True, reason="test not implemented")
@@ -36,15 +35,19 @@ SCRIPT_DIR = os.path.dirname(__file__)
 DBTYPE = 'csv'
 
 
-class ValidTargetTableTests(unittest.TestCase):
+class TargetTableTests(unittest.TestCase):
+    pass
+
+
+class CsvTableTests(TargetTableTests):
     def setUp(self):
+        """Load the csv test table"""
         test_config_file = os.path.join(SCRIPT_DIR, TEST_CONFIG_FILE_NAME)
         db_config = read_config(test_config_file, DBTYPE)
         db_config['directory'] = os.path.dirname(test_config_file)
-        self.target_table = TargetsData.factory(db_config, DBTYPE, False)
+        self.target_data = TargetsData.factory(db_config, DBTYPE, False)
 
-
-class TargetTableTest(ValidTargetTableTests):
+class TargetTableTest(CsvTableTests):
     """Class for simple tests of CSVUserData class."""
 
     def test_get_table(self):
@@ -61,7 +64,6 @@ class TargetTableTest(ValidTargetTableTests):
         self.assertIn(1, self.target_table)
 
     def test_keys(self):
-        print('keys %s' % self.target_table.keys())
         self.assertIn(42, self.target_table.keys())
         for key in self.target_table.keys():
             self.assertIn(key, self.target_table)
@@ -70,7 +72,9 @@ class TargetTableTest(ValidTargetTableTests):
         """Test get one record"""
         self.assertIn(42, self.target_table)
         user_record = self.target_table.get_dict_record(42)
+        user_record2 = self.target_table[42]
         self.assertIn('Product', user_record)
+        self.assertEqual(user_record, user_record2)
 
     def test_iter_items(self):
         """Test iteritems functionality"""
@@ -94,12 +98,23 @@ class TargetTableTest(ValidTargetTableTests):
         self.assertTrue(result_list is not None)
 
     def test_disabled_target(self):
-        self.assertTrue(self.target_table.disabled_target(
+        self.assertTrue(self.target_data.disabled_target(
             self.target_table[42]))
 
+    def test_get_enabled_list(self):
+        ids = self.target_data.get_enabled_targetids()
+        self.assertTrue(len(ids) > 0)
+        self.assertTrue(4 in ids)
+        self.assertTrue(42 not in ids)
+
+    def test_display_disabled(self):
+        # target_data = self.get_target_data()
+        self.target_data.display_disabled('simple')
+
     def test_enabled_target(self):
-        self.assertFalse(self.target_table.disabled_target(
-            self.target_table[4]))
+        # target_data = self.get_target_data()
+        self.target_data.display_disabled('simple')
+        self.assertFalse(self.target_data.disabled_target(self.target_data[4]))
 
 
 if __name__ == '__main__':

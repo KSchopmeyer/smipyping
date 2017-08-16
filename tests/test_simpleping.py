@@ -22,8 +22,14 @@ from __future__ import absolute_import, print_function
 
 import unittest
 import re
+import os
 
-from smipyping import SimplePing
+from smipyping import SimplePing, SimplePingList
+from smipyping import TargetsData
+from smipyping._configfile import read_config
+
+TEST_CONFIG_FILE_NAME = 'testconfig.ini'
+SCRIPT_DIR = os.path.dirname(__file__)
 
 
 class CommandLineTestCase(unittest.TestCase):
@@ -33,21 +39,22 @@ class CommandLineTestCase(unittest.TestCase):
     # TODO extend these tests. In particular test setting from target data.
 
 
-class SimplePingTestCase(CommandLineTestCase):
+class SimplePingTests(unittest.TestCase):
     """Unit test for SimplePing Class"""
-    def test_server0(self):
+    def test_server_host(self):
         """Test with valid server param"""
         sim_ping = SimplePing('http://localhost')
         self.assertEqual(sim_ping.url, 'http://localhost')
         conn = sim_ping.connect_server(sim_ping.url, verify_cert=False)
         print(sim_ping.get_connection_info(conn))
+        print(conn.url)
 
-    def test_server1(self):
+    def test_server_host1(self):
         """Test with valid server param"""
         sim_ping = SimplePing('https://localhost')
         self.assertEqual(sim_ping.url, 'https://localhost')
 
-    def test_server2(self):
+    def test_server_host2(self):
         """Test with valid server param"""
         sim_ping = SimplePing(server='http://localhost', user='fred',
                               password='xx', timeout=10, ping=False)
@@ -82,6 +89,27 @@ class SimplePingTestCase(CommandLineTestCase):
             self.fail('Expected exception')
         except ValueError:
             pass
+
+
+class SimplePingCsvListSetup(unittest.TestCase):
+    def setUp(self):
+        """Load the csv test table"""
+        dbtype = 'csv'
+        test_config_file = os.path.join(SCRIPT_DIR, TEST_CONFIG_FILE_NAME)
+        db_config = read_config(test_config_file, dbtype)
+        db_config['directory'] = os.path.dirname(test_config_file)
+        self.target_data = TargetsData.factory(db_config, dbtype, False)
+
+
+class SimplePingCsvListTests(SimplePingCsvListSetup):
+    def test_no_ids(self):
+        spl = SimplePingList(self.target_data)
+        self.assertTrue(spl > 0)
+        self.assertTrue(len(spl.target_ids), 47)
+
+    def test_with_ids(self):
+        spl = SimplePingList(self.target_data, target_ids=[4])
+        self.assertTrue(len(spl.target_ids), 1)
 
 
 if __name__ == '__main__':

@@ -69,7 +69,7 @@ __all__ = ['cli']
 @click.version_option(help="Show the version of this command and exit.")
 @click.pass_context
 def cli(ctx, config_file, db_type, log_level, output_format, verbose,
-        provider_data=None, db_info=None):
+        provider_data=None, db_info=None, log_file=None):
     """
     General command line script for smicli.  This script executes a number
     of subcommands to:
@@ -85,6 +85,7 @@ def cli(ctx, config_file, db_type, log_level, output_format, verbose,
     """
 
     # TODO add for noverify, etc.
+
     if verbose:
         if ctx and ctx.default_map:
             for data_key in ctx.default_map.keys():
@@ -128,11 +129,6 @@ def cli(ctx, config_file, db_type, log_level, output_format, verbose,
 
         # use db info to get target info.
         try:
-            # print('csv config config_file %s' % config_file)
-            # csv_config = read_config(config_file, 'csv')
-            # filename = csv_config['filename']
-            # if not os.path.dirname(filename):
-            #    filename = os.path.join(config_file_dir, filename)
             target_data = TargetsData.factory(db_info, db_type, verbose,
                                               output_format=output_format)
         except ValueError as ve:
@@ -185,7 +181,7 @@ The following can be entered in interactive mode:
   <CTRL-D>, :q, :quit, :exit  Exit interactive mode.
 
   <TAB>                       Tab completion (can be used anywhere).
-  --help                      Show smicli general help message, including a
+  --help or -h                Show smicli general help message, including a
                               list of smicli commands.
   <smicli-cmd> --help      Show help message for smicli command
                               <smicli-cmd>.

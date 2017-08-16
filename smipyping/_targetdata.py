@@ -15,7 +15,21 @@
 
 """
 Define the base of targets (i.e. systems to be tested)
-
+    TargetID = Column(Integer(11), primary_key=True)
+    IPAddress = Column(String(15), nullable=False)
+    CompanyID = Column(Integer(11), ForeignKey("Companies.CompanyID"))
+    Namespace = Column(String(30), nullable=False)
+    SMIVersion = Column(String(15), nullable=False)
+    Product = Column(String(30), nullable=False)
+    Principal = Column(String(30), nullable=False)
+    Credential = Column(String(30), nullable=False)
+    CimomVersion = Column(String(30), nullable=False)
+    InteropNamespace = Column(String(30), nullable=False)
+    Notify = Column(Enum('Enabled', 'Disabled'), default='Disabled')
+    NotifyUsers = Column(String(12), nullable=False)
+    ScanEnabled = Column(Enum('Enabled', 'Disabled'), default='Enabled')
+    Protocol = Column(String(10), default='http')
+    Port = Column(String(10), nullable=False)
 """
 
 # TODO change ip_address to hostname where host name is name : port
@@ -33,8 +47,8 @@ from ._configfile import read_config
 
 __all__ = ['TargetsData']
 
-STANDARD_FIELDS_DISPLAY_LIST = ['TargetID', 'IPAddress', 'CompanyName',
-                                'Product', 'Port', 'Protocol', 'CimomVersion']
+STANDARD_FIELDS_DISPLAY_LIST = ['TargetID', 'IPAddress', 'Port', 'Protocol',
+                                'CompanyName', 'Product', 'CimomVersion']
 
 
 class TargetsData(object):
@@ -46,6 +60,13 @@ class TargetsData(object):
     The factory method should be used to construct a new TargetsData object
     since that creates the correct object for the defined database type.
     """
+
+    key_field = 'TargetID'
+    fields = [key_field, 'targetID', 'IPAddress', 'CompanyID', 'Namespace',
+              'SMIVersion', 'Product', 'Principal', 'Credential',
+              'CimomVersion', 'InteropNamespace', 'Notify', 'NotifyUsers',
+              'ScanEnabled', 'Protocol', 'Port']
+    table_name = 'Targets'
 
     def __init__(self, db_dict, db_type, verbose, output_format):
         """Initialize the abstract Targets instance.
@@ -134,7 +155,8 @@ class TargetsData(object):
 
     def __str__(self):
         """String info on targetdata. TODO. Put more info her"""
-        return ('count=%s' % len(self.targets_dict))
+        return ('type=%s db=%s, len=%s' % (self.db_type, self.db_xxx(),
+                                           len(self.targets_dict)))
 
     def __repr__(self):
         """Rep of target data"""
@@ -144,10 +166,6 @@ class TargetsData(object):
     def get_field_list(self):
         """Return a list of the base table file names in the order defined."""
         return list(self.table_format_dict)
-
-    def get_format_dict(self, name):
-        """Return tuple of display name and length for name."""
-        return self.table_format_dict[name]
 
     def __contains__(self, record_id):
         """Determine if record_id is in targets dictionary."""
@@ -171,15 +189,37 @@ class TargetsData(object):
         return list(self.targets_dict.keys())
 
     def __getitem__(self, record_id):
-        """Return the record for the defined record_id from the targets."""
+        """Return the record for the defined record_id from the targets.
+
+          Parameters:
+
+            record_id(:term:`integer)
+                Valid key in targets dictionary
+
+          Returns:
+            target record corresponding to the id
+
+          Exceptions:
+            KeyError if record_id not it table
+        """
         return self.targets_dict[record_id]
 
     def __delitem__(self, record_id):
+        """Delete the record_id in the table"""
         del self.targets_dict[record_id]
 
     def __len__(self):
         """Return number of targets"""
         return len(self.targets_dict)
+
+    def get_format_dict(self, name):
+        """Return tuple of display name and length for name."""
+        return self.table_format_dict[name]
+
+    def get_enabled_targetids(self):
+        """Get list of target ids that are marked enabled"""
+        return [x for x in self.targets_dict
+                if not self.disabled_target_id(x)]
 
     # TODO we have multiple of these. See get dict_for_host,get_hostid_list
     def get_targets_host(self, host_id):
@@ -245,16 +285,16 @@ class TargetsData(object):
         rtn = OrderedDict()
         for key, value in self.targets_dict.items():
             if ip_filter and re.match(ip_filter, value['IPAddress']):
-                rtn.append[key] = value
+                rtn[key] = value
             if company_name_filter and \
                     re.match(value['CompanyName'], company_name_filter):
-                rtn.append[key] = value
+                rtn[key] = value
 
         return rtn
 
     def get_hostid_list(self, ip_filter=None, company_name_filter=None):
         """
-        Get all WBEM Server ids in the targets base.
+        Get all WBEM Server ipaddresses in the targets base.
 
         Returns list of IP addresses:port entries.
            TODO: Does not include port right now.
@@ -302,7 +342,9 @@ class TargetsData(object):
         return line
 
     def disabled_target(self, target_record):
-        """If record disabled, return true, else return false."""
+        """
+        If target_record disabled, return true, else return false.
+        """
         val = target_record['ScanEnabled'].lower()
         if val == 'enabled':
             return False
@@ -311,6 +353,24 @@ class TargetsData(object):
         else:
             ValueError('ScanEnabled field must contain "Enabled" or "Disabled'
                        ' string. %s is invalid.' % val)
+
+    def disabled_target_id(self, target_id):
+        """
+        Return True if target recorded for this target_id marked
+        disabled. Otherwise return True
+
+        Parameters:
+
+            target_id(:term:`integer`)
+                Valid target Id for the Target_Tableue .
+
+        Returns: (:term: `boolean`)
+            True if this target id disabled
+
+        Exceptions:
+            KeyError if target_id not in database
+        """
+        return(self.disabled_target(self.targets_dict[target_id]))
 
     def get_output_width(self, col_list):
         """
@@ -324,25 +384,25 @@ class TargetsData(object):
 
     def db_info(self):
         """get info on the database used"""
-        print('Base class. No info')
+        pass
 
-    def display_disabled(self):
+    def display_disabled(self, output_format):
         """Display diabled entries."""
-        col_list = ['Id', 'IPAddress', 'CompanyName', 'Product',
+        col_list = [self.key_field, 'IPAddress', 'CompanyName', 'Product',
                     'Port', 'Protocol', 'ScanEnabled']
 
         table_data = []
 
         # TODO can we do this with list comprehension
         for record_id in sorted(self.targets_dict.iterkeys()):
-            if self.disabled_record(self.targets_dict[record_id]):
+            if self.disabled_target(self.targets_dict[record_id]):
                 table_data.append(self.format_record(record_id, col_list))
         table = TableFormatter(table_data, headers=col_list,
                                title='Disabled hosts',
                                table_format=self.output_format)
         table.print_table()
 
-    def display_cols(self, fields):
+    def display_cols(self, fields, show_disabled=True):
         """
         Display the columns of data defined by the fields parameter.
 
@@ -351,8 +411,10 @@ class TargetsData(object):
         based on those target_data colums
 
         Parameters:
-          column_list: list of strings defining the targets_data columns to be
+          fields: list of strings defining the targets_data columns to be
             displayed.
+
+          show_disabled(:term:`boolean`)
 
         """
         table_data = []
@@ -363,13 +425,22 @@ class TargetsData(object):
         fold = False if table_width < 80 else True
 
         for record_id in sorted(self.targets_dict.iterkeys()):
-            table_data.append(self.format_record(record_id, fields, fold))
+            if show_disabled:
+                table_data.append(self.format_record(record_id, fields, fold))
 
+            else:
+                if not self.disabled_target_id(record_id):
+                    table_data.append(self.format_record(record_id, fields,
+                                                         fold))
+
+        title = 'Target Providers Overview:'
+        if show_disabled:
+            title = '%s including disabled' % title
         table = TableFormatter(table_data, headers=col_list,
-                               title='Target Systems Overview:')
+                               title=title)
         table.print_table()
 
-    def display_all(self, fields=None, company=None):
+    def display_all(self, fields=None, company=None, show_disabled=True):
         """Display all entries in the base. If fields does not exist,
            display a standard list of fields from the database.
         """
@@ -378,7 +449,7 @@ class TargetsData(object):
             fields = STANDARD_FIELDS_DISPLAY_LIST
         else:
             fields = fields
-        self.display_cols(fields)
+        self.display_cols(fields, show_disabled=show_disabled)
 
 
 class SQLTargetsData(TargetsData):
@@ -389,9 +460,10 @@ class SQLTargetsData(TargetsData):
     def __init__(self, db_dict, dbtype, verbose, output_format):
         """Pass through to SQL"""
         if verbose:
-            print('MySQL Database type %s  verbose=%s' % (db_dict, verbose))
+            print('SQL Database type %s  verbose=%s' % (db_dict, verbose))
         super(SQLTargetsData, self).__init__(db_dict, dbtype, verbose,
                                              output_format)
+        self.connection = None
 
     def db_info(self):
         """
@@ -405,6 +477,9 @@ class SQLTargetsData(TargetsData):
         except ValueError as ve:
             print('Invalid database configuration exception %s' % ve)
         return self.db_dict
+
+    def db_xxx(self):
+        return '%s' % self.db_dict
 
     def write_updated_record(self, recordid):
         """
@@ -450,6 +525,7 @@ class MySQLTargetsData(SQLTargetsData):
                 if verbose:
                     print('sql db connection established. host %s, db %s' %
                           (db_dict['host'], db_dict['database']))
+                self.connection = connection
             else:
                 print('SQL database connection failed. host %s, db %s' %
                       (db_dict['host'], db_dict['database']))
@@ -483,14 +559,12 @@ class MySQLTargetsData(SQLTargetsData):
         try:
             targets_dict = {}
             # fetchall returns tuple so need index to fields, not names
-            cursor.execute('SELECT TargetID, IPAddress, CompanyID, Namespace, '
-                           'SMIVersion, Product, Principal, Credential, '
-                           'CimomVersion, InterOpNamespace, Notify, '
-                           'NotifyUsers, ScanEnabled, Protocol, Port '
-                           'FROM Targets')
+            fields = ', '.join(self.fields)
+            select = 'SELECT %s FROM %s' % (fields, self.table_name)
+            cursor.execute(select)
             rows = cursor.fetchall()
             for row in rows:
-                key = row['TargetID']
+                key = row[self.key_field]
                 targets_dict[key] = row
 
             # save the combined table for the other functions.
@@ -526,7 +600,7 @@ class CsvTargetsData(TargetsData):
         # config file defined by the db_dict entry directory
         if os.path.isabs(fn):
             if not os.path.isfile(fn):
-                ValueError('CSV target data file %s does not exist ' % fn)
+                ValueError('CSV file %s does not exist ' % fn)
             else:
                 self.filename = fn
         else:
@@ -535,7 +609,7 @@ class CsvTargetsData(TargetsData):
             else:
                 full_fn = os.path.join(db_dict['directory'], fn)
                 if not os.path.isfile(full_fn):
-                    ValueError('CSV target data file %s does not exist '
+                    ValueError('CSV file %s does not exist '
                                'in local directory or config directory %s' %
                                (fn, db_dict['directory']))
                 else:
@@ -570,7 +644,10 @@ class CsvTargetsData(TargetsData):
                                                           ve))
         return db_config
 
-    def write_updated_record(self, recordid):
+    def db_xxx(self):
+        return '%s' % self.db_dict
+
+    def write_updated_record(self, record_id):
         """Backup the existing file and write the new one.
         with cvs it writes the whole file back
         """

@@ -283,10 +283,10 @@ def main(prog):
             db_type = opts.dbtype
             db_config = read_config(opts.config_file, db_type, opts.verbose)
         else:
-            general = read_config(opts.config_file, "general", opts.verbose)           
+            general = read_config(opts.config_file, "general", opts.verbose)
             db_type = general.get('dbtype', None)
             db_config = read_config(opts.config_file, db_type, opts.verbose)
-            
+
         if not db_type:
             db_type = DEFAULT_DBTYPE
             db_config = DEFAULT_DB_CONFIG

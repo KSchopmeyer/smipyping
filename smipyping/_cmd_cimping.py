@@ -20,9 +20,10 @@ of wbem servers.
 """
 from __future__ import print_function, absolute_import
 
+import sys
 import click
 
-from smipyping import SimplePing
+from smipyping import SimplePing, SimplePingList
 from .smicli import cli, CMD_OPTS_TXT
 from ._tableoutput import TableFormatter
 from .config import DEFAULT_NAMESPACE, DEFAULT_OPERATION_TIMEOUT, \
@@ -38,7 +39,7 @@ def cimping_group():
     the subcommand.  This allows targets to be defined in a number of
     ways including:
 
-      - Complete target identification (url, etc.)
+      - Complete target identification (url, etc.) (host)
 
       - Target Id in the database.
 
@@ -133,10 +134,32 @@ def cimping_host(context, host, **options):
 def cimping_ids(context, ids, **options):  # pylint: disable=redefined-builtin
     """
     Execute a simple cim ping against all wbem servers in the target
-    database.
-
+    database and return exit code in accord with response.
     """
     context.execute_cmd(lambda: cmd_cimping_ids(context, ids, options))
+
+
+@cimping_group.command('id', options_metavar=CMD_OPTS_TXT)
+@click.argument('ID', type=int, metavar='TargetID', required=True)
+@click.option('-t', '--timeout', type=int, default=DEFAULT_OPERATION_TIMEOUT,
+              help='Namespace for the operation.'
+                   ' ' + '(Default: %s.' % DEFAULT_OPERATION_TIMEOUT)
+@click.option('--no-ping', default=False, type=bool, required=False,
+              help='Disable network ping ofthe wbem server before executing '
+                   'the cim request.'
+                   ' ' + '(Default: %s.' % True)
+@click.option('-d' '--debug', default=False, type=bool, required=False,
+              help='Set the debug parameter for the pywbem call. Displays '
+                   'detailed information on the call and response.'
+                   ' ' + '(Default: %s.' % False)
+@click.pass_obj
+def cimping_id(context, id, **options):  # pylint: disable=redefined-builtin
+    """
+    Execute a simple cim ping against all wbem servers in the target
+    database and return exit code in accord with response. Exits interactive
+    mode and returns exit code corresponding to test result.
+    """
+    context.execute_cmd(lambda: cmd_cimping_id(context, id, options))
 
 
 @cimping_group.command('all', options_metavar=CMD_OPTS_TXT)
@@ -211,37 +234,70 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
     from the database provided with the input parameters.
     """
 
-    ids = context.target_data.keys()
+    if True:
+        simple_ping_list = SimplePingList(context.target_data, None,
+                                          logfile=context.log_file,
+                                          log_level=context.log_level,
+                                          verbose=context.verbose)
+        results = simple_ping_list.ping_servers()
 
-    # TODO create a simpleping report rather than multiple single simplepings.
-    rows = []
-    for id_ in ids:
-        simpleping = SimplePing(target_id=id_, timeout=options['timeout'],
-                                ping=not options['no_ping'],
-                                logfile=context.log_file,
-                                log_level=context.log_level)
+        headers = ['id', 'addr', 'result', 'exception', 'time', 'company']
+        # print('Results %s' % results)
+        rows = []
+        for result in results:
+            target_id = result[0]
+            target = context.target_data[target_id]
+            test_result = result[1]
 
-        simpleping.set_param_from_targetdata(id_, context.target_data)
-        test_result = simpleping.test_server(verify_cert=False)
+            addr = '%s://%s' % (target['Protocol'], target['IPAddress'])
+            exception = '%s' % test_result.exception
 
-        target = context.target_data.get_dict_record(id_)
-        addr = '%s://%s' % (target['Protocol'], target['IPAddress'])
-        exception = '%s' % test_result.exception        
+            rows.append([target_id,
+                         addr,
+                         ('%s:%s' % (test_result.type, test_result.code)),
+                         TableFormatter.fold_cell(exception, 12),
+                         test_result.execution_time,
+                         TableFormatter.fold_cell(target['Product'], 12)])
 
-        rows.append([id_,
-                     ('%s:%s' % (test_result.type, test_result.code)),
-                     TableFormatter.fold_cell(exception, 12),
-                     test_result.execution_time,
-                     addr,
-                     TableFormatter.fold_cell(target['Product'], 8)])
+        context.spinner.stop()
 
-    context.spinner.stop()
-    headers = ['id', 'result', 'exception', 'time', 'addr', 'company']
+        table = TableFormatter(rows, headers,
+                               title='CIMPing Results:',
+                               table_format=context.output_format)
+        click.echo(table.build_table())
 
-    table = TableFormatter(rows, headers,
-                           title='cimping all targets:',
-                           table_format=context.output_format)
-    click.echo(table.build_table())
+    else:
+        ids = context.target_data.keys()
+
+        rows = []
+        for id_ in ids:
+            simpleping = SimplePing(target_id=id_, timeout=options['timeout'],
+                                    target_data=context.target_data,
+                                    ping=not options['no_ping'],
+                                    logfile=context.log_file,
+                                    log_level=context.log_level)
+
+            # simpleping.set_param_from_targetdata(id_, context.target_data)
+            test_result = simpleping.test_server(verify_cert=False)
+
+            target = context.target_data.get_dict_record(id_)
+            addr = '%s://%s' % (target['Protocol'], target['IPAddress'])
+            exception = '%s' % test_result.exception
+
+            rows.append([id_,
+                         ('%s:%s' % (test_result.type, test_result.code)),
+                         TableFormatter.fold_cell(exception, 12),
+                         test_result.execution_time,
+                         addr,
+                         TableFormatter.fold_cell(target['Product'], 8)])
+
+        context.spinner.stop()
+        headers = ['id', 'result', 'exception', 'time', 'addr', 'company']
+
+        table = TableFormatter(rows, headers,
+                               title='cimping all targets:',
+                               table_format=context.output_format)
+        click.echo(table.build_table())
 
 
 def cmd_cimping_ids(context, ids, options):  # pylint: disable=redefined-builtin
@@ -251,24 +307,52 @@ def cmd_cimping_ids(context, ids, options):  # pylint: disable=redefined-builtin
     """
     for id_ in ids:
         try:
-            targ_rec = context.target_data.get_dict_record(id_)  # noqa: F841
-        except Exception as ex:
-            raise click.ClickException('Invalid TargetID=%s. Not in database. '
-                                       '%s: %s' % (id,
-                                                   ex.__class__.__name__, ex))
+            context.target_data.get_dict_record(id_)  # noqa: F841
+        except KeyError:
+            raise click.ClickException('Invalid Target: ID=%s not in database'
+                                       ' %s.' % (id_, context.target_data))
 
-    # TODO add other setup parameters, ping, timeout
     for id_ in ids:
         simpleping = SimplePing(target_id=id_, timeout=options['timeout'],
+                                target_data=context.target_data,
                                 ping=not options['no_ping'],
                                 logfile=context.log_file,
                                 log_level=context.log_level)
 
         # TODO: Move the requirement for all target data up and
         # set from record get the target_record
-        # TODO create ping for multiple IDs
-        simpleping.set_param_from_targetdata(id_, context.target_data)
-
         test_result = simpleping.test_server(verify_cert=False)
 
+        # TODO pass on output_format
+        context.spinner.stop()
         print_ping_result(simpleping, test_result, context.verbose)
+
+
+def cmd_cimping_id(context, id, options):  # pylint: disable=redefined-builtin
+    """
+    Execute one simple ping of a target wbem server based on the target_ids
+    from the database provided with the input parameters. Closes
+    interactive mode
+    """
+    try:
+        context.target_data.get_dict_record(id)  # noqa: F841
+    except KeyError:
+        raise click.ClickException('Invalid Target: ID=%s not in database'
+                                   ' %s.' % (id, context.target_data))
+
+    simpleping = SimplePing(target_id=id, timeout=options['timeout'],
+                            target_data=context.target_data,
+                            ping=not options['no_ping'],
+                            logfile=context.log_file,
+                            log_level=context.log_level)
+
+    # TODO: Move the requirement for all target data up and
+    # set from record get the target_record
+    test_result = simpleping.test_server(verify_cert=False)
+
+    # TODO pass on output_format
+    context.spinner.stop()
+    print_ping_result(simpleping, test_result, context.verbose)
+
+    # Exit with code returned from test
+    sys.exit(test_result.code)

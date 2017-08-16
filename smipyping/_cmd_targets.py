@@ -49,6 +49,10 @@ def targets_group():
                    'Default: a Standard list of fields')
 # @click.option('-c', '--company', type=str, default=None,
 #              help='regex filter to filter selected companies.')
+@click.option('-d', '--disabled', default=False, is_flag=True, required=False,
+              help='Show disabled targets. Otherwise only targets that are '
+                   'set enabled in the database are shown.'
+                   ' ' + '(Default: %s.' % False)
 @click.option('-o', '--order', type=str, default=None,
               help='sort by the defined field name. NOT IMPLEMENTED')
 # TODO sort by a particular field
@@ -64,7 +68,7 @@ def targets_list(context, **options):
 @click.pass_obj
 def targets_info(context):
     """
-    Show target database  config information
+    Show target database config information
     """
     context.execute_cmd(lambda: cmd_targets_info(context))
 
@@ -95,7 +99,7 @@ def targets_get(context, targetid, **options):
 @click.pass_obj
 def targets_disable(context, targetid, enable, **options):
     """
-    Disable a provider from scanning.
+    Disable a provider from scanning. This changes the database.
     """
     context.execute_cmd(lambda: cmd_targets_disable(context, targetid,
                                                     enable, options))
@@ -185,8 +189,11 @@ def cmd_targets_list(context, options):
     except KeyError as ke:
         raise click.ClickException("%s: Invalid field name: %s" %
                                    (ke.__class__.__name__, ke))
+
     try:
-        context.target_data.display_all(list(fields), company=None)
+        context.target_data.display_all(list(fields),
+                                        show_disabled=options['disabled'],
+                                        company=None)
 
     except Exception as ex:
         raise click.ClickException("%s: %s" % (ex.__class__.__name__, ex))
