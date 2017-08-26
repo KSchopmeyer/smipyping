@@ -53,7 +53,7 @@ General options:
                         Set log level: ['error', 'warning', 'info', 'debug']
   --scantype SCANTYPE, -s SCANTYPE
                         Set scan type: ['tcp', 'syn', 'all']. Some scan types
-                        requie privilege mode.
+                        require privilege mode.
   --dryrun              Display list of systems/ports to be scanned but do not
                         scan. This is a diagnostic tool
 
