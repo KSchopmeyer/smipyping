@@ -45,7 +45,7 @@ class SimplePingTests(unittest.TestCase):
         """Test with valid server param"""
         sim_ping = SimplePing('http://localhost')
         self.assertEqual(sim_ping.url, 'http://localhost')
-        conn = sim_ping.connect_server(sim_ping.url, verify_cert=False)
+        conn = sim_ping.connect_server(sim_ping.url)
         print(sim_ping.get_connection_info(conn))
         print(conn.url)
 
@@ -63,16 +63,19 @@ class SimplePingTests(unittest.TestCase):
         self.assertEqual(sim_ping.ping, False)
         self.assertEqual(sim_ping.user, 'fred')
         self.assertEqual(sim_ping.password, 'xx')
-        conn = sim_ping.connect_server(sim_ping.url, verify_cert=False)
+        conn = sim_ping.connect_server(sim_ping.url)
         self.assertEqual(conn.url, 'http://localhost')
         banner = sim_ping.get_connection_info(conn)
         match_result = re.match(r'Connection: http://localhost', banner)
         self.assertIsNotNone(match_result)
 
     def test_target_id(self):
-        """Test with valid target id"""
-        sim_ping = SimplePing(target_id=4)
-        self.assertEqual(sim_ping.target_id, 4)
+        """Test with valid target id and no target_data"""
+        try:
+            sim_ping = SimplePing(target_id=4)
+            self.fail("Expected exception")
+        except ValueError:
+            pass
 
     def test_invalid_server(self):
         """Test for invalid server schema"""

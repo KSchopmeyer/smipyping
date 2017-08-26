@@ -45,7 +45,8 @@ class CsvTableTests(TargetTableTests):
         test_config_file = os.path.join(SCRIPT_DIR, TEST_CONFIG_FILE_NAME)
         db_config = read_config(test_config_file, DBTYPE)
         db_config['directory'] = os.path.dirname(test_config_file)
-        self.target_data = TargetsData.factory(db_config, DBTYPE, False)
+        self.target_table = TargetsData.factory(db_config, DBTYPE, False)
+
 
 class TargetTableTest(CsvTableTests):
     """Class for simple tests of CSVUserData class."""
@@ -98,23 +99,24 @@ class TargetTableTest(CsvTableTests):
         self.assertTrue(result_list is not None)
 
     def test_disabled_target(self):
-        self.assertTrue(self.target_data.disabled_target(
+        self.assertTrue(self.target_table.disabled_target(
             self.target_table[42]))
 
     def test_get_enabled_list(self):
-        ids = self.target_data.get_enabled_targetids()
+        ids = self.target_table.get_enabled_targetids()
         self.assertTrue(len(ids) > 0)
         self.assertTrue(4 in ids)
         self.assertTrue(42 not in ids)
 
     def test_display_disabled(self):
         # target_data = self.get_target_data()
-        self.target_data.display_disabled('simple')
+        self.target_table.display_disabled('simple')
 
     def test_enabled_target(self):
         # target_data = self.get_target_data()
-        self.target_data.display_disabled('simple')
-        self.assertFalse(self.target_data.disabled_target(self.target_data[4]))
+        self.target_table.display_disabled('simple')
+        self.assertFalse(
+            self.target_table.disabled_target(self.target_table[4]))
 
 
 if __name__ == '__main__':

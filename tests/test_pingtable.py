@@ -64,6 +64,7 @@ class TableTests(unittest.TestCase):
         for key, value in tbl_inst .iteritems():
             self.assertTrue(key in test_keys)
 
+
 class MySQLTests(TableTests):
     def test_create(self):
         dbtype = 'mysql'
@@ -72,7 +73,7 @@ class MySQLTests(TableTests):
         tbl_inst = PingsTable.factory(db_config, dbtype, False)
         print('pings %s' % tbl_inst.data_dict)
         self.assertEqual(len(tbl_inst), 0)
-        #self.methods_test(tbl_inst)
+        # self.methods_test(tbl_inst)
         rows = tbl_inst.get_data_for_day(2016, 8, 5)
         print('len rows %s' % len(rows))
 

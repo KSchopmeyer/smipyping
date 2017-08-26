@@ -362,10 +362,12 @@ class ServerSweep(object):
           Each call returns a tuple of (IP address, port)
         """
 
+        if isinstance(self.net_defs, tuple):
+            self.net_defs = list(self.net_defs)
         if not isinstance(self.net_defs, list):
             self.net_defs = [self.net_defs]
 
-        if not isinstance(self.ports, list):
+        if not isinstance(self.ports, (list, tuple)):
             self.ports = [self.ports]
 
         for net_def in self.net_defs:

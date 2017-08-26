@@ -71,7 +71,7 @@ __all__ = ['cli']
 def cli(ctx, config_file, db_type, log_level, output_format, verbose,
         provider_data=None, db_info=None, log_file=None):
     """
-    General command line script for smicli.  This script executes a number
+    Command line script for smicli.  This script executes a number
     of subcommands to:
 
     \b
@@ -79,9 +79,12 @@ def cli(ctx, config_file, db_type, log_level, output_format, verbose,
           additional information specific to SMI.
 
     \b
-        * Manage a database that defines smi servers. It supports two forms
-          of the data base, sql database and csv file.
+        * Manage a database that defines smi servers, users, company names
+          and history. It supports two forms of the data base, sql database
+          and csv file.
 
+    \b
+        * Sweep ranges of ip addresses and ports to find wbem servers.
     """
 
     # TODO add for noverify, etc.
