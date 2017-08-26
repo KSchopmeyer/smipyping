@@ -107,11 +107,11 @@ do_cmd 'cimping all'
 # Provider commands
 #
 # classes, info, interop, namespaces, ping profiles
-do_cmd 'provider interop -t 89'
-do_cmd 'provider namespaces -t 89'
-do_cmd 'provider profiles
-#do_cmd 'provider classes CIM_ManagedElement -t'
-
+do_cmd 'provider interop -t 115'
+do_cmd 'provider namespaces -t 115'
+do_cmd 'provider profiles -t 115'
+do_cmd 'provider classes CIM_ManagedElement -t 115'
+do_cmd 'provider classes CIM_ManagedElement -t 115'
 #
 #   Exercise explorer
 #

@@ -21,6 +21,7 @@ from __future__ import print_function, absolute_import
 import click
 
 from .smicli import cli, CMD_OPTS_TXT
+from ._tableoutput import TableFormatter
 
 
 @cli.group('targets', options_metavar=CMD_OPTS_TXT)
@@ -36,10 +37,6 @@ def targets_group():
     data such as company, etc.
     """
     pass
-
-
-# TODO Use some other multiple mechanism. This one is a mess.
-# TODO implement ordering.
 
 
 @targets_group.command('list', options_metavar=CMD_OPTS_TXT)
@@ -151,8 +148,15 @@ def cmd_targets_info(context):
 
 def cmd_targets_fields(context):
     """Display the information fields for the providers dictionary."""
+    fields = context.target_data.get_field_list()
+    rows = []
+    for field in fields:
+        rows.append([field])
+    headers = 'Table Fields'
+    tbl = TableFormatter(rows, headers, title='Target table fields',
+                         table_format=context.output_format)
 
-    click.echo('\n'.join(context.target_data.get_field_list()))
+    click.echo(tbl.build_table())
 
 
 def cmd_targets_get(context, targetid, options):

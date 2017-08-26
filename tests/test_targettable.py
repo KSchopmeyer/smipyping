@@ -47,6 +47,7 @@ class CsvTableTests(TargetTableTests):
         db_config['directory'] = os.path.dirname(test_config_file)
         self.target_data = TargetsData.factory(db_config, DBTYPE, False)
 
+
 class TargetTableTest(CsvTableTests):
     """Class for simple tests of CSVUserData class."""
 

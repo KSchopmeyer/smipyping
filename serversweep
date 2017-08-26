@@ -133,7 +133,7 @@ Examples:
         help=('Set log level: %s' % LOG_LEVELS))
     general_arggroup.add_argument(
         '--scantype', '-s', default='tcp', metavar='SCANTYPE',
-        help=('Set scan type: %s. Some scan types requie privilege mode.'
+        help=('Set scan type: %s. Some scan types require privilege mode.'
               % SCAN_TYPES))
     general_arggroup.add_argument(
         '--dryrun', action='store_true', default=False,

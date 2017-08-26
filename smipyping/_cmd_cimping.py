@@ -13,10 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-smicli commands based on python click for executin a simple ping against
-wbem servers.  Subcommands allow executing request by specific server
-information or through a database that defines characteristics of a group
-of wbem servers.
+smicli commands based on python click for executing sweeps of selected
+targets to find WBEM servers.
 """
 from __future__ import print_function, absolute_import
 
