@@ -62,12 +62,12 @@ DEFAULT_DB_CONFIG = {'targetfilename': 'targetdata_example.csv'}
               envvar='SMI_DB_TYPE',
               help="Database type. May be defined on cmd line, config file, "
                    " or through default. Default is %s." % DEFAULT_DBTYPE)
-@click.option('-l', '--log_level', type=str,
-              envvar='Log_Level', required=False, default=None,
+@click.option('-l', '--log_level', type=str, envvar='SMI_LOG_LEVEL',
+              required=False, default=None,
               help="Optional option to enable logging for the level "
                    " defined, by the parameter. Choices are: "
                    " " + "%s" % LOG_LEVELS)
-@click.option('-o', '--output-format',
+@click.option('-o', '--output-format', envvar='SMI_OUTPUT_FORMAT',
               type=click.Choice(TABLE_FORMATS),
               help="Output format (Default: {of}). pywbemcli may override "
                    "the format choice depending on the operation since not "

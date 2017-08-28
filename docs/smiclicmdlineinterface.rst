@@ -50,9 +50,8 @@ The ``smicli`` commands that can be typed in the ``smicli`` shell are simply the
 line arguments that would follow the ``smicli`` command when used in
 `command mode`_::
 
-    $ smicli targets all
-    
-    Enter password: <password>
+    $ smicli
+
     > targets id 4
     . . . display of the definition of target with id = 4
     > targets id 5
@@ -66,8 +65,7 @@ above has the same effect as the standalone command::
 
     . . . display of the definition of target with id = 4
 
-.
-See also `Environment variables and avoiding password prompts`_.
+See also `Environment variables`_.
 
 The internal commands ``:?``, ``:h``, or ``:help`` display general help
 information for external and internal commands::
@@ -118,6 +116,8 @@ commands::
           repl      Enter interactive (REPL) mode (default) and...
 
 
+Note that ``-h`` can be uses as a shortcut for ``--help`` throughout ``smicli``.
+
 The usage line in this help text show the standalone command use. Within the
 smicli shell, the ``smicli`` word is ommitted and the remainder is typed in.
 
@@ -133,8 +133,7 @@ specified smicli command, for example::
       --help  Show this message and exit.
 
     Commands:
-
-TODO
+        ...
 
 The smicli shell supports popup help text while typing, where the valid choices
 are shown based upon what was typed so far, and where an item from the popup
@@ -169,7 +168,6 @@ Examples::
     $ smicli cimping http://localhost -n root/cimv2 -u username
     . . . <TODO>
 
-TODO: Need to sort this one out
 In command mode, bash tab completion is also supported, but must be enabled
 first as follows (in a bash shell)::
 
@@ -186,7 +184,7 @@ Bash tab completion for ``smicli`` is used like any other bash tab completion::
     $ smicli database <TAB><TAB>
     ... <shows the database sub-commands to select from>
 
-.. _`Environment variables and avoiding password prompts`:
+.. _`Environment variables`:
 
 Environment variables
 ---------------------
@@ -194,17 +192,23 @@ Environment variables
 The smicli CLI has  environment variable options corresponding to the
 command line options for specifying the general options to be used including:
 
-**TODO:** add the SMICLI environment variables
+1. SMI_CONFIG_FILE - The absolute path to the configuration file
+
+2. SMI_DB_TYPE - The typd of database
+
+3. SMI_LOG_LEVEL - The log level
+
+4. SMI_OUTPUT_FORMAT - The output format for reports, etc.
 
 If these environment variables are set, the corresponding general option on the
 command line is not required and the value of the environment variable is
 used.
 
-Thus, in the following example, the second line accesses the server
-http://localhost::
+Thus, in the following example, the second line accesses the configuration
+file blah.ini ::
 
-      $ export SMICLI_SERVER=http://localhost
-      $ smicli TODO
+      $ export SMICLI_CONFIG_FILE=blah.ini
+      $ smicli ...
 
 Passwords
 ---------
@@ -213,7 +217,7 @@ Passwords (credentials) are defined in:
 
 1. The options for some of the subcommands (ex. ``smicli cimping host``)
 
-2. The targets database column for credentials. There is a specific column
+2. The targets database. There is are specific columns
 in the database for users(prinicpals) and passwords(credentials)
 
 3. A standard default credential and user name that will be used if none are

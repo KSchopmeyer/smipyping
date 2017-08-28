@@ -94,10 +94,6 @@ doc_opts := -v -d $(doc_build_dir)/doctrees -c $(doc_conf_dir) .
 
 # File names of automatically generated utility help message text output
 doc_utility_help_files := \
-    $(doc_conf_dir)/simpleping.help.txt \
-    $(doc_conf_dir)/serversweep.help.txt \
-    $(doc_conf_dir)/explore.help.txt \
-    $(doc_conf_dir)/targets.help.txt \
 
 # Dependents for Sphinx documentation build
 doc_dependent_files := \
@@ -109,8 +105,8 @@ doc_dependent_files := \
     $(package_name)/_explore.py \
     $(package_name)/_simpleping.py \
     $(package_name)/_serversweep.py \
-
-
+    $(package_name)/_cmd_*.py \
+    $(package_name)/smicli.py \
 
 # Flake8 config file
 flake8_rc_file := .flake8
@@ -368,27 +364,8 @@ $(test_log_file): Makefile $(package_name)/*.py tests/*.py .coveragerc
 	@echo 'Done: Created test log file: $@'
 
 # Create the help text.rst files for each separate script
-$(doc_conf_dir)/serversweep.help.txt: serversweep $(package_name)/_serversweep.py
-	./serversweep --help >$@
-	@echo 'Done: Created serversweep script help message file: $@'
 
-$(doc_conf_dir)/explore.help.txt: explore $(package_name)/_explore.py
-	./explore --help >$@
-	@echo 'Done: Created explore script help message file: $@'
-
-$(doc_conf_dir)/targets.help.txt: targets $(package_name)/_targetdata.py
-	./targets --help >$@
-	@echo 'Done: Created targets script help message file: $@'
-
-$(doc_conf_dir)/simpleping.help.txt: simpleping $(package_name)/_simpleping.py
-	./simpleping --help >$@
-	@echo 'Done: Created simpleping script help message file: $@'
-
-$(doc_conf_dir)/simplepingall.help.txt: simplepingall $(package_name)/_simpleping.py
-	./simplepingall --help >$@
-	@echo 'Done: Created simplepingall script help message file: $@'
-
-$(doc_conf_dir)/smicli_help.rst: smicli $(package_name)/smicli.py $(package_name)/_cmd*.py
+$(doc_conf_dir)/smicli_help.rst: $(package_name)/smicli.py $(package_name)/_cmd*.py
 	tools/click_help_capture.py --help >$@
 	@echo 'Done: Created smicli script help message file: $@'
 
