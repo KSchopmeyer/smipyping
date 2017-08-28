@@ -24,9 +24,8 @@ import click
 from smipyping import ServerSweep,\
     DEFAULT_SWEEP_PORT, SCAN_TYPES
 from .smicli import cli, CMD_OPTS_TXT
-from ._tableoutput import TableFormatter
-from .config import DEFAULT_NAMESPACE, DEFAULT_OPERATION_TIMEOUT, \
-    DEFAULT_USERNAME, DEFAULT_PASSWORD
+# from .config import DEFAULT_NAMESPACE, DEFAULT_OPERATION_TIMEOUT, \
+#    DEFAULT_USERNAME, DEFAULT_PASSWORD
 
 
 @cli.group('sweep', options_metavar=CMD_OPTS_TXT)

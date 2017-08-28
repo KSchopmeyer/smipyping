@@ -15,20 +15,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for functions and classes in _pingstable.py
+Tests for functions and classes in smipyping/_tableoutput.py
 """
 from __future__ import print_function, absolute_import
 
 import os
 import unittest
 
-from smipyping._pingstable import PingsTable
 from smipyping._configfile import read_config
+from smipyping._cimreport import build_cimreport
 
 VERBOSE = False
 
 SCRIPT_DIR = os.path.dirname(__file__)
-
 
 class TableTests(unittest.TestCase):
     def setUp(self):
@@ -36,47 +35,17 @@ class TableTests(unittest.TestCase):
 
     def get_config(self, dbtype):
         test_config_file = os.path.join(SCRIPT_DIR, 'testconfig.ini')
-        db_config = read_config(test_config_file, dbtype)
+        db_config = read_config('testconfig.ini', dbtype)
         db_config['directory'] = os.path.dirname(test_config_file)
         return db_config
 
-    def methods_test(self, tbl_inst):
-        if VERBOSE:
-            print('dict %s' % tbl_inst.data_dict)
-        test_keys = []
-        for key in tbl_inst:
-            test_keys.append(key)
-            self.assertTrue(key in tbl_inst)
-            value = tbl_inst[key]
-            id_ = value[tbl_inst.key_field]
-            self.assertTrue(isinstance(id_, int))
-            for name in tbl_inst:
-                self.assertTrue(name in tbl_inst)
-
-        self.assertEqual(len(test_keys), len(tbl_inst))
-
-        for key in test_keys:
-            self.assertTrue(key in tbl_inst)
-
-        for key in test_keys:
-            self.assertTrue(key in tbl_inst)
-
-        for key, value in tbl_inst .iteritems():
-            self.assertTrue(key in test_keys)
-
-
-class MySQLTests(TableTests):
-    def test_create(self):
+class ReportTests(TableTests):
+    def test_create_report(self):
         dbtype = 'mysql'
         db_config = self.get_config(dbtype)
-
-        tbl_inst = PingsTable.factory(db_config, dbtype, False)
-        print('pings %s' % tbl_inst.data_dict)
-        self.assertEqual(len(tbl_inst), 0)
-        # self.methods_test(tbl_inst)
-        rows = tbl_inst.get_data_for_day(2016, 8, 5)
-        print('len rows %s' % len(rows))
-
+        report = build_cimreport(db_config, dbtype, year, month,
+                                 day_of_month, verbose)
+        
 
 if __name__ == '__main__':
     unittest.main()

@@ -77,7 +77,6 @@ class Company(Base):
         return("CompanyID=%s; CompanyName='%s'" % (self.CompanyID,
                                                    self.CompanyName))
 
-
 class Target(Base):
     __tablename__ = 'Targets'
 

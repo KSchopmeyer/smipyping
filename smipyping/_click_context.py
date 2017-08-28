@@ -63,15 +63,20 @@ class ClickContext(object):
     @property
     def db_type(self):
         """
-        :term:`string`: Type of db used.
+        :term:`string`: Type of db used. This must be one of the strings
+        defined by :data:`~smipyping.config.DB_POSSIBLE_TYPES`
         """
         return self._db_type
 
     @property
     def db_info(self):
         """
-        :term:`dict`: Detailed info on db used. Varies by db type.
+        :term:`dict`: Detailed info on db used. Varies by db type. This
+        defines the configuration parameters for opening the db defined by
+        db_type and the directory containing the directory for the
+        config file.
         """
+        # TODO this should have been named db_config
         return self._db_info
 
     @property

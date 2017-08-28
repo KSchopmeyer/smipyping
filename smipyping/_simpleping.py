@@ -210,13 +210,13 @@ class SimplePing(object):
 
         # Error code keys and corresponding exit codes
         self.error_code = {
-            'Running': 0,
+            'OK': 0,
             'WBEMException': 1,
-            'PyWBEM Error': 2,
-            'General Error': 3,
+            'PyWBEMError': 2,
+            'GeneralError': 3,
             'TimeoutError': 4,
             'ConnectionError': 5,
-            'Ping Fail': 6,
+            'PingFail': 6,
             'Disabled': 0}
 
     def __repr__(self):
@@ -318,7 +318,7 @@ class SimplePing(object):
             ping_result, result = self.ping_server()
             if ping_result is False:
                 result_code = self.get_result_code(result)
-                exception = 'Ping failed'
+                exception = ''
         self.logger.debug('ping result=%s', result_code)
         if ping_result:
             # connect to the server and execute the cim operation test
@@ -354,8 +354,8 @@ class SimplePing(object):
         if self.verbose:
             print('Ping network address %s' % target_address[0])
         if ping_host(target_address[0], PING_TIMEOUT):
-            return(True, 'running')
-        return(False, 'Ping Fail')
+            return(True, 'OK')
+        return(False, 'PingFail')
 
     def connect_server(self, verify_cert=False):
         """
@@ -400,7 +400,7 @@ class SimplePing(object):
             if self.verbose:
                 print('Running host=%s. Returned %s instance(s)' %
                       (conn.url, len(insts)))
-            rtn_tuple = ("Running", "")
+            rtn_tuple = ('OK', "")
 
         except CIMError as ce:
             print('CIMERROR %r %s %s %s' % (ce,
@@ -416,9 +416,9 @@ class SimplePing(object):
         except TimeoutError as to:
             rtn_tuple = ("TimeoutError", to)
         except Error as er:
-            rtn_tuple = ("PyWBEM Error", er)
+            rtn_tuple = ("PyWBEMError", er)
         except Exception as ex:  # pylint: disable=broad-except
-            rtn_tuple = ("General Error", ex)
+            rtn_tuple = ("GeneralError", ex)
 
         if self.debug:
             last_request = conn.last_request or conn.last_raw_request

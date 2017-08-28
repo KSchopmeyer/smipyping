@@ -592,7 +592,7 @@ class CsvTargetsData(TargetsData):
         super(CsvTargetsData, self).__init__(db_dict, dbtype, verbose,
                                              output_format)
 
-        fn = db_dict['filename']
+        fn = db_dict['targetsfilename']
         self.filename = fn
 
         # If the filename is not a full directory, the data file must be

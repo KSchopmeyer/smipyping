@@ -27,7 +27,7 @@ import click
 from prompt_toolkit.history import FileHistory
 
 from smipyping import TargetsData
-from smipyping import DEFAULT_DBTYPE, DB_POSSIBLE_TYPES
+from smipyping import DEFAULT_DBTYPE
 from ._click_context import ClickContext
 
 from .config import SMICLI_PROMPT, SMICLI_HISTORY_FILE
@@ -40,7 +40,16 @@ from ._common import TABLE_FORMATS, DEFAULT_OUTPUT_FORMAT, set_input_variable
 GENERAL_OPTIONS_METAVAR = '[GENERAL-OPTIONS]'
 CMD_OPTS_TXT = '[COMMAND-OPTIONS]'
 
-__all__ = ['cli']
+
+__all__ = ['cli', 'DB_POSSIBLE_TYPES', 'DEFAULT_DB_CONFIG']
+
+#: Possible db types list.  This ks all of the db types allowed in smipyping
+DB_POSSIBLE_TYPES = ['csv', 'mysql', 'sqlite']
+
+#: Dictionary that defines a default database configuration
+#: if no database is defined in config file or cmd line input
+#: This is a csv file and corresponses to the DEFAULT_DBTYPE above
+DEFAULT_DB_CONFIG = {'targetfilename': 'targetdata_example.csv'}
 
 
 @click.group(invoke_without_command=True,

@@ -9,7 +9,6 @@ import pprint
 import argparse
 from configparser import ConfigParser
 from sqlalchemy import inspect
-import pprint  # noqa: F401
 
 try:
     from sqlalchemy.orm import class_mapper, object_mapper
@@ -17,7 +16,7 @@ except ImportError:
     from sqlalchemy.orm.util import class_mapper, object_mapper
 from _sql_alchemy_decls import create_sqlalchemy_session, \
     create_sqlalchemy_engine, Company, Target, User, Ping, PreviousScan, \
-    LastScan, Program, Notification, Program
+    LastScan, Program, Notification
 
 # from mysql.connector import MySQLConnection, Error
 
@@ -69,6 +68,11 @@ def get_dbconfig(configfile, section=DBTYPE, connector='mysql+mysqlconnector'):
 
 
 def print_table_info(session, table, verbose):
+    # TODO, doing count with session.query(Segment.id).count() is much faster
+    print('PrimaryKey %s' % class_mapper(table).primary_key[0].name)
+    primary_keys = [key.name for key in inspect(table).primary_key]
+    # TODO how do I map the above into the query below. table.primary_key
+    print('primary_keys list %s' % primary_keys)
     print('Table %s; count = %s' % (table.__table__,
                                     session.query(table).count()))
 
@@ -106,7 +110,8 @@ def table2dict(table, session, id_field):
     row = session.query(table).first()
     print('row %s type %s' % (row, type(row)))
     value = row_as_dict(row)
-    print('Primary key %s input %s' % (inspect(table).primary_key[0].name, id_field))
+    print('Primary key %s input %s' % (
+        inspect(table).primary_key[0].name, id_field))
     key = value[id_field]
     d[key] = value
     return d
@@ -155,12 +160,13 @@ def model_to_dict2(obj, visited_children=None, back_relationships=None):
                 children = []
                 for child in [c for c in relationship_children if c not in visited_children]:
                     visited_children.add(child)
-                    children.append(model_to_dict(child, visited_children, \
-                        back_relationships))
+                    children.append(model_to_dict2(child, visited_children,
+                                                   back_relationships))
                 serialized_data[name] = children
             else:
-                serialized_data[name] = model_to_dict(relationship_children, \
-                    visited_children, back_relationships)
+                serialized_data[name] = model_to_dict2(relationship_children,
+                                                       visited_children,
+                                                       back_relationships)
     return serialized_data
 
 
@@ -211,7 +217,7 @@ def print_targets(session, verbose=False):
 
     # row = session.query(Target).first()
     # print('row: %s' % row)
-    
+
     # print('ObjectasDict: %s' % row_as_dict(row))
     # row_dict = object_to_dict(row)
     # print('object_to_dict: %s' % object_to_dict(row))
@@ -278,7 +284,7 @@ def print_previous_scans(session, verbose=False):
 
 def print_lastscan(session, verbose=False):
     print_table_info(session, LastScan, verbose)
-    
+
     for row in session.query(LastScan, LastScan.ScanID).all():
         print(row.LastScan)
 
@@ -291,12 +297,13 @@ def print_users(session, verbose=False):
             print(row.User, row.User.company)
 
 
-def print_programs(session, verbose=False):
+def print_program(session, verbose=False):
     print_table_info(session, Program, verbose)
 
     if verbose:
         for row in session.query(Program, Program.ProgramID).all():
             print(row)
+
 
 def print_notifications(session, verbose=False):
     print_table_info(session, Notification, verbose)
@@ -305,6 +312,7 @@ def print_notifications(session, verbose=False):
         for row in session.query(Notification,
                                  Notification.NotificationID).all():
             print(row)
+
 
 def print_pings(session, verbose=False):
     """
@@ -320,9 +328,16 @@ def print_pings(session, verbose=False):
     #    for row in session.query(Ping, Ping.PingID).all():
     #        print(row.Ping)
 
-    print('oldest record; %s\nnewest record; %s' %
-          (session.query(Ping).first(),
-           session.query(Ping).order_by(-Ping.PingID).first()))
+    print('oldest record; %s' %
+          (session.query(Ping).first()))
+
+    print('Newest records')
+    rows = session.query(Ping).order_by(-Ping.PingID).limit(60).all()
+
+    for row in rows:
+        print(row)
+
+    #session.query(Ping).order_by(-Ping.PingID).first()))
 
 
 def display_tables(configfile, args):
@@ -345,8 +360,8 @@ def display_tables(configfile, args):
             print_lastscan(session, verbose=args.details)
         elif table == 'Pings':
             print_pings(session, verbose=args.details)
-        elif table == 'Programs':
-            print_programs(session, verbose=args.details)
+        elif table == 'Program':
+            print_program(session, verbose=args.details)
         elif table == 'Notifications':
             print_notifications(session, verbose=args.details)
 
@@ -367,9 +382,9 @@ def display_tables(configfile, args):
 
 
 def display_table_names(configfile, args):
-    
+
     db_config = get_dbconfig(configfile, section=DBTYPE)
-    engine = create_sqlalchemy_engine(db_config, echo = args.details)
+    engine = create_sqlalchemy_engine(db_config, echo=args.details)
     print ('Defined Table Names:')
     for name in engine.table_names():
         print('   %s' % name)
