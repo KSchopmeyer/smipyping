@@ -50,7 +50,12 @@ class ConfigSectionSchema(object):  # pylint: disable=too-few-public-methods
         """ Database config section schema. Defines the characteristcs of
             the csv file if that database type is specified
         """
-        filename = Param(type=str)    # filename for the csv file
+        targetsfilename = Param(type=str)    # filename for targets csv file
+        pingsfilename = Param(type=str)    # filename for pings csv file
+        lastscanfilename = Param(type=str)    # filename for the csv file
+        companiesfilename = Param(type=str)    # filename for the csv file
+        notificationsfilename = Param(type=str)    # filename for the csv file
+        usersfilename = Param(type=str)    # filename for the userscsv file
 
     @matches_section("mysql")  # pylint: disable=too-few-public-methods
     class Mysql(SectionSchema):
@@ -59,6 +64,13 @@ class ConfigSectionSchema(object):  # pylint: disable=too-few-public-methods
         database = Param(type=str)    # database name on the host
         user = Param(type=str)        # user name for db access
         password = Param(type=str)    # user password for db access
+
+    @matches_section("sqlite")  # pylint: disable=too-few-public-methods
+    class Sqlite(SectionSchema):
+        """ Database config section schema. Defines the characteristcs of
+            the csv file if that database type is specified
+        """
+        filename = Param(type=str)    # filename for the csv file
 
     @matches_section("log")  # pylint: disable=too-few-public-methods
     class Log(SectionSchema):

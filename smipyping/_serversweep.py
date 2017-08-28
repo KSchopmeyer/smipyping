@@ -377,15 +377,22 @@ class ServerSweep(object):
                     yield test_ip, port_
 
     def write_results(self, open_hosts, output_file='serversweep.txt',
-                      new_only=True):
+                      unknown_only=True):
         """
         Write the results to an output file for further processing
         """
         with open(output_file, 'w+') as f1:
             # add code to filter
             for open_host in open_hosts:
-                # clear the file
-                print('%s' % open_host, file=f1)
+                ip_address = '%s:%s' % (open_host[0], open_host[1])
+                status = ''
+                if self.target_data is not None:
+                    record_list = self.target_data.get_targets_host(open_host)
+                    status = 'known' if record_list else 'unknown'
+                if unknown_only and status == 'unknown':
+                    print('%s %s' % (ip_address, status), file=f1)
+                else:
+                    print('%s %s' % (ip_address, status), file=f1)
 
     def print_open_hosts_report(self, open_hosts):
         """
@@ -395,22 +402,25 @@ class ServerSweep(object):
         Product, etc.
         """
         print('\n')
-        execution_time = ''
         if self.total_sweep_time <= 60:
             execution_time = "%.2f sec" % (round(self.total_sweep_time, 1))
         else:
             execution_time = "%.2f min" % (self.total_sweep_time / 60)
 
         range_txt = '%s:%s' % (self.min_octet_val, self.max_octet_val)
+
         unknown = 0
         known = 0
         rows = []
+
         headers = ['IPAddress', 'CompanyName', 'Product', 'Error']
+
         title = 'Open WBEMServers:subnet(s)=%s\n' \
                 'port(s)=%s range=%s, scan_type=%s time=%s\n' \
                 '    total pings=%s pings answered=%s' \
                 % (self.net_defs, self.ports, range_txt, self.scan_type,
                    execution_time, self.total_pings, len(open_hosts))
+
         if open_hosts:    # if open_hosts not zero
             # open_hosts.sort(key=lambda ip: map(int, ip.split('.')))
             # TODO this probably requires ordered dict rather than dictionary to

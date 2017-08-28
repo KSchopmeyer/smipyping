@@ -31,12 +31,11 @@ the variables.
 
 # This module is meant to be safe for 'import *'.
 
-__all__ = ['ENFORCE_INTEGER_RANGE', 'DEFAULT_SWEEP_PORT', 'USERDATA_FILE',
+__all__ = ['ENFORCE_INTEGER_RANGE', 'DEFAULT_SWEEP_PORT',
            'PING_TEST_CLASS', 'SIMPLEPING_OPERATION_DEFAULT_TIMEOUT',
            'DEFAULT_CONFIG_FILE', 'DEFAULT_NAMESPACE', 'DEFAULT_DBTYPE',
-           'DEFAULT_SMICLI_CONFIG_FILES', 'DB_POSSIBLE_TYPES',
-           'DEFAULT_OPERATION_TIMEOUT', 'DEFAULT_USERNAME', 'DEFAULT_PASSWORD',
-           'DEFAULT_DB_CONFIG']
+           'DEFAULT_SMICLI_CONFIG_FILES',
+           'DEFAULT_OPERATION_TIMEOUT', 'DEFAULT_USERNAME', 'DEFAULT_PASSWORD']
 
 #: Enforce the value range in CIM integer types (e.g. :class:`~pywbem.Uint8`).
 #:
@@ -49,9 +48,6 @@ ENFORCE_INTEGER_RANGE = True
 #: The default port used by the serversweep function in case no parameter is
 #: provided. This is the DMTF defined https port.
 DEFAULT_SWEEP_PORT = 5989
-
-#: File name for user data
-USERDATA_FILE = 'targetdata_example.csv'
 
 #: The class that is used in ping tests.
 PING_TEST_CLASS = 'CIM_ComputerSystem'
@@ -75,14 +71,6 @@ DEFAULT_NAMESPACE = 'root/cimv2'
 
 #: type of database to use. Possible types are in DB_TYPES
 DEFAULT_DBTYPE = 'csv'
-
-#: Dictionary that defines a default database configuration
-#: if no database is defined in config file or cmd line input
-#: This is a csv file and corresponses to the DEFAULT_DBTYPE above
-DEFAULT_DB_CONFIG = {'filename': 'targetdata_example.csv'}
-
-#: Possible db types
-DB_POSSIBLE_TYPES = ['csv', 'mysql', 'sqlite']
 
 #: Maximum number of parallel threads to use in multithreaded operations
 MAX_THREADS = 100

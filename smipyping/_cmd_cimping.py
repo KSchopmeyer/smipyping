@@ -19,13 +19,37 @@ targets to find WBEM servers.
 from __future__ import print_function, absolute_import
 
 import sys
+import datetime
 import click
 
+from smipyping import PingsTable
 from smipyping import SimplePing, SimplePingList
 from .smicli import cli, CMD_OPTS_TXT
+from ._common_options import add_options
 from ._tableoutput import TableFormatter
 from .config import DEFAULT_NAMESPACE, DEFAULT_OPERATION_TIMEOUT, \
     DEFAULT_USERNAME, DEFAULT_PASSWORD
+
+#
+#   Common options for the Ping group
+#
+timeout_option = [            # pylint: disable=invalid-name
+    click.option('-t', '--timeout', type=int,
+                 default=DEFAULT_OPERATION_TIMEOUT,
+                 help='Timeout in sec for the operation.'
+                      ' ' + '(Default: %s.)' % DEFAULT_OPERATION_TIMEOUT)]
+
+no_ping_option = [            # pylint: disable=invalid-name
+    click.option('--no-ping', default=False, is_flag=True, required=False,
+                 help='Disable network ping of the wbem server before '
+                      'executing the cim request.'
+                      ' ' + '(Default: %s.)' % True)]
+
+debug_option = [            # pylint: disable=invalid-name
+    click.option('-d', '--debug', default=False, is_flag=True, required=False,
+                 help='Set the debug parameter for the pywbem call. Displays '
+                      'detailed information on the call and response.'
+                      ' ' + '(Default: %s.)' % False)]
 
 
 @cli.group('cimping', options_metavar=CMD_OPTS_TXT)
@@ -90,7 +114,7 @@ def cimping_group():
 @click.pass_obj
 def cimping_host(context, host, **options):
     """
-    Execute a cimping on the wbem server defined by hostname.
+    cimping wbem server defined by hostname.
 
        Host name or url of the WBEM server in this format:\n
              [{scheme}://]{host}[:{port}]\n
@@ -117,68 +141,67 @@ def cimping_host(context, host, **options):
 
 @cimping_group.command('ids', options_metavar=CMD_OPTS_TXT)
 @click.argument('IDs', type=int, metavar='TargetIDs', required=True, nargs=-1)
-@click.option('-t', '--timeout', type=int, default=DEFAULT_OPERATION_TIMEOUT,
-              help='Namespace for the operation.'
-                   ' ' + '(Default: %s.' % DEFAULT_OPERATION_TIMEOUT)
-@click.option('--no-ping', default=False, type=bool, required=False,
-              help='Disable network ping ofthe wbem server before executing '
-                   'the cim request.'
-                   ' ' + '(Default: %s.' % True)
-@click.option('-d' '--debug', default=False, type=bool, required=False,
-              help='Set the debug parameter for the pywbem call. Displays '
-                   'detailed information on the call and response.'
-                   ' ' + '(Default: %s.' % False)
+@add_options(timeout_option)
+@add_options(no_ping_option)
+@add_options(debug_option)
 @click.pass_obj
 def cimping_ids(context, ids, **options):  # pylint: disable=redefined-builtin
     """
-    Execute a simple cim ping against all wbem servers in the target
-    database and return exit code in accord with response.
+    Cimping a list of targets from database.
+
+    Execute simple cim ping against the list of ids provided for target servers
+    in the database defined by each id in the list of ids creates a table
+    showing result.
+
+    ex. smicli cimping ids 5 8 9
+
     """
     context.execute_cmd(lambda: cmd_cimping_ids(context, ids, options))
 
 
 @cimping_group.command('id', options_metavar=CMD_OPTS_TXT)
 @click.argument('ID', type=int, metavar='TargetID', required=True)
-@click.option('-t', '--timeout', type=int, default=DEFAULT_OPERATION_TIMEOUT,
-              help='Namespace for the operation.'
-                   ' ' + '(Default: %s.' % DEFAULT_OPERATION_TIMEOUT)
-@click.option('--no-ping', default=False, type=bool, required=False,
-              help='Disable network ping ofthe wbem server before executing '
-                   'the cim request.'
-                   ' ' + '(Default: %s.' % True)
-@click.option('-d' '--debug', default=False, type=bool, required=False,
-              help='Set the debug parameter for the pywbem call. Displays '
-                   'detailed information on the call and response.'
-                   ' ' + '(Default: %s.' % False)
+@add_options(timeout_option)
+@add_options(no_ping_option)
+@add_options(debug_option)
 @click.pass_obj
 def cimping_id(context, id, **options):  # pylint: disable=redefined-builtin
     """
-    Execute a simple cim ping against all wbem servers in the target
-    database and return exit code in accord with response. Exits interactive
+    Cimping  one target from database.
+
+    Executes a simple ping against one target wbem servers in the target
+    database and returns exit code in accord with response. Exits interactive
     mode and returns exit code corresponding to test result.
+
+    This test can specifically be used to get a cmd line exit code corresponding
+    to the status of a given target WBEM Server.
+
+    ex. smicli cimping 5
     """
     context.execute_cmd(lambda: cmd_cimping_id(context, id, options))
 
 
 @cimping_group.command('all', options_metavar=CMD_OPTS_TXT)
-@click.option('-t', '--timeout', type=int, default=DEFAULT_OPERATION_TIMEOUT,
-              help='Namespace for the operation.'
-                   ' ' + '(Default: %s.' % DEFAULT_OPERATION_TIMEOUT)
-@click.option('--no-ping', default=False, type=bool, required=False,
-              help='Disable network ping ofthe wbem server before executing '
-                   'the cim request.'
-                   ' ' + '(Default: %s.' % True)
-@click.option('-d' '--debug', default=False, type=bool, required=False,
-              help='Set the debug parameter for the pywbem call. Displays '
-                   'detailed information on the call and response.'
-                   ' ' + '(Default: %s.' % False)
+@add_options(timeout_option)
+@add_options(no_ping_option)
+@click.option('-s', '--saveresult', default=False, is_flag=True,
+              required=False,
+              help='Save the result of each cimping test of a wbem server'
+              ' to the database Pings table for future analysis.'
+              ' ' + '(Default: %s.' % False)
+@add_options(debug_option)
 @click.pass_obj
 def cimping_all(context, **options):  # pylint: disable=redefined-builtin
     """
-    Execute a simple cim ping against the target ids defined in the request.
-    One or more ids may be supplied.
+    CIMPing all enabled targets in database.
 
-    ex. smicli cimping ids 4 5 6
+    Executes the ping on all enabledtargets in the targets table of the
+    database.
+
+    Creates a table of results and optionally logs status of each in the
+    Pings table (saveresult option)
+
+    ex. smicli cimping all
     """
     context.execute_cmd(lambda: cmd_cimping_all(context, options))
 
@@ -257,6 +280,17 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
                          test_result.execution_time,
                          TableFormatter.fold_cell(target['Product'], 12)])
 
+        tbl_inst = PingsTable.factory(context.db_info, context.db_type,
+                                      context.verbose)
+        print('pingstable %s %r' % (tbl_inst, tbl_inst))
+        # if option set, append status to pings table
+        # TODO figure out why click prepends the s__ for this
+        if options['saveresult']:
+            timestamp = datetime.datetime.now()
+            for result in results:
+                print('ping data %s %s %s' % (result[0], result[1], timestamp))
+                tbl_inst.append(result[0], result[1], timestamp)
+
         context.spinner.stop()
 
         table = TableFormatter(rows, headers,
@@ -264,7 +298,7 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
                                table_format=context.output_format)
         click.echo(table.build_table())
 
-    else:
+    else:  # TODO Why this code TODO Old code before we did the all class.
         ids = context.target_data.keys()
 
         rows = []

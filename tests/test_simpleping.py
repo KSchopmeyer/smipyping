@@ -72,7 +72,7 @@ class SimplePingTests(unittest.TestCase):
     def test_target_id(self):
         """Test with valid target id and no target_data"""
         try:
-            sim_ping = SimplePing(target_id=4)
+            SimplePing(target_id=4)
             self.fail("Expected exception")
         except ValueError:
             pass
@@ -95,6 +95,9 @@ class SimplePingTests(unittest.TestCase):
 
 
 class SimplePingCsvListSetup(unittest.TestCase):
+    """
+    Test SimplePing with List
+    """
     def setUp(self):
         """Load the csv test table"""
         dbtype = 'csv'
@@ -105,12 +108,15 @@ class SimplePingCsvListSetup(unittest.TestCase):
 
 
 class SimplePingCsvListTests(SimplePingCsvListSetup):
+    """test SimplepingList ability to create a list of targets"""
     def test_no_ids(self):
+        """ Test with no ids"""
         spl = SimplePingList(self.target_data)
         self.assertTrue(spl > 0)
         self.assertTrue(len(spl.target_ids), 47)
 
     def test_with_ids(self):
+        """Test with a specific ID"""
         spl = SimplePingList(self.target_data, target_ids=[4])
         self.assertTrue(len(spl.target_ids), 1)
 

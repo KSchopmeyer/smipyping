@@ -32,8 +32,6 @@ from smipyping._configfile import read_config
 TEST_CONFIG_FILE_NAME = 'testconfig.ini'
 SCRIPT_DIR = os.path.dirname(__file__)
 
-DBTYPE = 'csv'
-
 
 class TargetTableTests(unittest.TestCase):
     pass
@@ -42,10 +40,11 @@ class TargetTableTests(unittest.TestCase):
 class CsvTableTests(TargetTableTests):
     def setUp(self):
         """Load the csv test table"""
+        dbtype = 'csv'
         test_config_file = os.path.join(SCRIPT_DIR, TEST_CONFIG_FILE_NAME)
-        db_config = read_config(test_config_file, DBTYPE)
+        db_config = read_config(test_config_file, dbtype)
         db_config['directory'] = os.path.dirname(test_config_file)
-        self.target_table = TargetsData.factory(db_config, DBTYPE, False)
+        self.target_table = TargetsData.factory(db_config, dbtype, False)
 
 
 class TargetTableTest(CsvTableTests):
