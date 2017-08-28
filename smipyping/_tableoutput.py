@@ -33,6 +33,8 @@ from terminaltables import AsciiTable
 import six
 from ._common import TABLE_FORMATS
 
+__all__ = ['TableFormatter']
+
 
 class TableFormatter(object):
     """

@@ -93,10 +93,10 @@ The following defines the help output for the `smicli cimping --help` subcommand
       -h, --help  Show this message and exit.
     
     Commands:
-      all   Execute a simple cim ping against the target...
-      host  Execute a cimping on the wbem server defined...
-      id    Execute a simple cim ping against all wbem...
-      ids   Execute a simple cim ping against all wbem...
+      all   CIMPing all enabled targets in database.
+      host  cimping wbem server defined by hostname.
+      id    Cimping one target from database.
+      ids   Cimping a list of targets from database.
 
 
 
@@ -114,18 +114,26 @@ The following defines the help output for the `smicli cimping all --help` subcom
 
     Usage: smicli cimping all [COMMAND-OPTIONS]
     
-      Execute a simple cim ping against the target ids defined in the request.
-      One or more ids may be supplied.
+      CIMPing all enabled targets in database.
     
-      ex. smicli cimping ids 4 5 6
+      Executes the ping on all enabledtargets in the targets table of the
+      database.
+    
+      Creates a table of results and optionally logs status of each in the Pings
+      table (saveresult option)
+    
+      ex. smicli cimping all
     
     Options:
-      -t, --timeout INTEGER  Namespace for the operation. (Default: 10.
-      --no-ping BOOLEAN      Disable network ping ofthe wbem server before
-                             executing the cim request. (Default: True.
-      -d--debug BOOLEAN      Set the debug parameter for the pywbem call. Displays
-                             detailed information on the call and response.
+      -t, --timeout INTEGER  Timeout in sec for the operation. (Default: 10.)
+      --no-ping              Disable network ping of the wbem server before
+                             executing the cim request. (Default: True.)
+      -s, --saveresult       Save the result of each cimping test of a wbem server
+                             to the database Pings table for future analysis.
                              (Default: False.
+      -d, --debug            Set the debug parameter for the pywbem call. Displays
+                             detailed information on the call and response.
+                             (Default: False.)
       -h, --help             Show this message and exit.
 
 
@@ -144,7 +152,7 @@ The following defines the help output for the `smicli cimping host --help` subco
 
     Usage: smicli cimping host [COMMAND-OPTIONS] HOST NAME
     
-      Execute a cimping on the wbem server defined by hostname.
+      cimping wbem server defined by hostname.
     
          Host name or url of the WBEM server in this format:
     
@@ -219,17 +227,24 @@ The following defines the help output for the `smicli cimping id --help` subcomm
 
     Usage: smicli cimping id [COMMAND-OPTIONS] TargetID
     
-      Execute a simple cim ping against all wbem servers in the target database
-      and return exit code in accord with response. Exits interactive mode and
-      returns exit code corresponding to test result.
+      Cimping  one target from database.
+    
+      Executes a simple ping against one target wbem servers in the target
+      database and returns exit code in accord with response. Exits interactive
+      mode and returns exit code corresponding to test result.
+    
+      This test can specifically be used to get a cmd line exit code
+      corresponding to the status of a given target WBEM Server.
+    
+      ex. smicli cimping 5
     
     Options:
-      -t, --timeout INTEGER  Namespace for the operation. (Default: 10.
-      --no-ping BOOLEAN      Disable network ping ofthe wbem server before
-                             executing the cim request. (Default: True.
-      -d--debug BOOLEAN      Set the debug parameter for the pywbem call. Displays
+      -t, --timeout INTEGER  Timeout in sec for the operation. (Default: 10.)
+      --no-ping              Disable network ping of the wbem server before
+                             executing the cim request. (Default: True.)
+      -d, --debug            Set the debug parameter for the pywbem call. Displays
                              detailed information on the call and response.
-                             (Default: False.
+                             (Default: False.)
       -h, --help             Show this message and exit.
 
 
@@ -248,16 +263,21 @@ The following defines the help output for the `smicli cimping ids --help` subcom
 
     Usage: smicli cimping ids [COMMAND-OPTIONS] TargetIDs
     
-      Execute a simple cim ping against all wbem servers in the target database
-      and return exit code in accord with response.
+      Cimping a list of targets from database.
+    
+      Execute simple cim ping against the list of ids provided for target
+      servers in the database defined by each id in the list of ids creates a
+      table showing result.
+    
+      ex. smicli cimping ids 5 8 9
     
     Options:
-      -t, --timeout INTEGER  Namespace for the operation. (Default: 10.
-      --no-ping BOOLEAN      Disable network ping ofthe wbem server before
-                             executing the cim request. (Default: True.
-      -d--debug BOOLEAN      Set the debug parameter for the pywbem call. Displays
+      -t, --timeout INTEGER  Timeout in sec for the operation. (Default: 10.)
+      --no-ping              Disable network ping of the wbem server before
+                             executing the cim request. (Default: True.)
+      -d, --debug            Set the debug parameter for the pywbem call. Displays
                              detailed information on the call and response.
-                             (Default: False.
+                             (Default: False.)
       -h, --help             Show this message and exit.
 
 
