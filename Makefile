@@ -101,10 +101,6 @@ doc_dependent_files := \
     $(wildcard $(doc_conf_dir)/*.rst) \
     $(wildcard $(doc_conf_dir)/notebooks/*.ipynb) \
     $(package_name)/__init__.py \
-    $(package_name)/_targetdata.py \
-    $(package_name)/_explore.py \
-    $(package_name)/_simpleping.py \
-    $(package_name)/_serversweep.py \
     $(package_name)/_cmd_*.py \
     $(package_name)/smicli.py \
 

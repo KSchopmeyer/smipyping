@@ -1,0 +1,21 @@
+#!/bin/bash
+
+##
+## This script runs the sweeper using the current defintion of the
+## snia network.  It sweeps all of the SNIA network as defined below.
+## This script MUST BE executed in privilege mode.
+
+## Because it must be run in privileged mode and normally smipyping runs
+## in user mode, we must set the config file its full path so that the
+## program can find the file.
+## 
+##
+# base_dir = os.path.dirname(os.path.abspath(__file__))
+# activate_this = os.path.join(base_dir, 'venv/bin/activate_this.py')
+# execfile(activate_this, dict(__file__=activate_this))
+
+export PYTHONPATH=/home/.virtualenvs/smipyping
+CONFIG_FILE=$PWD/smicli.ini
+# sweeps 10.1  132, 134, 136 all in octet 4(1 through 254)
+#        10.2  100 THROUGH 117      octet 4(1 through 50)
+sudo ./serversweep 10.1.134.160-190 -c $CONFIG_FILE -p 5988 5989
