@@ -221,6 +221,11 @@ class TargetsData(object):
         return [x for x in self.targets_dict
                 if not self.disabled_target_id(x)]
 
+    def get_disabled_targetids(self):
+        """Get list of target ids that are marked disabled"""
+        return [x for x in self.targets_dict
+                if self.disabled_target_id(x)]
+
     # TODO we have multiple of these. See get dict_for_host,get_hostid_list
     def get_targets_host(self, host_id):
         """
@@ -245,17 +250,22 @@ class TargetsData(object):
 
         return return_list
 
-    # TODO remap this one to use get_item directly.
-    def get_dict_record(self, requested_id):
+    def get_target(self, target_id):
         """
-        If an entry for `record_data` exists return that record.
+        Get the target data for the parameter target_id.
 
-        else generate exception
+        This is alternate to using [id] directly. It does an additonal check
+        for correct type.
+
+        Returns:
+            target as dictionary
+        Exceptions:
+            KeyError if target not in targets dictionary
         """
-        if not isinstance(requested_id, six.integer_types):
-            requested_id = int(requested_id)
+        if not isinstance(target_id, six.integer_types):
+            target_id = int(target_id)
 
-        return self.targets_dict[requested_id]
+        return self.targets_dict[target_id]
 
     def get_target_for_host(self, target_addr):
         """
@@ -324,7 +334,7 @@ class TargetsData(object):
         """
         # TODO can we make this a std cvt function.
 
-        record = self.get_dict_record(record_id)
+        record = self.get_target(record_id)
 
         line = []
         for name in field_list:

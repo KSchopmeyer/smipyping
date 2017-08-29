@@ -41,7 +41,7 @@ good_config_data = [
     'password = test8play',
 
     '[csv]',
-    'filename = targetdata_example.csv',
+    'targetsfilename = targetdata_example.csv',
 
     '[logging]',
     'log_level = debug']
@@ -100,13 +100,13 @@ class ConfigFileTest(ValidConfigFileTests):
 
         self.assertEqual(mysql['host'], 'localhost')
         csv = default_map['csv']
-        self.assertEqual(csv['filename'], 'targetdata_example.csv')
+        self.assertEqual(csv['targetsfilename'], 'targetdata_example.csv')
 
     def test_no_config_file(self):
         """Test where no file exists."""
         ConfigFileProcessor.set_config_files('blah.blah')
         config_dict = get_config_dict()
-        expected = {'default_map': {}}
+        expected = {'default_map': {}, 'help_option_names': ['-h', '--help']}
         self.assertEqual(config_dict, expected, 'Error: Expected:\n%s, '
                          '\nActual:\n%s' % (expected, config_dict))
 

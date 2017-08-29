@@ -435,8 +435,7 @@ class ServerSweep(object):
                     if record_list:
                         # TODO this should be a list since there may be
                         # multiples for single ip address
-                        entry = self.target_data.get_dict_record(
-                            record_list[0])
+                        entry = self.target_data.get_target(record_list[0])
                         if entry is not None:
                             known += 1
                             rows.append([ip_address,

@@ -130,7 +130,7 @@ def cmd_explore_ids(context, ids, **options):
     # TODO: ks redo this code to use the record once it is acquired.
     for id_ in ids:
         try:
-            targ_rec = context.target_data.get_dict_record(id_)  # noqa: F841
+            targ_rec = context.target_data.get_target(id_)  # noqa: F841
         except Exception as ex:
             raise click.ClickException('Invalid TargetID=%s. Not in database. '
                                        '%s: %s' % (id,

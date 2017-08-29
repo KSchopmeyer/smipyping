@@ -29,23 +29,30 @@ VERBOSE = False
 
 SCRIPT_DIR = os.path.dirname(__file__)
 
+
 class TableTests(unittest.TestCase):
     def setUp(self):
         self.test_config_file = os.path.join(SCRIPT_DIR, 'testconfig.ini')
 
     def get_config(self, dbtype):
         test_config_file = os.path.join(SCRIPT_DIR, 'testconfig.ini')
-        db_config = read_config('testconfig.ini', dbtype)
+        db_config = read_config(test_config_file, dbtype)
         db_config['directory'] = os.path.dirname(test_config_file)
         return db_config
+
 
 class ReportTests(TableTests):
     def test_create_report(self):
         dbtype = 'mysql'
         db_config = self.get_config(dbtype)
+        year = 2016
+        month = 12
+        day_of_month = 1
         report = build_cimreport(db_config, dbtype, year, month,
-                                 day_of_month, verbose)
-        
+                                 day_of_month)
+        # TODO test results of report
+        print(report)
+
 
 if __name__ == '__main__':
     unittest.main()

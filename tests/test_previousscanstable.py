@@ -36,7 +36,7 @@ class LastScanTests(unittest.TestCase):
 
     def get_config(self, dbtype):
         test_config_file = os.path.join(SCRIPT_DIR, 'testconfig.ini')
-        db_config = read_config('testconfig.ini', dbtype)
+        db_config = read_config(test_config_file, dbtype)
         db_config['directory'] = os.path.dirname(test_config_file)
         return db_config
 

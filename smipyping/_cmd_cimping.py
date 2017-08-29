@@ -312,7 +312,7 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
             # simpleping.set_param_from_targetdata(id_, context.target_data)
             test_result = simpleping.test_server(verify_cert=False)
 
-            target = context.target_data.get_dict_record(id_)
+            target = context.target_data.get_target(id_)
             addr = '%s://%s' % (target['Protocol'], target['IPAddress'])
             exception = '%s' % test_result.exception
 
@@ -339,7 +339,7 @@ def cmd_cimping_ids(context, ids, options):  # pylint: disable=redefined-builtin
     """
     for id_ in ids:
         try:
-            context.target_data.get_dict_record(id_)  # noqa: F841
+            context.target_data.get_target(id_)  # noqa: F841
         except KeyError:
             raise click.ClickException('Invalid Target: ID=%s not in database'
                                        ' %s.' % (id_, context.target_data))
@@ -367,7 +367,7 @@ def cmd_cimping_id(context, id, options):  # pylint: disable=redefined-builtin
     interactive mode
     """
     try:
-        context.target_data.get_dict_record(id)  # noqa: F841
+        context.target_data.get_target(id)  # noqa: F841
     except KeyError:
         raise click.ClickException('Invalid Target: ID=%s not in database'
                                    ' %s.' % (id, context.target_data))

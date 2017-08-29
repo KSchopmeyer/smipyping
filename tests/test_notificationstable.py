@@ -36,21 +36,23 @@ class LastScanTests(unittest.TestCase):
 
     def get_config(self, dbtype):
         test_config_file = os.path.join(SCRIPT_DIR, 'testconfig.ini')
-        db_config = read_config('testconfig.ini', dbtype)
+        db_config = read_config(test_config_file, dbtype)
         db_config['directory'] = os.path.dirname(test_config_file)
         return db_config
 
 
+@unittest.skip("testing skipping because uses mysql")
 class MySQLTests(LastScanTests):
     def test_create(self):
         dbtype = 'mysql'
         db_config = self.get_config(dbtype)
-
         tbl_inst = NotificationsTable.factory(db_config, dbtype, False)
         if VERBOSE:
             print('dict %s' % tbl_inst .data_dict)
         test_keys = []
+
         self.assertTrue(len(tbl_inst) > 0)
+        print(len(tbl_inst))
         for key in tbl_inst:
             test_keys.append(key)
             self.assertTrue(key in tbl_inst)
@@ -84,9 +86,9 @@ class CsvTests(LastScanTests):
 
         self.assertEqual(lst.last_ping, '2016-10-28 09:00:01')
         self.assertEqual(lst.data_dict['LastPing'], '2016-10-28 09:00:01')
-        print('csv last scan %s' % lst)
-        print('csv last scan %s' % lst.last_ping)
-        print('cvs last scan dict %s' % lst.data_dict)
+        # print('csv last scan %s' % lst)
+        # print('csv last scan %s' % lst.last_ping)
+        # print('cvs last scan dict %s' % lst.data_dict)
 
 
 if __name__ == '__main__':
