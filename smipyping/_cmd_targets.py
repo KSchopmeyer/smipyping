@@ -111,7 +111,7 @@ def cmd_targets_disable(context, targetid, enable, options):
     """Display the information fields for the targets dictionary."""
 
     try:
-        target_record = context.target_data.get_dict_record(targetid)
+        target_record = context.target_data.get_target(targetid)
 
         # TODO add test to see if already in correct state
         next_state = 'Enabled' if enable else 'Disabled'
@@ -163,7 +163,7 @@ def cmd_targets_get(context, targetid, options):
     """Display the fields of a single provider record."""
 
     try:
-        target_record = context.target_data.get_dict_record(targetid)
+        target_record = context.target_data.get_target(targetid)
 
         # TODO need to order output.
         for key in target_record:

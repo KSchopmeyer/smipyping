@@ -139,7 +139,7 @@ The commands are:
         # TWO argvs, ie the command and the subcommand
         args = disable_parser.parse_args(_sys.argv[2:])
 
-        host_record = target_data.get_dict_record(args.Id)
+        host_record = target_data.get_target(args.Id)
 
         # TODO add test to see if already in correct state
 
@@ -177,7 +177,7 @@ The commands are:
                             default='targetdata_example.csv',
                             help='Filename to display')
         args = parser.parse_args(_sys.argv[2:])
-        record = target_data.get_dict_record(args.server)
+        record = target_data.get_target(args.server)
 
         # TODO separate get record  from display record .
         if record is None:
@@ -201,7 +201,7 @@ The commands are:
 
         record_id = "%2.2s" % args.record_id
         # TODO get host ids from table
-        record = target_data.get_dict_record(record_id)
+        record = target_data.get_target(record_id)
         # TODO separate get record  from display record .
         if record is None:
             print('Record %s not found in Targets data.' % record_id)

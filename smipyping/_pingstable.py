@@ -167,11 +167,11 @@ class CsvPingsTable(PingsTable):
 
     def get_last_ping_id(self):
         with open(file, "rb") as f:
-            first = f.readline()      # Read the first line.
-            f.seek(-2, 2)             # Jump to the second last byte.
+            f.readline()               # Read the first line.
+            f.seek(-2, 2)              # Jump to the second last byte.
             while f.read(1) != b"\n":  # Until EOL is found...
-                f.seek(-2, 1)         # ...jump back, read byte plus one more.
-            last = f.readline()       # Read last line.
+                f.seek(-2, 1)          # ...jump back, read byte plus one more.
+            last = f.readline()        # Read last line.
             return last
 
     def append(self, target_id, timestamp, status):

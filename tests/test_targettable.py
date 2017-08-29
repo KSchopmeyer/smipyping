@@ -60,19 +60,19 @@ class TargetTableTest(CsvTableTests):
 
     def test_table_contains(self):
         """Test contains functionality."""
-        self.assertIn(42, self.target_table)
+        self.assertIn(6, self.target_table)
         self.assertIn(1, self.target_table)
 
     def test_keys(self):
-        self.assertIn(42, self.target_table.keys())
+        self.assertIn(6, self.target_table.keys())
         for key in self.target_table.keys():
             self.assertIn(key, self.target_table)
 
     def test_get_data_record(self):
         """Test get one record"""
-        self.assertIn(42, self.target_table)
-        user_record = self.target_table.get_dict_record(42)
-        user_record2 = self.target_table[42]
+        self.assertIn(6, self.target_table)
+        user_record = self.target_table.get_target(6)
+        user_record2 = self.target_table[6]
         self.assertIn('Product', user_record)
         self.assertEqual(user_record, user_record2)
 
@@ -85,11 +85,11 @@ class TargetTableTest(CsvTableTests):
             self.assertIn('SMIVersion', user_record)
             self.assertIn('ScanEnabled', user_record)
 
-        self.assertEqual(counter, 51)
-        self.assertEqual(len(self.target_table), 51)
+        self.assertEqual(counter, 6)
+        self.assertEqual(len(self.target_table), 6)
 
     def test_not_contains(self):
-        self.assertNotIn(942, self.target_table)
+        self.assertNotIn(96, self.target_table)
 
     def test_get_target_table_host(self):
         host_id = ['10.1.132.110', 5989]
@@ -99,13 +99,19 @@ class TargetTableTest(CsvTableTests):
 
     def test_disabled_target(self):
         self.assertTrue(self.target_table.disabled_target(
-            self.target_table[42]))
+            self.target_table[6]))
 
     def test_get_enabled_list(self):
         ids = self.target_table.get_enabled_targetids()
-        self.assertTrue(len(ids) > 0)
+        self.assertTrue(len(ids) == 5)
         self.assertTrue(4 in ids)
-        self.assertTrue(42 not in ids)
+        self.assertTrue(6 not in ids)
+
+    def test_get_disabled_list(self):
+        ids = self.target_table.get_disabled_targetids()
+        self.assertTrue(len(ids) == 1)
+        self.assertTrue(4 not in ids)
+        self.assertTrue(6 in ids)
 
     def test_display_disabled(self):
         # target_data = self.get_target_data()

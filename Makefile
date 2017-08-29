@@ -100,12 +100,7 @@ doc_dependent_files := \
     $(doc_conf_dir)/conf.py \
     $(wildcard $(doc_conf_dir)/*.rst) \
     $(wildcard $(doc_conf_dir)/notebooks/*.ipynb) \
-    $(package_name)/__init__.py \
-    $(package_name)/_targetdata.py \
-    $(package_name)/_explore.py \
-    $(package_name)/_simpleping.py \
-    $(package_name)/_serversweep.py \
-    $(package_name)/_cmd_*.py \
+    $(wildcard $(package_name)/*.py) \
     $(package_name)/smicli.py \
 
 # Flake8 config file
@@ -133,6 +128,7 @@ endif
 # Files the distribution archive depends upon.
 dist_dependent_files := \
     $(package_name)/LICENSE.txt \
+    setup.py setup.cfg \
     README.rst \
     requirements.txt \
     INSTALL.md \
@@ -153,7 +149,8 @@ help:
 	@echo '  build      - Build the distribution files in: $(dist_dir) (requires Linux or OSX)'
 	@echo '  buildwin   - Build the Windows installable in: $(dist_dir) (requires Windows 64-bit)'
 	@echo '  builddoc   - Build documentation in: $(doc_build_dir)'
-	@echo '  check      - Run PyLint and Flake8 on sources and save results in: pylint.log and flake8.log'
+	@echo '  check      - Run Flake8 on sources and save results in: flake8.log'
+	@echo '  pylint     - Run PyLint on sources and save results in: pylint.log'
 	@echo '  test       - Run unit tests (and test coverage) and save results in: $(test_log_file)'
 	@echo '               Env.var TESTCASES can be used to specify a py.test expression for its -k option'
 	@echo '  all        - Do all of the above (except buildwin when not on Windows)'
@@ -201,7 +198,7 @@ html: $(doc_build_dir)/html/docs/index.html
 
 $(doc_build_dir)/html/docs/index.html: Makefile $(doc_utility_help_files) $(doc_dependent_files)
 	rm -f $@
-	PYTHONPATH=. $(doc_cmd) -b html $(doc_opts) $(doc_build_dir)/html
+	$(doc_cmd) -b html $(doc_opts) $(doc_build_dir)/html
 	@echo "Done: Created the HTML pages with top level file: $@"
 
 .PHONY: pdf
@@ -215,7 +212,7 @@ pdf: Makefile $(doc_utility_help_files) $(doc_dependent_files)
 
 .PHONY: man
 man: Makefile $(doc_utility_help_files) $(doc_dependent_files)
-	rm -f $@
+	rm -fv $@
 	$(doc_cmd) -b man $(doc_opts) $(doc_build_dir)/man
 	@echo "Done: Created the manual pages in: $(doc_build_dir)/man/"
 	@echo '$@ done.'
@@ -249,15 +246,11 @@ pyshow:
 	@echo '$@ done.'
 
 .PHONY: check
-check: pylint.log flake8.log
+check: flake8.log
 	@echo '$@ done.'
 
 .PHONY: pylint
 pylint: pylint.log
-	@echo '$@ done.'
-
-.PHONY: flake8
-flake8: flake8.log
 	@echo '$@ done.'
 
 .PHONY: install
@@ -313,17 +306,27 @@ else
 endif
 
 # Distribution archives.
-$(bdist_file) $(sdist_file): Makefile setup.py $(dist_dependent_files)
+$(bdist_file): Makefile $(dist_dependent_files)
 ifneq ($(PLATFORM),Windows)
 	rm -Rfv $(package_name).egg-info .eggs
-	$(PYTHON_CMD) setup.py sdist -d $(dist_dir) bdist_wheel -d $(dist_dir) --universal
-	@echo 'Done: Created distribution files: $@'
+	$(PYTHON_CMD) setup.py bdist_wheel -d $(dist_dir) --universal
+	@echo 'Done: Created binary distribution archive: $@'
 else
-	@echo 'Error: Creating distribution archives requires to run on Linux or OSX'
+	@echo 'Error: Creating binary distribution archive requires to run on Linux or OSX'
 	@false
 endif
 
-$(win64_dist_file): Makefile setup.py $(dist_dependent_files)
+$(sdist_file): Makefile $(dist_dependent_files)
+ifneq ($(PLATFORM),Windows)
+	rm -Rfv $(package_name).egg-info .eggs
+	$(PYTHON_CMD) setup.py sdist -d $(dist_dir)
+	@echo 'Done: Created source distribution archive: $@'
+else
+	@echo 'Error: Creating source distribution archive requires to run on Linux or OSX'
+	@false
+endif
+
+$(win64_dist_file): Makefile $(dist_dependent_files)
 ifeq ($(PLATFORM),Windows)
 	rm -Rfv $(package_name).egg-info .eggs
 	$(PYTHON_CMD) setup.py bdist_wininst -d $(dist_dir) -o -t "$(package_name) v$(package_version)"

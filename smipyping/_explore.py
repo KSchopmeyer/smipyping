@@ -92,7 +92,7 @@ class Explorer(object):
         for server_tuple in servers:
             if server_tuple.status == 'OK':
                 target_id = server_tuple.target_id
-                entry = user_data.get_dict_record(target_id)
+                entry = user_data.get_target(target_id)
                 try:
                     versions = self.smi_version(server_tuple.server)
                 except Exception as ex:
@@ -131,7 +131,7 @@ class Explorer(object):
             server = server_tuple.server
             status = server_tuple.status
             target_id = server_tuple.target_id
-            target = target_data.get_dict_record(target_id)
+            target = target_data.get_target(target_id)
             version = ''
             interop_ns = ''
             smi_profiles = ''
