@@ -82,9 +82,7 @@ these example variants of ``make test``:
 ::
 
     $ make test                                              # Run all unit tests
-    $ PYTHONPATH=. py.test testsuite/test_cim_obj.py -s      # Run only this test source file
-    $ PYTHONPATH=. py.test InitCIMInstanceName -s            # Run only this test class
-    $ PYTHONPATH=. py.test -k InitCIMInstanceName or Bla -s  # py.test -k expressions are possible
+    $ PYTHONPATH=. py.test tests/<testname>.py -s          # Run only this test source file
 
 Invoke ``py.test --help`` for details on the expression syntax of its ``-k``
 option.
@@ -142,7 +140,7 @@ Note that a release may be either local only or to PyPI.  We will announce when
 we do a release to PyPI.  Locally a release involves creating a
 branch that represents the release and tagging both that branch and the
 master branch with versions. I PyPI release involves then uploading the
-released version of the  package to PyPI 
+released version of the  package to PyPI
 
 Switch to your work directory of the smipyping Git repo (this is where
 the ``Makefile`` is), and perform the following steps in that directory:
@@ -183,7 +181,7 @@ the ``Makefile`` is), and perform the following steps in that directory:
       .. code-block:: text
 
           Version 0.6.0
-          ^^^^^^^^^^^^^^
+          -------------
 
     * Change the release date to today's date, e.g.:
 
@@ -332,7 +330,7 @@ the ``Makefile`` is), and perform the following steps in that directory:
     .. code-block:: text
 
         Version 0.7.0
-        ^^^^^^^^^^^^^^
+        -------------
 
         Released: not yet
 
