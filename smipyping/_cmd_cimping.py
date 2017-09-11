@@ -256,14 +256,28 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
     """
 
     if True:
+
+        # cimping the complete set of targets
         simple_ping_list = SimplePingList(context.target_data, None,
                                           logfile=context.log_file,
                                           log_level=context.log_level,
                                           verbose=context.verbose)
         results = simple_ping_list.ping_servers()
 
+        # if saveresult set, update pings table with results.
+        if options['saveresult']:
+            tbl_inst = PingsTable.factory(context.db_info, context.db_type,
+                                          context.verbose)
+            print('pingstable %s %r' % (tbl_inst, tbl_inst))
+            # if option set, append status to pings table
+            # TODO figure out why click prepends the s__ for this
+            timestamp = datetime.datetime.now()
+            for result in results:
+                print('ping data %s %s %s' % (result[0], result[1], timestamp))
+                tbl_inst.append(result[0], result[1], timestamp)
+
+        # print results of the scan.
         headers = ['id', 'addr', 'result', 'exception', 'time', 'company']
-        # print('Results %s' % results)
         rows = []
         for result in results:
             target_id = result[0]
@@ -279,18 +293,6 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
                          TableFormatter.fold_cell(exception, 12),
                          test_result.execution_time,
                          TableFormatter.fold_cell(target['Product'], 12)])
-
-        tbl_inst = PingsTable.factory(context.db_info, context.db_type,
-                                      context.verbose)
-        print('pingstable %s %r' % (tbl_inst, tbl_inst))
-        # if option set, append status to pings table
-        # TODO figure out why click prepends the s__ for this
-        if options['saveresult']:
-            timestamp = datetime.datetime.now()
-            for result in results:
-                print('ping data %s %s %s' % (result[0], result[1], timestamp))
-                tbl_inst.append(result[0], result[1], timestamp)
-
         context.spinner.stop()
 
         table = TableFormatter(rows, headers,

@@ -40,6 +40,7 @@ class LastScanTests(unittest.TestCase):
         db_config['directory'] = os.path.dirname(test_config_file)
         return db_config
 
+
 @unittest.skip("testing skipping because uses mysql")
 class MySQLTests(LastScanTests):
     def test_create(self):

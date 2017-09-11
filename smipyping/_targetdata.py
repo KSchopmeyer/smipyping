@@ -84,7 +84,7 @@ class TargetsData(object):
             String defining one of the allowed database types for the
             target database.
 
-          verbose (:term: `bool`)
+          verbose (:class:`py:bool`)
             Boolean. If true detailed info is displayed on the processing
             of the TargetData class
 
@@ -374,7 +374,7 @@ class TargetsData(object):
             target_id(:term:`integer`)
                 Valid target Id for the Target_Tableue .
 
-        Returns: (:term: `boolean`)
+        Returns: (:class:`py:bool`)
             True if this target id disabled
 
         Exceptions:
@@ -424,7 +424,7 @@ class TargetsData(object):
           fields: list of strings defining the targets_data columns to be
             displayed.
 
-          show_disabled(:term:`boolean`)
+          show_disabled(:class:`py:bool`)
 
         """
         table_data = []
