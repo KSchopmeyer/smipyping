@@ -164,7 +164,7 @@ class TargetsData(object):
                 (self.db_type, len(self.targets_dict)))
 
     def get_field_list(self):
-        """Return a list of the base table file names in the order defined."""
+        """Return a list of the base table field names in the order defined."""
         return list(self.table_format_dict)
 
     def __contains__(self, record_id):
@@ -229,14 +229,16 @@ class TargetsData(object):
     # TODO we have multiple of these. See get dict_for_host,get_hostid_list
     def get_targets_host(self, host_id):
         """
-        If an record for `host_data` exists return that record.
-
+        If an record for `host_data` exists return that record,
         otherwise return None.
 
-        Host data is a tuple of ipaddress and port.
-
-        Note that   there may be multiple ipaddress, port entries for a
+        There may be multiple ipaddress, port entries for a
         single ipaddress, port in the database
+
+        Parameters:
+
+          host_id(tuple of hostname or ipaddress and port)
+
         Returns list of targetdata keys
         """
         # TODO clean up for PY 3
@@ -255,10 +257,11 @@ class TargetsData(object):
         Get the target data for the parameter target_id.
 
         This is alternate to using [id] directly. It does an additonal check
-        for correct type.
+        for correct type for target_id
 
         Returns:
             target as dictionary
+
         Exceptions:
             KeyError if target not in targets dictionary
         """
