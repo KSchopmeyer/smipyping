@@ -327,7 +327,7 @@ class SimplePing(object):
                (self.url, self.namespace, self.ping, self.user, self.password,
                 self.debug, self.verbose)
 
-    def get_connection_info(self, conn):
+    def get_connection_info(self, conn):  # pylint: disable no-self-use
         """Return a string with the connection info."""
         info = 'Connection: %s,' % conn.url
 
@@ -472,8 +472,8 @@ class SimplePing(object):
         """
         Issue the test operation. Returns with system exit code.
 
-        Returns a tuple of code and reason text.  The code is ne 0 if there was
-        an error.
+        Returns a tuple of code and reason text or exception if an exception
+        occurred.  The code is ne 0 if there was an error.
         """
         try:
             if self.verbose:
@@ -510,8 +510,8 @@ class SimplePing(object):
 
         if self.verbose:
             print('execute_cim_test %s rtn_tuple %s' % (conn.url, (rtn_tuple,)))
-        self.logger.info('SimplePing Result  ip %s %s', (conn.url,
-                                                         (rtn_tuple,)))
+        self.logger.info('SimplePing Result  ip=%s return=%s', conn.url,
+                                                               (rtn_tuple,))
         return rtn_tuple
 
     # def set_param_from_targetdata(self, target_id, target_data):
