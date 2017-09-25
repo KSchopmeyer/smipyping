@@ -491,14 +491,8 @@ class SimplePing(object):
             rtn_tuple = ('OK', "")
 
         except CIMError as ce:
-            print('CIMERROR %r %s %s %s' % (ce,
-                                            ce.status_code,
-                                            ce.status_code_name,
-                                            ce.status_description))
-            # TODO add status_code
             # TODO make this a named tuple for clarity
-            rtn_tuple = ("WBEMException", ce, ce.status_code_name,
-                         ce.status_description)
+            rtn_tuple = ("WBEMException", ce)
         except ConnectionError as co:
             rtn_tuple = ("ConnectionError", co)
         except TimeoutError as to:
@@ -514,11 +508,10 @@ class SimplePing(object):
             last_reply = conn.last_reply or conn.last_raw_reply
             print('Reply:\n\n%s\n' % last_reply)
 
-        # rtn_tuple = [rtn_code[0], rtn_code[1]]
-        # rtn_tuple = tuple(rtn_code)
         if self.verbose:
-            print('rtn_tuple %s' % (rtn_tuple,))
-        self.logger.info('SimplePing Result %s', (rtn_tuple,))
+            print('execute_cim_test %s rtn_tuple %s' % (conn.url, (rtn_tuple,)))
+        self.logger.info('SimplePing Result  ip %s %s', (conn.url,
+                                                         (rtn_tuple,)))
         return rtn_tuple
 
     # def set_param_from_targetdata(self, target_id, target_data):
