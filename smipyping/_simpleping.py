@@ -72,7 +72,7 @@ class SimplePingList(object):
 
     """
     def __init__(self, target_data, target_ids=None, verbose=None, logfile=None,
-                 log_level=None):
+                 log_level=None, include_disabled=False):
         """
         Saves the input parameters and sets up local variables for the
         execution of the scan.
@@ -98,13 +98,21 @@ class SimplePingList(object):
             log_level(:term:`string`)
                 TODO clean this up
 
+            include_disabled(:class:`py:bool`):
+                If true, include disabled targets.
+
         Exceptions:
             KeyError if a target_id is not in the database.
         """
         self.target_data = target_data
 
-        self.target_ids = target_ids if target_ids else \
-            target_data.get_enabled_targetids()
+        if include_disabled:
+            self.target_ids = target_ids if target_ids else \
+                target_data.keys()
+        else:
+            self.target_ids = target_ids if target_ids else \
+                target_data.get_enabled_targetids()
+
 
         self.verbose = verbose
         self.logfile = logfile

@@ -217,7 +217,7 @@ class TargetsData(object):
         return self.table_format_dict[name]
 
     def get_enabled_targetids(self):
-        """Get list of target ids that are marked enabled"""
+        """Get list of target ids that are marked enabled."""
         return [x for x in self.targets_dict
                 if not self.disabled_target_id(x)]
 

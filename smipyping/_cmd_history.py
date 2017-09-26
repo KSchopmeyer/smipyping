@@ -73,17 +73,25 @@ def history_create(context, **options):  # pylint: disable=redefined-builtin
 #              help='Optional list of ids. If not supplied, all ids are used')
 # TODO change this to get epoch record for datetime
 @click.option('-s', '--startdate', type=Datetime(format='%d/%m/%y'),
-              default=datetime.datetime.now(),
+              default=None,
               required=False,
-              help='Start date for pings to be gathered. Format is %d/%m/%y')
+              help='Start date for ping records included. Format is %d/%m/%y'
+                   ' where %d and %m are zero padded (ex. 01) and year is'
+                   ' without century (ex. 17). Default is oldest record')
 @click.option('-e', '--enddate', type=Datetime(format='%d/%m/%y'),
-              default=datetime.datetime.now(),
+              default=None,
               required=False,
-              help='End date for pings to be gathered. Format is %d/%m/%y')
-@click.option('-t', '--targetID', type=int,
+              help='End date for ping records included. Format is %d/%m/%y'
+                   ' where %d and %m are zero padded (ex. 01) and year is'
+                   ' without century (ex. 17). Default is current datetime')
+@click.option('-n', '--numberofdays', type=int,
+              required=False,
+              help='Alternative to enddate. Number of days to report from'
+                   ' startdate. enddate ignored if numberofdays set')
+@click.option('-t', '--targetId', type=int,
               required=False,
               help='Get results only for the defined targetID')
-@click.option('-r', 'result', type=click.Choice(['full', 'status']),
+@click.option('-r', 'result', type=click.Choice(['full', 'status', '%ok']),
               default='status',
               help='Display. Full displays all records, status displays'
                    ' status summary by id. Default=status')
@@ -105,7 +113,7 @@ def history_list(context, **options):  # pylint: disable=redefined-builtin
 
 
 @history_group.command('stats', options_metavar=CMD_OPTS_TXT)
-@click.option('-S' '--summary', is_flag=True, required=False, default=False,
+@click.option('-S', '--summary', is_flag=True, required=False, default=False,
               help='If set only a summary is generated.')
 @click.pass_obj
 def history_stats(context, **options):  # pylint: disable=redefined-builtin
@@ -170,10 +178,12 @@ def cmd_history_delete(context, options):
 
     # TODO standard function for target_id valid test
     if target_id:
-        if 'targetID' not in context.target_data:
-            raise click.ClickException('Invalid Target: ID=%s not in database'
-                                       ' %s.' % (target_id,
-                                                 context.target_data))
+        try:
+            context.target_data.get_target(target_id)  # noqa: F841
+        except KeyError:
+            raise click.ClickException('Invalid Target: target_id=%s not in '
+                                       'database %s.' %
+                                       (target_id, context.target_data))
 
     pings_tbl = PingsTable.factory(context.db_info, context.db_type,
                                    context.verbose)
@@ -184,6 +194,7 @@ def cmd_history_delete(context, options):
 
     try:
         pings_tbl.delete_by_daterange()
+        context.spinner.stop()
         click.echo('Delete finished. removed %s records' %
                    (pings_tbl.record_count() - record_count))
     except Exception as ex:
@@ -197,7 +208,13 @@ def cmd_history_stats(context, options):
     """
     tbl_inst = PingsTable.factory(context.db_info, context.db_type,
                                   context.verbose)
-    click.echo(tbl_inst.record_count())
+    count = tbl_inst.record_count()
+    oldest = tbl_inst.get_oldest_ping()
+    newest = tbl_inst.get_newest_ping()
+    context.spinner.stop()
+    click.echo('Total=%s records\noldest: %s\nnewest: %s' %
+               (count, oldest, newest))
+
     # get first and last record.
     # if verbose output, get count by program
 
@@ -258,19 +275,23 @@ def cmd_history_list(context, options):
 
     target_id = options['targetid']
     if target_id:
-        if 'targetID' not in context.target_data:
-            raise click.ClickException('Invalid Target: ID=%s not in database'
-                                       ' %s.' % (target_id,
-                                                 context.target_data))
+        try:
+            context.target_data.get_target(target_id)  # noqa: F841
+        except KeyError:
+            raise click.ClickException('Invalid Target: target_id=%s not in '
+                                       'database %s.' %
+                                       (target_id, context.target_data))
 
     pings_tbl = PingsTable.factory(context.db_info, context.db_type,
                                    context.verbose)
 
+    # if full, show all records in base that match options
     if options['result'] == 'full':
-        rows = pings_tbl.select_by_daterange(options['startdate'],
-                                             end_date=options['enddate'],
-                                             target_id=target_id)
-
+        rows = pings_tbl.select_by_daterange(
+            options['startdate'],
+            end_date=options['enddate'],
+            number_of_days=options['numberofdays'],
+            target_id=target_id)
         headers = ['pingid', 'id', 'ip', 'company', 'timestamp', 'status']
         tbl_rows = []
         for row in rows:
@@ -288,27 +309,61 @@ def cmd_history_list(context, options):
             tbl_row = [ping_id, target_id, ip, company, timestamp, status]
             tbl_rows.append(tbl_row)
 
+    # if status show counts of ping records by status
     elif options['result'] == 'status':
-        results = pings_tbl.get_status_by_id(options['startdate'],
-                                             end_date=options['enddate'],
-                                             target_id=target_id)
+        results = pings_tbl.get_status_by_id(
+            options['startdate'],
+            end_date=options['enddate'],
+            number_of_days=options['numberofdays'],
+            target_id=target_id)
         # create report of id, statuses with count for each
         headers = ['id', 'ip', 'company', 'status', 'count']
         # find all status and convert to report format
         tbl_rows = []
 
         for target_id, value in six.iteritems(results):
+            if target_id in context.target_data:
+                target = context.target_data[target_id]
+                company = target.get('CompanyName', ' empty')
+                ip = target.get('IPAddress', 'empty')
+            else:
+                company = "%s id unknown" % target_id
+                ip = ''
             for key in value:
-                if target_id in context.target_data:
-                    target = context.target_data[target_id]
-                    company = target.get('CompanyName', ' empty')
-                    ip = target.get('IPAddress', 'empty')
-                else:
-                    company = "%s id unknown" % target_id
-                    ip = ''
                 status = (key[:20] + '..') if len(key) > 20 else key
                 row = [target_id, ip, company, status, value[key]]
                 tbl_rows.append(row)
+
+    elif options['result'] == '%ok':
+        results = pings_tbl.get_status_by_id(
+            options['startdate'],
+            end_date=options['enddate'],
+            number_of_days=options['numberofdays'],
+            target_id=target_id)
+        # create report of id, statuses with count for each
+        headers = ['id', 'ip', 'company', 'product', '%OK', 'total']
+        # find all status and convert to report format
+        tbl_rows = []
+        for target_id, value in six.iteritems(results):
+            ok_count = 0
+            total = 0
+            if target_id in context.target_data:
+                target = context.target_data[target_id]
+                company = target.get('CompanyName', 'empty')
+                product = target.get('Product', 'empty')
+                ip = target.get('IPAddress', 'empty')
+            else:
+                company = "No target"
+                ip = ''
+                product = ''
+            for key, value in six.iteritems(value):
+                if key == 'OK':
+                    ok_count = value
+                total += value
+            percent_ok = (ok_count * 100) / total
+            row = [target_id, ip, company, product, percent_ok, total]
+            tbl_rows.append(row)
+
     else:
         raise click.ClickException('Invalid result: %s'
                                    % (options['result']))

@@ -185,6 +185,10 @@ class CsvPingsTable(PingsTable):
 
 
 class SQLPingsTable(PingsTable):
+    """
+    PingsTable subclass for SQL. Implements functionality for general
+    SQL table usage.
+    """
     def __init__(self, db_dict, dbtype, verbose):
         """Init for sqlpingtable class"""
         super(SQLPingsTable, self).__init__(db_dict, dbtype, verbose)
@@ -221,6 +225,10 @@ class SQLPingsTable(PingsTable):
 
 
 class MySQLPingsTable(SQLPingsTable):
+    """
+    Specialization for mysql databases. Specializes connection, etc for
+    these databases.
+    """
     def __init__(self, db_dict, dbtype, verbose):
         """Read the input file into a dictionary."""
         super(MySQLPingsTable, self).__init__(db_dict, dbtype, verbose)
@@ -273,7 +281,31 @@ class MySQLPingsTable(SQLPingsTable):
         print('record_count %s' % res)
         return res[0]
 
-    def select_by_daterange(self, start_date, end_date=None, target_id=None):
+    def _compute_dates(self, start_date, end_date=None, number_of_days=None):
+        """
+        Compute the start and end dates from the input and return a tuple
+        of start date and end date.
+        """
+        if start_date is None:
+            row = self.get_oldest_ping()
+            oldest_timestamp = row[2]
+            start_date = oldest_timestamp
+
+        if number_of_days and end_date:
+            raise ValueError('Both enddate and number of days options '
+                             'not allowed')
+
+        if number_of_days:
+            end_date = start_date + datetime.timedelta(days=number_of_days)
+
+        if end_date is None:
+            end_date = datetime.datetime.now()
+        print('start %s end %s num %s' % (start_date, end_date, number_of_days))
+
+        return (start_date, end_date)
+
+    def select_by_daterange(self, start_date, end_date=None,
+                            number_of_days=None, target_id=None):
         """
         Select records between two timestamps and return the set of
         records selected
@@ -288,22 +320,28 @@ class MySQLPingsTable(SQLPingsTable):
             The end datetime for the scan.  If `None`, the current date time
             is used
 
+          days(:term:`py:integer`)
+            Number of days from startdate to gather. If end_date is set also
+            this is invalid.
+
           target_id(:term:`integer`):
-            Integer defining a target id in the target table. The result if
-            filtered by this target id against the TargetID field in the
-            Pings record if the value is not `None`.
+            Optional Integer defining a target id in the target table. The
+            result if filtered by this target id against the TargetID field
+            in the Pings record if the value is not `None`.
 
         Returns:
             List of tuples representing rows in the Pings table. Each entry in
             the return is a field in the Pings table
+
+        Exceptions:
+            ValueError if input parameters incorrect.
         """
-        if end_date is None:
-            end_date = datetime.datetime.now()
+        start_date, end_date = self._compute_dates(start_date, end_date=None,
+                                                   number_of_days=None)
 
         cursor = self.connection.cursor()
         try:
             if target_id is None:
-                print('sel for nonw')
                 cursor.execute('SELECT * '
                                'FROM Pings WHERE Timestamp BETWEEN %s AND %s',
                                (start_date, end_date))
@@ -319,7 +357,8 @@ class MySQLPingsTable(SQLPingsTable):
         finally:
             cursor.close()
 
-    def delete_by_daterange(self, start_date, end_date=None, target_id=None):
+    def delete_by_daterange(self, start_date, end_date=None,
+                            number_of_days=None, target_id=None):
         """
         Deletes records from the database based on start_date, end_date and
         optional target_id
@@ -340,7 +379,7 @@ class MySQLPingsTable(SQLPingsTable):
         """
         cursor = self.connection.cursor()
 
-        if end_date is None:
+        if end_date is None and number_of_days is None:
             end_date = datetime.datetime.now()
 
         try:
@@ -368,7 +407,72 @@ class MySQLPingsTable(SQLPingsTable):
     def get_ordered_by_date(self):
         pass
 
-    def get_status_by_id(self, start_date, end_date=None, target_id=None):
+    def get_oldest_ping(self, target_id=None):
+        """Get the first record in the database. If target_id set, get
+           oldest for this target_id.
+
+           Parameters:
+             target_id(:term:`integer`)
+                Optional target_id for record.  If `None` oldest for
+                Pings table returned.  If valid target, the oldest ping
+                record for this targe returned.
+        """
+        cursor = self.connection.cursor()
+
+        try:
+            if target_id is None:
+                cursor.execute('SELECT * FROM Pings LIMIT 0, 1')
+            else:
+                cursor.execute('SELECT * FROM Pings WHERE TargetID = %s '
+                               'LIMIT 0, 1',
+                               target_id)
+            # TODO optimize by using server side cursor if that works
+            row = cursor.fetchone()
+            if row:
+                return row
+            else:
+                if target_id:
+                    raise ValueError('TargetId %s not in Pings database.' %
+                                     target_id)
+                else:
+                    raise ValueError('Error getting database oldest record. No'
+                                     'records')
+
+        finally:
+            cursor.close()
+
+    def get_newest_ping(self, target_id=None):
+        """
+        Get the record that represents the newest entry in the ping table
+        """
+        cursor = self.connection.cursor()
+
+        try:
+            if target_id is None:
+                cursor.execute(
+                    'SELECT * FROM Pings ORDER BY PingID DESC LIMIT 1')
+            else:
+                cursor.execute(
+                    'SELECT * FROM Pings ORDER BY PingID DESC LIMIT 1'
+                    ' WHERE TargetID = %s', target_id)
+
+            # TODO optimize by using server side cursor if that works
+            row = cursor.fetchone()
+            if row:
+                return row
+            else:
+                if target_id:
+                    raise ValueError('TargetId %s not in Pings database.' %
+                                     target_id)
+                else:
+                    raise ValueError('Error getting database oldest record. No'
+                                     'records')
+
+        finally:
+            cursor.close()
+
+    def get_status_by_id(self, start_date, end_date=None, number_of_days=None,
+                         target_id=None):
         """
         Select by date range and create a dictionary by id and status. If
         target_id is provided it acts as a filter.
@@ -379,6 +483,7 @@ class MySQLPingsTable(SQLPingsTable):
                Value is dictionary where key is status and value is count
         """
         rows = self.select_by_daterange(start_date, end_date=end_date,
+                                        number_of_days=number_of_days,
                                         target_id=target_id)
 
         # dictionary by id with subdictionary by status
