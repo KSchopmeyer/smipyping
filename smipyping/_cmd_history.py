@@ -271,8 +271,6 @@ def cmd_history_list(context, options):
     """
     Show history for the defined start and end dates
     """
-    print('list options %s' % options)
-
     target_id = options['targetid']
     if target_id:
         try:
@@ -284,7 +282,6 @@ def cmd_history_list(context, options):
 
     pings_tbl = PingsTable.factory(context.db_info, context.db_type,
                                    context.verbose)
-
     # if full, show all records in base that match options
     if options['result'] == 'full':
         rows = pings_tbl.select_by_daterange(
@@ -303,7 +300,7 @@ def cmd_history_list(context, options):
                 ip = target.get('IPAddress', 'empty')
             else:
                 company = "%s id unknown" % target_id
-                ip = ''
+                ip = '??'
             timestamp = datetime.datetime.strftime(row[2], '%d/%m/%y:%H:%M:%S')
             status = row[3]
             tbl_row = [ping_id, target_id, ip, company, timestamp, status]
@@ -328,25 +325,21 @@ def cmd_history_list(context, options):
                 ip = target.get('IPAddress', 'empty')
             else:
                 company = "%s id unknown" % target_id
-                ip = ''
+                ip = '??'
             for key in value:
                 status = (key[:20] + '..') if len(key) > 20 else key
                 row = [target_id, ip, company, status, value[key]]
                 tbl_rows.append(row)
 
     elif options['result'] == '%ok':
-        results = pings_tbl.get_status_by_id(
+        percentok_dict = pings_tbl.get_percentok_by_id(
             options['startdate'],
             end_date=options['enddate'],
             number_of_days=options['numberofdays'],
             target_id=target_id)
-        # create report of id, statuses with count for each
-        headers = ['id', 'ip', 'company', 'product', '%OK', 'total']
-        # find all status and convert to report format
+        # create report of id,  company, product and %ok / total counts
         tbl_rows = []
-        for target_id, value in six.iteritems(results):
-            ok_count = 0
-            total = 0
+        for target_id, value in six.iteritems(percentok_dict):
             if target_id in context.target_data:
                 target = context.target_data[target_id]
                 company = target.get('CompanyName', 'empty')
@@ -356,12 +349,7 @@ def cmd_history_list(context, options):
                 company = "No target"
                 ip = ''
                 product = ''
-            for key, value in six.iteritems(value):
-                if key == 'OK':
-                    ok_count = value
-                total += value
-            percent_ok = (ok_count * 100) / total
-            row = [target_id, ip, company, product, percent_ok, total]
+            row = [target_id, ip, company, product, value[0], value[2]]
             tbl_rows.append(row)
 
     else:
@@ -369,6 +357,7 @@ def cmd_history_list(context, options):
                                    % (options['result']))
 
     context.spinner.stop()
+    headers = ['id', 'ip', 'company', 'product', '%OK', 'total']
     table = TableFormatter(tbl_rows, headers,
                            title=('Ping Status for %s to %s' %
                                   (options['startdate'],

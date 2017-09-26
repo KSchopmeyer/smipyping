@@ -300,7 +300,6 @@ class MySQLPingsTable(SQLPingsTable):
 
         if end_date is None:
             end_date = datetime.datetime.now()
-        print('start %s end %s num %s' % (start_date, end_date, number_of_days))
 
         return (start_date, end_date)
 
@@ -336,8 +335,10 @@ class MySQLPingsTable(SQLPingsTable):
         Exceptions:
             ValueError if input parameters incorrect.
         """
-        start_date, end_date = self._compute_dates(start_date, end_date=None,
-                                                   number_of_days=None)
+        start_date, end_date = self._compute_dates(
+            start_date,
+            end_date=end_date,
+            number_of_days=number_of_days)
 
         cursor = self.connection.cursor()
         try:
@@ -356,6 +357,69 @@ class MySQLPingsTable(SQLPingsTable):
 
         finally:
             cursor.close()
+
+    def get_status_by_id(self, start_date, end_date=None, number_of_days=None,
+                         target_id=None):
+        """
+        Select by date range and create a dictionary by id and status. If
+        target_id is provided it acts as a filter.
+
+        return:
+           Dictionary where:
+               target_id is key
+               Value is dictionary where key is status and value is count
+        """
+        rows = self.select_by_daterange(start_date, end_date=end_date,
+                                        number_of_days=number_of_days,
+                                        target_id=target_id)
+
+        # dictionary by id with subdictionary by status
+        status_dict = {}
+        for row in rows:
+            target_id = row[1]
+            status = row[3]
+            if target_id in status_dict:
+                x = status_dict[target_id]
+                if status in x:
+                    x[status] += 1
+                else:
+                    x[status] = 1
+                status_dict[target_id] = x
+            else:
+                status_dict[target_id] = {status: 1}
+        return status_dict
+
+    def get_percentok_by_id(self, start_date, end_date=None,
+                            number_of_days=None, target_id=None):
+        """
+        Create dictionary of percent OK and total pings by target_id
+
+        Parameters:
+            TODO
+
+        Returns:
+            dictionary where keys are target_id and value is tuple of
+            percent of OK responses, count of OK responses  and total number
+            of resposnes for the target_id
+        """
+        status_dict = self.get_status_by_id(
+            start_date,
+            end_date=end_date,
+            number_of_days=number_of_days,
+            target_id=target_id)
+
+        # create dictionary by target_id with value of [oks, total]
+        percent_dict = {}
+        for target_id, status_dict in six.iteritems(status_dict):
+            ok_count = 0
+            total = 0
+            for key, status_count in six.iteritems(status_dict):
+                if key == 'OK':
+                    ok_count = status_count
+                total += status_count
+            percent_ok = (ok_count * 100) / total
+            percent_dict[target_id] = (percent_ok, ok_count, total)
+        return percent_dict
 
     def delete_by_daterange(self, start_date, end_date=None,
                             number_of_days=None, target_id=None):
@@ -470,37 +534,6 @@ class MySQLPingsTable(SQLPingsTable):
 
         finally:
             cursor.close()
-
-    def get_status_by_id(self, start_date, end_date=None, number_of_days=None,
-                         target_id=None):
-        """
-        Select by date range and create a dictionary by id and status. If
-        target_id is provided it acts as a filter.
-
-        return:
-           Dictionary where:
-               target_id is key
-               Value is dictionary where key is status and value is count
-        """
-        rows = self.select_by_daterange(start_date, end_date=end_date,
-                                        number_of_days=number_of_days,
-                                        target_id=target_id)
-
-        # dictionary by id with subdictionary by status
-        status_dict = {}
-        for row in rows:
-            target_id = row[1]
-            status = row[3]
-            if target_id in status_dict:
-                x = status_dict[target_id]
-                if status in x:
-                    x[status] += 1
-                else:
-                    x[status] = 1
-                status_dict[target_id] = x
-            else:
-                status_dict[target_id] = {status: 1}
-        return status_dict
 
     def append(self, target_id, status, timestamp):
         """
