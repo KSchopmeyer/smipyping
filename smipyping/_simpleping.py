@@ -67,29 +67,52 @@ class SimplePingList(object):
     """
         Ping a list of target_ids using a work queue to speed up the process.
         Uses the SimplePing class to execute pings against a list of servers.
-        If no list is provided, it scans all servers in the database.
+        If no list is provided, it scans all servers in the Targets Table
+        of thedatabase.
 
     """
     def __init__(self, target_data, target_ids=None, verbose=None, logfile=None,
-                 log_level=None):
+                 log_level=None, include_disabled=False):
         """
+        Saves the input parameters and sets up local variables for the
+        execution of the scan.
+
         Parameters:
 
-            target_data:
+            target_data(:class:`~smipyping.TargetData`)
+               Instance of the TargetData class with the targets from the
+               database.
 
             target_ids(:term:`list` of :term:`integer`)
                 database Ids of targets that are to be pinged. If this is
                 None, the entire set of enabled targets is pinged.
 
-        Return
+            verbose(:class:`py:bool`):
+                Optional flag that when enabled outputs additional diagnostic
+                information to the console.
+
+            logfile(:term:`string`):
+                Optional string defining a file name for a log file
+                TODO change this
+
+            log_level(:term:`string`)
+                TODO clean this up
+
+            include_disabled(:class:`py:bool`):
+                If true, include disabled targets.
 
         Exceptions:
             KeyError if a target_id is not in the database.
         """
         self.target_data = target_data
 
-        self.target_ids = target_ids if target_ids else \
-            target_data.get_enabled_targetids()
+        if include_disabled:
+            self.target_ids = target_ids if target_ids else \
+                target_data.keys()
+        else:
+            self.target_ids = target_ids if target_ids else \
+                target_data.get_enabled_targetids()
+
 
         self.verbose = verbose
         self.logfile = logfile
@@ -109,7 +132,7 @@ class SimplePingList(object):
             # check_result, error = self.check_port(work[0])
             simpleping = SimplePing(target_id=work[0],
                                     target_data=self.target_data)
-            test_result = simpleping.test_server(verify_cert=False)
+            test_result = simpleping.test_server()
             # append target_id and results to results list.
             results.append((work[0], test_result))
             queue.task_done()
@@ -117,10 +140,16 @@ class SimplePingList(object):
 
     def ping_servers(self):
         """
-        Threaded scan of IP Addresses for open ports.
+        Threaded cimping of servers.
 
-        execute SimplePing on the servers defined. Returns a list of
-        results with the following format:
+        Execute SimplePing on the servers defined. Returns a list of
+        results
+
+        return:
+            list of TestResult named tuples with results of test.
+
+        Exceptions:
+            KeyboardInterrupt:
 
         """
 
@@ -153,15 +182,97 @@ class SimplePingList(object):
         # returns list of ip addresses that were were found
         return results
 
+    def create_fake_results(self, result=None):
+        """
+        Test functionality to create a fake result list from either the
+        ids in the list or all ids.  If the result is none, generate result
+        by rotating through possible results. Otherwise use result indicated.
+
+        This is a test tool only.
+
+        Return list of tuples where each tuple contains
+            (targetdata id, TestResult)
+        """
+        rtn_list = []
+        for id_ in self.target_ids:
+            result = 'OK'
+            result_code = SimplePing.get_result_code(result)
+            exception = None
+            execution_time = .01
+            rtn_list.append((id_, TestResult(
+                code=result_code,
+                type=result,
+                exception=exception,
+                execution_time=str(execution_time))))
+        return rtn_list
+
 
 class SimplePing(object):
     """Simple ping class. Contains all functionality to handle simpleping."""
+
+    # class level attributes
+    # Error code keys and corresponding exit codes
+    error_code = {
+        'OK': 0,
+        'WBEMException': 1,
+        'PyWBEMError': 2,
+        'GeneralError': 3,
+        'TimeoutError': 4,
+        'ConnectionError': 5,
+        'PingFail': 6,
+        'Disabled': 7}
+
+    @classmethod
+    def get_result_code(cls, result_type):
+        """Get the result code corresponding to the result_type."""
+        return cls.error_code[result_type]
 
     def __init__(self, server=None, namespace=None, user=None, password=None,
                  timeout=None, target_id=None, target_data=None, ping=True,
                  certfile=None, keyfile=None, verify_cert=False,
                  debug=False, verbose=None, logfile=None, log_level=None):
-        """Initialize instance attributes."""
+        """
+        Initialize instance attributes.
+
+          Parameters:
+
+            server(:term:`string`):
+                url of a server to cimping. This is optional however either
+                the url or target_id must exist and they cannot both exist
+
+            namespace(:term:`string`):
+                namespace of the server if url is defined. Otherwise ignored.
+
+            user
+
+            password
+
+            timeout
+
+            target_id
+
+            target_data
+
+            ping
+
+            certfile
+
+            keyfile
+
+            verify_cert
+
+            debug
+
+            verbose
+
+            logfile
+
+            log_level
+
+          Exceptions:
+            ValueError if invalid input parameters.
+
+        """
         if server:
             self.url = self.server_url_validate(server)
         else:
@@ -208,17 +319,6 @@ class SimplePing(object):
                                        log_level=log_level)
         self.logger = get_logger(CIMPING_LOGGER_NAME)
 
-        # Error code keys and corresponding exit codes
-        self.error_code = {
-            'OK': 0,
-            'WBEMException': 1,
-            'PyWBEMError': 2,
-            'GeneralError': 3,
-            'TimeoutError': 4,
-            'ConnectionError': 5,
-            'PingFail': 6,
-            'Disabled': 0}
-
     def __repr__(self):
         """Return url."""
         return 'url=%s ns=%s user=%s password=%s timeout=%s ping=%s debug=' \
@@ -235,7 +335,7 @@ class SimplePing(object):
                (self.url, self.namespace, self.ping, self.user, self.password,
                 self.debug, self.verbose)
 
-    def get_connection_info(self, conn):
+    def get_connection_info(self, conn):  # pylint: disable no-self-use
         """Return a string with the connection info."""
         info = 'Connection: %s,' % conn.url
 
@@ -285,10 +385,6 @@ class SimplePing(object):
         self.url = url
         return url
 
-    def get_result_code(self, result_type):
-        """Get the result code corresponding to the result_type."""
-        return self.error_code[result_type]
-
     def ping_log_result(self, result, db_dict, dbtype):
         """
             Write the ping result to the ping_log destination.
@@ -300,7 +396,7 @@ class SimplePing(object):
         pingtable = PingsTable.factory(db_dict, dbtype, self.verbose)
 
         pingtable.append(self.target_id, result)
-        # TODO Finish this
+        # TODO Finish this. NOTE: Do I really need this???
 
     def test_server(self, verify_cert=False):
         """
@@ -308,18 +404,20 @@ class SimplePing(object):
 
         This method executes all of the required tests against the server
         and returns the namedtuple TestResults
+
+          Returns:
+             tuple of
         """
         start_time = datetime.datetime.now()
         # execute the ping test if required
         ping_result = True
         result_code = 0
-        exception = ''
+        exception = None
         if self.ping:
             ping_result, result = self.ping_server()
             if ping_result is False:
                 result_code = self.get_result_code(result)
-                exception = ''
-        self.logger.debug('ping result=%s', result_code)
+                exception = None
         if ping_result:
             # connect to the server and execute the cim operation test
             conn = self.connect_server(verify_cert=verify_cert)
@@ -330,8 +428,13 @@ class SimplePing(object):
                   % (result, exception, result_code))
         execution_time = datetime.datetime.now() - start_time
         execution_time = '%.2fs' % execution_time.total_seconds()
-        self.logger.info('result=%s, exception=%s, resultCode=%s, time=%s',
-                         result, exception, result_code,
+        if self.url:
+            id_ = 'url=%s' % self.url
+        else:
+            id_ = 'target_id=%s' % self.target_id
+        self.logger.info('Test %s result=%s, exception=%s, resultCode=%s,'
+                         ' time=%s',
+                         id_, result, exception, result_code,
                          str(execution_time))
 
         # Return namedtuple with results
@@ -384,8 +487,13 @@ class SimplePing(object):
         """
         Issue the test operation. Returns with system exit code.
 
-        Returns a tuple of code and reason text.  The code is ne 0 if there was
-        an error.
+        Returns a tuple of code and reason text or exception if an exception
+        occurred.  The code is ne 0 if there was an error.
+
+          Return:
+            tuple of result code (:term:`string`) and exception object if
+            there was an exception (otherwise None).
+
         """
         try:
             if self.verbose:
@@ -400,17 +508,11 @@ class SimplePing(object):
             if self.verbose:
                 print('Running host=%s. Returned %s instance(s)' %
                       (conn.url, len(insts)))
-            rtn_tuple = ('OK', "")
+            rtn_tuple = ('OK', None)
 
         except CIMError as ce:
-            print('CIMERROR %r %s %s %s' % (ce,
-                                            ce.status_code,
-                                            ce.status_code_name,
-                                            ce.status_description))
-            # TODO add status_code
             # TODO make this a named tuple for clarity
-            rtn_tuple = ("WBEMException", ce, ce.status_code_name,
-                         ce.status_description)
+            rtn_tuple = ("WBEMException", ce)
         except ConnectionError as co:
             rtn_tuple = ("ConnectionError", co)
         except TimeoutError as to:
@@ -426,11 +528,10 @@ class SimplePing(object):
             last_reply = conn.last_reply or conn.last_raw_reply
             print('Reply:\n\n%s\n' % last_reply)
 
-        # rtn_tuple = [rtn_code[0], rtn_code[1]]
-        # rtn_tuple = tuple(rtn_code)
         if self.verbose:
-            print('rtn_tuple %s' % (rtn_tuple,))
-        self.logger.info('SimplePing Result %s', (rtn_tuple,))
+            print('Execute_cim_test %s rtn_tuple %s' % (conn.url, (rtn_tuple,)))
+        self.logger.info('SimplePing Result  ip=%s return=%s', conn.url,
+                         (rtn_tuple,))
         return rtn_tuple
 
     # def set_param_from_targetdata(self, target_id, target_data):

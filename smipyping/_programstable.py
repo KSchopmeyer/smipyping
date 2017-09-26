@@ -53,8 +53,8 @@ class ProgramsTable(object):
         return ('len %s' % len(self.data_dict))
 
     def __repr__(self):
-        """Rep of Companiestable data"""
-        return ('Companies db_type %s db len %s' %
+        """Rep of Programstable data"""
+        return ('Programs db_type %s db len %s' %
                 (self.db_type, len(self.data_dict)))
 
     @classmethod
@@ -88,7 +88,7 @@ class ProgramsTable(object):
         return record_id in self.data_dict
 
     def __iter__(self):
-        """iterator for targets."""
+        """iterator for programs."""
         return six.iterkeys(self.data_dict)
 
     def iteritems(self):
@@ -101,7 +101,7 @@ class ProgramsTable(object):
             yield (key, val)
 
     def keys(self):
-        """get all of the target_ids as a list"""
+        """get all of the program_ids as a list"""
         return list(self.data_dict.keys())
 
     def __getitem__(self, record_id):

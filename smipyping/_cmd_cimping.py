@@ -189,6 +189,10 @@ def cimping_id(context, id, **options):  # pylint: disable=redefined-builtin
               help='Save the result of each cimping test of a wbem server'
               ' to the database Pings table for future analysis.'
               ' ' + '(Default: %s.' % False)
+@click.option('-d', '--disabled', default=False, is_flag=True,
+              required=False,
+              help='If set include disabled targets in the cimping scan.'
+              ' ' + '(Default: %s.' % False)
 @add_options(debug_option)
 @click.pass_obj
 def cimping_all(context, **options):  # pylint: disable=redefined-builtin
@@ -255,81 +259,50 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
     from the database provided with the input parameters.
     """
 
-    if True:
-        simple_ping_list = SimplePingList(context.target_data, None,
-                                          logfile=context.log_file,
-                                          log_level=context.log_level,
-                                          verbose=context.verbose)
-        results = simple_ping_list.ping_servers()
+    # cimping the complete set of targets
+    include_disabled = options['disabled']
+    print('include_disabled %s %s' % (include_disabled, options))
+    simple_ping_list = SimplePingList(context.target_data, None,
+                                      logfile=context.log_file,
+                                      log_level=context.log_level,
+                                      verbose=context.verbose,
+                                      include_disabled=include_disabled)
+    results = simple_ping_list.ping_servers()
 
-        headers = ['id', 'addr', 'result', 'exception', 'time', 'company']
-        # print('Results %s' % results)
-        rows = []
-        for result in results:
-            target_id = result[0]
-            target = context.target_data[target_id]
-            test_result = result[1]
-
-            addr = '%s://%s' % (target['Protocol'], target['IPAddress'])
-            exception = '%s' % test_result.exception
-
-            rows.append([target_id,
-                         addr,
-                         ('%s:%s' % (test_result.type, test_result.code)),
-                         TableFormatter.fold_cell(exception, 12),
-                         test_result.execution_time,
-                         TableFormatter.fold_cell(target['Product'], 12)])
-
+    # if saveresult set, update pings table with results.
+    if options['saveresult']:
         tbl_inst = PingsTable.factory(context.db_info, context.db_type,
                                       context.verbose)
-        print('pingstable %s %r' % (tbl_inst, tbl_inst))
         # if option set, append status to pings table
         # TODO figure out why click prepends the s__ for this
-        if options['saveresult']:
-            timestamp = datetime.datetime.now()
-            for result in results:
-                print('ping data %s %s %s' % (result[0], result[1], timestamp))
-                tbl_inst.append(result[0], result[1], timestamp)
+        timestamp = datetime.datetime.now()
+        for result in results:
+            print('ping data %s %s %s' % (result[0], result[1], timestamp))
+            tbl_inst.append(result[0], result[1], timestamp)
 
-        context.spinner.stop()
+    # print results of the scan.
+    headers = ['id', 'addr', 'result', 'exception', 'time', 'company']
+    rows = []
+    for result in results:
+        target_id = result[0]
+        target = context.target_data[target_id]
+        test_result = result[1]
 
-        table = TableFormatter(rows, headers,
-                               title='CIMPing Results:',
-                               table_format=context.output_format)
-        click.echo(table.build_table())
+        addr = '%s://%s' % (target['Protocol'], target['IPAddress'])
+        exception = '%s' % test_result.exception
 
-    else:  # TODO Why this code TODO Old code before we did the all class.
-        ids = context.target_data.keys()
-
-        rows = []
-        for id_ in ids:
-            simpleping = SimplePing(target_id=id_, timeout=options['timeout'],
-                                    target_data=context.target_data,
-                                    ping=not options['no_ping'],
-                                    logfile=context.log_file,
-                                    log_level=context.log_level)
-
-            # simpleping.set_param_from_targetdata(id_, context.target_data)
-            test_result = simpleping.test_server(verify_cert=False)
-
-            target = context.target_data.get_target(id_)
-            addr = '%s://%s' % (target['Protocol'], target['IPAddress'])
-            exception = '%s' % test_result.exception
-
-            rows.append([id_,
-                         ('%s:%s' % (test_result.type, test_result.code)),
-                         TableFormatter.fold_cell(exception, 12),
-                         test_result.execution_time,
-                         addr,
-                         TableFormatter.fold_cell(target['Product'], 8)])
-
-        context.spinner.stop()
-        headers = ['id', 'result', 'exception', 'time', 'addr', 'company']
-
-        table = TableFormatter(rows, headers,
-                               title='cimping all targets:',
-                               table_format=context.output_format)
-        click.echo(table.build_table())
+        rows.append([target_id,
+                     addr,
+                     ('%s:%s' % (test_result.type, test_result.code)),
+                     TableFormatter.fold_cell(exception, 12),
+                     test_result.execution_time,
+                     TableFormatter.fold_cell(target['Product'], 12)])
+    context.spinner.stop()
+    d_flag = 'Include Disabled' if include_disabled else ''
+    table = TableFormatter(rows, headers,
+                           title='CIMPing Results (%s):' % d_flag,
+                           table_format=context.output_format)
+    click.echo(table.build_table())
 
 
 def cmd_cimping_ids(context, ids, options):  # pylint: disable=redefined-builtin
@@ -341,8 +314,9 @@ def cmd_cimping_ids(context, ids, options):  # pylint: disable=redefined-builtin
         try:
             context.target_data.get_target(id_)  # noqa: F841
         except KeyError:
-            raise click.ClickException('Invalid Target: ID=%s not in database'
-                                       ' %s.' % (id_, context.target_data))
+            raise click.ClickException('Invalid Target: target_id=%s not in '
+                                       'database %s.' %
+                                       (id_, context.target_data))
 
     for id_ in ids:
         simpleping = SimplePing(target_id=id_, timeout=options['timeout'],

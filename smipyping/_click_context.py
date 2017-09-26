@@ -82,21 +82,21 @@ class ClickContext(object):
     @property
     def verbose(self):
         """
-        :term:`bool`: verbose display flag
+        :class:`py:bool`: verbose display flag
         """
         return self._verbose
 
     @property
     def log_level(self):
         """
-        :term:`bool`: verbose display flag
+        :class:`py:bool`: verbose display flag
         """
         return self._log_level
 
     @property
     def log_file(self):
         """
-        :term:`bool`: verbose display flag
+        :class:`py:bool`: verbose display flag
         """
         return self._log_file
 

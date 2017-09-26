@@ -24,7 +24,7 @@ import datetime
 import csv
 import os
 import six
-from mysql.connector import MySQLConnection
+from mysql.connector import MySQLConnection, Error
 
 __all__ = ['PingsTable']
 
@@ -125,8 +125,7 @@ class CsvPingsTable(PingsTable):
         fn = db_dict['pingsfilename']
         self.filename = fn
 
-        print('init csvpingtable %s %s' % (self.filename, self.args))
-        print('init csvlastscantable %s %s' % (self.filename, self.args))
+        print('init csvpingtable %s %s' % (self.filename, dbtype))
 
         # If the filename is not a full directory, the data file must be
         # either in the local directory or the same directory as the
@@ -186,6 +185,10 @@ class CsvPingsTable(PingsTable):
 
 
 class SQLPingsTable(PingsTable):
+    """
+    PingsTable subclass for SQL. Implements functionality for general
+    SQL table usage.
+    """
     def __init__(self, db_dict, dbtype, verbose):
         """Init for sqlpingtable class"""
         super(SQLPingsTable, self).__init__(db_dict, dbtype, verbose)
@@ -222,6 +225,10 @@ class SQLPingsTable(PingsTable):
 
 
 class MySQLPingsTable(SQLPingsTable):
+    """
+    Specialization for mysql databases. Specializes connection, etc for
+    these databases.
+    """
     def __init__(self, db_dict, dbtype, verbose):
         """Read the input file into a dictionary."""
         super(MySQLPingsTable, self).__init__(db_dict, dbtype, verbose)
@@ -262,6 +269,271 @@ class MySQLPingsTable(SQLPingsTable):
     def select_for_timestamp(self, timestamp):
         # TODO
         pass
+
+    def record_count(self):
+        """
+        Get count of records in pings table
+        """
+        cursor = self.connection.cursor()
+        query = "SELECT COUNT(*) from Pings"
+        cursor.execute(query)
+        res = cursor.fetchone()
+        print('record_count %s' % res)
+        return res[0]
+
+    def _compute_dates(self, start_date, end_date=None, number_of_days=None):
+        """
+        Compute the start and end dates from the input and return a tuple
+        of start date and end date.
+        """
+        if start_date is None:
+            row = self.get_oldest_ping()
+            oldest_timestamp = row[2]
+            start_date = oldest_timestamp
+
+        if number_of_days and end_date:
+            raise ValueError('Both enddate and number of days options '
+                             'not allowed')
+
+        if number_of_days:
+            end_date = start_date + datetime.timedelta(days=number_of_days)
+
+        if end_date is None:
+            end_date = datetime.datetime.now()
+
+        return (start_date, end_date)
+
+    def select_by_daterange(self, start_date, end_date=None,
+                            number_of_days=None, target_id=None):
+        """
+        Select records between two timestamps and return the set of
+        records selected
+
+        Parameters:
+
+          start_date(:class:`py:datetime.datetime` or `None`):
+            The starttime for the select statement. If `None' the oldest
+            timestamp in the database is used.
+
+          end_date(:class:`py:datetime.datetime` or `None`):
+            The end datetime for the scan.  If `None`, the current date time
+            is used
+
+          days(:term:`py:integer`)
+            Number of days from startdate to gather. If end_date is set also
+            this is invalid.
+
+          target_id(:term:`integer`):
+            Optional Integer defining a target id in the target table. The
+            result if filtered by this target id against the TargetID field
+            in the Pings record if the value is not `None`.
+
+        Returns:
+            List of tuples representing rows in the Pings table. Each entry in
+            the return is a field in the Pings table
+
+        Exceptions:
+            ValueError if input parameters incorrect.
+        """
+        start_date, end_date = self._compute_dates(
+            start_date,
+            end_date=end_date,
+            number_of_days=number_of_days)
+
+        cursor = self.connection.cursor()
+        try:
+            if target_id is None:
+                cursor.execute('SELECT * '
+                               'FROM Pings WHERE Timestamp BETWEEN %s AND %s',
+                               (start_date, end_date))
+            else:
+                cursor.execute('SELECT * '
+                               'FROM Pings WHERE TargetID = %s AND '
+                               'Timestamp BETWEEN %s AND %s',
+                               (target_id, start_date, end_date))
+
+            rows = cursor.fetchall()
+            return rows
+
+        finally:
+            cursor.close()
+
+    def get_status_by_id(self, start_date, end_date=None, number_of_days=None,
+                         target_id=None):
+        """
+        Select by date range and create a dictionary by id and status. If
+        target_id is provided it acts as a filter.
+
+        return:
+           Dictionary where:
+               target_id is key
+               Value is dictionary where key is status and value is count
+        """
+        rows = self.select_by_daterange(start_date, end_date=end_date,
+                                        number_of_days=number_of_days,
+                                        target_id=target_id)
+
+        # dictionary by id with subdictionary by status
+        status_dict = {}
+        for row in rows:
+            target_id = row[1]
+            status = row[3]
+            if target_id in status_dict:
+                x = status_dict[target_id]
+                if status in x:
+                    x[status] += 1
+                else:
+                    x[status] = 1
+                status_dict[target_id] = x
+            else:
+                status_dict[target_id] = {status: 1}
+        return status_dict
+
+    def get_percentok_by_id(self, start_date, end_date=None,
+                            number_of_days=None, target_id=None):
+        """
+        Create dictionary of percent OK and total pings by target_id
+
+        Parameters:
+            TODO
+
+        Returns:
+            dictionary where keys are target_id and value is tuple of
+            percent of OK responses, count of OK responses  and total number
+            of resposnes for the target_id
+        """
+        status_dict = self.get_status_by_id(
+            start_date,
+            end_date=end_date,
+            number_of_days=number_of_days,
+            target_id=target_id)
+
+        # create dictionary by target_id with value of [oks, total]
+        percent_dict = {}
+        for target_id, status_dict in six.iteritems(status_dict):
+            ok_count = 0
+            total = 0
+            for key, status_count in six.iteritems(status_dict):
+                if key == 'OK':
+                    ok_count = status_count
+                total += status_count
+            percent_ok = (ok_count * 100) / total
+            percent_dict[target_id] = (percent_ok, ok_count, total)
+        return percent_dict
+
+    def delete_by_daterange(self, start_date, end_date=None,
+                            number_of_days=None, target_id=None):
+        """
+        Deletes records from the database based on start_date, end_date and
+        optional target_id
+
+        Parameters:
+
+          start_date(:class:`py:datetime.datetime` or `None`):
+            The starttime for the select statement. If `None' the oldest
+            timestamp in the database is used.
+
+          end_date(:class:`py:datetime.datetime` or `None`):
+            The end datetime for the scan.  If `None`, the current date time
+            is used
+
+        Exceptions:
+            Database error if the execute failed.
+
+        """
+        cursor = self.connection.cursor()
+
+        if end_date is None and number_of_days is None:
+            end_date = datetime.datetime.now()
+
+        try:
+            try:
+                if target_id is None:
+                    cursor.execute('DELETE  '
+                                   'FROM Pings '
+                                   'WHERE Timestamp BETWEEN %s AND %s',
+                                   (start_date, end_date))
+                else:
+                    cursor.execute('DELETE '
+                                   'FROM Pings WHERE TargetID = %s AND '
+                                   'Timestamp BETWEEN %s AND %s',
+                                   (target_id, start_date, end_date))
+            except(Error) as err:
+                print(err)
+                self.connection.rollback()
+                raise
+
+            self.connection.commit()
+
+        finally:
+            cursor.close()
+
+    def get_ordered_by_date(self):
+        pass
+
+    def get_oldest_ping(self, target_id=None):
+        """Get the first record in the database. If target_id set, get
+           oldest for this target_id.
+
+           Parameters:
+             target_id(:term:`integer`)
+                Optional target_id for record.  If `None` oldest for
+                Pings table returned.  If valid target, the oldest ping
+                record for this targe returned.
+        """
+        cursor = self.connection.cursor()
+
+        try:
+            if target_id is None:
+                cursor.execute('SELECT * FROM Pings LIMIT 0, 1')
+            else:
+                cursor.execute('SELECT * FROM Pings WHERE TargetID = %s '
+                               'LIMIT 0, 1',
+                               target_id)
+            # TODO optimize by using server side cursor if that works
+            row = cursor.fetchone()
+            if row:
+                return row
+            else:
+                if target_id:
+                    raise ValueError('TargetId %s not in Pings database.' %
+                                     target_id)
+                else:
+                    raise ValueError('Error getting database oldest record. No'
+                                     'records')
+
+        finally:
+            cursor.close()
+
+    def get_newest_ping(self, target_id=None):
+        """
+        Get the record that represents the newest entry in the ping table
+        """
+        cursor = self.connection.cursor()
+
+        try:
+            if target_id is None:
+                cursor.execute(
+                    'SELECT * FROM Pings ORDER BY PingID DESC LIMIT 1')
+            else:
+                cursor.execute(
+                    'SELECT * FROM Pings ORDER BY PingID DESC LIMIT 1'
+                    ' WHERE TargetID = %s', target_id)
+
+            # TODO optimize by using server side cursor if that works
+            row = cursor.fetchone()
+            if row:
+                return row
+            else:
+                if target_id:
+                    raise ValueError('TargetId %s not in Pings database.' %
+                                     target_id)
+                else:
+                    raise ValueError('Error getting database oldest record. No'
+                                     'records')
+
+        finally:
+            cursor.close()
 
     def append(self, target_id, status, timestamp):
         """

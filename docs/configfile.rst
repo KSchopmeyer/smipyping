@@ -31,7 +31,7 @@ Configuration File Sections
 The configuration file includes the following sections:
 
 * General - Those parameters that are considered general to the startup of
-the utilities
+  the utilities
 
 * mysql - Parameters used for the startup of a mysql database
 

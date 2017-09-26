@@ -16,17 +16,14 @@ The following defines the help output for the `smicli  --help` subcommand
 
     Usage: smicli [GENERAL-OPTIONS] COMMAND [ARGS]...
     
-      Command line script for smicli.  This script executes a number of
+      General command line script for smicli.  This script executes a number of
       subcommands to:
     
           * Explore one or more smi servers for basic WBEM information and
             additional information specific to SMI.
     
-          * Manage a database that defines smi servers, users, company names
-            and history. It supports two forms of the data base, sql database
-            and csv file.
-    
-          * Sweep ranges of ip addresses and ports to find wbem servers.
+          * Manage a database that defines smi servers. It supports two forms
+            of the data base, sql database and csv file.
     
     Options:
       -c, --config_file TEXT          Configuration file to use for config
@@ -46,7 +43,7 @@ The following defines the help output for the `smicli  --help` subcommand
       -v, --verbose                   Display extra information about the
                                       processing.
       --version                       Show the version of this command and exit.
-      -h, --help                      Show this message and exit.
+      --help                          Show this message and exit.
     
     Commands:
       cimping   Command group to do simpleping.
@@ -54,7 +51,6 @@ The following defines the help output for the `smicli  --help` subcommand
       help      Show help message for interactive mode.
       provider  Command group for simple provider operations.
       repl      Enter interactive (REPL) mode (default).
-      sweep     Command group to sweep for servers.
       targets   Command group for managing targets data.
 
 
@@ -79,7 +75,7 @@ The following defines the help output for the `smicli cimping --help` subcommand
       subcommand.  This allows targets to be defined in a number of ways
       including:
     
-        - Complete target identification (url, etc.) (host)
+        - Complete target identification (url, etc.)
     
         - Target Id in the database.
     
@@ -90,51 +86,11 @@ The following defines the help output for the `smicli cimping --help` subcommand
       known CIMClass.
     
     Options:
-      -h, --help  Show this message and exit.
+      --help  Show this message and exit.
     
     Commands:
-      all   CIMPing all enabled targets in database.
-      host  cimping wbem server defined by hostname.
-      id    Cimping one target from database.
-      ids   Cimping a list of targets from database.
-
-
-
-.. _`smicli cimping all --help`:
-
-smicli cimping all --help
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-
-The following defines the help output for the `smicli cimping all --help` subcommand
-
-
-::
-
-    Usage: smicli cimping all [COMMAND-OPTIONS]
-    
-      CIMPing all enabled targets in database.
-    
-      Executes the ping on all enabledtargets in the targets table of the
-      database.
-    
-      Creates a table of results and optionally logs status of each in the Pings
-      table (saveresult option)
-    
-      ex. smicli cimping all
-    
-    Options:
-      -t, --timeout INTEGER  Timeout in sec for the operation. (Default: 10.)
-      --no-ping              Disable network ping of the wbem server before
-                             executing the cim request. (Default: True.)
-      -s, --saveresult       Save the result of each cimping test of a wbem server
-                             to the database Pings table for future analysis.
-                             (Default: False.
-      -d, --debug            Set the debug parameter for the pywbem call. Displays
-                             detailed information on the call and response.
-                             (Default: False.)
-      -h, --help             Show this message and exit.
+      host  Execute a cimping on the wbem server defined...
+      id    Execute a simple cim ping against the target...
 
 
 
@@ -152,7 +108,7 @@ The following defines the help output for the `smicli cimping host --help` subco
 
     Usage: smicli cimping host [COMMAND-OPTIONS] HOST NAME
     
-      cimping wbem server defined by hostname.
+      Execute a cimping on the wbem server defined by hostname.
     
          Host name or url of the WBEM server in this format:
     
@@ -209,7 +165,7 @@ The following defines the help output for the `smicli cimping host --help` subco
                                the certfile option. Not allowed if no certfile
                                option. Default: No client key file. Client private
                                key should then be part  of the certfile
-      -h, --help               Show this message and exit.
+      --help                   Show this message and exit.
 
 
 
@@ -227,58 +183,16 @@ The following defines the help output for the `smicli cimping id --help` subcomm
 
     Usage: smicli cimping id [COMMAND-OPTIONS] TargetID
     
-      Cimping  one target from database.
-    
-      Executes a simple ping against one target wbem servers in the target
-      database and returns exit code in accord with response. Exits interactive
-      mode and returns exit code corresponding to test result.
-    
-      This test can specifically be used to get a cmd line exit code
-      corresponding to the status of a given target WBEM Server.
-    
-      ex. smicli cimping 5
+      Execute a simple cim ping against the target id defined in the request
     
     Options:
-      -t, --timeout INTEGER  Timeout in sec for the operation. (Default: 10.)
-      --no-ping              Disable network ping of the wbem server before
-                             executing the cim request. (Default: True.)
-      -d, --debug            Set the debug parameter for the pywbem call. Displays
+      -t, --timeout INTEGER  Namespace for the operation. (Default: 10.
+      --no-ping BOOLEAN      Disable network ping ofthe wbem server before
+                             executing the cim request. (Default: True.
+      -d--debug BOOLEAN      Set the debug parameter for the pywbem call. Displays
                              detailed information on the call and response.
-                             (Default: False.)
-      -h, --help             Show this message and exit.
-
-
-
-.. _`smicli cimping ids --help`:
-
-smicli cimping ids --help
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-
-The following defines the help output for the `smicli cimping ids --help` subcommand
-
-
-::
-
-    Usage: smicli cimping ids [COMMAND-OPTIONS] TargetIDs
-    
-      Cimping a list of targets from database.
-    
-      Execute simple cim ping against the list of ids provided for target
-      servers in the database defined by each id in the list of ids creates a
-      table showing result.
-    
-      ex. smicli cimping ids 5 8 9
-    
-    Options:
-      -t, --timeout INTEGER  Timeout in sec for the operation. (Default: 10.)
-      --no-ping              Disable network ping of the wbem server before
-                             executing the cim request. (Default: True.)
-      -d, --debug            Set the debug parameter for the pywbem call. Displays
-                             detailed information on the call and response.
-                             (Default: False.)
-      -h, --help             Show this message and exit.
+                             (Default: False.
+      --help                 Show this message and exit.
 
 
 
@@ -306,11 +220,11 @@ The following defines the help output for the `smicli explorer --help` subcomman
       normally generates a log of all activity.
     
     Options:
-      -h, --help  Show this message and exit.
+      --help  Show this message and exit.
     
     Commands:
       all  Execute the general explorer on the enabled...
-      ids  Execute the general explorer on the providers...
+      id   Execute the general explorer on the providers...
 
 
 
@@ -336,23 +250,23 @@ The following defines the help output for the `smicli explorer all --help` subco
       --thread / --no-thread     Run test multithreaded.  Much faster. Default:
                                  thread
       -r, --report [full|brief]  Generate full or brief (fewer columns) report
-      -h, --help                 Show this message and exit.
+      --help                     Show this message and exit.
 
 
 
-.. _`smicli explorer ids --help`:
+.. _`smicli explorer id --help`:
 
-smicli explorer ids --help
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+smicli explorer id --help
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 
-The following defines the help output for the `smicli explorer ids --help` subcommand
+The following defines the help output for the `smicli explorer id --help` subcommand
 
 
 ::
 
-    Usage: smicli explorer ids [COMMAND-OPTIONS] TargetIDs
+    Usage: smicli explorer id [COMMAND-OPTIONS] TargetIDs
     
       Execute the general explorer on the providers defined by id.  Multiple ids
       may be supplied (ex. id 5 6 7)
@@ -363,7 +277,7 @@ The following defines the help output for the `smicli explorer ids --help` subco
       --thread / --no-thread     Run test multithreaded.  Much faster. Default:
                                  thread
       -r, --report [full|brief]  Generate full or brief (fewer columns) report
-      -h, --help                 Show this message and exit.
+      --help                     Show this message and exit.
 
 
 
@@ -384,7 +298,7 @@ The following defines the help output for the `smicli help --help` subcommand
       Show help message for interactive mode.
     
     Options:
-      -h, --help  Show this message and exit.
+      --help  Show this message and exit.
 
 
 
@@ -414,7 +328,7 @@ The following defines the help output for the `smicli provider --help` subcomman
       set of providers.
     
     Options:
-      -h, --help  Show this message and exit.
+      --help  Show this message and exit.
     
     Commands:
       classes     Find all classes that match CLASSNAME.
@@ -469,7 +383,7 @@ The following defines the help output for the `smicli provider classes --help` s
                                       namespace(s)
       -n, --namespace <name>          Namespace to use for this operation. If not
                                       defined all namespaces are used
-      -h, --help                      Show this message and exit.
+      --help                          Show this message and exit.
 
 
 
@@ -497,7 +411,7 @@ The following defines the help output for the `smicli provider info --help` subc
     Options:
       -t, --targetid INTEGER  Define a specific target ID from the database to
                               use. Multiples are allowed.
-      -h, --help              Show this message and exit.
+      --help                  Show this message and exit.
 
 
 
@@ -525,7 +439,7 @@ The following defines the help output for the `smicli provider interop --help` s
     Options:
       -t, --targetid INTEGER  Define a specific target ID from the database to
                               use. Multiples are allowed.
-      -h, --help              Show this message and exit.
+      --help                  Show this message and exit.
 
 
 
@@ -553,7 +467,7 @@ The following defines the help output for the `smicli provider namespaces --help
     Options:
       -t, --targetid INTEGER  Define a specific target ID from the database to
                               use. Multiples are allowed.
-      -h, --help              Show this message and exit.
+      --help                  Show this message and exit.
 
 
 
@@ -582,7 +496,7 @@ The following defines the help output for the `smicli provider ping --help` subc
       -t, --targetid INTEGER  Define a specific target ID from the database to
                               use. Multiples are allowed.
       --timeout INTEGER       Timeout for the ping in seconds. (Default 2.
-      -h, --help              Show this message and exit.
+      --help                  Show this message and exit.
 
 
 
@@ -613,7 +527,7 @@ The following defines the help output for the `smicli provider profiles --help` 
       -o, --organization INTEGER  Optionally specify organization for the profiles
       -n, --name INTEGER          Optionally specify name for the profiles
       -v, --version INTEGER       Optionally specify versionfor the profiles
-      -h, --help                  Show this message and exit.
+      --help                      Show this message and exit.
 
 
 
@@ -638,125 +552,7 @@ The following defines the help output for the `smicli repl --help` subcommand
       history file.
     
     Options:
-      -h, --help  Show this message and exit.
-
-
-
-.. _`smicli sweep --help`:
-
-smicli sweep --help
--------------------
-
-
-
-The following defines the help output for the `smicli sweep --help` subcommand
-
-
-::
-
-    Usage: smicli sweep [COMMAND-OPTIONS] COMMAND [ARGS]...
-    
-      Command group to sweep for servers.
-    
-      Sweeping for servers involves pinging in one form or another possible
-      ip/port combinations to find open ports.
-    
-      This group sweeps servers in a defined range looking for open WBEMServers.
-    
-    Options:
-      -h, --help  Show this message and exit.
-    
-    Commands:
-      nets  Execute sweep on the ip/port combinations...
-      todo  Execute sweep on the ip/port combinations...
-
-
-
-.. _`smicli sweep nets --help`:
-
-smicli sweep nets --help
-^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-
-The following defines the help output for the `smicli sweep nets --help` subcommand
-
-
-::
-
-    sweep_group
-    Usage: smicli sweep nets [COMMAND-OPTIONS]
-    
-      Execute sweep on the ip/port combinations defined by the --subnet and
-      --port options
-    
-    Options:
-      -s, --subnet TEXT             IP subnets to scan (ex. 10.1.132). One subnet
-                                    per option Each subnet string is itself a
-                                    definition that consists of period separated
-                                    octets that are used to create the individual
-                                    ip addresses to be tested:   * Integers: Each
-                                    integer is in the range 0-255       ex.
-                                    10.1.2.9   * Octet range definition: A range
-                                    expansion is in the      form: int-int which
-                                    defines the mininum and maximum       values
-                                    for that octet (ex 10.1.132-134) or   *
-                                    Integer lists: A range list is in the form:
-                                    int,int,int
-                                         and defines the set of values
-                                    for that octet. Missing octet definitions are
-                                    expanded to the value range defined by the min
-                                    and max octet value parameters All octets of
-                                    the ip address can use any of the 3
-                                    definitions.
-                                    Examples: 10.1.132,134 expands to
-                                    addresses in 10.1.132 and 10.1.134. where the
-                                    last octet is the range 1 to 254  [required]
-      -p, --port INTEGER RANGE      Port(s) to test. This argument may be define
-                                    multiple  ports. Ex. -p 5988 -p 5989.
-                                    Default=5989
-      -t, --scantype [tcp|syn|all]  Set scan type: %s. Some scan types require
-                                    privilege mode. (Default: tcp.)
-      -m INTEGER RANGE              Minimum expanded value for any octet that is
-                                    not specifically included in a net definition.
-                                    Default = 1
-      -M INTEGER RANGE              Maximum expanded value for any octet that is
-                                    not specifically included in a net definition.
-                                    Default = 254
-      -D, --dryrun                  Display list of systems/ports to be scanned
-                                    but do not  scan. This is a diagnostic tool
-                                    (Default: False.)
-      --no_threads                  Disable multithread scan.  This should only be
-                                    used if there are issues with the multithread
-                                    scan. It is MUCH  slower. (Default: False.)
-      -h, --help                    Show this message and exit.
-
-
-
-.. _`smicli sweep todo --help`:
-
-smicli sweep todo --help
-^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-
-The following defines the help output for the `smicli sweep todo --help` subcommand
-
-
-::
-
-    sweep_group
-    Usage: smicli sweep todo [COMMAND-OPTIONS]
-    
-      Execute sweep on the ip/port combinations defined by the --subnet and
-      --port options
-    
-    Options:
-      -s, --subnet TEXT     blah blah  [required]
-      -D, --dryrun BOOLEAN  Set the debug parameter for the pywbem call. Displays
-                            detailed information on the call and response.
-                            (Default: False.
-      -h, --help            Show this message and exit.
+      --help  Show this message and exit.
 
 
 
@@ -784,7 +580,7 @@ The following defines the help output for the `smicli targets --help` subcommand
       such as company, etc.
     
     Options:
-      -h, --help  Show this message and exit.
+      --help  Show this message and exit.
     
     Commands:
       disable  Disable a provider from scanning.
@@ -809,11 +605,11 @@ The following defines the help output for the `smicli targets disable --help` su
 
     Usage: smicli targets disable [COMMAND-OPTIONS] TargetID
     
-      Disable a provider from scanning. This changes the database.
+      Disable a provider from scanning.
     
     Options:
       -e, --enable  Enable the Target if it is disabled.
-      -h, --help    Show this message and exit.
+      --help        Show this message and exit.
 
 
 
@@ -834,7 +630,7 @@ The following defines the help output for the `smicli targets fields --help` sub
       Display field names in targets database.
     
     Options:
-      -h, --help  Show this message and exit.
+      --help  Show this message and exit.
 
 
 
@@ -855,7 +651,7 @@ The following defines the help output for the `smicli targets get --help` subcom
       display details of a single record from Targets database.
     
     Options:
-      -h, --help  Show this message and exit.
+      --help  Show this message and exit.
 
 
 
@@ -873,10 +669,10 @@ The following defines the help output for the `smicli targets info --help` subco
 
     Usage: smicli targets info [COMMAND-OPTIONS]
     
-      Show target database config information
+      Show target database  config information
     
     Options:
-      -h, --help  Show this message and exit.
+      --help  Show this message and exit.
 
 
 
@@ -900,9 +696,7 @@ The following defines the help output for the `smicli targets list --help` subco
       -f, --fields TEXT  Define specific fields for output. It always includes
                          TargetID. Ex. -f TargetID -f CompanyName Default: a
                          Standard list of fields
-      -d, --disabled     Show disabled targets. Otherwise only targets that are
-                         set enabled in the database are shown. (Default: False.
       -o, --order TEXT   sort by the defined field name. NOT IMPLEMENTED
-      -h, --help         Show this message and exit.
+      --help             Show this message and exit.
 
 
