@@ -172,8 +172,6 @@ def cmd_history_delete(context, options):
         and optional id.
 
     """
-    print('list options %s' % options)
-
     target_id = options['targetid']
 
     # TODO standard function for target_id valid test
@@ -223,7 +221,6 @@ def cmd_history_create(context, options):
     """
     Create a set of ping records in the database.  This is a test function
     """
-
     print('create options %s' % options)
     # construct cimping for the complete set of targets
     simple_ping_list = SimplePingList(context.target_data,
@@ -284,12 +281,13 @@ def cmd_history_list(context, options):
                                    context.verbose)
     # if full, show all records in base that match options
     if options['result'] == 'full':
+        headers = ['pingid', 'id', 'ip', 'company', 'timestamp', 'status']
+
         rows = pings_tbl.select_by_daterange(
             options['startdate'],
             end_date=options['enddate'],
             number_of_days=options['numberofdays'],
             target_id=target_id)
-        headers = ['pingid', 'id', 'ip', 'company', 'timestamp', 'status']
         tbl_rows = []
         for row in rows:
             target_id = row[1]
@@ -308,16 +306,15 @@ def cmd_history_list(context, options):
 
     # if status show counts of ping records by status
     elif options['result'] == 'status':
+        headers = ['id', 'ip', 'company', 'status', 'count']
+
         results = pings_tbl.get_status_by_id(
             options['startdate'],
             end_date=options['enddate'],
             number_of_days=options['numberofdays'],
             target_id=target_id)
-        # create report of id, statuses with count for each
-        headers = ['id', 'ip', 'company', 'status', 'count']
         # find all status and convert to report format
         tbl_rows = []
-
         for target_id, value in six.iteritems(results):
             if target_id in context.target_data:
                 target = context.target_data[target_id]
@@ -327,11 +324,14 @@ def cmd_history_list(context, options):
                 company = "%s id unknown" % target_id
                 ip = '??'
             for key in value:
+                # restrict status output to 20 char.
                 status = (key[:20] + '..') if len(key) > 20 else key
                 row = [target_id, ip, company, status, value[key]]
                 tbl_rows.append(row)
 
     elif options['result'] == '%ok':
+        headers = ['id', 'ip', 'company', 'product', '%OK', 'total']
+
         percentok_dict = pings_tbl.get_percentok_by_id(
             options['startdate'],
             end_date=options['enddate'],
@@ -357,7 +357,6 @@ def cmd_history_list(context, options):
                                    % (options['result']))
 
     context.spinner.stop()
-    headers = ['id', 'ip', 'company', 'product', '%OK', 'total']
     table = TableFormatter(tbl_rows, headers,
                            title=('Ping Status for %s to %s' %
                                   (options['startdate'],
