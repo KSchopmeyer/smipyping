@@ -28,6 +28,7 @@ from __future__ import print_function, absolute_import
 import os
 import csv
 import six
+import datetime
 from mysql.connector import MySQLConnection
 
 __all__ = ['ProgramsTable']
@@ -114,6 +115,25 @@ class ProgramsTable(object):
     def __len__(self):
         """Return number of targets"""
         return len(self.data_dict)
+
+    def current(self):
+        """Return record for current program if one exists.
+
+        Returns:
+            Program record of current program or None if there is no
+            current program. The current program is one where the date today
+            is ge the program start date and lt the program end date.
+
+        Exceptions:
+            ValueError if there is no current program
+        """
+        today = datetime.date.today()
+        for program_id in self:
+            pgm = self[program_id]
+            if today <= pgm['EndDate'] and today >= pgm['StartDate']:
+                return pgm
+
+        raise ValueError("There is no current program")
 
 
 class CsvProgramsTable(ProgramsTable):

@@ -118,6 +118,24 @@ class UsersTable(object):
         """Return number of targets"""
         return len(self.data_dict)
 
+    def get_for_company(self, company_id):
+        """Get the set of user records for a company_id"""
+        # return [self[id_] for id_ in self if self[id_]['CompanyID'] == company_id]
+        users = []
+        for id_ in self:
+            value = self[id_]
+            if value['CompanyID'] == company_id:
+                users.append(value)
+
+    def get_emails_for_company(self, company_id):
+        """ Get users for company as a list."""
+        for id_ in self:
+            value = self[id_]
+            emails = []
+            if value['CompanyID'] == company_id:
+                emails.append(value['Email'])
+        return emails
+
 
 class CsvUsersTable(UsersTable):
     """
@@ -238,3 +256,26 @@ class MySQLUsersTable(UsersTable):
             raise ValueError('Error: setup sql based targets table %r. '
                              'Exception: %r'
                              % (db_dict, ex))
+
+    def append(self, firstname, lastname, email, company_id, active=True,
+               notify=True):
+        """
+        Write a new record to the database containing the target_id,
+        scan status and a timestamp
+
+        Parameters:
+          target_id :term:`integer`
+            The database target_id of the wbem_server for which the
+            status is being reported.
+
+          status (:term:`string`):
+            String containing the status of the last test of the wbem
+            server.
+
+          timestamp (TODO)
+            The time stamp for the scan.  NOTE: This may not be exactly the
+            time at which the last scan was run since the timestamp serves
+            as a gathering point for scans so the same time stamp may be
+            reported for a number of target_ids
+        """
+        pass

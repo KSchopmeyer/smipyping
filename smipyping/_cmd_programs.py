@@ -52,20 +52,14 @@ def programs_group():
               default=None,
               required=True,
               help='End date for program')
-@click.option('-', '--programname', type=str,
+@click.option('-p', '--programname', type=str,
               default=None,
               required=True,
               help='Descriptive name for program')
 @click.pass_obj
 def programs_new(context, **options):  # pylint: disable=redefined-builtin
     """
-    Create fake cimping results in pings database.
-
-    Execute simple cim ping against the list of ids provided for target servers
-    in the database defined by each id in the list of ids creates a table
-    showing result.
-
-    ex. smicli cimping ids 5 8 9
+    Add new program to the database.
 
     """
     context.execute_cmd(lambda: cmd_programs_new(context, options))
@@ -75,23 +69,56 @@ def programs_new(context, **options):  # pylint: disable=redefined-builtin
 @click.pass_obj
 def programs_list(context):  # pylint: disable=redefined-builtin
     """
-    Create fake cimping results in pings database.
-
-    Execute simple cim ping against the list of ids provided for target servers
-    in the database defined by each id in the list of ids creates a table
-    showing result.
-
-    ex. smicli cimping ids 5 8 9
-
+    List programs in the database.
     """
     context.execute_cmd(lambda: cmd_programs_list(context))
 
+
+@programs_group.command('delete', options_metavar=CMD_OPTS_TXT)
+@click.argument('ID', type=int, metavar='ProgramID', required=True, nargs=1)
+@click.option('-v', '--verify', is_flag=True,
+              help='Verify the deletion before deleting the program.')
+@click.pass_obj
+def programs_delete(context, id, options):  # pylint: disable=redefined-builtin
+    """
+    Delete a program from the database.
+
+    Delete the program defined by the subcommand argument from the
+    database.
+    """
+    context.execute_cmd(lambda: cmd_programs_delete(context))
+
+
+@programs_group.command('current', options_metavar=CMD_OPTS_TXT)
+@click.pass_obj
+def programs_current(context):  # pylint: disable=redefined-builtin
+    """
+    Get info on current program.
+
+    Search database for current program and display info on this program
+    """
+    context.execute_cmd(lambda: cmd_programs_current(context))
 
 ######################################################################
 #
 #    Action functions
 #
 ######################################################################
+
+
+def cmd_programs_current(context):
+    """
+    """
+    programs_tbl = ProgramsTable.factory(context.db_info, context.db_type,
+                                         context.verbose)
+
+    if programs_tbl.current():
+        cp = programs_tbl.current()
+        click.echo('Current program=%s(id=%s) started=%s ends=%s' %
+                   (cp['ProgramName'], cp['ProgramID'], cp['StartDate'],
+                    cp['EndDate']))
+    else:
+        click.ClickException('Error, no current program defined')
 
 
 def cmd_programs_list(context):
@@ -115,4 +142,9 @@ def cmd_programs_list(context):
 
 
 def cmd_programs_new(context, options):
-    click.echo('NOT IMPLEMENTED')
+    click.echo('Programs new NOT IMPLEMENTED')
+
+
+def cmd_programs_delete(context, options):
+    """Delete a program from the database."""
+    click.echo('Programs delete NOT IMPLEMENTED')

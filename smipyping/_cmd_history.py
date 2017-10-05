@@ -23,7 +23,7 @@ import click
 from click_datetime import Datetime
 import six
 
-from smipyping import SimplePingList, PingsTable
+from smipyping import SimplePingList, PingsTable, ProgramsTable, UsersTable
 from .smicli import cli, CMD_OPTS_TXT
 from ._tableoutput import TableFormatter
 
@@ -36,7 +36,7 @@ def history_group():
 
     Includes commands to clean the table and also to create various reports
     and tables of the history of tests on the WBEM servers in the
-    targets database.
+    targets table that are stored in the Pings table.
 
     """
     pass
@@ -54,13 +54,7 @@ def history_group():
 @click.pass_obj
 def history_create(context, **options):  # pylint: disable=redefined-builtin
     """
-    Create fake cimping results in pings database.
-
-    Execute simple cim ping against the list of ids provided for target servers
-    in the database defined by each id in the list of ids creates a table
-    showing result.
-
-    ex. smicli cimping ids 5 8 9
+    TODO: Delete this or move somewhere in a test catagory.
 
     """
     context.execute_cmd(lambda: cmd_history_create(context, options))
@@ -75,14 +69,14 @@ def history_create(context, **options):  # pylint: disable=redefined-builtin
 @click.option('-s', '--startdate', type=Datetime(format='%d/%m/%y'),
               default=None,
               required=False,
-              help='Start date for ping records included. Format is %d/%m/%y'
-                   ' where %d and %m are zero padded (ex. 01) and year is'
+              help='Start date for ping records included. Format is dd/mm/yy'
+                   ' where dd and mm are zero padded (ex. 01) and year is'
                    ' without century (ex. 17). Default is oldest record')
 @click.option('-e', '--enddate', type=Datetime(format='%d/%m/%y'),
               default=None,
               required=False,
-              help='End date for ping records included. Format is %d/%m/%y'
-                   ' where %d and %m are zero padded (ex. 01) and year is'
+              help='End date for ping records included. Format is dd/mm/yy'
+                   ' where dd and dm are zero padded (ex. 01) and year is'
                    ' without century (ex. 17). Default is current datetime')
 @click.option('-n', '--numberofdays', type=int,
               required=False,
@@ -100,13 +94,10 @@ def history_create(context, **options):  # pylint: disable=redefined-builtin
 @click.pass_obj
 def history_list(context, **options):  # pylint: disable=redefined-builtin
     """
-    Cimping a list of targets from database.
+    List history of pings from database
 
-    Execute simple cim ping against the list of ids provided for target servers
-    in the database defined by each id in the list of ids creates a table
-    showing result.
-
-    ex. smicli cimping ids 5 8 9
+    List pings history from database within a time range.  This allows listing
+    full list of pings, status summary or percetage OK responses.
 
     """
     context.execute_cmd(lambda: cmd_history_list(context, options))
@@ -118,13 +109,9 @@ def history_list(context, **options):  # pylint: disable=redefined-builtin
 @click.pass_obj
 def history_stats(context, **options):  # pylint: disable=redefined-builtin
     """
-    Cimping a list of targets from database.
+    Get stats on pings in database.
 
-    Execute simple cim ping against the list of ids provided for target servers
-    in the database defined by each id in the list of ids creates a table
-    showing result.
-
-    ex. smicli cimping ids 5 8 9
+    TODO. This could well be just another option in list.
 
     """
     context.execute_cmd(lambda: cmd_history_stats(context, options))
@@ -160,11 +147,91 @@ def history_delete(context, **options):  # pylint: disable=redefined-builtin
     context.execute_cmd(lambda: cmd_history_delete(context, options))
 
 
+@history_group.command('weekly', options_metavar=CMD_OPTS_TXT)
+@click.pass_obj
+def history_weekly(context):  # pylint: disable=redefined-builtin
+    """
+    Generate weekly report.
+
+    """
+    context.execute_cmd(lambda: cmd_history_weekly(context))
+
+
 ######################################################################
 #
 #    Action functions
 #
 ######################################################################
+
+
+def cmd_history_weekly(context):
+    """
+    Generate the standard weekly status report
+    """
+    pings_tbl = PingsTable.factory(context.db_info, context.db_type,
+                                   context.verbose)
+
+    programs_tbl = ProgramsTable.factory(context.db_info, context.db_type,
+                                         context.verbose)
+
+    users_tbl = UsersTable.factory(context.db_info, context.db_type,
+                                   context.verbose)
+
+    if programs_tbl.current():
+        cp = programs_tbl.current()
+    else:
+        click.ClickException('Error, no current program defined')
+
+    percentok_ytd = pings_tbl.get_percentok_by_id(
+        cp['StartDate'],
+        end_date=cp['EndDate'])
+
+    today = datetime.date.today()
+    percentok_today = pings_tbl.get_percentok_by_id(today)
+
+    week_start = today - datetime.timedelta(days=today.weekday())
+
+    headers = ['id', 'IP', 'company', 'Product', 'Today%', 'pgm%', 'Contacts']
+    tbl_rows = []
+    for target_id, value in six.iteritems(percentok_ytd):
+        if target_id in context.target_data:
+            target = context.target_data[target_id]
+            company = target.get('CompanyName', 'empty')
+            company = TableFormatter.fold_cell(company, 15)
+            product = target.get('Product', 'empty')
+            product = TableFormatter.fold_cell(product, 15)
+            ip = target.get('IPAddress', 'empty')
+            smi_version = target.get('SMIVersion', 'empty')
+            smi_version = TableFormatter.fold_cell(smi_version, 15)
+            company_id = target.get('CompanyID', 'empty')
+            # get users list
+            email_list = users_tbl.get_emails_for_company(company_id)
+            print(users_tbl.get_for_company(company_id))
+            print('company_id %s, emails %s' % (company_id, email_list))
+            emails = "\n".join(email_list)
+        else:
+            company = "No target"
+            ip = ''
+            product = ''
+            smi_version = ''
+            emails = ''
+        if target_id in percentok_today:
+            today_percent = percentok_today[target_id][0]
+        else:
+            today_percent = 0
+
+        row = [target_id, ip, company, product, today_percent, value[0], emails]
+        tbl_rows.append(row)
+
+    context.spinner.stop()
+    table = TableFormatter(tbl_rows, headers,
+                           title=('Sever Status %s for %s to %s' %
+                                  (today,
+                                   cp['StartDate'],
+                                   cp['EndDate'])),
+                           table_format=context.output_format)
+    click.echo(table.build_table())
+
 
 def cmd_history_delete(context, options):
     """
