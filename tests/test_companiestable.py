@@ -21,6 +21,7 @@ from __future__ import print_function, absolute_import
 
 import os
 import unittest
+import six
 
 from smipyping._companiestable import CompaniesTable
 from smipyping._configfile import read_config
@@ -61,7 +62,7 @@ class TableTests(unittest.TestCase):
         for key in test_keys:
             self.assertTrue(key in tbl_inst)
 
-        for key, value in tbl_inst .iteritems():
+        for key, value in six.iteritems(tbl_inst):
             self.assertTrue(key in test_keys)
 
 

@@ -118,22 +118,51 @@ class UsersTable(object):
         """Return number of targets"""
         return len(self.data_dict)
 
-    def get_for_company(self, company_id):
-        """Get the set of user records for a company_id"""
-        # return [self[id_] for id_ in self if self[id_]['CompanyID'] == company_id]
-        users = []
+    def filter_records(self, field, target_value):
+        """Get the set of user records for a field in the table that
+        where the field value matches the test_value provided.
+        Return the result as a new dictionary where the key is
+        userID and value is the user record.
+
+        Parameters:
+
+          field(:term:`string`):
+            Name of field in the table on which the filtering occurs
+
+          target_value():
+            value to compare with value in user table field for equality.
+            The datat type depends on the field being compared
+
+        Returns:
+          Dictionary of user table records that match where the UserID is
+          the key and the value for that ID in the user table is the
+          value.
+
+        Returns:
+            KeyError if the field is NOT in the user table.
+
+        """
+        users = {}
         for id_ in self:
             value = self[id_]
-            if value['CompanyID'] == company_id:
-                users.append(value)
+            if value[field] == target_value:
+                users[id_] = value
+        return users
 
     def get_emails_for_company(self, company_id):
-        """ Get users for company as a list."""
-        for id_ in self:
-            value = self[id_]
-            emails = []
-            if value['CompanyID'] == company_id:
-                emails.append(value['Email'])
+        """ Get all emails for a company id from the users base.  There will
+            be typically multiple users returned
+
+            Parameters:
+
+              company_id(:term:`integer`)
+                The companyID for which all user records will be returned
+
+            Returns:
+                list of email addresses.
+        """
+        users = self.filter_records('CompanyID', company_id)
+        emails = [value['Email'] for key, value in six.iteritems(users)]
         return emails
 
 

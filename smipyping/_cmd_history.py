@@ -206,8 +206,6 @@ def cmd_history_weekly(context):
             company_id = target.get('CompanyID', 'empty')
             # get users list
             email_list = users_tbl.get_emails_for_company(company_id)
-            print(users_tbl.get_for_company(company_id))
-            print('company_id %s, emails %s' % (company_id, email_list))
             emails = "\n".join(email_list)
         else:
             company = "No target"
