@@ -65,11 +65,17 @@ class TableTests(unittest.TestCase):
         for key, value in six.iteritems(tbl_inst):
             self.assertTrue(key in test_keys)
 
-        for key, value in six.iteritems(tbl_inst):
-            company_id = 1
-            rtns = tbl_inst.filter_records('CompanyID', company_id)
-            for user in rtns
-                user
+        company_id = 1
+        records = tbl_inst.filter_records('CompanyID', company_id)
+        for user in records:
+            user_value = records[user]
+            self.assertEqual(company_id, user_value['CompanyID'])
+
+        try:
+            tbl_inst.filter_records('xxx', 9)
+            self.assertfail('expected exception')
+        except KeyError as er:
+            print('error %s' % er)
 
 
 class MySQLTests(TableTests):

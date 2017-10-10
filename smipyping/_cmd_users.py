@@ -24,6 +24,7 @@ import six
 from smipyping import UsersTable, CompaniesTable
 from .smicli import cli, CMD_OPTS_TXT
 from ._tableoutput import TableFormatter
+from ._common import validate_prompt, pick_from_list
 
 
 @cli.group('users', options_metavar=CMD_OPTS_TXT)
@@ -39,8 +40,6 @@ def users_group():
     """
     pass
 
-# TODO make new program automatic extension of last
-
 
 @users_group.command('new', options_metavar=CMD_OPTS_TXT)
 @click.option('-f', '--firstname', type=str,
@@ -53,20 +52,22 @@ def users_group():
 @click.option('-e', '--email', type=str,
               required=True,
               help='User email address.')
-@click.option('-p', '--programID', type=int,
+@click.option('-c', '--companyID', type=int,
               default=None,
               required=True,
               help='CompanyID for the company attached to this user')
+@click.option('--inactive', default=False, is_flag=True,
+              help='Set the active/inactive state in the database for this '
+              'user. Default is active')
+@click.option('--disable', default=False, is_flag=True,
+              help='Disable notifications in the database for this '
+              'user. Default is enabled')
 @click.pass_obj
 def users_new(context, **options):  # pylint: disable=redefined-builtin
     """
-    Create fake cimping results in pings database.
+    Create a new user in the user table.
 
-    Execute simple cim ping against the list of ids provided for target servers
-    in the database defined by each id in the list of ids creates a table
-    showing result.
-
-    ex. smicli cimping ids 5 8 9
+    Creates a new user with the defined parameters.
 
     """
     context.execute_cmd(lambda: cmd_users_new(context, options))
@@ -83,17 +84,65 @@ def users_list(context):  # pylint: disable=redefined-builtin
 
 @users_group.command('delete', options_metavar=CMD_OPTS_TXT)
 @click.argument('ID', type=int, metavar='UserID', required=True, nargs=1)
-@click.option('-v', '--verify', is_flag=True,
-              help='Verify the deletion before deleting the program.')
+@click.option('-v', '--verify', is_flag=True, default=False,
+              help='Verify the deletion before deleting the user.')
 @click.pass_obj
-def users_delete(context, id, options):  # pylint: disable=redefined-builtin
+def users_delete(context, id, **options):  # pylint: disable=redefined-builtin
     """
     Delete a program from the database.
 
     Delete the program defined by the subcommand argument from the
     database.
     """
-    context.execute_cmd(lambda: cmd_users_delete(context))
+    context.execute_cmd(lambda: cmd_users_delete(context, id, options))
+
+
+@users_group.command('modify', options_metavar=CMD_OPTS_TXT)
+@click.argument('ID', type=int, metavar='UserID', required=True, nargs=1)
+@click.option('-f', '--firstname', type=str,
+              required=False,
+              help='User first name.')
+@click.option('-l', '--lastname', type=str,
+              default=None,
+              required=False,
+              help='User last name')
+@click.option('-e', '--email', type=str,
+              required=False,
+              help='User email address.')
+@click.option('-p', '--programID', type=int, default=None, required=False,
+              help='CompanyID for the company attached to this user')
+@click.option('--inactive', is_flag=True, default=False,
+              help='Set the inactive state in the database for this '
+              'user if this flag set.')
+@click.option('--no_notifications', is_flag=True, default=False,
+              help='Disable the notify statein the database for this '
+              'user if this flag set.')
+@click.option('-v', '--verify', is_flag=True, default=False,
+              help='Verify the deletion before modifying the user.')
+@click.pass_obj
+def users_modify(context, id, **options):  # pylint: disable=redefined-builtin
+    """
+    Create fake cimping results in pings database.
+
+    Execute simple cim ping against the list of ids provided for target servers
+    in the database defined by each id in the list of ids creates a table
+    showing result.
+
+    ex. smicli cimping ids 5 8 9
+
+    """
+    context.execute_cmd(lambda: cmd_users_new(context, options))
+
+
+@users_group.command('activate', options_metavar=CMD_OPTS_TXT)
+@click.argument('ID', type=int, metavar='UserID', required=True, nargs=1)
+@click.option('--activate/deactivate', default=False,
+              help='Set the activate/deactivate flag in the database for this '
+              'user.')
+def users_activate(context, id, **options):
+    """
+    """
+    context.execute_cmd(lambda: cmd_users_activate(context, options))
 
 
 ######################################################################
@@ -101,6 +150,32 @@ def users_delete(context, id, options):  # pylint: disable=redefined-builtin
 #    Action functions
 #
 ######################################################################
+
+
+def _test_active(options):
+    """
+    Test the activate options. This has 3 possible values.
+    """
+    if options['active']:
+        activate = True
+    elif options['inactive']:
+        activate = False
+    else:
+        activate = None
+    return activate
+
+
+def _test_notify(options):
+    """
+    Test the activate options. This has 3 possible values.
+    """
+    if options['enable']:
+        notify = True
+    elif options['disable']:
+        notify = False
+    else:
+        notify = None
+    return notify
 
 
 def cmd_users_list(context):
@@ -116,6 +191,8 @@ def cmd_users_list(context):
         row = [data[field] for field in headers]
         tbl_rows.append(row)
 
+    tbl_rows.sort(key=lambda x: x[0])
+
     context.spinner.stop()
     table = TableFormatter(tbl_rows, headers,
                            title=('Users Table'),
@@ -124,8 +201,9 @@ def cmd_users_list(context):
 
 
 def cmd_users_new(context, options):
-    click.echo('users new NOT IMPLEMENTED')
-
+    """
+    Add a new user to the table.
+    """
     first_name = options['firstname']
     last_name = options['lastname']
     email = options['email']
@@ -133,10 +211,72 @@ def cmd_users_new(context, options):
 
     companies_tbl = CompaniesTable.factory(context.db_info, context.db_type,
                                            context.verbose)
-    #if company_id in companies_tbl:
-    # TODO finish this
+
+    users_tbl = UsersTable.factory(context.db_info, context.db_type,
+                                   context.verbose)
+
+    active = not options['inactive']
+    notify = not options['disable']
+
+    # TODO sept 2017 expand to include active and notify
+    if company_id in companies_tbl:
+        users_tbl.insert(first_name, last_name, email, company_id,
+                         active=active,
+                         notify=notify)
+    else:
+        raise click.ClickException('The companyID %s is not a valid companyID '
+                                   'in companies table' % company_id)
 
 
-def cmd_users_delete(context, options):
+def cmd_users_delete(context, id, options):
     """Delete a user from the database."""
-    click.echo('Users delete NOT IMPLEMENTED')
+
+    users_tbl = UsersTable.factory(context.db_info, context.db_type,
+                                   context.verbose)
+    user_id = id
+
+    if user_id in users_tbl:
+        if options['verify']:
+            user = users_tbl[user_id]
+            click.echo(user)
+            context.spinner.stop()
+            if validate_prompt():
+                users_tbl.delete(user_id)
+            else:
+                click.echo('Abort Operation')
+                return
+        else:
+            users_tbl.delete(user_id)
+
+    else:
+        raise click.ClickException('The UserID %s is not in the table' %
+                                   user_id)
+
+
+def cmd_users_modify(context, id, options):
+    """Delete a user from the database."""
+
+    users_tbl = UsersTable.factory(context.db_info, context.db_type,
+                                   context.verbose)
+    user_id = id
+
+    first_name = options['firstname']
+    last_name = options['lastname']
+    email = options['email']
+    company_id = options['companyid']
+    activate = _test_active(options)
+
+    if user_id in users_tbl:
+        # TODO validate data
+        users_tbl.modify(user_id, first_name, last_name, email, company_id,
+                         activate)
+    else:
+        raise click.ClickException('The UserID %s is not in the table' %
+                                   user_id)
+
+
+def cmd_users_activate(context, id, options):
+    """
+    """
+    # TODO not implemented
+    click.echo("Not implemented")

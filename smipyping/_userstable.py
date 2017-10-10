@@ -162,6 +162,7 @@ class UsersTable(object):
                 list of email addresses.
         """
         users = self.filter_records('CompanyID', company_id)
+        # pylint: disable=unused-variable
         emails = [value['Email'] for key, value in six.iteritems(users)]
         return emails
 
@@ -205,8 +206,6 @@ class CsvUsersTable(UsersTable):
                 key = int(row['TargetID'])
                 if key in result:
                     # duplicate row handling
-                    print('ERROR. Duplicate Id in table: %s\nrow=%s' %
-                          (key, row))
                     raise ValueError('Input Error. duplicate Id')
                 else:
                     result[key] = row
@@ -233,9 +232,10 @@ class SQLUsersTable(UsersTable):
         dictionary.
         """
         try:
-            print('Database characteristics')
-            for key in self.db_dict:
-                print('%s: %s' % key, self.db_dict[key])
+            if self.verbose:
+                print('Database characteristics')
+                for key in self.db_dict:
+                    print('%s: %s' % key, self.db_dict[key])
         except ValueError as ve:
             print('Invalid database configuration exception %s' % ve)
         return self.db_dict
@@ -246,7 +246,8 @@ class MySQLUsersTable(UsersTable):
     def __init__(self, db_dict, dbtype, verbose):
         """Read the input file into a dictionary."""
 
-        print('MySQL Database type %s  verbose=%s' % (db_dict, verbose))
+        if verbose:
+            print('MySQL Database type %s  verbose=%s' % (db_dict, verbose))
         super(MySQLUsersTable, self).__init__(db_dict, dbtype, verbose)
 
         try:
@@ -256,8 +257,9 @@ class MySQLUsersTable(UsersTable):
                                          password=db_dict['password'])
 
             if connection.is_connected():
-                print('sql db connection established. host %s, db %s' %
-                      (db_dict['host'], db_dict['database']))
+                if verbose:
+                    print('sql db connection established. host %s, db %s' %
+                          (db_dict['host'], db_dict['database']))
                 self.connection = connection
             else:
                 print('SQL database connection failed. host %s, db %s' %
@@ -268,9 +270,13 @@ class MySQLUsersTable(UsersTable):
             raise ValueError('Could not connect to sql database %r. '
                              ' Exception: %r'
                              % (db_dict, ex))
+
+        self._load()
+
+    def _load(self):
         try:
             # python-mysql-connector-dictcursor  # noqa: E501
-            cursor = connection.cursor(dictionary=True)
+            cursor = self.connection.cursor(dictionary=True)
 
             # fetchall returns tuple so need index to fields, not names
             fields = ', '.join(self.fields)
@@ -284,27 +290,127 @@ class MySQLUsersTable(UsersTable):
         except Exception as ex:
             raise ValueError('Error: setup sql based targets table %r. '
                              'Exception: %r'
-                             % (db_dict, ex))
+                             % (self.db_dict, ex))
 
-    def append(self, firstname, lastname, email, company_id, active=True,
+    def insert(self, firstname, lastname, email, company_id, active=True,
                notify=True):
         """
         Write a new record to the database containing the target_id,
         scan status and a timestamp
 
         Parameters:
-          target_id :term:`integer`
-            The database target_id of the wbem_server for which the
-            status is being reported.
+          firstname(:term:`string`):
+            User first name. Required
 
-          status (:term:`string`):
-            String containing the status of the last test of the wbem
-            server.
+          lastname(:term:`string`):
 
-          timestamp (TODO)
-            The time stamp for the scan.  NOTE: This may not be exactly the
-            time at which the last scan was run since the timestamp serves
-            as a gathering point for scans so the same time stamp may be
-            reported for a number of target_ids
+          email(:term:`string`):
+
+          company_id(:term:`integer`)
+
+          active(:class:`py:bool`):
+
+          notify(:class:`py:bool`):
+
+        Exceptions:
+
         """
-        pass
+        cursor = self.connection.cursor()
+
+        active = 'Active' if active else 'Inactive'
+        notify = 'Enabled' if notify else 'Disabled'
+
+        sql = ("INSERT INTO Users "
+               "(Firstname, Lastname, Email, CompanyID, Active, Notify) "
+               "VALUES (%s, %s, %s, %s, %s, %s)")
+        data = (firstname, lastname, email, company_id, active,
+                notify)
+
+        try:
+            cursor.execute(sql, data)
+            self.connection.commit()
+        except Exception as ex:
+            print('userstable.append failed: exception %r' % ex)
+            self.connection.rollback()
+            raise ex
+        finally:
+            self._load()
+            self.connection.close()
+
+    def delete(self, user_id):
+        """
+        Delete the record defined by user_id
+        """
+        cursor = self.connection.cursor()
+
+        sql = "DELETE FROM Users WHERE UserID=%s"
+        try:
+            mydata = cursor.execute(sql, (user_id,))
+            self.connection.commit()
+        except Exception as ex:
+            print('userstable.delete failed: exception %r' % ex)
+            self.connection.rollback()
+            raise ex
+        finally:
+            self._load()
+            self.connection.close()
+
+    def modify(self, user_id, firstname, lastname, email, company_id,
+               active=True, notify=True):
+        """
+        Write a new record to the database containing the target_id,
+        scan status and a timestamp
+
+        Parameters:
+          firstname(:term:`string`):
+            User first name. Optional If not provided, this value will not
+            be changed.
+
+          lastname(:term:`string`):
+            User last name. Optional If not provided, this value will not
+            be changed.
+
+          email(:term:`string`):
+            User email address. Optional If not provided, this value will not
+            be changed.
+
+          company_id(:term:`integer`)
+            User last name. Optional If not provided, this value will not
+            be changed.
+
+          active(:class:`py:bool`):
+
+          notify(:class:`py:bool`):
+
+        Exceptions:
+
+        """
+        cursor = self.connection.cursor()
+
+        # TODO.  Need to account for 3 values, i.e. NONE also
+        if active is not None:
+            active = 'Active' if active else 'Inactive'
+
+        if notify is not None:
+            notify = 'Enabled' if notify else 'Disabled'
+
+        # Create list of fields
+
+        # create list of variables
+
+        sql = ("UPDATE USERS "
+               "set Firstname=%s, Lastname=%s, Email=%s, CompanyID=%s, "
+               "Active=%s, Notify=%s) "
+               "WHERE UserID = %s",
+               (firstname, lastname, email, company_id, active,
+                notify, user_id))
+        try:
+            cursor.execute(sql)
+            self.connection.commit()
+        except Exception as ex:
+            print('userstable.append failed: exception %r' % ex)
+            self.connection.rollback()
+            raise ex
+        finally:
+            self._load()
+            self.connection.close()

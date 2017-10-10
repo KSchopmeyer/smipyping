@@ -410,7 +410,7 @@ class MySQLPingsTable(SQLPingsTable):
 
         # create dictionary by target_id with value of [oks, total]
         percent_dict = {}
-        for target_id, status_dict in six.iteritems(status_dict):
+        for target_id_, status_dict in six.iteritems(status_dict):
             ok_count = 0
             total = 0
             for key, status_count in six.iteritems(status_dict):
@@ -418,7 +418,7 @@ class MySQLPingsTable(SQLPingsTable):
                     ok_count = status_count
                 total += status_count
             percent_ok = (ok_count * 100) / total
-            percent_dict[target_id] = (percent_ok, ok_count, total)
+            percent_dict[target_id_] = (percent_ok, ok_count, total)
         return percent_dict
 
     def delete_by_daterange(self, start_date, end_date=None,
@@ -556,19 +556,21 @@ class MySQLPingsTable(SQLPingsTable):
             reported for a number of target_ids
         """
         cursor = self.connection.cursor()
+        if status.type == 'OK' or status.type == 'PingFail':
+            status_str = '%s' % (status.type)
+        else:
+            status_str = '%s %s' % (status.type, status.exception)
+        sql = ("INSERT INTO Pings "
+               "(TargetID, Timestamp, Status) "
+               "VALUES (%s, %s, %s)")
+        data = (target_id, timestamp, status_str)
+
         try:
-            if status.type == 'OK' or status.type == 'PingFail':
-                status_str = '%s' % (status.type)
-            else:
-                status_str = '%s %s' % (status.type, status.exception)
-            add_record = ("INSERT INTO Pings "
-                          "(TargetID, Timestamp, Status) "
-                          "VALUES (%s, %s, %s)")
-            data = (target_id, timestamp, status_str)
-            cursor.execute(add_record, data)
+            cursor.execute(sql, data)
             self.connection.commit()
         except Exception as ex:
             print('pingstable.append exception %r' % ex)
             self.connection.rollback()
             raise ex
-        cursor.close()
+        finally:
+            cursor.close()

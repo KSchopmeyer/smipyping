@@ -35,6 +35,10 @@ def prompt(txt):
     """ single function for prompt. Aids mock tests"""
     return prompt_toolkit.prompt(txt)
 
+def validate_prompt():
+    text = prompt('Valid (y/n): ')
+    return True if text == 'y' else False
+
 
 def filter_namelist(regex, name_list, ignore_case=True):
     """
