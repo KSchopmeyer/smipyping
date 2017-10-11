@@ -96,6 +96,8 @@ from ._cmd_cimping import *  # noqa: F401,F403
 from ._cmd_sweep import *  # noqa: F401,F403
 from ._cmd_history import *  # noqa: F401,F403
 from ._cmd_programs import *  # noqa: F401,F403
+from ._cmd_users import *  # noqa: F401,F403
+from ._cmd_companies import *  # noqa: F401,F403
 
 from ._click_configfile import *  # noqa: F401,F403
 

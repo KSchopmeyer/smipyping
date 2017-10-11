@@ -21,6 +21,7 @@ from __future__ import print_function, absolute_import
 
 import os
 import unittest
+import six
 
 from smipyping._userstable import UsersTable
 from smipyping._configfile import read_config
@@ -61,8 +62,20 @@ class TableTests(unittest.TestCase):
         for key in test_keys:
             self.assertTrue(key in tbl_inst)
 
-        for key, value in tbl_inst .iteritems():
+        for key, value in six.iteritems(tbl_inst):
             self.assertTrue(key in test_keys)
+
+        company_id = 1
+        records = tbl_inst.filter_records('CompanyID', company_id)
+        for user in records:
+            user_value = records[user]
+            self.assertEqual(company_id, user_value['CompanyID'])
+
+        try:
+            tbl_inst.filter_records('xxx', 9)
+            self.assertfail('expected exception')
+        except KeyError as er:
+            print('error %s' % er)
 
 
 class MySQLTests(TableTests):
