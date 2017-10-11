@@ -27,8 +27,8 @@ from __future__ import print_function, absolute_import
 
 import os
 import csv
-import six
 import datetime
+import six
 from mysql.connector import MySQLConnection
 
 __all__ = ['ProgramsTable']
@@ -116,6 +116,7 @@ class ProgramsTable(object):
         """Return number of targets"""
         return len(self.data_dict)
 
+    # TODO combine current and for_date into a single method
     def current(self):
         """Return record for current program if one exists.
 
@@ -134,6 +135,33 @@ class ProgramsTable(object):
                 return pgm
 
         raise ValueError("There is no current program")
+
+    def for_date(self, date):
+        """Return record for program containing date defined in variable.
+
+        Parameters:
+          date(:class:`py:datetime.datetime`)
+            Gets program for the defined datetime or date.
+
+        Returns:
+            Program record of program or None if there is no
+            program for `date`. The program is one where the date today
+            is ge the program start date and le the program end date.
+
+        Exceptions:
+            ValueError if there is no current program
+        """
+        # allow datetime and convert to date
+        if isinstance(date, datetime.datetime):
+            date = date.date()
+
+        # find program that encompasses the date parameter
+        for program_id in self:
+            pgm = self[program_id]
+            if date <= pgm['EndDate'] and date >= pgm['StartDate']:
+                return pgm
+
+        raise ValueError("There is no program for date %s" % date)
 
 
 class CsvProgramsTable(ProgramsTable):
@@ -177,7 +205,8 @@ class CsvProgramsTable(ProgramsTable):
                     # duplicate row handling
                     print('ERROR. Duplicate Id in table: %s\nrow=%s' %
                           (key, row))
-                    raise ValueError('Input Error. duplicate Id')
+                    raise ValueError('Input Error. duplicate Id in table:'
+                                     '%s\nrow=%s' % (key, row))
                 else:
                     result[key] = row
         self.data_dict = result
@@ -203,7 +232,7 @@ class SQLProgramsTable(ProgramsTable):
         dictionary.
         """
         try:
-            print('Database characteristics')
+            print('Database characteristics:')
             for key in self.db_dict:
                 print('%s: %s' % key, self.db_dict[key])
         except ValueError as ve:

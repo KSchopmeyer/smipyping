@@ -65,7 +65,7 @@ def history_create(context, **options):  # pylint: disable=redefined-builtin
 #              multiple=True,
 #              required=False,
 #              help='Optional list of ids. If not supplied, all ids are used')
-# TODO change this to get epoch record for datetime
+# TODO move to multiple IDs.
 @click.option('-s', '--startdate', type=Datetime(format='%d/%m/%y'),
               default=None,
               required=False,
@@ -78,17 +78,19 @@ def history_create(context, **options):  # pylint: disable=redefined-builtin
               help='End date for ping records included. Format is dd/mm/yy'
                    ' where dd and dm are zero padded (ex. 01) and year is'
                    ' without century (ex. 17). Default is current datetime')
+# TODO make this test for positive int
 @click.option('-n', '--numberofdays', type=int,
               required=False,
               help='Alternative to enddate. Number of days to report from'
-                   ' startdate. enddate ignored if numberofdays set')
+                   ' startdate. "enddate" ignored if "numberofdays" set')
 @click.option('-t', '--targetId', type=int,
               required=False,
               help='Get results only for the defined targetID')
 @click.option('-r', 'result', type=click.Choice(['full', 'status', '%ok']),
               default='status',
-              help='Display. Full displays all records, status displays'
-                   ' status summary by id. Default=status')
+              help='Display. "full" displays all records, "status" displays '
+                   'status summary by id. Default=status. "%ok" reports '
+                   'percentage pings OK by Id and total count.')
 @click.option('-S' '--summary', is_flag=True, required=False, default=False,
               help='If set only a summary is generated.')
 @click.pass_obj
@@ -118,43 +120,49 @@ def history_stats(context, **options):  # pylint: disable=redefined-builtin
 
 
 @history_group.command('delete', options_metavar=CMD_OPTS_TXT)
-# @click.option('-i', '--targetIDs', default=None, type=int,
-#              multiple=True,
-#              required=False,
-#              help='Optional list of ids. If not supplied, all ids are used')
-# TODO change this to get epoch record for datetime
 @click.option('-s', '--startdate', type=Datetime(format='%d/%m/%y'),
               default=datetime.datetime.now(),
               required=False,
-              help='Start date for pings to be deleted. Format is %d/%m/%y')
+              help='Start date for pings to be deleted. Format is dd/mm/yy')
 @click.option('-e', '--enddate', type=Datetime(format='%d/%m/%y'),
               default=datetime.datetime.now(),
               required=False,
-              help='End date for pings to be deleted. Format is %d/%m/%y')
+              help='End date for pings to be deleted. Format is dd/mm/yy')
 @click.option('-t', '--targetID', type=int,
               required=False,
-              help='Delete only for the defined targetID')
+              help='Optional targetID. If included, delete ping records only '
+                   'for the defined targetID. Otherwise all ping records in '
+                   'the define time period are deleted.')
 @click.pass_obj
 def history_delete(context, **options):  # pylint: disable=redefined-builtin
     """
     Delete records from history file.
 
     Delete records from the history file based on start date and end date
+    options
 
-    ex. smicli cimping ids 5 8 9
+    ex. smicli history delete --startdate 09/09/17 --endate 09/10/17
 
     """
     context.execute_cmd(lambda: cmd_history_delete(context, options))
 
 
 @history_group.command('weekly', options_metavar=CMD_OPTS_TXT)
+@click.option('-d', '--date', type=Datetime(format='%d/%m/%y'),
+              default=datetime.datetime.today(),
+              required=False,
+              help='Optional date to be used as basis for report in form '
+                   ' dd/mm/yy. Default is the current day. This allows reports '
+                   'to be generated for previous periods.')
 @click.pass_obj
-def history_weekly(context):  # pylint: disable=redefined-builtin
+def history_weekly(context, **options):  # pylint: disable=redefined-builtin
     """
-    Generate weekly report.
+    Generate weekly report. This report includes percentage OK for each
+    target for today, this week, and the program and overall information on
+    the target (company, product, SMIversion, contacts.)
 
     """
-    context.execute_cmd(lambda: cmd_history_weekly(context))
+    context.execute_cmd(lambda: cmd_history_weekly(context, options))
 
 
 ######################################################################
@@ -164,9 +172,10 @@ def history_weekly(context):  # pylint: disable=redefined-builtin
 ######################################################################
 
 
-def cmd_history_weekly(context):
+def cmd_history_weekly(context, options):
     """
-    Generate the standard weekly status report
+    Generate the standard weekly status report. This report generates status
+    info on the current day, week, and program.
     """
     pings_tbl = PingsTable.factory(context.db_info, context.db_type,
                                    context.verbose)
@@ -177,21 +186,28 @@ def cmd_history_weekly(context):
     users_tbl = UsersTable.factory(context.db_info, context.db_type,
                                    context.verbose)
 
-    if programs_tbl.current():
-        cp = programs_tbl.current()
-    else:
-        click.ClickException('Error, no current program defined')
+    report_date = options['date'] if options['date'] else datetime.date.today()
+
+    try:
+        cp = programs_tbl.for_date(report_date)
+    except ValueError as ve:
+        raise click.ClickException('Error, no program defined %s ' % ve)
+    print('history_weekly options %s' % options)
+
+    percentok_today = pings_tbl.get_percentok_by_id(report_date)
+
+    week_start = report_date - datetime.timedelta(days=report_date.weekday())
+
+    percentok_week = pings_tbl.get_percentok_by_id(
+        week_start)
 
     percentok_ytd = pings_tbl.get_percentok_by_id(
         cp['StartDate'],
         end_date=cp['EndDate'])
 
-    today = datetime.date.today()
-    percentok_today = pings_tbl.get_percentok_by_id(today)
+    headers = ['id', 'IP', 'Company', 'Product', 'Today%', 'Week%', 'Pgm%',
+               'Contacts']
 
-    week_start = today - datetime.timedelta(days=today.weekday())
-
-    headers = ['id', 'IP', 'company', 'Product', 'Today%', 'pgm%', 'Contacts']
     tbl_rows = []
     for target_id, value in six.iteritems(percentok_ytd):
         if target_id in context.target_data:
@@ -218,13 +234,21 @@ def cmd_history_weekly(context):
         else:
             today_percent = 0
 
-        row = [target_id, ip, company, product, today_percent, value[0], emails]
+        if target_id in percentok_week:
+            week_percent = percentok_week[target_id][0]
+        else:
+            week_percent = 0
+
+        row = [target_id, ip, company, product, today_percent, week_percent,
+               value[0], emails]
         tbl_rows.append(row)
 
     context.spinner.stop()
     table = TableFormatter(tbl_rows, headers,
-                           title=('Sever Status %s for %s to %s' %
-                                  (today,
+                           title=('Server Status %s program=%s dates: %s/'
+                                  '%s' %
+                                  (report_date,
+                                   cp['ProgramName'],
                                    cp['StartDate'],
                                    cp['EndDate'])),
                            table_format=context.output_format)
@@ -277,6 +301,7 @@ def cmd_history_stats(context, options):
     context.spinner.stop()
     click.echo('Total=%s records\noldest: %s\nnewest: %s' %
                (count, oldest, newest))
+    # TODO add by pgm, etc. options
 
     # get first and last record.
     # if verbose output, get count by program

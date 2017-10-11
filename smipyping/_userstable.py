@@ -149,6 +149,7 @@ class UsersTable(object):
                 users[id_] = value
         return users
 
+    # add option for active
     def get_emails_for_company(self, company_id):
         """ Get all emails for a company id from the users base.  There will
             be typically multiple users returned
@@ -163,7 +164,8 @@ class UsersTable(object):
         """
         users = self.filter_records('CompanyID', company_id)
         # pylint: disable=unused-variable
-        emails = [value['Email'] for key, value in six.iteritems(users)]
+        emails = [value['Email'] for key, value in six.iteritems(users)
+                  if value['Active'] == 'Active']
         return emails
 
 
@@ -345,6 +347,7 @@ class MySQLUsersTable(UsersTable):
 
         sql = "DELETE FROM Users WHERE UserID=%s"
         try:
+            # TODO what is return on execute??
             mydata = cursor.execute(sql, (user_id,))
             self.connection.commit()
         except Exception as ex:
