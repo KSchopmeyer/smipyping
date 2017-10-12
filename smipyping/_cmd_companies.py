@@ -19,11 +19,11 @@ targets to find WBEM servers.
 from __future__ import print_function, absolute_import
 
 import click
-import six
 
 from smipyping import CompaniesTable
 from .smicli import cli, CMD_OPTS_TXT
 from ._tableoutput import TableFormatter
+from ._common import build_table_struct
 
 
 @cli.group('companies', options_metavar=CMD_OPTS_TXT)
@@ -53,21 +53,17 @@ def users_list(context):  # pylint: disable=redefined-builtin
 
 def cmd_companies_list(context):
     """
-    List existing Companies
+    List existing Companies in table format
     """
     companies_tbl = CompaniesTable.factory(context.db_info, context.db_type,
                                            context.verbose)
 
     headers = CompaniesTable.fields
-    tbl_rows = []
-    for co_id, data in six.iteritems(companies_tbl):
-        row = [data[field] for field in headers]
-        tbl_rows.append(row)
-
-    tbl_rows.sort(key=lambda x:x[0])
+    tbl_rows = build_table_struct(headers, companies_tbl)
 
     context.spinner.stop()
     table = TableFormatter(tbl_rows, headers,
                            title=('Companies Table'),
                            table_format=context.output_format)
+
     click.echo(table.build_table())

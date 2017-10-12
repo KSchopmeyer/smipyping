@@ -113,7 +113,6 @@ class SimplePingList(object):
             self.target_ids = target_ids if target_ids else \
                 target_data.get_enabled_targetids()
 
-
         self.verbose = verbose
         self.logfile = logfile
         self.log_level = log_level

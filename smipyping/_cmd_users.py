@@ -24,7 +24,7 @@ import six
 from smipyping import UsersTable, CompaniesTable
 from .smicli import cli, CMD_OPTS_TXT
 from ._tableoutput import TableFormatter
-from ._common import validate_prompt, pick_from_list
+from ._common import validate_prompt
 
 
 @cli.group('users', options_metavar=CMD_OPTS_TXT)

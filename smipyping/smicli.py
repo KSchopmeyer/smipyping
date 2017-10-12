@@ -26,7 +26,7 @@ import click
 
 from prompt_toolkit.history import FileHistory
 
-from smipyping import TargetsData
+from smipyping import TargetsTable
 from smipyping import DEFAULT_DBTYPE
 from ._click_context import ClickContext
 
@@ -141,8 +141,8 @@ def cli(ctx, config_file, db_type, log_level, output_format, verbose,
 
         # use db info to get target info.
         try:
-            target_data = TargetsData.factory(db_info, db_type, verbose,
-                                              output_format=output_format)
+            target_data = TargetsTable.factory(db_info, db_type, verbose,
+                                               output_format=output_format)
         except ValueError as ve:
             raise click.ClickException("%s: %s" % (ve.__class__.__name__, ve))
 

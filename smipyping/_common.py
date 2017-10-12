@@ -20,6 +20,7 @@
 from __future__ import absolute_import, unicode_literals
 
 import re
+import six
 import prompt_toolkit
 
 TABLE_FORMATS = ['plain', 'simple', 'grid', 'html']
@@ -35,8 +36,13 @@ def prompt(txt):
     """ single function for prompt. Aids mock tests"""
     return prompt_toolkit.prompt(txt)
 
-def validate_prompt():
-    text = prompt('Valid (y/n): ')
+
+def validate_prompt(text=""):
+    """
+    Issue prompt and get y/n response. Input parameter text is prepended to
+    the prompt output.
+    """
+    text = prompt('%s valid (y/n): ' % text)
     return True if text == 'y' else False
 
 
@@ -185,3 +191,38 @@ def set_input_variable(ctx, var_, config_file_name, default_value):
     else:
         rtn_value = default_value
     return rtn_value
+
+
+def build_table_struct(fields, db_table, max_width=None, sort=False):
+    """
+    Build a formatted table from the list of fields in the db_table.
+    This builds a table with each table entry in the table
+
+    Parameters:
+      fields(list of :term:`string`):
+        list containing the names of the fields from the the db_table
+        to be included in the table formatted output
+
+      db_table TODO
+
+      max_width(:term:`integer`):
+        Optional maximum width of any field
+
+      sort(:class:`py:bool`):
+        If True, the resulting rows are sorted by ID
+
+    Returns:
+        list of lists where each inner list is a row. This is suitable for
+        printing with the table formatter.
+
+    """
+    tbl_rows = []
+    # pylint: disable=unused-variable
+    for id_, data in six.iteritems(db_table):
+        row = [data[field] for field in fields]
+        tbl_rows.append(row)
+
+    if sort:
+        tbl_rows.sort(key=lambda x: x[0])
+
+    return tbl_rows
