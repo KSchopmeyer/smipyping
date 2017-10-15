@@ -24,7 +24,7 @@ import six
 
 from smipyping import ProgramsTable
 from .smicli import cli, CMD_OPTS_TXT
-from ._tableoutput import TableFormatter
+from ._click_common import print_table
 
 
 @cli.group('programs', options_metavar=CMD_OPTS_TXT)
@@ -135,10 +135,8 @@ def cmd_programs_list(context):
         tbl_rows.append(row)
 
     context.spinner.stop()
-    table = TableFormatter(tbl_rows, headers,
-                           title=('Programs Table'),
-                           table_format=context.output_format)
-    click.echo(table.build_table())
+    print_table(tbl_rows, headers, title=('Programs Table'),
+                table_format=context.output_format)
 
 
 def cmd_programs_new(context, options):

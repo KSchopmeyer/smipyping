@@ -19,9 +19,10 @@ data file.
 from __future__ import print_function, absolute_import
 
 import click
+import six
 
 from .smicli import cli, CMD_OPTS_TXT
-from ._tableoutput import TableFormatter
+from ._click_common import print_table
 
 
 @cli.group('targets', options_metavar=CMD_OPTS_TXT)
@@ -106,7 +107,7 @@ def targets_disable(context, targetid, enable, **options):
 #  targets processing commands
 ##############################################################
 
-def display_cols(self, target_table, fields, show_disabled=True):
+def display_cols(target_table, fields, show_disabled=True, output_format=None):
     """
     Display the columns of data defined by the fields parameter.
 
@@ -123,34 +124,34 @@ def display_cols(self, target_table, fields, show_disabled=True):
     """
     table_data = []
 
-    col_list = self.tbl_hdr(fields)
+    col_list = target_table.tbl_hdr(fields)
 
-    table_width = self.get_output_width(fields) + len(fields)
+    table_width = target_table.get_output_width(fields) + len(fields)
     fold = False if table_width < 80 else True
 
-    for record_id in sorted(target_table.iterkeys()):
+    for record_id in sorted(target_table.keys()):
         if show_disabled:
-            table_data.append(self.format_record(record_id, fields, fold))
+            table_data.append(target_table.format_record(record_id, fields,
+                                                         fold))
 
         else:
-            if not self.disabled_target_id(record_id):
-                table_data.append(self.format_record(record_id, fields,
-                                                     fold))
+            if not target_table.disabled_target_id(record_id):
+                table_data.append(target_table.format_record(record_id, fields,
+                                                             fold))
 
     title = 'Target Providers Overview:'
     if show_disabled:
         title = '%s including disabled' % title
-    table = TableFormatter(table_data, headers=col_list,
-                           title=title)
-    table.print_table()
+    print_table(table_data, headers=col_list, title=title,
+                table_format=output_format)
 
 
 STANDARD_FIELDS_DISPLAY_LIST = ['TargetID', 'IPAddress', 'Port', 'Protocol',
                                 'CompanyName', 'Product', 'CimomVersion']
 
 
-def display_all(self, target_table, fields=None, company=None,
-                show_disabled=True):
+def display_all(target_table, fields=None, company=None,
+                show_disabled=True, output_format=None):
     """Display all entries in the base. If fields does not exist,
        display a standard list of fields from the database.
     """
@@ -159,7 +160,8 @@ def display_all(self, target_table, fields=None, company=None,
         fields = STANDARD_FIELDS_DISPLAY_LIST
     else:
         fields = fields
-    display_cols(target_table, fields, show_disabled=show_disabled)
+    display_cols(target_table, fields, show_disabled=show_disabled,
+                 output_format=output_format)
 
 
 def cmd_targets_disable(context, targetid, enable, options):
@@ -176,7 +178,7 @@ def cmd_targets_disable(context, targetid, enable, options):
             click.echo('State already same as proposed change')
             return
         return
-
+        # TODO why the following
         if target_record is not None:
             target_record['ScanEnabled'] = False if enable is True else True
             context.provider_data.write_updated_record(targetid)
@@ -208,10 +210,8 @@ def cmd_targets_fields(context):
     for field in fields:
         rows.append([field])
     headers = 'Table Fields'
-    tbl = TableFormatter(rows, headers, title='Target table fields',
-                         table_format=context.output_format)
-
-    click.echo(tbl.build_table())
+    print_table(rows, headers, title='Target table fields',
+                table_format=context.output_format)
 
 
 def cmd_targets_get(context, targetid, options):
@@ -250,9 +250,9 @@ def cmd_targets_list(context, options):
                                    (ke.__class__.__name__, ke))
 
     try:
-        context.target_data.display_all(list(fields),
-                                        show_disabled=options['disabled'],
-                                        company=None)
+        display_all(context.target_data, list(fields),
+                    show_disabled=options['disabled'],
+                    company=None, output_format=context.output_format)
 
     except Exception as ex:
         raise click.ClickException("%s: %s" % (ex.__class__.__name__, ex))

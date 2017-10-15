@@ -31,9 +31,14 @@ except ImportError:
     from io import StringIO
 from terminaltables import AsciiTable
 import six
-from ._click_common import TABLE_FORMATS
 
 __all__ = ['TableFormatter']
+
+TABLE_FORMATS = ['plain', 'simple', 'grid', 'html']
+
+# TODO: Want to expand to this when we get updated tabulate.
+# TABLE_FORMATS = ['table', 'plain', 'simple', 'psql', 'rst', 'mediawiki',
+#                 'html']
 
 
 class TableFormatter(object):

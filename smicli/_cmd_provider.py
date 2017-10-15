@@ -28,9 +28,8 @@ from pywbem import WBEMServer, WBEMConnection, Error, ValueMapping
 from smipyping._ping import ping_host
 from smipyping.config import PING_TIMEOUT
 from .smicli import cli, CMD_OPTS_TXT
-from ._tableoutput import TableFormatter
 from ._common_options import add_options, namespace_option
-from ._click_common import filter_namelist
+from ._click_common import filter_namelist, print_table
 
 
 @cli.group('provider', options_metavar=CMD_OPTS_TXT)
@@ -233,10 +232,8 @@ def cmd_provider_profiles(context, options):
         rows.append(row)
     headers = ['Organization', 'Registered Name', 'Version']
 
-    table = TableFormatter(rows, headers,
-                           title='Advertised management profiles:',
-                           table_format=context.output_format)
-    table.print_table()
+    print_table(rows, headers, title='Advertised management profiles:',
+                table_format=context.output_format)
 
 
 def connect_target(targets, target_id):
@@ -276,10 +273,10 @@ def cmd_provider_namespaces(context, options):
         rows = []
         for ns in namespaces:
             rows.append([ns])
-        table = TableFormatter(rows, 'Namespace Name',
-                               title='Server Namespaces:',
-                               table_format=context.output_format)
-        table.print_table()
+
+        print_table(rows, 'Namespace Name',
+                    title='Server Namespaces:',
+                    table_format=context.output_format)
 
     except Error as er:
         raise click.ClickException("%s: %s" % (er.__class__.__name__, er))
@@ -297,10 +294,10 @@ def cmd_provider_interop(context, options):
 
         rows = []
         rows.append([interop_ns])
-        table = TableFormatter(rows, 'Namespace Name',
-                               title='Server Interop Namespace:',
-                               table_format=context.output_format)
-        table.print_table()
+
+        print_table(rows, 'Namespace Name',
+                    title='Server Interop Namespace:',
+                    table_format=context.output_format)
 
     except Error as er:
         raise click.ClickException("%s: %s" % (er.__class__.__name__, er))
@@ -326,10 +323,9 @@ def cmd_provider_info(context, options):
             namespaces = ', '.join(server.namespaces)
         rows.append([server.brand, server.version, server.interop_ns,
                      namespaces])
-        table = TableFormatter(rows, headers,
-                               title='Server General Information',
-                               table_format=context.output_format)
-        table.print_table()
+
+        print_table(rows, headers, title='Server General Information',
+                    table_format=context.output_format)
 
     except Error as er:
         raise click.ClickException("%s: %s" % (er.__class__.__name__, er))
@@ -387,10 +383,8 @@ def cmd_provider_classes(context, options):
         context.spinner.stop()
         title += ' (filter=%s):' % classname_regex if classname_regex else ':'
 
-        table = TableFormatter(rows, headers,
-                               title='Server Classes:',
-                               table_format=context.output_format)
-        table.print_table()
+        print_table(rows, headers, title='Server Classes:',
+                    table_format=context.output_format)
 
     except Error as er:
         raise click.ClickException("%s: %s" % (er.__class__.__name__, er))

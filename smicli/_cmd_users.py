@@ -23,8 +23,7 @@ import six
 
 from smipyping import UsersTable, CompaniesTable
 from .smicli import cli, CMD_OPTS_TXT
-from ._tableoutput import TableFormatter
-from ._click_common import validate_prompt
+from ._click_common import validate_prompt, print_table
 
 
 @cli.group('users', options_metavar=CMD_OPTS_TXT)
@@ -194,11 +193,9 @@ def cmd_users_list(context):
     tbl_rows.sort(key=lambda x: x[0])
 
     context.spinner.stop()
-    table = TableFormatter(tbl_rows, headers,
-                           title=('Users Table'),
-                           table_format=context.output_format)
-    click.echo(table.build_table())
 
+    print_table(tbl_rows, headers, title=('Users Table'),
+                table_format=context.output_format)
 
 def cmd_users_new(context, options):
     """

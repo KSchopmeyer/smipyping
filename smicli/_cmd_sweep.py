@@ -24,7 +24,7 @@ import click
 from smipyping import ServerSweep,\
     DEFAULT_SWEEP_PORT, SCAN_TYPES
 from .smicli import cli, CMD_OPTS_TXT
-from ._tableoutput import TableFormatter
+from ._click_common import print_table
 # from .config import DEFAULT_NAMESPACE, DEFAULT_OPERATION_TIMEOUT, \
 #    DEFAULT_USERNAME, DEFAULT_PASSWORD
 
@@ -153,9 +153,7 @@ def cmd_sweep_nets(context, options):
         rows, headers, title, known, unknown, execution_time = \
             sweep.print_open_hosts_report(open_servers)
         if rows:
-            table = TableFormatter(rows, headers=headers,
-                                   title=title)
-            table.print_table()
+            print_table(rows, headers=headers, title=title)
         # TODO: Should the following  be in the report???
         print('\nScan Results: Found=%s, Unknown=%s, Total=%s Time=%s'
               % (known, unknown, (known + unknown), execution_time))

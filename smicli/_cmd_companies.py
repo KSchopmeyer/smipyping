@@ -23,7 +23,7 @@ import click
 from smipyping import CompaniesTable
 from smipyping._common import build_table_struct
 from .smicli import cli, CMD_OPTS_TXT
-from ._tableoutput import TableFormatter
+from ._click_common import print_table
 
 
 @cli.group('companies', options_metavar=CMD_OPTS_TXT)
@@ -62,8 +62,6 @@ def cmd_companies_list(context):
     tbl_rows = build_table_struct(headers, companies_tbl)
 
     context.spinner.stop()
-    table = TableFormatter(tbl_rows, headers,
-                           title=('Companies Table'),
-                           table_format=context.output_format)
 
-    click.echo(table.build_table())
+    print_table(tbl_rows, headers, title=('Companies Table'),
+                table_format=context.output_format)

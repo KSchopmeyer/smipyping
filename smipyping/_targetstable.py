@@ -170,6 +170,10 @@ class TargetsTable(object):
 
     def __iter__(self):
         """iterator for targets."""
+        return six.iter(self.targets_dict)
+
+    def __iterkeys__(self):
+        """iterator for targets."""
         return six.iterkeys(self.targets_dict)
 
     def iteritems(self):

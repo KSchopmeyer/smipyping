@@ -25,7 +25,7 @@ import six
 
 from smipyping import SimplePingList, PingsTable, ProgramsTable, UsersTable
 from .smicli import cli, CMD_OPTS_TXT
-from ._tableoutput import TableFormatter
+from ._click_common import fold_cell, print_table
 
 
 @cli.group('history', options_metavar=CMD_OPTS_TXT)
@@ -212,12 +212,12 @@ def cmd_history_weekly(context, options):
         if target_id in context.target_data:
             target = context.target_data[target_id]
             company = target.get('CompanyName', 'empty')
-            company = TableFormatter.fold_cell(company, 15)
+            company = fold_cell(company, 15)
             product = target.get('Product', 'empty')
-            product = TableFormatter.fold_cell(product, 15)
+            product = fold_cell(product, 15)
             ip = target.get('IPAddress', 'empty')
             smi_version = target.get('SMIVersion', 'empty')
-            smi_version = TableFormatter.fold_cell(smi_version, 15)
+            smi_version = fold_cell(smi_version, 15)
             company_id = target.get('CompanyID', 'empty')
             # get users list
             email_list = users_tbl.get_emails_for_company(company_id)
@@ -243,15 +243,15 @@ def cmd_history_weekly(context, options):
         tbl_rows.append(row)
 
     context.spinner.stop()
-    table = TableFormatter(tbl_rows, headers,
-                           title=('Server Status %s program=%s dates: %s/'
-                                  '%s' %
-                                  (report_date,
-                                   cp['ProgramName'],
-                                   cp['StartDate'],
-                                   cp['EndDate'])),
-                           table_format=context.output_format)
-    click.echo(table.build_table())
+
+    print_table(tbl_rows, headers,
+                title=('Server Status %s program=%s dates: %s/'
+                       '%s' %
+                       (report_date,
+                        cp['ProgramName'],
+                        cp['StartDate'],
+                        cp['EndDate'])),
+                table_format=context.output_format)
 
 
 def cmd_history_delete(context, options):
@@ -342,15 +342,14 @@ def cmd_history_create(context, options):
         rows.append([target_id,
                      addr,
                      ('%s:%s' % (test_result.type, test_result.code)),
-                     TableFormatter.fold_cell(exception, 12),
+                     fold_cell(exception, 12),
                      test_result.execution_time,
-                     TableFormatter.fold_cell(target['Product'], 12)])
+                     fold_cell(target['Product'], 12)])
     context.spinner.stop()
 
-    table = TableFormatter(rows, headers,
-                           title='FAKE CIMPing Results:',
-                           table_format=context.output_format)
-    click.echo(table.build_table())
+    print_table(rows, headers,
+                title='FAKE CIMPing Results:',
+                table_format=context.output_format)
 
 
 def cmd_history_list(context, options):
@@ -446,9 +445,8 @@ def cmd_history_list(context, options):
                                    % (options['result']))
 
     context.spinner.stop()
-    table = TableFormatter(tbl_rows, headers,
-                           title=('Ping Status for %s to %s' %
-                                  (options['startdate'],
-                                   options['enddate'])),
-                           table_format=context.output_format)
-    click.echo(table.build_table())
+    print_table(tbl_rows, headers,
+                title=('Ping Status for %s to %s' %
+                       (options['startdate'],
+                        options['enddate'])),
+                table_format=context.output_format)

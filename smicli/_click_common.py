@@ -18,6 +18,7 @@ from textwrap import wrap
 import re
 import six
 import prompt_toolkit
+from ._tableoutput import TableFormatter
 
 
 __all__ = ['DEFAULT_CONFIG_FILE', 'SMICLI_PROMPT', 'SMICLI_HISTORY_FILE',
@@ -44,12 +45,6 @@ SMICLI_PROMPT = u'smicli> '
 #: the file system), it is properly expanded.
 
 SMICLI_HISTORY_FILE = '~/.smicli_history'
-
-TABLE_FORMATS = ['plain', 'simple', 'grid', 'html']
-
-# TODO: Want to expand to this when we get updated tabulate.
-# TABLE_FORMATS = ['table', 'plain', 'simple', 'psql', 'rst', 'mediawiki',
-#                 'html']
 
 DEFAULT_OUTPUT_FORMAT = 'simple'
 
@@ -235,3 +230,12 @@ def fold_cell(cell_string, max_cell_width):
             new_cell = '\n'.join(wrap(cell_string, max_cell_width))
 
     return new_cell
+
+
+def print_table(rows, headers=None, title=None, table_format=None):
+    """
+    """
+    table = TableFormatter(rows, headers=headers,
+                           title='Server Explorer Report:',
+                           table_format=table_format)
+    table.print_table()

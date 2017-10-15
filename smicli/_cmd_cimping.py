@@ -29,7 +29,7 @@ from smipyping.config import DEFAULT_NAMESPACE, DEFAULT_OPERATION_TIMEOUT, \
 
 from .smicli import cli, CMD_OPTS_TXT
 from ._common_options import add_options
-from ._tableoutput import TableFormatter
+from ._click_common import fold_cell, print_table
 
 #
 #   Common options for the Ping group
@@ -295,15 +295,13 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
         rows.append([target_id,
                      addr,
                      ('%s:%s' % (test_result.type, test_result.code)),
-                     TableFormatter.fold_cell(exception, 12),
+                     fold_cell(exception, 12),
                      test_result.execution_time,
-                     TableFormatter.fold_cell(target['Product'], 12)])
+                     fold_cell(target['Product'], 12)])
     context.spinner.stop()
     d_flag = 'Include Disabled' if include_disabled else ''
-    table = TableFormatter(rows, headers,
-                           title='CIMPing Results (%s):' % d_flag,
-                           table_format=context.output_format)
-    click.echo(table.build_table())
+    print_table(rows, headers, title='CIMPing Results (%s):' % d_flag,
+                table_format=context.output_format)
 
 
 def cmd_cimping_ids(context, ids, options):  # pylint: disable=redefined-builtin

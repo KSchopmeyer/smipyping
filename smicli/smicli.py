@@ -33,8 +33,9 @@ from ._click_context import ClickContext
 from ._click_common import SMICLI_PROMPT, SMICLI_HISTORY_FILE
 from ._click_configfile import CONTEXT_SETTINGS
 # from .smipyping._logging import LOG_LEVELS
-from ._click_common import TABLE_FORMATS, DEFAULT_OUTPUT_FORMAT, \
+from ._click_common import DEFAULT_OUTPUT_FORMAT, \
     set_input_variable
+from ._tableoutput import TABLE_FORMATS
 
 
 # Display of options in usage line
