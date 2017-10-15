@@ -31,7 +31,7 @@ except ImportError:
     from io import StringIO
 from terminaltables import AsciiTable
 import six
-from ._common import TABLE_FORMATS
+from ._click_common import TABLE_FORMATS
 
 __all__ = ['TableFormatter']
 

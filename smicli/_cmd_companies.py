@@ -21,9 +21,9 @@ from __future__ import print_function, absolute_import
 import click
 
 from smipyping import CompaniesTable
+from smipyping._common import build_table_struct
 from .smicli import cli, CMD_OPTS_TXT
 from ._tableoutput import TableFormatter
-from ._common import build_table_struct
 
 
 @cli.group('companies', options_metavar=CMD_OPTS_TXT)

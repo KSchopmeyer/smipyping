@@ -101,7 +101,6 @@ doc_dependent_files := \
     $(wildcard $(doc_conf_dir)/*.rst) \
     $(wildcard $(doc_conf_dir)/notebooks/*.ipynb) \
     $(wildcard $(package_name)/*.py) \
-    $(package_name)/smicli.py \
 
 # Flake8 config file
 flake8_rc_file := .flake8
@@ -113,6 +112,7 @@ pylint_rc_file := .pylintrc
 check_py_files := \
     setup.py \
     $(wildcard $(package_name)/*.py) \
+    $(wildcard $(cli_package_name)/*.py) \
     $(wildcard tests/*.py)
 
 # Test log
@@ -168,11 +168,12 @@ help:
 
 .PHONY: _pip
 _pip:
-	@echo 'Installing/upgrading pip, setuptools and wheel with PACKAGE_LEVEL=$(PACKAGE_LEVEL)'
-	$(PIP_CMD) install --upgrade pip
-	$(PIP_CMD) install $(pip_level_opts) pip
+	@echo 'Installing/upgrading pip, setuptools, wheel and pbr with PACKAGE_LEVEL=$(PACKAGE_LEVEL)'
+	$(PIP_CMD) install $(pip_level_opts) pip setuptools wheel pbr
+	@echo "Temp fix: Install setuptools a second time to circumvent import error for build_clib on Travis"
 	$(PIP_CMD) install $(pip_level_opts) setuptools
-	$(PIP_CMD) install $(pip_level_opts) wheel
+	$(PIP_CMD) list
+	# TODO: Final solution for the above temp fix. See also pip issue https://github.com/pypa/pip/issues/4724
 
 .PHONY: develop
 develop: _pip
@@ -196,13 +197,13 @@ builddoc: html
 html: $(doc_build_dir)/html/docs/index.html
 	@echo '$@ done.'
 
-$(doc_build_dir)/html/docs/index.html: Makefile $(doc_utility_help_files) $(doc_dependent_files)
-	rm -f $@
+$(doc_build_dir)/html/docs/index.html: Makefile $(doc_dependent_files)
+	rm -fv $@
 	$(doc_cmd) -b html $(doc_opts) $(doc_build_dir)/html
 	@echo "Done: Created the HTML pages with top level file: $@"
 
 .PHONY: pdf
-pdf: Makefile $(doc_utility_help_files) $(doc_dependent_files)
+pdf: Makefile $(doc_dependent_files)
 	rm -fv $@
 	$(doc_cmd) -b latex $(doc_opts) $(doc_build_dir)/pdf
 	@echo "Running LaTeX files through pdflatex..."
@@ -211,7 +212,7 @@ pdf: Makefile $(doc_utility_help_files) $(doc_dependent_files)
 	@echo '$@ done.'
 
 .PHONY: man
-man: Makefile $(doc_utility_help_files) $(doc_dependent_files)
+man: Makefile $(doc_dependent_files)
 	rm -fv $@
 	$(doc_cmd) -b man $(doc_opts) $(doc_build_dir)/man
 	@echo "Done: Created the manual pages in: $(doc_build_dir)/man/"

@@ -106,6 +106,61 @@ def targets_disable(context, targetid, enable, **options):
 #  targets processing commands
 ##############################################################
 
+def display_cols(self, target_table, fields, show_disabled=True):
+    """
+    Display the columns of data defined by the fields parameter.
+
+    This gets the
+    data from the targets data based on the col_list and prepares a table
+    based on those target_data colums
+
+    Parameters:
+      fields: list of strings defining the targets_data columns to be
+        displayed.
+
+      show_disabled(:class:`py:bool`)
+
+    """
+    table_data = []
+
+    col_list = self.tbl_hdr(fields)
+
+    table_width = self.get_output_width(fields) + len(fields)
+    fold = False if table_width < 80 else True
+
+    for record_id in sorted(target_table.iterkeys()):
+        if show_disabled:
+            table_data.append(self.format_record(record_id, fields, fold))
+
+        else:
+            if not self.disabled_target_id(record_id):
+                table_data.append(self.format_record(record_id, fields,
+                                                     fold))
+
+    title = 'Target Providers Overview:'
+    if show_disabled:
+        title = '%s including disabled' % title
+    table = TableFormatter(table_data, headers=col_list,
+                           title=title)
+    table.print_table()
+
+
+STANDARD_FIELDS_DISPLAY_LIST = ['TargetID', 'IPAddress', 'Port', 'Protocol',
+                                'CompanyName', 'Product', 'CimomVersion']
+
+
+def display_all(self, target_table, fields=None, company=None,
+                show_disabled=True):
+    """Display all entries in the base. If fields does not exist,
+       display a standard list of fields from the database.
+    """
+    if not fields:
+        # list of default fields for display
+        fields = STANDARD_FIELDS_DISPLAY_LIST
+    else:
+        fields = fields
+    display_cols(target_table, fields, show_disabled=show_disabled)
+
 
 def cmd_targets_disable(context, targetid, enable, options):
     """Display the information fields for the targets dictionary."""

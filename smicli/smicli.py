@@ -26,14 +26,15 @@ import click
 
 from prompt_toolkit.history import FileHistory
 
-from smipyping import TargetsTable
-from smipyping import DEFAULT_DBTYPE
+import smipyping
+
 from ._click_context import ClickContext
 
-from .config import SMICLI_PROMPT, SMICLI_HISTORY_FILE
+from ._click_common import SMICLI_PROMPT, SMICLI_HISTORY_FILE
 from ._click_configfile import CONTEXT_SETTINGS
-from ._logging import LOG_LEVELS
-from ._common import TABLE_FORMATS, DEFAULT_OUTPUT_FORMAT, set_input_variable
+# from .smipyping._logging import LOG_LEVELS
+from ._click_common import TABLE_FORMATS, DEFAULT_OUTPUT_FORMAT, \
+    set_input_variable
 
 
 # Display of options in usage line
@@ -61,12 +62,13 @@ DEFAULT_DB_CONFIG = {'targetfilename': 'targetdata_example.csv'}
 @click.option('-d', '--db_type', type=click.Choice(DB_POSSIBLE_TYPES),
               envvar='SMI_DB_TYPE',
               help="Database type. May be defined on cmd line, config file, "
-                   " or through default. Default is %s." % DEFAULT_DBTYPE)
+                   " or through default. "
+                   "Default is %s." % smipyping.DEFAULT_DBTYPE)
 @click.option('-l', '--log_level', type=str, envvar='SMI_LOG_LEVEL',
               required=False, default=None,
               help="Optional option to enable logging for the level "
                    " defined, by the parameter. Choices are: "
-                   " " + "%s" % LOG_LEVELS)
+                   " " + "%s" % smipyping.LOG_LEVELS)
 @click.option('-o', '--output-format', envvar='SMI_OUTPUT_FORMAT',
               type=click.Choice(TABLE_FORMATS),
               help="Output format (Default: {of}). pywbemcli may override "
@@ -113,7 +115,8 @@ def cli(ctx, config_file, db_type, log_level, output_format, verbose,
         output_format = set_input_variable(ctx, output_format, 'output_format',
                                            DEFAULT_OUTPUT_FORMAT)
 
-        db_type = set_input_variable(ctx, db_type, 'dbtype', DEFAULT_DBTYPE)
+        db_type = set_input_variable(ctx, db_type, 'dbtype',
+                                     smipyping.DEFAULT_DBTYPE)
 
         log_level = set_input_variable(ctx, log_level, 'log_level', None)
 
@@ -141,8 +144,8 @@ def cli(ctx, config_file, db_type, log_level, output_format, verbose,
 
         # use db info to get target info.
         try:
-            target_data = TargetsTable.factory(db_info, db_type, verbose,
-                                               output_format=output_format)
+            target_data = smipyping.TargetsTable.factory(
+                db_info, db_type, verbose, output_format=output_format)
         except ValueError as ve:
             raise click.ClickException("%s: %s" % (ve.__class__.__name__, ve))
 

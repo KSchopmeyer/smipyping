@@ -40,7 +40,6 @@ import six
 from .config import MAX_THREADS
 from ._scanport_syn import check_port_syn
 from ._scanport_tcp import check_port_tcp
-from ._tableoutput import TableFormatter
 from ._logging import SWEEP_LOGGER_NAME, get_logger
 
 __all__ = ['ServerSweep', 'SCAN_TYPES']
@@ -458,13 +457,8 @@ class ServerSweep(object):
             print('No WBEM Servers found:subnet(s)=%s port(s)=%s range %s, %s' %
                   (self.net_defs, self.ports, range_txt, execution_time))
 
-        if rows:
-            table = TableFormatter(rows, headers=headers,
-                                   title=title)
-            table.print_table()
-        # TODO: Should the following  be in the report???
-        print('\nScan Results: Found=%s, Unknown=%s, Total=%s Time=%s'
-              % (known, unknown, (known + unknown), execution_time))
+        # TODO this s a messy return
+        return(rows, headers, title, known, unknown, execution_time)
 
     def sweep_servers(self):
         """

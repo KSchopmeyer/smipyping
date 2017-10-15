@@ -152,8 +152,8 @@ def history_delete(context, **options):  # pylint: disable=redefined-builtin
               default=datetime.datetime.today(),
               required=False,
               help='Optional date to be used as basis for report in form '
-                   ' dd/mm/yy. Default is the current day. This allows reports '
-                   'to be generated for previous periods.')
+                   ' dd/mm/yy. Default is the today. This option '
+                   'allows reports to be generated for previous periods.')
 @click.pass_obj
 def history_weekly(context, **options):  # pylint: disable=redefined-builtin
     """
@@ -192,7 +192,6 @@ def cmd_history_weekly(context, options):
         cp = programs_tbl.for_date(report_date)
     except ValueError as ve:
         raise click.ClickException('Error, no program defined %s ' % ve)
-    print('history_weekly options %s' % options)
 
     percentok_today = pings_tbl.get_percentok_by_id(report_date)
 

@@ -24,11 +24,12 @@ import click
 
 from smipyping import PingsTable
 from smipyping import SimplePing, SimplePingList
+from smipyping.config import DEFAULT_NAMESPACE, DEFAULT_OPERATION_TIMEOUT, \
+    DEFAULT_USERNAME, DEFAULT_PASSWORD
+
 from .smicli import cli, CMD_OPTS_TXT
 from ._common_options import add_options
 from ._tableoutput import TableFormatter
-from .config import DEFAULT_NAMESPACE, DEFAULT_OPERATION_TIMEOUT, \
-    DEFAULT_USERNAME, DEFAULT_PASSWORD
 
 #
 #   Common options for the Ping group

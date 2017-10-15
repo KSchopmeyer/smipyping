@@ -25,12 +25,12 @@ import six
 
 from pywbem import WBEMServer, WBEMConnection, Error, ValueMapping
 
+from smipyping._ping import ping_host
+from smipyping.config import PING_TIMEOUT
 from .smicli import cli, CMD_OPTS_TXT
-from ._ping import ping_host
-from .config import PING_TIMEOUT
 from ._tableoutput import TableFormatter
 from ._common_options import add_options, namespace_option
-from ._common import filter_namelist
+from ._click_common import filter_namelist
 
 
 @cli.group('provider', options_metavar=CMD_OPTS_TXT)
