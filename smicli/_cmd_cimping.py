@@ -262,7 +262,7 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
 
     # cimping the complete set of targets
     include_disabled = options['disabled']
-    print('include_disabled %s %s' % (include_disabled, options))
+
     simple_ping_list = SimplePingList(context.target_data, None,
                                       logfile=context.log_file,
                                       log_level=context.log_level,
@@ -282,7 +282,7 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
             tbl_inst.append(result[0], result[1], timestamp)
 
     # print results of the scan.
-    headers = ['id', 'addr', 'result', 'exception', 'time', 'company']
+    headers = ['Id', 'Addr', 'Result', 'Exception', 'Time', 'company']
     rows = []
     for result in results:
         target_id = result[0]
@@ -298,9 +298,11 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
                      fold_cell(exception, 12),
                      test_result.execution_time,
                      fold_cell(target['Product'], 12)])
+
     context.spinner.stop()
-    d_flag = 'Include Disabled' if include_disabled else ''
-    print_table(rows, headers, title='CIMPing Results (%s):' % d_flag,
+
+    disabled_flag = ': Includes Disabled' if include_disabled else ''
+    print_table(rows, headers, title='CIMPing Results%s:' % disabled_flag,
                 table_format=context.output_format)
 
 

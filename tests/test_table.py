@@ -29,7 +29,8 @@ try:
 except ImportError:
     from io import StringIO
 
-from smipyping._tableoutput import TableFormatter
+from smicli._tableoutput import TableFormatter
+from smicli._click_common import fold_cell
 
 VERBOSE = True
 
@@ -55,7 +56,7 @@ class TableTests(unittest.TestCase):
     def create_folded_table(self, table_format, title=True):
         """Create a table with folded cells"""
         headers = ['col1', 'col2', 'col3']
-        folded = TableFormatter.fold_cell('this is a folded cell', 10)
+        folded = fold_cell('this is a folded cell', 10)
         rows = [['row1col1', 'row2col2', folded],
                 [folded, 'row2col2', 'row2col3']]
         title_txt = 'test folded table' if title else None
@@ -143,7 +144,7 @@ class AsciiTableTests(TableTests):
         """Test a simple table with header build function"""
 
         table = self.create_simple_table(table_format='simple', title=True)
-        actual = table.build_table()
+        actual = table.result
         if VERBOSE:
             print(actual)
 
@@ -251,7 +252,7 @@ class AsciiTableTests(TableTests):
     def test_folded_cell_plain_build(self):
         """Test building a folded cell table plain with header"""
         table = self.create_folded_table(table_format='plain', title=True)
-        actual = table.build_table()
+        actual = table.result
 
         if VERBOSE:
             print(actual)
@@ -301,7 +302,7 @@ class AsciiTableTests(TableTests):
     def test_folded_cell_grid_build(self):
         """Test a folded cell table with header"""
         table = self.create_folded_table(table_format='grid', title=True)
-        actual = table.build_table()
+        actual = table.result
 
         if VERBOSE:
             print(actual)

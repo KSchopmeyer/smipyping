@@ -36,6 +36,7 @@ from ._click_configfile import CONTEXT_SETTINGS
 from ._click_common import DEFAULT_OUTPUT_FORMAT, \
     set_input_variable
 from ._tableoutput import TABLE_FORMATS
+from ._click_common import USE_TABULATE
 
 
 # Display of options in usage line
@@ -76,12 +77,14 @@ DEFAULT_DB_CONFIG = {'targetfilename': 'targetdata_example.csv'}
                    "the format choice depending on the operation since not "
                    "all formats apply to all output data types."
               .format(of=DEFAULT_OUTPUT_FORMAT))
-@click.option('-v', '--verbose', is_flag=True,
+@click.option('-v', '--verbose', is_flag=True, default=False,
               help='Display extra information about the processing.')
+@click.option('-t', '--tabulate', is_flag=True,
+              help='Display using tabulate.')
 @click.version_option(help="Show the version of this command and exit.")
 @click.pass_context
 def cli(ctx, config_file, db_type, log_level, output_format, verbose,
-        provider_data=None, db_info=None, log_file=None):
+        provider_data=None, db_info=None, log_file=None, tabulate=None):
     """
     Command line script for smicli.  This script executes a number
     of subcommands to:
@@ -112,6 +115,8 @@ def cli(ctx, config_file, db_type, log_level, output_format, verbose,
         # Apply the documented option defaults.
 
         # get the db_type. Order is cmd line, config file, default
+
+        USE_TABULATE = True
 
         output_format = set_input_variable(ctx, output_format, 'output_format',
                                            DEFAULT_OUTPUT_FORMAT)

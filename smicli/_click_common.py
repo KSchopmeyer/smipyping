@@ -13,17 +13,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
+Table printer.  This is being replaced by the python tabulate package as
+that package develops more capabilities.  Currently the only functions in
+this module used are the csv format and the htmo format
 """
 from textwrap import wrap
 import re
 import six
 import prompt_toolkit
+import pywbem
+import click
+from tabulate import tabulate
 from ._tableoutput import TableFormatter
 
 
 __all__ = ['DEFAULT_CONFIG_FILE', 'SMICLI_PROMPT', 'SMICLI_HISTORY_FILE',
            'DEFAULT_SMICLI_CONFIG_FILES']
 
+USE_TABULATE = False
 #: Default configuration file for smipyping cli
 DEFAULT_CONFIG_FILE = 'smicli.ini'
 
@@ -232,10 +239,67 @@ def fold_cell(cell_string, max_cell_width):
     return new_cell
 
 
-def print_table(rows, headers=None, title=None, table_format=None):
+def print_table(rows, headers=None, title=None, table_format='simple'):
     """
+    Create table output for the title, headers, and rows provided and
+    return the resulting string.
+
+    Parameters:
+        rows(list of lists or other iterable of iterables):
+            Each itterable within the outter iterable is a row in the table
+            Each item in the inner iterable is the data in a cell.  It may
+            be string, numeric, or None.
+
+            TODO: Define inner table
+            TODO: define formattting
+
+        headers(list of :term:`string`):
+            Each string in the list is a column header. Optional and if not
+            included, no header is placed on the table
+
+        title(:term:`string` or None):
+            If string that string is printed as a title before the table
+            normally left justified.
+
+        table_format(:term:`string`):
+            one of the strings defined in TABLE_FORMATS list that defines
+            the output format of the table
+
+
     """
-    table = TableFormatter(rows, headers=headers,
-                           title='Server Explorer Report:',
-                           table_format=table_format)
-    table.print_table()
+    if table_format == 'table':
+        table_format = 'psql'
+    if table_format != 'html':
+        if title:
+            print('\n\n%s\n' % title)
+        click.echo(tabulate(rows, headers=headers, tablefmt=table_format))
+    else:
+        table = TableFormatter(rows, headers=headers,
+                               title=title,
+                               table_format=table_format)
+        click.echo('%s\n' % table.result)
+
+
+def raise_click_exception(exc, error_format='sg'):
+    """
+    Raise a ClickException with the desired error message format.
+    Parameters:
+      exc (exception or string):
+        The exception or the message.
+      error_format (string):
+        The error format (see ``--error-format`` general option).
+    """
+    if error_format == 'def':
+        if isinstance(exc, pywbem.Error):
+            error_str = exc.str_def()
+        else:
+            assert isinstance(exc, six.string_types)
+            error_str = "classname: None, message: {}".format(exc)
+    else:
+        assert error_format == 'msg'
+        if isinstance(exc, pywbem.Error):
+            error_str = "{}: {}".format(exc.__class__.__name__, exc)
+        else:
+            assert isinstance(exc, six.string_types)
+            error_str = exc
+    raise click.ClickException(error_str)
