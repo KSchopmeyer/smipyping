@@ -245,7 +245,8 @@ def cmd_history_weekly(context, options):
     context.spinner.stop()
 
     print_table(tbl_rows, headers,
-                title=('Server Status: Report date=%s program=%s start: %s end: '
+                title=('Server Status: Report-date=%s '
+                       'program=%s start: %s end: '
                        '%s' %
                        (report_date,
                         cp['ProgramName'],
@@ -276,10 +277,15 @@ def cmd_history_delete(context, options):
 
     record_count = pings_tbl.record_count()
 
-    # Verify that you have correct data
+    # TODO Verify that you have correct data
 
     try:
-        pings_tbl.delete_by_daterange()
+        pings_tbl.delete_by_daterange(
+            options['startdate'],
+            end_date=options['enddate'],
+            number_of_days=options['numberofdays'],
+            target_id=target_id)
+
         context.spinner.stop()
         click.echo('Delete finished. removed %s records' %
                    (pings_tbl.record_count() - record_count))
@@ -369,7 +375,7 @@ def cmd_history_list(context, options):
                                    context.verbose)
     # if full, show all records in base that match options
     if options['result'] == 'full':
-        headers = ['pingid', 'id', 'ip', 'company', 'timestamp', 'status']
+        headers = ['Pingid', 'Id', 'Ip', 'Company', 'Timestamp', 'Status']
 
         rows = pings_tbl.select_by_daterange(
             options['startdate'],

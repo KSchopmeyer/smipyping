@@ -96,7 +96,7 @@ class TableFormatter(object):
             else:
                 # Prints dictionaries if header='keys'
                 self.result = tabulate.tabulate(self.rows, self.headers,
-                                           tablefmt=self.table_format)
+                                                tablefmt=self.table_format)
 
         if self.title:
             self.result = '\n%s\n%s' % (self.title, self.result)
@@ -144,7 +144,7 @@ class TableFormatter(object):
                     cell = cell.replace('\n', '<br />')
         if self.title:
             print('<p>%s<\\p>' % self.title)
-        result = HtmlTable(rows=new_rows, header_row=self.headers)
+        result = HtmlTable(rows=self.rows, header_row=self.headers)
 
         return result
 
@@ -195,6 +195,7 @@ class TableFormatter(object):
                              ' limited formatting.' % self.table_format)
 
         return(table.table)
+
 
 # Table style to get thin black lines in Mozilla/Firefox instead of 3D borders
 TABLE_STYLE_THINBORDER = "border: 1px solid #000000; border-collapse: collapse;"

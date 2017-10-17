@@ -197,6 +197,7 @@ def cmd_users_list(context):
     print_table(tbl_rows, headers, title=('Users Table'),
                 table_format=context.output_format)
 
+
 def cmd_users_new(context, options):
     """
     Add a new user to the table.

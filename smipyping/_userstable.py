@@ -276,6 +276,9 @@ class MySQLUsersTable(UsersTable):
         self._load()
 
     def _load(self):
+        """
+        Load the internal dictionary from the database.
+        """
         try:
             # python-mysql-connector-dictcursor  # noqa: E501
             cursor = self.connection.cursor(dictionary=True)
@@ -348,7 +351,8 @@ class MySQLUsersTable(UsersTable):
         sql = "DELETE FROM Users WHERE UserID=%s"
         try:
             # TODO what is return on execute??
-            mydata = cursor.execute(sql, (user_id,))
+            # pylint: disable=unused-variable
+            mydata = cursor.execute(sql, (user_id,))  # noqa F841
             self.connection.commit()
         except Exception as ex:
             print('userstable.delete failed: exception %r' % ex)
