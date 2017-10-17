@@ -23,8 +23,9 @@ import six
 import prompt_toolkit
 import pywbem
 import click
+import copy
 from tabulate import tabulate
-from ._tableoutput import TableFormatter
+from ._tableoutput import HtmlTable
 
 
 __all__ = ['DEFAULT_CONFIG_FILE', 'SMICLI_PROMPT', 'SMICLI_HISTORY_FILE',
@@ -269,15 +270,42 @@ def print_table(rows, headers=None, title=None, table_format='simple'):
     """
     if table_format == 'table':
         table_format = 'psql'
-    if table_format != 'html':
+
+    # all formats except html go to tabulate directly
+    if table_format == 'html':
+        result = build_html_table(rows, headers, title)
+        click.echo('%s\n' % result)
+
+        # Currently tabulate does not allow setting borders, etc. on
+        # html tables. The following would be the tabulate code.
+        # if title:
+        #    title = '<p>%s<\\p>' % title
+        # click.echo(tabulate(rows, headers=headers,
+        #                    tablefmt=table_format))
+    else:
         if title:
             print('\n\n%s\n' % title)
         click.echo(tabulate(rows, headers=headers, tablefmt=table_format))
-    else:
-        table = TableFormatter(rows, headers=headers,
-                               title=title,
-                               table_format=table_format)
-        click.echo('%s\n' % table.result)
+
+
+def build_html_table(rows, headers, title):
+    """
+    Print a table and header in html format.
+    """
+    # Create copy to avoid modifying original
+    n_rows = copy.deepcopy(rows)
+    n_headers = copy.copy(headers)
+    # Convert EOL to html break for html output.
+    for row in n_rows:
+        for i, cell in enumerate(row):
+            if isinstance(cell, six.string_types):
+                row[i] = cell.replace('\n', '<br />')
+    for i, header in enumerate(n_headers):
+        if isinstance(header, six.string_types):
+            n_headers[i] = header.replace('\n', '<br />')
+    if title:
+        print('\n<p>%s</p>\n' % title)
+    return HtmlTable(rows=n_rows, header_row=n_headers)
 
 
 def raise_click_exception(exc, error_format='sg'):

@@ -204,8 +204,8 @@ def cmd_history_weekly(context, options):
         cp['StartDate'],
         end_date=cp['EndDate'])
 
-    headers = ['id', 'IP', 'Company', 'Product', 'Today%', 'Week%', 'Pgm%',
-               'Contacts']
+    headers = ['target\nid', 'IP', 'Company', 'Product', '%\nToday', '%\nWeek',
+               '%\nPgm', 'Contacts']
 
     tbl_rows = []
     for target_id, value in six.iteritems(percentok_ytd):
@@ -245,7 +245,7 @@ def cmd_history_weekly(context, options):
     context.spinner.stop()
 
     print_table(tbl_rows, headers,
-                title=('Server Status %s program=%s dates: %s/'
+                title=('Server Status: Report date=%s program=%s start: %s end: '
                        '%s' %
                        (report_date,
                         cp['ProgramName'],

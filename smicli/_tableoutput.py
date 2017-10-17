@@ -137,23 +137,14 @@ class TableFormatter(object):
         """
         Print a table and header in html format.
         """
-        # Very inefficent but recreates the table with NL replaced by
-        # html break.
-        new_rows = []
+        # Convert to html break
         for row in self.rows:
-            new_row = []
             for cell in row:
                 if isinstance(cell, six.string_types):
                     cell = cell.replace('\n', '<br />')
-                new_row.append(cell)
-            new_rows.append(new_row)
-        use_tabulate = False
         if self.title:
             print('<p>%s<\\p>' % self.title)
-        if use_tabulate:
-            result = tabulate.tabulate(new_rows, self.headers, tablefmt='html')
-        else:
-            result = HtmlTable(rows=new_rows, header_row=self.headers)
+        result = HtmlTable(rows=new_rows, header_row=self.headers)
 
         return result
 
