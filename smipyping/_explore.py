@@ -30,7 +30,6 @@ import threading
 
 from pywbem import WBEMConnection, WBEMServer, ValueMapping, Error, \
     ConnectionError, TimeoutError, AuthError
-from ._tableoutput import TableFormatter
 from ._ping import ping_host
 from .config import PING_TIMEOUT, DEFAULT_USERNAME, DEFAULT_PASSWORD
 from ._logging import EXPLORE_LOGGER_NAME, get_logger, SmiPypingLoggers
@@ -76,103 +75,6 @@ class Explorer(object):
                                        log_filename=logfile,
                                        log_level=log_level)
         self.logger = get_logger(EXPLORE_LOGGER_NAME)
-
-    def print_smi_profile_info(self, servers, user_data):
-        """
-        Generates a table of smi profile information listing the smi profiles
-
-        Parameters:
-
-          servers: list of ServerInfoTuple entries
-        """
-
-        table_data = []
-        table_hdr = [' Id', 'Url', 'Company', 'Product', 'SMI Profiles']
-        table_data.append(table_hdr)
-        for server_tuple in servers:
-            if server_tuple.status == 'OK':
-                target_id = server_tuple.target_id
-                entry = user_data.get_target(target_id)
-                try:
-                    versions = self.smi_version(server_tuple.server)
-                except Exception as ex:
-                    print('Exception %s in smi_versions %s' % (ex,
-                                                               server_tuple))
-                    continue
-
-                line = [entry['TargetID'],
-                        server_tuple.url,
-                        entry['CompanyName'],
-                        entry['Product']]
-                if versions is not None:
-                    cell_str = ", ". join(sorted(versions))
-                    line.append(TableFormatter.fold_cell(cell_str, 14))
-                table_data.append(line)
-        table = TableFormatter(table_data, headers=table_hdr,
-                               title='Display SMI Profile Information',
-                               table_format=self.output_format)
-        table.print_table()
-
-    def report_server_info(self, servers, target_data, table_format='table',
-                           columns=None, report='full'):
-        """ Display a table of info from the server scan
-        """
-
-        rows = []
-        if report == 'full':
-            headers = ['Id', 'Url', 'Company', 'Product', 'Vers',
-                       'SMI Profiles', 'Interop_ns', 'Status', 'time']
-        else:
-            headers = ['Id', 'Url', 'Company', 'Product',
-                       'Status', 'time']
-        servers.sort(key=lambda tup: int(tup.target_id))
-        for server_tuple in servers:
-            url = server_tuple.url
-            server = server_tuple.server
-            status = server_tuple.status
-            target_id = server_tuple.target_id
-            target = target_data.get_target(target_id)
-            version = ''
-            interop_ns = ''
-            smi_profiles = ''
-            if server is not None and status == 'OK':
-                version = server.version
-                interop_ns = server.interop_ns
-                smi_profile_list = self.smi_version(server_tuple.server)
-                if smi_profile_list is not None:
-                    cell_str = ", ". join(sorted(smi_profile_list))
-                    smi_profiles = (TableFormatter.fold_cell(cell_str, 14))
-            disp_time = None
-            if server_tuple.time <= 60:
-                disp_time = "%.2fs" % (round(server_tuple.time, 1))
-            else:
-                disp_time = "%.2fm" % (server_tuple.time / 60)
-            row = []
-            if 'Id' in headers:
-                row.append(target_id)
-            if 'Url' in headers:
-                row.append(url)
-            if 'Company' in headers:
-                row.append(TableFormatter.fold_cell(target['CompanyName'], 11),)
-            if 'Product' in headers:
-                row.append(TableFormatter.fold_cell(target['Product'], 8),)
-            if 'Vers' in headers:
-                row.append(version)
-            if 'SMI Profiles' in headers:
-                row.append(smi_profiles)
-            if 'Interop_ns' in headers:
-                row.append(interop_ns)
-            if 'Status' in headers:
-                row.append(server_tuple.status)
-            if 'time' in headers:
-                row.append(disp_time)
-
-            rows.append(row)
-
-        table = TableFormatter(rows, headers=headers,
-                               title='Server Explorer Report:',
-                               table_format=self.output_format)
-        table.print_table()
 
     def explore_servers(self, target_list):
         """
@@ -399,24 +301,6 @@ class Explorer(object):
         if verbose:
             print('Ping host=%s, result=%s' % (target_address[0], result))
         return result
-
-    def smi_version(self, server):
-        """
-        Get the smi version used by this server from the SNIA profile
-        information on the server
-        """
-
-        org_vm = ValueMapping.for_property(server, server.interop_ns,
-                                           'CIM_RegisteredProfile',
-                                           'RegisteredOrganization')
-        snia_server_profiles = server.get_selected_profiles('SNIA', 'SMI-S')
-        versions = []
-        for inst in snia_server_profiles:
-            org = org_vm.tovalues(inst['RegisteredOrganization'])  # noqa: F841
-            name = inst['RegisteredName']  # noqa: F841
-            vers = inst['RegisteredVersion']
-            versions.append(vers)
-        return versions
 
     def explore_server_profiles(self, server, args, short_explore=True):
 

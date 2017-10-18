@@ -25,7 +25,7 @@ import re
 import os
 
 from smipyping import SimplePing, SimplePingList
-from smipyping import TargetsData
+from smipyping import TargetsTable
 from smipyping._configfile import read_config
 
 TEST_CONFIG_FILE_NAME = 'testconfig.ini'
@@ -104,7 +104,7 @@ class SimplePingCsvListSetup(unittest.TestCase):
         test_config_file = os.path.join(SCRIPT_DIR, TEST_CONFIG_FILE_NAME)
         db_config = read_config(test_config_file, dbtype)
         db_config['directory'] = os.path.dirname(test_config_file)
-        self.target_data = TargetsData.factory(db_config, dbtype, False)
+        self.target_data = TargetsTable.factory(db_config, dbtype, False)
 
 
 class SimplePingCsvListTests(SimplePingCsvListSetup):

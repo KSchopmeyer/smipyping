@@ -22,7 +22,6 @@ format (iterable of iterables).
 from __future__ import print_function, absolute_import
 
 import os
-from textwrap import wrap
 import csv
 import tabulate
 try:
@@ -31,9 +30,12 @@ except ImportError:
     from io import StringIO
 from terminaltables import AsciiTable
 import six
-from ._common import TABLE_FORMATS
 
 __all__ = ['TableFormatter']
+
+# TODO: Want to expand to this when we get updated tabulate.
+TABLE_FORMATS = ['table', 'plain', 'simple', 'grid', 'psql', 'rst', 'mediawiki',
+                 'html']
 
 
 class TableFormatter(object):
@@ -50,7 +52,7 @@ class TableFormatter(object):
             rows(:term:'list' of lists):
                 A list of lists where each inner list contains the items
                 in a row of the table.
-            headers(:term: 'list'):
+            headers(:term: 'list' of :term:`string`):
                 If not none, a list of strings where each string is a table
                 column header (title for the column), If not Null it is
                 output before the table as a header row.  The exact format
@@ -75,6 +77,32 @@ class TableFormatter(object):
         self.table_format = table_format
         self.csv_dialect = csv_dialect
 
+        # test if there is a EOL in any cell and mark for folded processing
+        folded = False
+        for row in self.rows:
+            for cell in row:
+                if isinstance(cell, six.string_types) and'\n' in cell:
+                    folded = True
+        # If a cell is folded, use the terminal_table print
+        self.result = ""
+        if self.table_format == 'csv':
+            self.result = self.build_csv_table()
+        elif self.table_format == 'html':
+            self.result = self.build_html_table()
+        else:
+            if folded:
+                self.result = self.build_terminal_table()
+            # Else use tabulate package as the base for the table
+            else:
+                # Prints dictionaries if header='keys'
+                self.result = tabulate.tabulate(self.rows, self.headers,
+                                                tablefmt=self.table_format)
+
+        if self.title:
+            self.result = '\n%s\n%s' % (self.title, self.result)
+        else:
+            self.result = '\n%s' % self.result
+
     def build_csv_table(self):
         """
         Output a list of lists and optional header as csv formatted data
@@ -96,96 +124,31 @@ class TableFormatter(object):
         Output a table to either stdout or a file. Defaults to simple ascii
         format.
         """
-        result = self.build_table()
-
         # TODO handling utf on output for both python 2 and 3
         if output_file:
             with open(output_file, 'w') as f:
-                print(result, file=f)
+                print(self.result, file=f)
                 print("", file=f)
         else:
-            print(result)
+            print(self.result)
             print()
-
-    def build_table(self):
-        """
-            General print table function. This is temporary while the world
-            gets the tabulate python package capable of supporting multiline
-            cells.
-
-            Parameters:
-              headers (iterable of strings) where each string is a
-               table column name or None if no header is to be attached
-
-              table_data - interable of iterables where:
-                 each the top level iterables represents the list of rows
-                 and each row is an iterable of strings for the data in that
-                 row.
-
-              title (:term: `string`)
-                 Optional title to be places io the output above the table.
-                 No title is output if this parameter is None
-
-              table_format (:term: 'string')
-                Output format defined by the string and limited to one of the
-                choice of table formats defined in TABLE_FORMATS list
-
-              output_file (:term: 'string')
-                If not None, a file name to which the output formatted data
-                is sent.
-
-        """
-        # test if there is a EOL in any cell and mark for folded processing
-        folded = False
-        for row in self.rows:
-            for cell in row:
-                if isinstance(cell, six.string_types) and'\n' in cell:
-                    folded = True
-        # If a cell is folded, use the terminal_table print
-        result = ""
-        if self.table_format == 'csv':
-            result = self.build_csv_table()
-        elif self.table_format == 'html':
-            result = self.build_html_table()
-        else:
-            if folded:
-                result = self.build_terminal_table()
-            # Else use tabulate package as the base for the table
-            else:
-                # Prints dictionaries if header='keys'
-                result = tabulate.tabulate(self.rows, self.headers,
-                                           tablefmt=self.table_format)
-
-        if self.title:
-            result = '\n%s\n%s' % (self.title, result)
-        else:
-            result = '\n%s' % result
-        return result
 
     def build_html_table(self):
         """
         Print a table and header in html format.
         """
-        # Very inefficent but recreates the table with NL replaced by
-        # html break.
-        new_rows = []
+        # Convert to html break
         for row in self.rows:
-            new_row = []
             for cell in row:
                 if isinstance(cell, six.string_types):
                     cell = cell.replace('\n', '<br />')
-                new_row.append(cell)
-            new_rows.append(new_row)
-        use_tabulate = False
         if self.title:
             print('<p>%s<\\p>' % self.title)
-        if use_tabulate:
-            result = tabulate.tabulate(new_rows, self.headers, tablefmt='html')
-        else:
-            result = HtmlTable(rows=new_rows, header_row=self.headers)
+        result = HtmlTable(rows=self.rows, header_row=self.headers)
 
         return result
 
+    # TODO drop this completely now that tabulate does folded tables
     def build_terminal_table(self):
         """ Build table with data as an ascii table using the terminal table
             package.  This is used only for multiline tables because it has
@@ -233,31 +196,11 @@ class TableFormatter(object):
 
         return(table.table)
 
-    @staticmethod
-    def fold_cell(cell_string, max_cell_width):
-        """ Fold a string within a maximum width to fit within a table entry
-
-            Parameters:
-
-              cell_string:
-                The string of data to go into the cell
-              max_cell_width:
-                Maximum width of cell.  Data is folded into multiple lines to
-                fit into this width.
-
-            Return:
-                String representing the folded string
-        """
-        new_cell = cell_string
-        if isinstance(cell_string, six.string_types):
-            if max_cell_width < len(cell_string):
-                new_cell = '\n'.join(wrap(cell_string, max_cell_width))
-
-        return new_cell
-
 
 # Table style to get thin black lines in Mozilla/Firefox instead of 3D borders
 TABLE_STYLE_THINBORDER = "border: 1px solid #000000; border-collapse: collapse;"
+
+
 # TABLE_STYLE_THINBORDER = "border: 1px solid #000000;"
 
 

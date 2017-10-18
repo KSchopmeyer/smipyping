@@ -24,11 +24,12 @@ import click
 
 from smipyping import PingsTable
 from smipyping import SimplePing, SimplePingList
+from smipyping.config import DEFAULT_NAMESPACE, DEFAULT_OPERATION_TIMEOUT, \
+    DEFAULT_USERNAME, DEFAULT_PASSWORD
+
 from .smicli import cli, CMD_OPTS_TXT
 from ._common_options import add_options
-from ._tableoutput import TableFormatter
-from .config import DEFAULT_NAMESPACE, DEFAULT_OPERATION_TIMEOUT, \
-    DEFAULT_USERNAME, DEFAULT_PASSWORD
+from ._click_common import fold_cell, print_table
 
 #
 #   Common options for the Ping group
@@ -261,7 +262,7 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
 
     # cimping the complete set of targets
     include_disabled = options['disabled']
-    print('include_disabled %s %s' % (include_disabled, options))
+
     simple_ping_list = SimplePingList(context.target_data, None,
                                       logfile=context.log_file,
                                       log_level=context.log_level,
@@ -281,7 +282,7 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
             tbl_inst.append(result[0], result[1], timestamp)
 
     # print results of the scan.
-    headers = ['id', 'addr', 'result', 'exception', 'time', 'company']
+    headers = ['Id', 'Addr', 'Result', 'Exception', 'Time', 'company']
     rows = []
     for result in results:
         target_id = result[0]
@@ -294,15 +295,15 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
         rows.append([target_id,
                      addr,
                      ('%s:%s' % (test_result.type, test_result.code)),
-                     TableFormatter.fold_cell(exception, 12),
+                     fold_cell(exception, 12),
                      test_result.execution_time,
-                     TableFormatter.fold_cell(target['Product'], 12)])
+                     fold_cell(target['Product'], 12)])
+
     context.spinner.stop()
-    d_flag = 'Include Disabled' if include_disabled else ''
-    table = TableFormatter(rows, headers,
-                           title='CIMPing Results (%s):' % d_flag,
-                           table_format=context.output_format)
-    click.echo(table.build_table())
+
+    disabled_flag = ': Includes Disabled' if include_disabled else ''
+    print_table(rows, headers, title='CIMPing Results%s:' % disabled_flag,
+                table_format=context.output_format)
 
 
 def cmd_cimping_ids(context, ids, options):  # pylint: disable=redefined-builtin

@@ -33,8 +33,7 @@ the variables.
 
 __all__ = ['ENFORCE_INTEGER_RANGE', 'DEFAULT_SWEEP_PORT',
            'PING_TEST_CLASS', 'SIMPLEPING_OPERATION_DEFAULT_TIMEOUT',
-           'DEFAULT_CONFIG_FILE', 'DEFAULT_NAMESPACE', 'DEFAULT_DBTYPE',
-           'DEFAULT_SMICLI_CONFIG_FILES',
+           'DEFAULT_NAMESPACE', 'DEFAULT_DBTYPE',
            'DEFAULT_OPERATION_TIMEOUT', 'DEFAULT_USERNAME', 'DEFAULT_PASSWORD']
 
 #: Enforce the value range in CIM integer types (e.g. :class:`~pywbem.Uint8`).
@@ -58,35 +57,14 @@ PING_TIMEOUT = 2
 #: Timeout in seconds for the WBEM operation
 SIMPLEPING_OPERATION_DEFAULT_TIMEOUT = 20
 
-#: Default configuration file for smipyping cli
-DEFAULT_CONFIG_FILE = 'smicli.ini'
-
-#: Default smi cli configuration file for smipyping cli
-#: These are the default names for the smicli config files
-
-DEFAULT_SMICLI_CONFIG_FILES = ['smicli.ini', 'smicli.cfg']
-
 #: Defualt namespace when none is specified
 DEFAULT_NAMESPACE = 'root/cimv2'
 
 #: type of database to use. Possible types are in DB_TYPES
-DEFAULT_DBTYPE = 'csv'
+DEFAULT_DBTYPE = 'mysql'
 
 #: Maximum number of parallel threads to use in multithreaded operations
 MAX_THREADS = 100
-
-#: Characters for cmdline prompt when the smicli repl is executing.
-#: The prompt is presented at the beginning of a line awaiting a command
-#: input.
-#: The prompt MUST BE Unicode (prompt-toolkit requirement)
-
-SMICLI_PROMPT = u'smicli> '
-
-#: File path of history file for interactive mode.
-#: If the file name starts with tilde (which is handled by the shell, not by
-#: the file system), it is properly expanded.
-
-SMICLI_HISTORY_FILE = '~/.smicli_history'
 
 #: Default operation timeout in seconds if none is specified.
 DEFAULT_OPERATION_TIMEOUT = 10

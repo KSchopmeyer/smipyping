@@ -16,7 +16,7 @@
 # limitations under the License.
 
 """
-Test the TargetsData class class.
+Test the Configfile install.
 """
 from __future__ import absolute_import, print_function
 

@@ -3,9 +3,6 @@ ToDo list for pylint
 
 New ideas should be described as issues on GitHub, and not on this list.
 
-1. Eliminate all of the other scripts and put everything in smicli. Note
-that we will keep some special scripts for creating database, etc.
-
 2. Extend logging for more flexibility.
 
 3. Consider extending all subcommands that ask for target id to:
@@ -14,8 +11,6 @@ that we will keep some special scripts for creating database, etc.
    c. Allow multip ids and id ranges.
 
 4. Clean up and simplify documentation.
-
-5. Move code to github
 
 6. Implement travis testing
 
@@ -29,3 +24,9 @@ that we will keep some special scripts for creating database, etc.
 
 9. Extend the provider group to inspect other components of the server. Note
    that we will try to put these into pywbem and just use them
+
+10. Complete add/delete/modify for all table types
+
+11. Start to use cimconfig loadable ref to get config file.
+
+12. Force use of the config file all the time.

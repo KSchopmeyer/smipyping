@@ -56,14 +56,14 @@ from __future__ import absolute_import
 from .config import *  # noqa: F401,F403
 # core classes and functions
 from ._ping import *  # noqa: F401,F403
-from ._tableoutput import *  # noqa: F401,F403
 
+
+# common functionality
 from ._common import *  # noqa: F401,F403
 from ._logging import *  # noqa: F401,F403
-from ._common_options import *  # noqa: F401,F403
 
-# Database data sources
-from ._targetdata import *  # noqa: F401,F403
+# Database data source libraries
+from ._targetstable import *  # noqa: F401,F403
 from ._lastscantable import *  # noqa: F401,F403
 from ._pingstable import *  # noqa: F401,F403
 from ._companiestable import *  # noqa: F401,F403
@@ -77,28 +77,9 @@ from ._cliutils import *  # noqa: F401,F403
 from ._scanport_syn import *  # noqa: F401,F403
 from ._scanport_tcp import *  # noqa: F401,F403
 
-# support for particular script cmds
+# core functional smipyping libraries
 from ._simpleping import *  # noqa: F401,F403
 from ._explore import *  # noqa: F401,F403
 from ._serversweep import *  # noqa: F401,F403
-from ._targetdatacli import *  # noqa: F401,F403
-
-from ._cimreport import *  # noqa: F401,F403
-
-
-# smicli support libraries
-from .smicli import *  # noqa: F401,F403
-from ._click_context import *  # noqa: F401,F403
-from ._cmd_targets import *  # noqa: F401,F403
-from ._cmd_provider import *  # noqa: F401,F403
-from ._cmd_explorer import *  # noqa: F401,F403
-from ._cmd_cimping import *  # noqa: F401,F403
-from ._cmd_sweep import *  # noqa: F401,F403
-from ._cmd_history import *  # noqa: F401,F403
-from ._cmd_programs import *  # noqa: F401,F403
-from ._cmd_users import *  # noqa: F401,F403
-from ._cmd_companies import *  # noqa: F401,F403
-
-from ._click_configfile import *  # noqa: F401,F403
 
 from ._version import *  # noqa: F401,F403

@@ -40,24 +40,21 @@ import os
 import csv
 import re
 from collections import OrderedDict
+from textwrap import wrap
 import six
 from mysql.connector import MySQLConnection
-from ._tableoutput import TableFormatter
 from ._configfile import read_config
 
-__all__ = ['TargetsData']
-
-STANDARD_FIELDS_DISPLAY_LIST = ['TargetID', 'IPAddress', 'Port', 'Protocol',
-                                'CompanyName', 'Product', 'CimomVersion']
+__all__ = ['TargetsTable']
 
 
-class TargetsData(object):
+class TargetsTable(object):
     """Abstract top level class for the Target Base.
 
     This base contains information on the targets, host systems, etc. in the
     environment.
 
-    The factory method should be used to construct a new TargetsData object
+    The factory method should be used to construct a new TargetsTable object
     since that creates the correct object for the defined database type.
     """
 
@@ -139,12 +136,12 @@ class TargetsData(object):
                      db_type,
                      verbose))
         if db_type == ('csv'):
-            inst = CsvTargetsData(db_dict, db_type, verbose,
-                                  output_format=output_format)
+            inst = CsvTargetsTable(db_dict, db_type, verbose,
+                                   output_format=output_format)
 
         elif db_type == ('mysql'):
-            inst = MySQLTargetsData(db_dict, db_type, verbose,
-                                    output_format=output_format)
+            inst = MySQLTargetsTable(db_dict, db_type, verbose,
+                                     output_format=output_format)
         else:
             ValueError('Invalid target factory db_type %s' % db_type)
 
@@ -172,6 +169,10 @@ class TargetsData(object):
         return record_id in self.targets_dict
 
     def __iter__(self):
+        """iterator for targets."""
+        return six.iter(self.targets_dict)
+
+    def __iterkeys__(self):
         """iterator for targets."""
         return six.iterkeys(self.targets_dict)
 
@@ -329,6 +330,7 @@ class TargetsData(object):
             hdr.append(value[0])
         return hdr
 
+    # TODO This is a formatter and should probably not be in this file
     def format_record(self, record_id, field_list, fold=False):
         """Return the fields defined in field_list for the record_id in
         display format.
@@ -345,9 +347,9 @@ class TargetsData(object):
             value = self.get_format_dict(name)
             max_width = value[1]
             field_type = value[2]
-            if field_type is str and field_str:
+            if isinstance(field_type, six.string_types) and field_str:
                 if max_width < len(field_str):
-                    line.append(TableFormatter.fold_cell(field_str, max_width))
+                    line.append('\n'.join(wrap(field_str, max_width)))
                 else:
                     line.append('%s' % record[name])
             else:
@@ -399,73 +401,8 @@ class TargetsData(object):
         """get info on the database used"""
         pass
 
-    def display_disabled(self, output_format):
-        """Display diabled entries."""
-        col_list = [self.key_field, 'IPAddress', 'CompanyName', 'Product',
-                    'Port', 'Protocol', 'ScanEnabled']
 
-        table_data = []
-
-        # TODO can we do this with list comprehension
-        for record_id in sorted(self.targets_dict.iterkeys()):
-            if self.disabled_target(self.targets_dict[record_id]):
-                table_data.append(self.format_record(record_id, col_list))
-        table = TableFormatter(table_data, headers=col_list,
-                               title='Disabled hosts',
-                               table_format=self.output_format)
-        table.print_table()
-
-    def display_cols(self, fields, show_disabled=True):
-        """
-        Display the columns of data defined by the fields parameter.
-
-        This gets the
-        data from the targets data based on the col_list and prepares a table
-        based on those target_data colums
-
-        Parameters:
-          fields: list of strings defining the targets_data columns to be
-            displayed.
-
-          show_disabled(:class:`py:bool`)
-
-        """
-        table_data = []
-
-        col_list = self.tbl_hdr(fields)
-
-        table_width = self.get_output_width(fields) + len(fields)
-        fold = False if table_width < 80 else True
-
-        for record_id in sorted(self.targets_dict.iterkeys()):
-            if show_disabled:
-                table_data.append(self.format_record(record_id, fields, fold))
-
-            else:
-                if not self.disabled_target_id(record_id):
-                    table_data.append(self.format_record(record_id, fields,
-                                                         fold))
-
-        title = 'Target Providers Overview:'
-        if show_disabled:
-            title = '%s including disabled' % title
-        table = TableFormatter(table_data, headers=col_list,
-                               title=title)
-        table.print_table()
-
-    def display_all(self, fields=None, company=None, show_disabled=True):
-        """Display all entries in the base. If fields does not exist,
-           display a standard list of fields from the database.
-        """
-        if not fields:
-            # list of default fields for display
-            fields = STANDARD_FIELDS_DISPLAY_LIST
-        else:
-            fields = fields
-        self.display_cols(fields, show_disabled=show_disabled)
-
-
-class SQLTargetsData(TargetsData):
+class SQLTargetsTable(TargetsTable):
     """
     Subclass of Targets data for all SQL databases.  Subclasses of this class
     support specialized sql databases.
@@ -474,8 +411,8 @@ class SQLTargetsData(TargetsData):
         """Pass through to SQL"""
         if verbose:
             print('SQL Database type %s  verbose=%s' % (db_dict, verbose))
-        super(SQLTargetsData, self).__init__(db_dict, dbtype, verbose,
-                                             output_format)
+        super(SQLTargetsTable, self).__init__(db_dict, dbtype, verbose,
+                                              output_format)
         self.connection = None
 
     def db_info(self):
@@ -510,9 +447,9 @@ class SQLTargetsData(TargetsData):
         # connect.commit()
 
 
-class MySQLTargetsData(SQLTargetsData):
+class MySQLTargetsTable(SQLTargetsTable):
     """
-    This subclass of TargetsData process targets infromation from an sql
+    This subclass of TargetsTable process targets infromation from an sql
     database.
 
     Generate the targetstable from the sql database targets table and
@@ -524,8 +461,8 @@ class MySQLTargetsData(SQLTargetsData):
         """Read the input file into a dictionary."""
         if verbose:
             print('MySQL Database type %s  verbose=%s' % (db_dict, verbose))
-        super(MySQLTargetsData, self).__init__(db_dict, dbtype, verbose,
-                                               output_format)
+        super(MySQLTargetsTable, self).__init__(db_dict, dbtype, verbose,
+                                                output_format)
 
         # Connect to database
         try:
@@ -597,13 +534,13 @@ class MySQLTargetsData(SQLTargetsData):
                              % (db_dict, ex))
 
 
-class CsvTargetsData(TargetsData):
+class CsvTargetsTable(TargetsTable):
     """Comma Separated Values form of the Target base."""
 
     def __init__(self, db_dict, dbtype, verbose, output_format):
         """Read the input file into a dictionary."""
-        super(CsvTargetsData, self).__init__(db_dict, dbtype, verbose,
-                                             output_format)
+        super(CsvTargetsTable, self).__init__(db_dict, dbtype, verbose,
+                                              output_format)
 
         fn = db_dict['targetsfilename']
         self.filename = fn

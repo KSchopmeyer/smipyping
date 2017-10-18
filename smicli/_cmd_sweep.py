@@ -24,6 +24,7 @@ import click
 from smipyping import ServerSweep,\
     DEFAULT_SWEEP_PORT, SCAN_TYPES
 from .smicli import cli, CMD_OPTS_TXT
+from ._click_common import print_table
 # from .config import DEFAULT_NAMESPACE, DEFAULT_OPERATION_TIMEOUT, \
 #    DEFAULT_USERNAME, DEFAULT_PASSWORD
 
@@ -148,13 +149,19 @@ def cmd_sweep_nets(context, options):
         click.echo('The sweep may take several minutes')
 
         open_servers = sweep.sweep_servers()
-        # TODO move to use click.echo
-        sweep.print_open_hosts_report(open_servers)
+
+        rows, headers, title, known, unknown, execution_time = \
+            sweep.print_open_hosts_report(open_servers)
+        if rows:
+            print_table(rows, headers=headers, title=title)
+        # TODO: Should the following  be in the report???
+        print('\nScan Results: Found=%s, Unknown=%s, Total=%s Time=%s'
+              % (known, unknown, (known + unknown), execution_time))
 
 
 def cmd_sweep_todo(context, options):
     """
-    TODO
+    TODO  Do not know what this one is for
     """
     print('cmd_sweep_nets %s %s' % (context, options))
 

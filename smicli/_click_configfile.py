@@ -24,7 +24,7 @@ from __future__ import print_function, absolute_import
 from click_configfile import ConfigFileReader, Param, SectionSchema, \
     matches_section
 
-from .config import DEFAULT_SMICLI_CONFIG_FILES
+from ._click_common import DEFAULT_SMICLI_CONFIG_FILES
 
 
 class ConfigSectionSchema(object):  # pylint: disable=too-few-public-methods

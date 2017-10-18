@@ -16,7 +16,7 @@
 # limitations under the License.
 
 """
-Test the TargetsData class class.
+Test the TargetsTable class.
 """
 from __future__ import absolute_import, print_function
 
@@ -24,7 +24,7 @@ import os
 import unittest
 import six
 
-from smipyping import TargetsData
+from smipyping import TargetsTable
 from smipyping._configfile import read_config
 
 # unimplemented = pytest.mark.skipif(True, reason="test not implemented")
@@ -44,10 +44,10 @@ class CsvTableTests(TargetTableTests):
         test_config_file = os.path.join(SCRIPT_DIR, TEST_CONFIG_FILE_NAME)
         db_config = read_config(test_config_file, dbtype)
         db_config['directory'] = os.path.dirname(test_config_file)
-        self.target_table = TargetsData.factory(db_config, dbtype, False)
+        self.target_table = TargetsTable.factory(db_config, dbtype, False)
 
 
-class TargetTableTest(CsvTableTests):
+class TargetsTableTest(CsvTableTests):
     """Class for simple tests of CSVUserData class."""
 
     def test_get_table(self):

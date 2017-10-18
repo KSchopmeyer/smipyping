@@ -25,7 +25,7 @@ import six
 
 from smipyping import SimplePingList, PingsTable, ProgramsTable, UsersTable
 from .smicli import cli, CMD_OPTS_TXT
-from ._tableoutput import TableFormatter
+from ._click_common import fold_cell, print_table
 
 
 @cli.group('history', options_metavar=CMD_OPTS_TXT)
@@ -152,8 +152,8 @@ def history_delete(context, **options):  # pylint: disable=redefined-builtin
               default=datetime.datetime.today(),
               required=False,
               help='Optional date to be used as basis for report in form '
-                   ' dd/mm/yy. Default is the current day. This allows reports '
-                   'to be generated for previous periods.')
+                   ' dd/mm/yy. Default is the today. This option '
+                   'allows reports to be generated for previous periods.')
 @click.pass_obj
 def history_weekly(context, **options):  # pylint: disable=redefined-builtin
     """
@@ -192,7 +192,6 @@ def cmd_history_weekly(context, options):
         cp = programs_tbl.for_date(report_date)
     except ValueError as ve:
         raise click.ClickException('Error, no program defined %s ' % ve)
-    print('history_weekly options %s' % options)
 
     percentok_today = pings_tbl.get_percentok_by_id(report_date)
 
@@ -205,20 +204,20 @@ def cmd_history_weekly(context, options):
         cp['StartDate'],
         end_date=cp['EndDate'])
 
-    headers = ['id', 'IP', 'Company', 'Product', 'Today%', 'Week%', 'Pgm%',
-               'Contacts']
+    headers = ['target\nid', 'IP', 'Company', 'Product', '%\nToday', '%\nWeek',
+               '%\nPgm', 'Contacts']
 
     tbl_rows = []
     for target_id, value in six.iteritems(percentok_ytd):
         if target_id in context.target_data:
             target = context.target_data[target_id]
             company = target.get('CompanyName', 'empty')
-            company = TableFormatter.fold_cell(company, 15)
+            company = fold_cell(company, 15)
             product = target.get('Product', 'empty')
-            product = TableFormatter.fold_cell(product, 15)
+            product = fold_cell(product, 15)
             ip = target.get('IPAddress', 'empty')
             smi_version = target.get('SMIVersion', 'empty')
-            smi_version = TableFormatter.fold_cell(smi_version, 15)
+            smi_version = fold_cell(smi_version, 15)
             company_id = target.get('CompanyID', 'empty')
             # get users list
             email_list = users_tbl.get_emails_for_company(company_id)
@@ -244,15 +243,16 @@ def cmd_history_weekly(context, options):
         tbl_rows.append(row)
 
     context.spinner.stop()
-    table = TableFormatter(tbl_rows, headers,
-                           title=('Server Status %s program=%s dates: %s/'
-                                  '%s' %
-                                  (report_date,
-                                   cp['ProgramName'],
-                                   cp['StartDate'],
-                                   cp['EndDate'])),
-                           table_format=context.output_format)
-    click.echo(table.build_table())
+
+    print_table(tbl_rows, headers,
+                title=('Server Status: Report-date=%s '
+                       'program=%s start: %s end: '
+                       '%s' %
+                       (report_date,
+                        cp['ProgramName'],
+                        cp['StartDate'],
+                        cp['EndDate'])),
+                table_format=context.output_format)
 
 
 def cmd_history_delete(context, options):
@@ -277,10 +277,15 @@ def cmd_history_delete(context, options):
 
     record_count = pings_tbl.record_count()
 
-    # Verify that you have correct data
+    # TODO Verify that you have correct data
 
     try:
-        pings_tbl.delete_by_daterange()
+        pings_tbl.delete_by_daterange(
+            options['startdate'],
+            end_date=options['enddate'],
+            number_of_days=options['numberofdays'],
+            target_id=target_id)
+
         context.spinner.stop()
         click.echo('Delete finished. removed %s records' %
                    (pings_tbl.record_count() - record_count))
@@ -343,15 +348,14 @@ def cmd_history_create(context, options):
         rows.append([target_id,
                      addr,
                      ('%s:%s' % (test_result.type, test_result.code)),
-                     TableFormatter.fold_cell(exception, 12),
+                     fold_cell(exception, 12),
                      test_result.execution_time,
-                     TableFormatter.fold_cell(target['Product'], 12)])
+                     fold_cell(target['Product'], 12)])
     context.spinner.stop()
 
-    table = TableFormatter(rows, headers,
-                           title='FAKE CIMPing Results:',
-                           table_format=context.output_format)
-    click.echo(table.build_table())
+    print_table(rows, headers,
+                title='FAKE CIMPing Results:',
+                table_format=context.output_format)
 
 
 def cmd_history_list(context, options):
@@ -371,7 +375,7 @@ def cmd_history_list(context, options):
                                    context.verbose)
     # if full, show all records in base that match options
     if options['result'] == 'full':
-        headers = ['pingid', 'id', 'ip', 'company', 'timestamp', 'status']
+        headers = ['Pingid', 'Id', 'Ip', 'Company', 'Timestamp', 'Status']
 
         rows = pings_tbl.select_by_daterange(
             options['startdate'],
@@ -447,9 +451,8 @@ def cmd_history_list(context, options):
                                    % (options['result']))
 
     context.spinner.stop()
-    table = TableFormatter(tbl_rows, headers,
-                           title=('Ping Status for %s to %s' %
-                                  (options['startdate'],
-                                   options['enddate'])),
-                           table_format=context.output_format)
-    click.echo(table.build_table())
+    print_table(tbl_rows, headers,
+                title=('Ping Status for %s to %s' %
+                       (options['startdate'],
+                        options['enddate'])),
+                table_format=context.output_format)

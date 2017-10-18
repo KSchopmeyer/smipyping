@@ -21,7 +21,7 @@ from __future__ import print_function, absolute_import
 import click
 
 from .smicli import cli, CMD_OPTS_TXT
-from ._tableoutput import TableFormatter
+from ._click_common import print_table
 
 
 @cli.group('targets', options_metavar=CMD_OPTS_TXT)
@@ -106,6 +106,62 @@ def targets_disable(context, targetid, enable, **options):
 #  targets processing commands
 ##############################################################
 
+def display_cols(target_table, fields, show_disabled=True, output_format=None):
+    """
+    Display the columns of data defined by the fields parameter.
+
+    This gets the
+    data from the targets data based on the col_list and prepares a table
+    based on those target_data colums
+
+    Parameters:
+      fields: list of strings defining the targets_data columns to be
+        displayed.
+
+      show_disabled(:class:`py:bool`)
+
+    """
+    table_data = []
+
+    col_list = target_table.tbl_hdr(fields)
+
+    table_width = target_table.get_output_width(fields) + len(fields)
+    fold = False if table_width < 80 else True
+
+    for record_id in sorted(target_table.keys()):
+        if show_disabled:
+            table_data.append(target_table.format_record(record_id, fields,
+                                                         fold))
+
+        else:
+            if not target_table.disabled_target_id(record_id):
+                table_data.append(target_table.format_record(record_id, fields,
+                                                             fold))
+
+    title = 'Target Providers Overview:'
+    if show_disabled:
+        title = '%s including disabled' % title
+    print_table(table_data, headers=col_list, title=title,
+                table_format=output_format)
+
+
+STANDARD_FIELDS_DISPLAY_LIST = ['TargetID', 'IPAddress', 'Port', 'Protocol',
+                                'CompanyName', 'Product', 'CimomVersion']
+
+
+def display_all(target_table, fields=None, company=None,
+                show_disabled=True, output_format=None):
+    """Display all entries in the base. If fields does not exist,
+       display a standard list of fields from the database.
+    """
+    if not fields:
+        # list of default fields for display
+        fields = STANDARD_FIELDS_DISPLAY_LIST
+    else:
+        fields = fields
+    display_cols(target_table, fields, show_disabled=show_disabled,
+                 output_format=output_format)
+
 
 def cmd_targets_disable(context, targetid, enable, options):
     """Display the information fields for the targets dictionary."""
@@ -121,7 +177,7 @@ def cmd_targets_disable(context, targetid, enable, options):
             click.echo('State already same as proposed change')
             return
         return
-
+        # TODO why the following
         if target_record is not None:
             target_record['ScanEnabled'] = False if enable is True else True
             context.provider_data.write_updated_record(targetid)
@@ -153,10 +209,8 @@ def cmd_targets_fields(context):
     for field in fields:
         rows.append([field])
     headers = 'Table Fields'
-    tbl = TableFormatter(rows, headers, title='Target table fields',
-                         table_format=context.output_format)
-
-    click.echo(tbl.build_table())
+    print_table(rows, headers, title='Target table fields',
+                table_format=context.output_format)
 
 
 def cmd_targets_get(context, targetid, options):
@@ -195,9 +249,9 @@ def cmd_targets_list(context, options):
                                    (ke.__class__.__name__, ke))
 
     try:
-        context.target_data.display_all(list(fields),
-                                        show_disabled=options['disabled'],
-                                        company=None)
+        display_all(context.target_data, list(fields),
+                    show_disabled=options['disabled'],
+                    company=None, output_format=context.output_format)
 
     except Exception as ex:
         raise click.ClickException("%s: %s" % (ex.__class__.__name__, ex))
