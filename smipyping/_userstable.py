@@ -118,7 +118,7 @@ class UsersTable(object):
         """Return number of targets"""
         return len(self.data_dict)
 
-    def filter_records(self, field, target_value):
+    def filter_records(self, field, target_value, source_dict=None):
         """Get the set of user records for a field in the table that
         where the field value matches the test_value provided.
         Return the result as a new dictionary where the key is
@@ -129,9 +129,12 @@ class UsersTable(object):
           field(:term:`string`):
             Name of field in the table on which the filtering occurs
 
-          target_value():
+          target_value(:term:`string` or :term:`integer`):
             value to compare with value in user table field for equality.
             The datat type depends on the field being compared
+
+          source_list(`None` or dictionary of user records)
+            Source for the filter.  The default is the users table if None.
 
         Returns:
           Dictionary of user table records that match where the UserID is
@@ -143,7 +146,10 @@ class UsersTable(object):
 
         """
         users = {}
-        for id_ in self:
+
+        users_dict = source_dict if source_dict else self
+
+        for id_ in users_dict:
             value = self[id_]
             if value[field] == target_value:
                 users[id_] = value
@@ -164,7 +170,7 @@ class UsersTable(object):
         """
         users = self.filter_records('CompanyID', company_id)
         if enabled_only:
-            users = self.filter_records('Active', 'Active')
+            users = self.filter_records('Active', 'Active', source_dict=users)
         # pylint: disable=unused-variable
         emails = [value['Email'] for key, value in six.iteritems(users)
                   if value['Active'] == 'Active']
