@@ -118,7 +118,7 @@ class UsersTable(object):
         """Return number of targets"""
         return len(self.data_dict)
 
-    def filter_records(self, field, target_value, source_dict=None):
+    def filter_records(self, field, target_value):
         """Get the set of user records for a field in the table that
         where the field value matches the test_value provided.
         Return the result as a new dictionary where the key is
@@ -129,12 +129,9 @@ class UsersTable(object):
           field(:term:`string`):
             Name of field in the table on which the filtering occurs
 
-          target_value(:term:`string` or :term:`integer`):
+          target_value():
             value to compare with value in user table field for equality.
             The datat type depends on the field being compared
-
-          source_list(`None` or dictionary of user records)
-            Source for the filter.  The default is the users table if None.
 
         Returns:
           Dictionary of user table records that match where the UserID is
@@ -146,17 +143,13 @@ class UsersTable(object):
 
         """
         users = {}
-
-        users_dict = source_dict if source_dict else self
-
-        for id_ in users_dict:
-            value = self[id_]
+        for id_, value in six.iteritems(self):
             if value[field] == target_value:
                 users[id_] = value
         return users
 
     # add option for active
-    def get_emails_for_company(self, company_id, enabled_only=True):
+    def get_emails_for_company(self, company_id):
         """ Get all emails for a company id from the users base.  There will
             be typically multiple users returned
 
@@ -169,8 +162,6 @@ class UsersTable(object):
                 list of email addresses.
         """
         users = self.filter_records('CompanyID', company_id)
-        if enabled_only:
-            users = self.filter_records('Active', 'Active', source_dict=users)
         # pylint: disable=unused-variable
         emails = [value['Email'] for key, value in six.iteritems(users)
                   if value['Active'] == 'Active']
