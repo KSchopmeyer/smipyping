@@ -150,7 +150,7 @@ class UsersTable(object):
         return users
 
     # add option for active
-    def get_emails_for_company(self, company_id):
+    def get_emails_for_company(self, company_id, enabled_only=True):
         """ Get all emails for a company id from the users base.  There will
             be typically multiple users returned
 
@@ -163,6 +163,8 @@ class UsersTable(object):
                 list of email addresses.
         """
         users = self.filter_records('CompanyID', company_id)
+        if enabled_only:
+            users = self.filter_records('Active', 'Active')
         # pylint: disable=unused-variable
         emails = [value['Email'] for key, value in six.iteritems(users)
                   if value['Active'] == 'Active']
