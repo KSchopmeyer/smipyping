@@ -153,7 +153,8 @@ class CsvCompaniesTable(CompaniesTable):
                     # duplicate row handling
                     print('ERROR. Duplicate Id in table: %s\nrow=%s' %
                           (key, row))
-                    raise ValueError('Input Error. duplicate Id')
+                    raise ValueError('Input Error. duplicate Id in table: %s'
+                                     '\nrow=%s' % (key, row))
                 else:
                     result[key] = row
         self.data_dict = result
@@ -201,13 +202,16 @@ class MySQLCompaniesTable(CompaniesTable):
                                          password=db_dict['password'])
 
             if connection.is_connected():
-                print('sql db connection established. host %s, db %s' %
-                      (db_dict['host'], db_dict['database']))
+                if self.verbose:
+                    print('sql db connection established. host %s, db %s' %
+                          (db_dict['host'], db_dict['database']))
                 self.connection = connection
             else:
-                print('SQL database connection failed. host %s, db %s' %
-                      (db_dict['host'], db_dict['database']))
-                raise ValueError('Connection to database failed')
+                if self.verbose:
+                    print('SQL database connection failed. host %s, db %s' %
+                          (db_dict['host'], db_dict['database']))
+                raise ValueError('Connection to host %s database %s failed.' %
+                                 (db_dict['host'], db_dict['database']))
             self.connection = connection
         except Exception as ex:
             raise ValueError('Could not connect to sql database %r. '

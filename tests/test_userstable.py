@@ -78,7 +78,7 @@ class TableTests(unittest.TestCase):
             tbl_inst.filter_records('xxx', 9)
             self.assertfail('expected exception')
         except KeyError as er:
-            print('error %s' % er)
+            pass
 
 
 class MySQLTests(TableTests):
@@ -86,7 +86,7 @@ class MySQLTests(TableTests):
         dbtype = 'mysql'
         db_config = self.get_config(dbtype)
 
-        tbl_inst = UsersTable.factory(db_config, dbtype, True)
+        tbl_inst = UsersTable.factory(db_config, dbtype, False)
         self.assertTrue(len(tbl_inst) > 10)
         self.methods_test(tbl_inst)
 
@@ -95,8 +95,8 @@ class MySQLTests(TableTests):
         only for enabled clients"""
         dbtype = 'mysql'
         db_config = self.get_config(dbtype)
-        companies_table = CompaniesTable.factory(db_config, dbtype, True)
-        tbl_inst = UsersTable.factory(db_config, dbtype, True)
+        companies_table = CompaniesTable.factory(db_config, dbtype, False)
+        tbl_inst = UsersTable.factory(db_config, dbtype, False)
         for company_id in companies_table:
             emails = tbl_inst.get_emails_for_company(company_id)
             users = tbl_inst.filter_records('CompanyID', company_id)
@@ -115,7 +115,7 @@ class CsvTests(TableTests):
         print('csv Config File db info  dbtype %s, details %s' % (dbtype,
                                                                   db_config))
 
-        tbl_inst = UsersTable.factory(db_config, dbtype, True)
+        tbl_inst = UsersTable.factory(db_config, dbtype, False)
         self.assertTrue(len(tbl_inst) > 10)
         self.methods_test(tbl_inst)
 

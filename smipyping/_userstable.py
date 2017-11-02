@@ -142,11 +142,9 @@ class UsersTable(object):
             KeyError if the field is NOT in the user table.
 
         """
-        users = {}
-        for id_, value in six.iteritems(self):
-            if value[field] == target_value:
-                users[id_] = value
-        return users
+        # return {}
+        return {key: value for key, value in six.iteritems(self)
+                if value[field] == target_value}
 
     # add option for active
     def get_emails_for_company(self, company_id):
@@ -263,9 +261,11 @@ class MySQLUsersTable(UsersTable):
                           (db_dict['host'], db_dict['database']))
                 self.connection = connection
             else:
-                print('SQL database connection failed. host %s, db %s' %
-                      (db_dict['host'], db_dict['database']))
-                raise ValueError('Connection to database failed')
+                if self.verbose:
+                    print('SQL database connection failed. host %s, db %s' %
+                          (db_dict['host'], db_dict['database']))
+                raise ValueError('Connection to host %s database %s failed.' %
+                                 (db_dict['host'], db_dict['database']))
             self.connection = connection
         except Exception as ex:
             raise ValueError('Could not connect to sql database %r. '
