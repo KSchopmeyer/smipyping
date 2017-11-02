@@ -50,7 +50,8 @@ def history_group():
               default=datetime.datetime.now(),
               required=False,
               help='Timestamp for the ping history. format for input is'
-                   'min:hour:day/month/year. Default current datetime')
+                   'min:hour:day/month/year. The minute and hour are optional. '
+                   'Default current datetime')
 @click.pass_obj
 def history_create(context, **options):  # pylint: disable=redefined-builtin
     """
@@ -132,7 +133,7 @@ def history_stats(context, **options):  # pylint: disable=redefined-builtin
               required=False,
               help='Optional targetID. If included, delete ping records only '
                    'for the defined targetID. Otherwise all ping records in '
-                   'the define time period are deleted.')
+                   'the defined time period are deleted.')
 @click.pass_obj
 def history_delete(context, **options):  # pylint: disable=redefined-builtin
     """
@@ -163,6 +164,47 @@ def history_weekly(context, **options):  # pylint: disable=redefined-builtin
 
     """
     context.execute_cmd(lambda: cmd_history_weekly(context, options))
+
+
+@history_group.command('timeline', options_metavar=CMD_OPTS_TXT)
+@click.argument('IDs', type=int, metavar='TargetIDs', required=True, nargs=-1)
+@click.option('-s', '--startdate', type=Datetime(format='%d/%m/%y'),
+              default=None,
+              required=False,
+              help='Start date for ping records included. Format is dd/mm/yy'
+                   ' where dd and mm are zero padded (ex. 01) and year is'
+                   ' without century (ex. 17). Default is oldest record')
+@click.option('-e', '--enddate', type=Datetime(format='%d/%m/%y'),
+              default=None,
+              required=False,
+              help='End date for ping records included. Format is dd/mm/yy'
+                   ' where dd and dm are zero padded (ex. 01) and year is'
+                   ' without century (ex. 17). Default is current datetime')
+# TODO make this test for positive int
+@click.option('-n', '--numberofdays', type=int,
+              required=False,
+              help='Alternative to enddate. Number of days to report from'
+                   ' startdate. "enddate" ignored if "numberofdays" set')
+@click.option('-t', '--targetId', type=int,
+              required=False,
+              help='Get results only for the defined targetID')
+@click.option('-r', 'result', type=click.Choice(['full', 'status', '%ok']),
+              default='status',
+              help='Display. "full" displays all records, "status" displays '
+                   'status summary by id. Default=status. "%ok" reports '
+                   'percentage pings OK by Id and total count.')
+@click.option('-S' '--summary', is_flag=True, required=False, default=False,
+              help='If set only a summary is generated.')
+@click.pass_obj
+def history_timeline(context, ids, **options):
+    # pylint: disable=redefined-builtin
+    """
+    Show history of status changes for IDs
+
+    Show a timeline of the history of status changes for the IDs listed.
+
+    """
+    context.execute_cmd(lambda: cmd_history_timeline(context, ids, options))
 
 
 ######################################################################
@@ -455,4 +497,69 @@ def cmd_history_list(context, options):
                 title=('Ping Status for %s to %s' %
                        (options['startdate'],
                         options['enddate'])),
+                table_format=context.output_format)
+
+
+def cmd_history_timeline(context, ids, options):
+    """
+    Output a table that shows just the history records that represent changes
+    in status for the ids defined
+    """
+
+    for id_ in ids:
+        try:
+            context.target_data.get_target(id_)  # noqa: F841
+        except KeyError:
+            raise click.ClickException('Invalid Target: target_id=%s not in '
+                                       'database %s.' %
+                                       (id_, context.target_data))
+
+    pings_tbl = PingsTable.factory(context.db_info, context.db_type,
+                                   context.verbose)
+    headers = ['Pingid', 'Id', 'Ip', 'Company', 'Timestamp',
+               'Status', 'time_diff']
+    tbl_rows = []
+    for target_id in ids:
+        rows = pings_tbl.select_by_daterange(
+            options['startdate'],
+            end_date=options['enddate'],
+            number_of_days=options['numberofdays'],
+            target_id=target_id)
+
+        prev_status = None
+        prev_pingtime = None
+        timediff = None
+        for row in rows:
+            target_id = row[1]
+            ping_id = row[0]
+            ping_time = row[2]
+            timestamp = datetime.datetime.strftime(ping_time,
+                                                   '%d/%m/%y:%H:%M:%S')
+            status = row[3]
+            if not status == prev_status:
+                prev_status = status
+                if prev_pingtime:
+                    timediff = ping_time - prev_pingtime
+                prev_pingtime = ping_time
+                if target_id in context.target_data:
+                    target = context.target_data[target_id]
+                    company = target.get('CompanyName', ' empty')
+                    ip = target.get('IPAddress', 'empty')
+                else:
+                    company = "%s id unknown" % target_id
+                    ip = '??'
+
+                status = (status[:20] + '..') if len(status) > 20 else status
+                tbl_row = [ping_id, target_id, ip, company, timestamp, status,
+                           timediff]
+                tbl_rows.append(tbl_row)
+
+    context.spinner.stop()
+    print_table(tbl_rows, headers,
+                start_date, end_date = pings_tbl.compute_dates(
+                    options['startdate'], options['enddate'],
+                    options['numberofdays'])
+
+                title=('Ping timeline for %s to %s for ids %s' %
+                       (start_date, end_date, ",".join(map(str, ids)))),
                 table_format=context.output_format)
