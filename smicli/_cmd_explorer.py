@@ -147,7 +147,7 @@ def cmd_explore_ids(context, ids, **options):
     servers = explorer.explore_servers(ids)
     context.spinner.stop()
     report_server_info(servers, context.target_data,
-                       context.context.output_format,
+                       context.output_format,
                        report=options['report'])
 
 ##############################################################
