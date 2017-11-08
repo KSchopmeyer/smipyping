@@ -21,6 +21,7 @@ from __future__ import print_function, absolute_import
 
 import os
 import unittest
+import datetime
 
 from smipyping._pingstable import PingsTable
 from smipyping._configfile import read_config
@@ -41,6 +42,7 @@ class TableTests(unittest.TestCase):
         return db_config
 
     def methods_test(self, tbl_inst):
+        """Generate test for methods of the pings_table class"""
         if VERBOSE:
             print('dict %s' % tbl_inst.data_dict)
         test_keys = []
@@ -66,16 +68,67 @@ class TableTests(unittest.TestCase):
 
 
 class MySQLTests(TableTests):
-    def test_create(self):
+    """Tests for a mysql database"""
+
+    def setUp(self):
+        """Open database and get pings table"""
         dbtype = 'mysql'
         db_config = self.get_config(dbtype)
 
-        tbl_inst = PingsTable.factory(db_config, dbtype, False)
-        print('pings %s' % tbl_inst.data_dict)
-        self.assertEqual(len(tbl_inst), 0)
+        self.tbl_inst = PingsTable.factory(db_config, dbtype, False)
+
+    def tearDown(self):
+        """Close the database"""
+        self.tbl_inst.close_connection()
+
+    def test_create(self):
+        """Test create the pings table and get some instances"""
+
+        print('pings %s' % self.tbl_inst.data_dict)
+        self.assertEqual(len(self.tbl_inst), 0)
         # self.methods_test(tbl_inst)
-        rows = tbl_inst.get_data_for_day(2016, 8, 5)
+        rows = self.tbl_inst.get_data_for_day(2016, 8, 5)
         print('len rows %s' % len(rows))
+
+    def test_compute_number_of_days(self):
+        """Test the function that computes start and end dates"""
+
+        # test parameters
+        # Start date, end date, number of days, rtn start date, rtn end date
+        tests = [
+            ['01/01/16', '01/02/16', None, '01/01/16', '01/02/16'],
+            ['01/01/16', '02/01/16', None, '01/01/16', '02/01/16'],
+            [None, '02/01/16', None, '01/01/16', '02/01/16'],
+            ['01/01/16', None, 1, '01/01/16', '02/01/16'], ]
+
+        format = '%d/%m/%y'
+
+        for test in tests:
+            start = None
+            end = None
+            if test[0]:
+                start = datetime.datetime.strptime(test[0], format)
+            if test[1]:
+                end = datetime.datetime.strptime(test[1], format)
+            start_date, end_date = self.tbl_inst.compute_dates(start,
+                                                               end,
+                                                               test[2])
+            print('test %s start %s, end %s' % (test, start_date, end_date))
+            if start:
+                start_date = start_date.strftime(format)
+                self.assertEqual(start_date, test[3])
+
+            end_date = end_date.strftime(format)
+            self.assertEqual(end_date, test[4])
+
+        try:
+            end = datetime.datetime.strptime('01/01/16', format)
+            start_date, end_date = self.tbl_inst.compute_dates(None,
+                                                               end,
+                                                               2)
+            self.fail("Exception expected")
+        except ValueError as ve:
+            print(ve)
 
 
 if __name__ == '__main__':

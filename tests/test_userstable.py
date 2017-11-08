@@ -21,9 +21,12 @@ from __future__ import print_function, absolute_import
 
 import os
 import unittest
+from pprint import pprint as pp  # noqa: F401
 import six
 
 from smipyping._userstable import UsersTable
+from smipyping._companiestable import CompaniesTable
+
 from smipyping._configfile import read_config
 
 VERBOSE = False
@@ -75,7 +78,7 @@ class TableTests(unittest.TestCase):
             tbl_inst.filter_records('xxx', 9)
             self.assertfail('expected exception')
         except KeyError as er:
-            print('error %s' % er)
+            pass
 
 
 class MySQLTests(TableTests):
@@ -83,9 +86,25 @@ class MySQLTests(TableTests):
         dbtype = 'mysql'
         db_config = self.get_config(dbtype)
 
-        tbl_inst = UsersTable.factory(db_config, dbtype, True)
+        tbl_inst = UsersTable.factory(db_config, dbtype, False)
         self.assertTrue(len(tbl_inst) > 10)
         self.methods_test(tbl_inst)
+
+    def test_get_emails(self):
+        """Test if the get_emails function returns correct emails and
+        only for enabled clients"""
+        dbtype = 'mysql'
+        db_config = self.get_config(dbtype)
+        companies_table = CompaniesTable.factory(db_config, dbtype, False)
+        tbl_inst = UsersTable.factory(db_config, dbtype, False)
+        for company_id in companies_table:
+            emails = tbl_inst.get_emails_for_company(company_id)
+            users = tbl_inst.filter_records('CompanyID', company_id)
+
+            for email in emails:
+                for user, value in six.iteritems(users):
+                    if email == value['Email']:
+                        self.assertTrue(value['Active'] == 'Active')
 
 
 class CsvTests(TableTests):
@@ -96,7 +115,7 @@ class CsvTests(TableTests):
         print('csv Config File db info  dbtype %s, details %s' % (dbtype,
                                                                   db_config))
 
-        tbl_inst = UsersTable.factory(db_config, dbtype, True)
+        tbl_inst = UsersTable.factory(db_config, dbtype, False)
         self.assertTrue(len(tbl_inst) > 10)
         self.methods_test(tbl_inst)
 

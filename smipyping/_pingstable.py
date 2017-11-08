@@ -281,10 +281,28 @@ class MySQLPingsTable(SQLPingsTable):
         print('record_count %s' % res)
         return res[0]
 
-    def _compute_dates(self, start_date, end_date=None, number_of_days=None):
+    def close_connection(self):
+        """Close the connection"""
+        if self.connection:
+            self.connection.close()
+
+    def compute_dates(self, start_date, end_date=None, number_of_days=None):
         """
         Compute the start and end dates from the input and return a tuple
         of start date and end date.
+
+        Parameters:
+          start_date(:class:`py:datetime.datetime` or `None`):
+            Datetime for start of activity or if None, oldes timestamp in
+            the pings table
+
+          end_date(:class:`py:datetime.datetime` or `None`):
+            Datetune for end of activity or None.  If None and `number_of_days`
+            not set, the current date is used as the end_date
+
+          number_of_days(:term:`integer` or None):
+            If this integer set, end_date MUST BE `None`. Represents the
+            number of days for this activity since the `start_date`.
         """
         if start_date is None:
             row = self.get_oldest_ping()
@@ -292,8 +310,9 @@ class MySQLPingsTable(SQLPingsTable):
             start_date = oldest_timestamp
 
         if number_of_days and end_date:
-            raise ValueError('Both enddate and number of days options '
-                             'not allowed')
+            raise ValueError('Simultaneous enddate %s and number of days %s '
+                             'parameters not allowed' %
+                             (end_date, number_of_days))
 
         if number_of_days:
             end_date = start_date + datetime.timedelta(days=number_of_days)
@@ -335,7 +354,7 @@ class MySQLPingsTable(SQLPingsTable):
         Exceptions:
             ValueError if input parameters incorrect.
         """
-        start_date, end_date = self._compute_dates(
+        start_date, end_date = self.compute_dates(
             start_date,
             end_date=end_date,
             number_of_days=number_of_days)
