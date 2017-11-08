@@ -561,5 +561,6 @@ def cmd_history_timeline(context, ids, options):
 
     title = ('Ping status timeline for %s to %s; ids %s' %
              (start_date, end_date, ','.join(map(str, ids))))
+
     print_table(tbl_rows, headers, title,
                 table_format=context.output_format)
