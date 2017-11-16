@@ -69,15 +69,14 @@ class NotificationsTable(object):
         inst = None
         if verbose:
             print('notification factory datafile %s dbtype %s verbose %s'
-                  % (db_dict,
-                     db_type,
-                     verbose))
+                  % (db_dict, db_type, verbose))
         if db_type == 'csv':
             inst = CsvNotificationsTable(db_dict, db_type, verbose)
         elif db_type == 'mysql':
             inst = MySQLNotificationsTable(db_dict, db_type, verbose)
         else:
-            ValueError('Invalid companiestable factory db_type %s' % db_type)
+            ValueError('Invalid notifications table factory db_type %s' %
+                       db_type)
 
         if verbose:
             print('Notifications table factory inst %r' % inst)
@@ -205,9 +204,10 @@ class MySQLNotificationsTable(NotificationsTable):
                                          password=db_dict['password'])
 
             if connection.is_connected():
-                print('sql db connection established. host %s, db %s' %
-                      (db_dict['host'], db_dict['database']))
                 self.connection = connection
+                if verbose:
+                    print('sql db connection established. host %s, db %s' %
+                          (db_dict['host'], db_dict['database']))
             else:
                 print('SQL database connection failed. host %s, db %s' %
                       (db_dict['host'], db_dict['database']))

@@ -77,7 +77,7 @@ class TableTests(unittest.TestCase):
         try:
             tbl_inst.filter_records('xxx', 9)
             self.assertfail('expected exception')
-        except KeyError as er:
+        except KeyError:
             pass
 
 

@@ -18,18 +18,19 @@ that package develops more capabilities.  Currently the only functions in
 this module used are the csv format and the htmo format
 """
 from textwrap import wrap
-import re
+
+import copy
 import six
 import prompt_toolkit
 import pywbem
 import click
-import copy
 from tabulate import tabulate
 from ._tableoutput import HtmlTable
 
 
 __all__ = ['DEFAULT_CONFIG_FILE', 'SMICLI_PROMPT', 'SMICLI_HISTORY_FILE',
-           'DEFAULT_SMICLI_CONFIG_FILES']
+           'DEFAULT_SMICLI_CONFIG_FILES', 'pick_from_list',
+           'pick_multiple_from_list', 'print_table', 'fold_cell']
 
 USE_TABULATE = False
 #: Default configuration file for smipyping cli
@@ -69,31 +70,6 @@ def validate_prompt(text=""):
     """
     text = prompt('%s valid (y/n): ' % text)
     return True if text == 'y' else False
-
-
-def filter_namelist(regex, name_list, ignore_case=True):
-    """
-    Filter out names in name_list that do not match compiled_regex.
-
-    Note that the regex may define a subset of the name string.  Thus,  regex:
-        - CIM matches any name that starts with CIM
-        - CIM_abc matches any name that starts with CIM_abc
-        - CIM_ABC$ matches only the name CIM_ABC.
-
-    Parameters:
-      regex (:term: `String`) Python regular expression to match
-
-      name_list: List of strings to be matched.
-
-      ignore_case: bool. If True, do case-insensitive match. Default = True
-
-    Returns the list of names that match.
-
-    """
-    flags = re.IGNORECASE if ignore_case else None
-    compiled_regex = re.compile(regex, flags) if flags else re.compile(regex)
-    new_list = [n for n in name_list for m in[compiled_regex.match(n)] if m]
-    return new_list
 
 
 def pick_from_list(context, options, title):

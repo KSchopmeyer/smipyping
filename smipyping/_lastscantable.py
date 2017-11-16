@@ -66,9 +66,7 @@ class LastScanTable(object):
         inst = None
         if verbose:
             print('lastscan factory datafile %s dbtype %s verbose %s'
-                  % (db_dict,
-                     db_type,
-                     verbose))
+                  % (db_dict, db_type, verbose))
         if db_type == 'csv':
             inst = CsvLastScanTable(db_dict, db_type, verbose)
         elif db_type == 'mysql':
@@ -160,9 +158,10 @@ class MySQLLastScanTable(LastScanTable):
                                          password=db_dict['password'])
 
             if connection.is_connected():
-                print('sql db connection established. host %s, db %s' %
-                      (db_dict['host'], db_dict['database']))
                 self.connection = connection
+                if verbose:
+                    print('sql db connection established. host %s, db %s' %
+                          (db_dict['host'], db_dict['database']))
             else:
                 print('SQL database connection failed. host %s, db %s' %
                       (db_dict['host'], db_dict['database']))

@@ -69,15 +69,13 @@ class ProgramsTable(object):
         inst = None
         if verbose:
             print('notification factory datafile %s dbtype %s verbose %s'
-                  % (db_dict,
-                     db_type,
-                     verbose))
+                  % (db_dict, db_type, verbose))
         if db_type == 'csv':
             inst = CsvProgramsTable(db_dict, db_type, verbose)
         elif db_type == 'mysql':
             inst = MySQLProgramsTable(db_dict, db_type, verbose)
         else:
-            ValueError('Invalid companiestable factory db_type %s' % db_type)
+            ValueError('Invalid programs table factory db_type %s' % db_type)
 
         if verbose:
             print('Programs table factory inst %r' % inst)
@@ -113,7 +111,7 @@ class ProgramsTable(object):
         del self.data_dict[record_id]
 
     def __len__(self):
-        """Return number of targets"""
+        """Return number of programs"""
         return len(self.data_dict)
 
     # TODO combine current and for_date into a single method
@@ -253,9 +251,10 @@ class MySQLProgramsTable(ProgramsTable):
                                          password=db_dict['password'])
 
             if connection.is_connected():
-                print('sql db connection established. host %s, db %s' %
-                      (db_dict['host'], db_dict['database']))
                 self.connection = connection
+                if verbose:
+                    print('sql db connection established. host %s, db %s' %
+                          (db_dict['host'], db_dict['database']))
             else:
                 print('SQL database connection failed. host %s, db %s' %
                       (db_dict['host'], db_dict['database']))

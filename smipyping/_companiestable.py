@@ -63,10 +63,8 @@ class CompaniesTable(object):
 
         inst = None
         if verbose:
-            print('Companies factory datafile %s dbtype %s verbose %s'
-                  % (db_dict,
-                     db_type,
-                     verbose))
+            print('Companies factory table %s dbtype %s verbose %s'
+                  % (db_dict, db_type, verbose))
         if db_type == 'csv':
             inst = CsvCompaniesTable(db_dict, db_type, verbose)
         elif db_type == 'mysql':
@@ -202,10 +200,10 @@ class MySQLCompaniesTable(CompaniesTable):
                                          password=db_dict['password'])
 
             if connection.is_connected():
+                self.connection = connection
                 if self.verbose:
                     print('sql db connection established. host %s, db %s' %
                           (db_dict['host'], db_dict['database']))
-                self.connection = connection
             else:
                 if self.verbose:
                     print('SQL database connection failed. host %s, db %s' %

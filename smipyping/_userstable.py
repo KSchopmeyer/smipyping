@@ -71,15 +71,13 @@ class UsersTable(object):
         inst = None
         if verbose:
             print('lastscan factory datafile %s dbtype %s verbose %s'
-                  % (db_dict,
-                     db_type,
-                     verbose))
+                  % (db_dict, db_type, verbose))
         if db_type == 'csv':
             inst = CsvUsersTable(db_dict, db_type, verbose)
         elif db_type == 'mysql':
             inst = MySQLUsersTable(db_dict, db_type, verbose)
         else:
-            ValueError('Invalid companiestable factory db_type %s' % db_type)
+            ValueError('Invalid users table factory db_type %s' % db_type)
 
         if verbose:
             print('Users table factory inst %r' % inst)
@@ -149,10 +147,9 @@ class UsersTable(object):
     # add option for active
     def get_emails_for_company(self, company_id):
         """ Get all emails for a company id from the users base.  There will
-            be typically multiple users returned
+            be typically multiple users returned.
 
             Parameters:
-
               company_id(:term:`integer`)
                 The companyID for which all user records will be returned
 
@@ -256,10 +253,10 @@ class MySQLUsersTable(UsersTable):
                                          password=db_dict['password'])
 
             if connection.is_connected():
+                self.connection = connection
                 if verbose:
                     print('sql db connection established. host %s, db %s' %
                           (db_dict['host'], db_dict['database']))
-                self.connection = connection
             else:
                 if self.verbose:
                     print('SQL database connection failed. host %s, db %s' %

@@ -132,9 +132,7 @@ class TargetsTable(object):
         inst = None
         if verbose:
             print('targetdata factory datafile %s dbtype %s verbose %s'
-                  % (db_dict,
-                     db_type,
-                     verbose))
+                  % (db_dict, db_type, verbose))
         if db_type == ('csv'):
             inst = CsvTargetsTable(db_dict, db_type, verbose,
                                    output_format=output_format)
@@ -143,10 +141,10 @@ class TargetsTable(object):
             inst = MySQLTargetsTable(db_dict, db_type, verbose,
                                      output_format=output_format)
         else:
-            ValueError('Invalid target factory db_type %s' % db_type)
+            ValueError('Invalid targets factory db_type %s' % db_type)
 
         if verbose:
-            print('Resulting target factory inst %r' % inst)
+            print('Resulting targets factory inst %r' % inst)
 
         return inst
 
