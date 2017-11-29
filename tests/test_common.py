@@ -29,7 +29,7 @@ except ImportError:
     from io import StringIO
 
 from smicli._click_common import pick_from_list, pick_multiple_from_list, \
-    print_table
+    print_table, validate_prompt
 from smicli._click_context import ClickContext
 
 from smipyping._common import get_list_index, filter_stringlist
@@ -142,12 +142,26 @@ class TestPickFromMultiplesList(object):
         """Execute valid pick from a multipleslist"""
         list_ = ["aaa", "bbb", "ccc"]
         prompt_txt = 'Select multiple entries by index or Ctrl-C to exit >'
-        with patch('smicli._click_common.prompt', return_value='1 2') as prompt:
+        with patch('smicli._click_common.prompt', return_value='1 2') as \
+                prompt:
             ctx = ClickContext(None, None, None, None, None, None, None,
                                None, None)
             assert pick_multiple_from_list(ctx, list_, prompt_txt) == [1, 2]
             prompt.assert_called_once_with(prompt_txt)
 
+class TestValidatePrompt(object):
+    """
+    Test the click_common validate prompt
+    """
+    def test_valid_pick(self):
+        """Execute validateprompt"""
+        list_ = ["aaa", "bbb", "ccc"]
+        prompt_txt = 'blah blah'
+        with patch('smicli._click_common.prompt', return_value='y') as prompt:
+            ctx = ClickContext(None, None, None, None, None, None, None,
+                               None, None)
+            assert validate_prompt(prompt_txt) == True
+            prompt.assert_called_once_with(u'blah blah valid (y/n): ')
 
 class TestPrintTable(object):
 

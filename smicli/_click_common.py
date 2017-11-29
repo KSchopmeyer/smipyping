@@ -59,7 +59,10 @@ DEFAULT_OUTPUT_FORMAT = 'simple'
 
 
 def prompt(txt):
-    """ single function for prompt. Aids mock tests"""
+    """ Single function for prompt. Aids mock tests.
+    Issues prompt and returns.
+    """
+    print('prompt output %s' % txt)
     return prompt_toolkit.prompt(txt)
 
 
@@ -68,8 +71,8 @@ def validate_prompt(text=""):
     Issue prompt and get y/n response. Input parameter text is prepended to
     the prompt output.
     """
-    text = prompt('%s valid (y/n): ' % text)
-    return True if text == 'y' else False
+    rslt = prompt(unicode('%s valid (y/n): ' % text))
+    return True if rslt == 'y' else False
 
 
 def pick_from_list(context, options, title):

@@ -229,7 +229,6 @@ def cmd_history_weekly(context, options):
     Generate the standard weekly status report. This report generates status
     info on the current day, week, and program.
     """
-    print('cmd_history options %s context %s' % (options, context))
     pings_tbl = PingsTable.factory(context.db_info, context.db_type,
                                    context.verbose)
 

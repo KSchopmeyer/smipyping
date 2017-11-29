@@ -135,13 +135,19 @@ def users_modify(context, id, **options):  # pylint: disable=redefined-builtin
 
 @users_group.command('activate', options_metavar=CMD_OPTS_TXT)
 @click.argument('ID', type=int, metavar='UserID', required=True, nargs=1)
-@click.option('--activate/deactivate', default=False,
-              help='Set the activate/deactivate flag in the database for this '
-              'user.')
+@click.option('--active/--inactive', default=False, required=False,
+              help='Set the active/inactive state in the database for this '
+              'user. Default is to attempt set user to inactive')
+@click.pass_obj
 def users_activate(context, id, **options):
     """
+    Activate or deactivate a user.
+
+    This sets the user defined by the UserID argument to either active
+    or Inactive.  When a user is inactive they are no longer shown in
+    tables that involve user information such as the weekly report.
     """
-    context.execute_cmd(lambda: cmd_users_activate(context, options))
+    context.execute_cmd(lambda: cmd_users_activate(context, id, options))
 
 
 ######################################################################
@@ -238,7 +244,7 @@ def cmd_users_delete(context, id, options):
             user = users_tbl[user_id]
             click.echo(user)
             context.spinner.stop()
-            if validate_prompt():
+            if validate_prompt('Delete user id %s' % user_id):
                 users_tbl.delete(user_id)
             else:
                 click.echo('Abort Operation')
@@ -275,6 +281,24 @@ def cmd_users_modify(context, id, options):
 
 def cmd_users_activate(context, id, options):
     """
+        Set the user active flag if change required
     """
-    # TODO not implemented
-    click.echo("Not implemented")
+
+    users_tbl = UsersTable.factory(context.db_info, context.db_type,
+                                   context.verbose)
+    user_id = id
+    is_active = users_tbl.is_active(user_id)
+    active_flag = options['active']
+    context.spinner.stop()
+    if user_id in users_tbl:
+        if active_flag and is_active:
+            click.echo('User %s already active' % user_id)
+            return
+        elif not active_flag and not is_active:
+            click.echo('User %s already inactive' % user_id)
+            return
+        else:
+            users_tbl.activate(user_id, active_flag)
+            active_flag = users_tbl.is_active(user_id)
+            click.echo('User %s set %s' % (user_id,
+                                          users_tbl.is_active_str(user_id)))
