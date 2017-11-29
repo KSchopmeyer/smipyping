@@ -27,6 +27,11 @@ from smipyping import SimplePingList, PingsTable, ProgramsTable, UsersTable
 from .smicli import cli, CMD_OPTS_TXT
 from ._click_common import fold_cell, print_table
 
+from smipyping._common import get_list_index
+
+# default sort order for weekly table is the company row
+DEFAULT_WEEKLY_TBL_SORT = 'Company'
+
 
 @cli.group('history', options_metavar=CMD_OPTS_TXT)
 def history_group():
@@ -155,6 +160,11 @@ def history_delete(context, **options):  # pylint: disable=redefined-builtin
               help='Optional date to be used as basis for report in form '
                    ' dd/mm/yy. Default is the today. This option '
                    'allows reports to be generated for previous periods.')
+@click.option('-o', '--order', required=False, type=str,
+              default=DEFAULT_WEEKLY_TBL_SORT,
+              help='Sort order of the columns for the report output.  This '
+                   'can be any of the column headers (case independent). '
+                    'Default: {}'.format(DEFAULT_WEEKLY_TBL_SORT))
 @click.pass_obj
 def history_weekly(context, **options):  # pylint: disable=redefined-builtin
     """
@@ -233,7 +243,7 @@ def cmd_history_weekly(context, options):
     try:
         cp = programs_tbl.for_date(report_date)
     except ValueError as ve:
-        raise click.ClickException('Error, no program defined %s ' % ve)
+        raise click.ClickException('Error; no program defined %s ' % ve)
 
     percentok_today = pings_tbl.get_percentok_by_id(report_date)
 
@@ -249,6 +259,14 @@ def cmd_history_weekly(context, options):
     headers = ['target\nid', 'IP', 'Company', 'Product', '%\nToday', '%\nWeek',
                '%\nPgm', 'Contacts']
 
+    report_order = options['order']
+
+    try:
+        col_index = get_list_index(headers, report_order)
+    except ValueError:
+        raise click.ClickException('Error; report_order not valid report '
+                                   ' column %s' % report_order)
+
     tbl_rows = []
     for target_id, value in six.iteritems(percentok_ytd):
         if target_id in context.target_data:
@@ -263,7 +281,8 @@ def cmd_history_weekly(context, options):
             company_id = target.get('CompanyID', 'empty')
             # get users list
             email_list = users_tbl.get_emails_for_company(company_id)
-            emails = "\n".join(email_list)
+
+            emails = "\n".join(email_list) if email_list else 'unassigned'
         else:
             company = "No target"
             ip = ''
@@ -283,6 +302,9 @@ def cmd_history_weekly(context, options):
         row = [target_id, ip, company, product, today_percent, week_percent,
                value[0], emails]
         tbl_rows.append(row)
+
+        # sort by the company column
+        tbl_rows.sort(key=lambda x: x[col_index])
 
     context.spinner.stop()
 
@@ -358,7 +380,6 @@ def cmd_history_create(context, options):
     """
     Create a set of ping records in the database.  This is a test function
     """
-    print('create options %s' % options)
     # construct cimping for the complete set of targets
     simple_ping_list = SimplePingList(context.target_data,
                                       target_ids=options['ids'],

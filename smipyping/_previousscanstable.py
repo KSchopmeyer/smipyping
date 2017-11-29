@@ -66,15 +66,13 @@ class PreviousScansTable(object):
         inst = None
         if verbose:
             print('notification factory datafile %s dbtype %s verbose %s'
-                  % (db_dict,
-                     db_type,
-                     verbose))
+                  % (db_dict, db_type, verbose))
         if db_type == 'csv':
             inst = CsvPreviousScansTable(db_dict, db_type, verbose)
         elif db_type == 'mysql':
             inst = MySQLPreviousScansTable(db_dict, db_type, verbose)
         else:
-            ValueError('Invalid companiestable factory db_type %s' % db_type)
+            ValueError('Invalid prevscan table factory db_type %s' % db_type)
 
         if verbose:
             print('PreviousScans table factory inst %r' % inst)

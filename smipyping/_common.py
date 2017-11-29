@@ -20,7 +20,61 @@
 
 from __future__ import absolute_import, unicode_literals
 
+import re
 import six
+
+__all__ = ['get_list_index', 'build_table_struct', 'filter_stringlist']
+
+
+def filter_stringlist(regex, string_list, ignore_case=True):
+    """
+    Filter out names in string_list that do not match regex input parameter.
+
+    Note that the regex may define a subset of the name string.  Thus,  regex:
+        - CIM matches any name that starts with CIM
+        - CIM_abc matches any name that starts with CIM_abc
+        - CIM_ABC$ matches only the name CIM_ABC.
+
+    Parameters:
+      regex (:term: `String`) Python regular expression to match
+
+      name_list: List of strings to be matched.
+
+      ignore_case: bool. If True, do case-insensitive match. Default = True
+
+    Returns the list of strings that match.
+
+    """
+    flags = re.IGNORECASE if ignore_case else None
+    compiled_regex = re.compile(regex, flags) if flags else re.compile(regex)
+    new_list = [n for n in string_list for m in[compiled_regex.match(n)] if m]
+    return new_list
+
+
+def get_list_index(str_list, selection):
+    """
+    Gets the index of the string in a list of strings. This is case
+    case insensitive and returns the index of the default string.
+    It removes any EOL in the strings.
+
+      Parameters:
+        str_list(list of (:term:`String`))
+
+        selection (:term:`String`):
+
+        default(:term:`String`):
+      Returns:
+        index of selected entry
+      Exception:
+        ValueError if the selection cannot be found in the list
+
+    """
+    print('lstr_list %s' % str_list)
+    l1 = [li.replace('\n', '').lower() for li in str_list]
+    # l2 = [hi.lower() for hi in l1]
+    # ValueError if match fails
+    col_index = l1.index(selection.lower())
+    return col_index
 
 
 def build_table_struct(fields, db_table, max_width=None, sort=False):

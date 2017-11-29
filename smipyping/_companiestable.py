@@ -16,6 +16,10 @@
 """
 Define the Companies table and provide for import from multiple bases.
 
+  `CompanyID` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `CompanyName` varchar(30) NOT NULL,
+
+
 
 """
 
@@ -49,7 +53,7 @@ class CompaniesTable(object):
         return ('len %s' % len(self.data_dict))
 
     def __repr__(self):
-        """Rep of Companiestable data"""
+        """Rep of Companies table data"""
         return ('Companies db_type %s db len %s' %
                 (self.db_type, len(self.data_dict)))
 
@@ -60,13 +64,10 @@ class CompaniesTable(object):
 
            Returns instance object of the defined type.
         """
-
         inst = None
         if verbose:
-            print('Companies factory datafile %s dbtype %s verbose %s'
-                  % (db_dict,
-                     db_type,
-                     verbose))
+            print('Companies factory table %s dbtype %s verbose %s'
+                  % (db_dict, db_type, verbose))
         if db_type == 'csv':
             inst = CsvCompaniesTable(db_dict, db_type, verbose)
         elif db_type == 'mysql':
@@ -202,10 +203,10 @@ class MySQLCompaniesTable(CompaniesTable):
                                          password=db_dict['password'])
 
             if connection.is_connected():
+                self.connection = connection
                 if self.verbose:
                     print('sql db connection established. host %s, db %s' %
                           (db_dict['host'], db_dict['database']))
-                self.connection = connection
             else:
                 if self.verbose:
                     print('SQL database connection failed. host %s, db %s' %

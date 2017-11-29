@@ -22,7 +22,7 @@ from __future__ import absolute_import, print_function
 
 import os
 import unittest
-from smipyping._click_configfile import get_config_dict, ConfigFileProcessor
+from smicli._click_configfile import get_config_dict, ConfigFileProcessor
 
 SCRIPT_DIR = os.path.dirname(__file__)
 

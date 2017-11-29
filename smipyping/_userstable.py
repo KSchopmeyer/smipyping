@@ -56,7 +56,7 @@ class UsersTable(object):
         return ('len %s' % len(self.data_dict))
 
     def __repr__(self):
-        """Rep of lastscan data"""
+        """Rep of Users data"""
         return ('Users db_type %s db_dict len %s' %
                 (self.db_type, len(self.data_dict)))
 
@@ -71,15 +71,13 @@ class UsersTable(object):
         inst = None
         if verbose:
             print('lastscan factory datafile %s dbtype %s verbose %s'
-                  % (db_dict,
-                     db_type,
-                     verbose))
+                  % (db_dict, db_type, verbose))
         if db_type == 'csv':
             inst = CsvUsersTable(db_dict, db_type, verbose)
         elif db_type == 'mysql':
             inst = MySQLUsersTable(db_dict, db_type, verbose)
         else:
-            ValueError('Invalid companiestable factory db_type %s' % db_type)
+            ValueError('Invalid users table factory db_type %s' % db_type)
 
         if verbose:
             print('Users table factory inst %r' % inst)
@@ -149,10 +147,9 @@ class UsersTable(object):
     # add option for active
     def get_emails_for_company(self, company_id):
         """ Get all emails for a company id from the users base.  There will
-            be typically multiple users returned
+            be typically multiple users returned.
 
             Parameters:
-
               company_id(:term:`integer`)
                 The companyID for which all user records will be returned
 
@@ -164,6 +161,19 @@ class UsersTable(object):
         emails = [value['Email'] for key, value in six.iteritems(users)
                   if value['Active'] == 'Active']
         return emails
+
+    def is_active(self, user_id):
+        """
+        Test if user_id is marked active
+
+        Return:
+            True if active. False if Inactive
+        """
+        return True if self[user_id]['Active'] == 'Active' else False
+
+    def is_active_str(self, user_id):
+        """ Get string value of active enum."""
+        return self[user_id]['Active']
 
 
 class CsvUsersTable(UsersTable):
@@ -256,10 +266,10 @@ class MySQLUsersTable(UsersTable):
                                          password=db_dict['password'])
 
             if connection.is_connected():
+                self.connection = connection
                 if verbose:
                     print('sql db connection established. host %s, db %s' %
                           (db_dict['host'], db_dict['database']))
-                self.connection = connection
             else:
                 if self.verbose:
                     print('SQL database connection failed. host %s, db %s' %
@@ -284,8 +294,8 @@ class MySQLUsersTable(UsersTable):
 
             # fetchall returns tuple so need index to fields, not names
             fields = ', '.join(self.fields)
-            select_statement = 'SELECT %s FROM %s' % (fields, self.table_name)
-            cursor.execute(select_statement)
+            sql = 'SELECT %s FROM %s' % (fields, self.table_name)
+            cursor.execute(sql)
             rows = cursor.fetchall()
             for row in rows:
                 key = row[self.key_field]
@@ -355,6 +365,28 @@ class MySQLUsersTable(UsersTable):
             self.connection.commit()
         except Exception as ex:
             print('userstable.delete failed: exception %r' % ex)
+            self.connection.rollback()
+            raise ex
+        finally:
+            self._load()
+            self.connection.close()
+
+    def activate(self, user_id, activate_flag):
+        """
+        Activate or deactivate the table entry defined by the
+        boolean activate parameter
+        """
+        cursor = self.connection.cursor()
+
+        active_kw = 'Active' if activate_flag else 'Inactive'
+        sql = 'UPDATE Users SET Active = %s WHERE UserID = %s'
+
+        try:
+            mydata = cursor.execute(sql, (active_kw, user_id))  # noqa F841
+            self.connection.commit()
+        except Exception as ex:
+            print('userstable.activate id  %s failed: exception %r' % (user_id,
+                                                                       ex))
             self.connection.rollback()
             raise ex
         finally:

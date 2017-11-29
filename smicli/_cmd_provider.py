@@ -27,16 +27,16 @@ from pywbem import WBEMServer, WBEMConnection, Error, ValueMapping
 
 from smipyping._ping import ping_host
 from smipyping.config import PING_TIMEOUT
+from smipyping._common import filter_stringlist
 from .smicli import cli, CMD_OPTS_TXT
 from ._common_options import add_options, namespace_option
-from ._click_common import filter_namelist, print_table
+from ._click_common import print_table
 
 
 @cli.group('provider', options_metavar=CMD_OPTS_TXT)
 def provider_group():
     """
-    Command group for simple provider operations.
-
+    Command group for provider operations.
 
     This group of commands provides commands to query the providers defined
     by entries in the targets database.  This includes commands like ping,
@@ -358,7 +358,7 @@ def cmd_provider_classes(context, options):
             classnames = server.conn.EnumerateClassNames(
                 namespace=ns_name, DeepInheritance=True)
             if classname_regex:
-                classnames = filter_namelist(classname_regex, classnames)
+                classnames = filter_stringlist(classname_regex, classnames)
             classnames.sort()
             names_dict[ns_name] = classnames
 
