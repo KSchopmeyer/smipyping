@@ -61,7 +61,7 @@ else:
 
 # General information about the project.
 project = u'smipyping'
-#copyright = u'Karl Schopmeyer'
+copyright = u'Karl Schopmeyer'
 author = u'smipyping team'
 
 # The short description of the package.
