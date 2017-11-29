@@ -1,0 +1,6 @@
+# Requirements for building with Sphinx at readthedocs.org
+#
+pbr
+six
+Sphinx>=1.3
+sphinx-git
