@@ -30,13 +30,15 @@ from ._click_common import print_table
 @cli.group('programs', options_metavar=CMD_OPTS_TXT)
 def programs_group():
     """
-    Command group to process the history (pings) table in the
-    database.
+    Command group to handle programs table.
 
-    Includes commands to clean the table and also to create various reports
-    and tables of the history of tests on the WBEM servers in the
-    targets database.
+    The programs table defines programs in terms of start and end dates so
+    that other commands can use specific programs to manage their tables.
+    Normally a program is one year long and includes it start date, end date,
+    and a program name.
 
+    There are subcommands to create,modify, delete program entries and a list
+    command that shows all entries in the table.
     """
     pass
 

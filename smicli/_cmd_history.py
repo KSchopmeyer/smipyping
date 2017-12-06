@@ -36,13 +36,25 @@ DEFAULT_WEEKLY_TBL_SORT = 'Company'
 @cli.group('history', options_metavar=CMD_OPTS_TXT)
 def history_group():
     """
-    Command group to process the history (pings) table in the
-    database.
+    Command group manages history(pings) table.
 
-    Includes commands to clean the table and also to create various reports
-    and tables of the history of tests on the WBEM servers in the
+    The pings table maintains entries with the results of the ``cimping all``
+    subcommand.  Each entry contains the target id, the timestamp for the
+    test, and the results of the test.
+
+    It includes commands to clean the table and also to create various reports
+    and tables of the history of tests on the WBEM servecaurs in the
     targets table that are stored in the Pings table.
 
+    Because this table can be very large, there are subcommands to clean
+    entries out of the table based on program id, dates, etc.
+
+    Rather than a simple list subcommand this subcommand includes a number of
+    reports to view the table for:
+
+      - changes to status for particular targets.
+      - Consolidated history over time periods
+      - Snapshots of the full set of entries over periods of time.
     """
     pass
 

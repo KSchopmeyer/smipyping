@@ -3,22 +3,23 @@
 smicli Configuration File
 =========================
 
-Because the smi utilities, and in particular `smicli` operate off of number
-of parameters, much of the configuration uses a configuration file to
-define core parameters.
+Because the `smicli` operate off of number of parameters, much of the
+configuration uses a configuration file to define core parameters.
 
-The default name for the configuration file is `smicli.cfg` and it is
+The default name for the configuration file is `smicli.ini` and it is
 normally executed from the directory where smicli (or the other utilities)
-are executed.  Each utility contains an in put parameter to define an alternate
-location for the configuration file
+are executed. `smicli` looks for the file in the directory from which it
+is run.  Entries in the configuration file can also be included on the
+command line.  However, in general the config file makes the use of `smicli`
 
-This file generally includes information about:
+This file includes information about:
 
-* The database
+* The database. Identifies the database type, and other configuration information
+so that the database can be opened
 
-* output report formats
+* output report formats - Default output format for reports
 
-* Logging parameters
+* Logging parameters - Defines the level for logging.
 
 * other specialcharacteristics of each of the utilities.
 
@@ -49,7 +50,7 @@ The following is an example of an smicli configuration file
 
 ::
 
-    # -- FILE: smicli.cfg
+    # -- FILE: smicli.ini
     # general parameters
     [general]
     dbtype = mysql

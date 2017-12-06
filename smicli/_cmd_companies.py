@@ -29,9 +29,9 @@ from ._click_common import print_table
 @cli.group('companies', options_metavar=CMD_OPTS_TXT)
 def companies_group():
     """
-    Command group processs the companies table
+    Command group handles companies table.
 
-    Includes commands to list and modify the Companies table in the database
+    Includes commands to view and modify the Companies table in the database.
     """
     pass
 
