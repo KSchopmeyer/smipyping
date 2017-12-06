@@ -29,13 +29,10 @@ from ._click_common import validate_prompt, print_table
 @cli.group('users', options_metavar=CMD_OPTS_TXT)
 def users_group():
     """
-    Command group to process the history (pings) table in the
-    database.
+    Command group to handle users table.
 
-    Includes commands to clean the table and also to create various reports
-    and tables of the history of tests on the WBEM servers in the
-    targets database.
-
+    Includes subcommands to list entries in the users table in the
+    database and to create, modify, delete specific entries.
     """
     pass
 
