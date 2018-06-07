@@ -51,7 +51,23 @@ a number of these tables directly from smicli.
 Database structure
 ------------------
 
-Add basis diagram showing relationships between the tables
+The following diagram shows the interaction between the different tables
+in the database.
+
+    +----------+
+    | Programs |
+    | Table    |    +--------------+
+    +----------+    |   Targets    |
+                    |   Table      <------+ targetID
+                    +----+---------+      |
+                         | CompanyID      |
+    +----------+   +-----v-------+   +----+------+
+    |          |   |             |   |           |
+    |   Users  +--^+  Companies  |   |  Pings    |
+    |   Table  |   |  Table      |   |  Table    |
+    |          |   |             |   |           |
+    +----------+   +-------------+   +-----------+
+
 
 Alternative Databases
 ---------------------
@@ -59,8 +75,16 @@ Alternative Databases
 Today we do not test with any alternative databases.  We are looking at
 sqllite for the next release partly because it is integrated into python.
 
+We can run with a simple csv database for the targets table.  However, this has
+many limitations including the fact that it cannot create entries in a
+pings table today so it is good for current status reports but does not
+save history.
+
 Database schema
 ---------------
+
+MySQL Database
+^^^^^^^^^^^^^^
 
 Although the schema may change with new versions of smipyping, the following
 is the schema for smipyping version 0.7.0::
@@ -169,4 +193,17 @@ is the schema for smipyping version 0.7.0::
       `Notify` enum('Enabled','Disabled') NOT NULL,
       PRIMARY KEY (`UserID`)
     ) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=81 ;
+
+CSV database
+
+The schema for a csv database is simply the column names as shown below.
+
+    TargetID,CompanyName,Namespace,SMIVersion,Product,Principal,Credential,CimomVersion,IPAddress,InteropNamespace,Protocol,Port,ScanEnabled
+
+This database uses the CompanyName directly rather than an ID to point to
+a companies table.
+
+The following is an example of a row in a csv table:
+
+    01,Inova,root/cimv2,,OpenPegasus,,,OpenPegasus,mypw,interop,http,5988,Enabled
 

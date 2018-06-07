@@ -222,13 +222,21 @@ def report_server_info(servers, target_data, output_format,
 def smi_version(server):
     """
     Get the smi version used by this server from the SNIA profile
-    information on the server
+    information on the server.
+    If it cannot be found in the registered profiles an exception is
+    generated (TypeError
     """
 
     org_vm = ValueMapping.for_property(server, server.interop_ns,
                                        'CIM_RegisteredProfile',
                                        'RegisteredOrganization')
-    snia_server_profiles = server.get_selected_profiles('SNIA', 'SMI-S')
+    try:
+        snia_server_profiles = server.get_selected_profiles('SNIA', 'SMI-S')
+    except TypeError as te:
+        print('smi_version type error in get_selected_profiles  exc=%s' % te)
+        print('get all profiles for this server')
+        print(server.profiles)
+    return
     versions = []
     for inst in snia_server_profiles:
         org = org_vm.tovalues(inst['RegisteredOrganization'])  # noqa: F841
