@@ -20,10 +20,10 @@ from __future__ import print_function, absolute_import
 
 import click
 
-from smipyping import CompaniesTable, TargetsTable
+from smipyping import CompaniesTable, TargetsTable, UsersTable
 from smipyping._common import build_table_struct
 from .smicli import cli, CMD_OPTS_TXT
-from ._click_common import print_table
+from ._click_common import print_table, validate_prompt
 
 
 @cli.group('companies', options_metavar=CMD_OPTS_TXT)
@@ -44,11 +44,11 @@ def companies_list(context):  # pylint: disable=redefined-builtin
     """
     context.execute_cmd(lambda: cmd_companies_list(context))
 
+
 @companies_group.command('new', options_metavar=CMD_OPTS_TXT)
 @click.option('-c', '--companyname', type=str,
               required=True,
               help='Company name for company to add to table.')
-
 @click.pass_obj
 def companies_new(context, **options):  # pylint: disable=redefined-builtin
     """
@@ -57,16 +57,7 @@ def companies_new(context, **options):  # pylint: disable=redefined-builtin
     Creates a new user with the defined parameters.
 
     """
-    context.execute_cmd(lambda: cmd_users_new(context, options))
-
-
-@companies_group.command('list', options_metavar=CMD_OPTS_TXT)
-@click.pass_obj
-def companies_list(context):  # pylint: disable=redefined-builtin
-    """
-    List users in the database.
-    """
-    context.execute_cmd(lambda: cmd_companies_list(context))
+    context.execute_cmd(lambda: cmd_companies_new(context, options))
 
 
 @companies_group.command('delete', options_metavar=CMD_OPTS_TXT)
@@ -74,7 +65,8 @@ def companies_list(context):  # pylint: disable=redefined-builtin
 @click.option('-v', '--verify', is_flag=True, default=False,
               help='Verify the deletion before deleting the user.')
 @click.pass_obj
-def companies_delete(context, id, **options):  # pylint: disable=redefined-builtin
+def companies_delete(context, id, **options):
+    # pylint: disable=redefined-builtin
     """
     Delete a program from the database.
 
@@ -92,7 +84,8 @@ def companies_delete(context, id, **options):  # pylint: disable=redefined-built
 @click.option('-v', '--verify', is_flag=True, default=False,
               help='Verify the modification before modifying the user.')
 @click.pass_obj
-def companies_modify(context, id, **options):  # pylint: disable=redefined-builtin
+def companies_modify(context, id, **options):
+    # pylint: disable=redefined-builtin
     """
     Create fake cimping results in pings database.
 
@@ -127,16 +120,17 @@ def cmd_companies_list(context):
     print_table(tbl_rows, headers, title=('Companies Table'),
                 table_format=context.output_format)
 
+
 def cmd_companies_delete(context, id, options):
     """Delete a user from the database."""
 
     companies_tbl = CompaniesTable.factory(context.db_info, context.db_type,
-                                       context.verbose)
+                                           context.verbose)
     company_id = id
 
-    if company_id not in company_tbl:
+    if company_id not in companies_tbl:
         raise click.ClickException('The CompanyID %s is not in the table' %
-                                   user_id)
+                                   company_id)
 
     # Validate not a companyID in targets table
     targets_tbl = TargetsTable.factory(context.db_info, context.db_type,
@@ -144,14 +138,13 @@ def cmd_companies_delete(context, id, options):
     for target in targets_tbl:
         if target.companyID == company_id:
             raise click.ClickException('The CompanyID %s is used in the '
-                                       'targets table %s' %
-                                        target)
+                                       'targets table %s' % target)
     if options['verify']:
         company = companies_tbl[company_id]
         click.echo(company)
         context.spinner.stop()
         if validate_prompt():
-            companies_tbl.delete(id_id)
+            companies_tbl.delete(company_id)
         else:
             click.echo('Aborted Operation')
             return
@@ -162,30 +155,35 @@ def cmd_companies_delete(context, id, options):
 def cmd_users_modify(context, id, options):
     """Modify the company name from the database."""
 
-    companies_tbl = UsersTable.factory(context.db_info, context.db_type,
-                                       context.verbose)
+    companies_tbl = CompaniesTable.factory(context.db_info, context.db_type,
+                                           context.verbose)
     company_id = id
 
     company_name = options['companyname']
 
-    if company_id in companies_tbl:
-        if verify_operation(context, 'modify', company):
-            companies_tbl.modify(user_id, company_name)
-    else:
-        raise click.ClickException('The CompanyID %s is not in the table' %
-                                   user_id)
+    if company_id not in companies_tbl:
+        raise click.ClickException('The companyID %s is not a valid companyID '
+                                   'in companies table' % company_id)
 
-def verify_operation(context, record):
+    if verify_operation(context, 'modify company name', company_name,
+                        companies_tbl[company_id]):
+        companies_tbl.modify(company_id, company_name)
+    else:
+        click.echo('Return without executing modification')
+
+
+def verify_operation(context, action, modification, record):
     """Display the record and issue propmpt
-       TODO Review zhmc to see if we should exception or just return
     """
-    click.echo('%s %s' %(action, record))
+    click.echo('Verify_operation %s to %s\nRECORD: %s' % (action, modification,
+                                                          record))
     context.spinner.stop()
     if validate_prompt():
         return True
-    else:
-        click.echo('Aborted Operation')
-        return False
+
+    click.echo('Aborting Operation')
+    return False
+
 
 def cmd_companies_new(context, options):
     """
@@ -213,6 +211,3 @@ def cmd_companies_new(context, options):
     else:
         raise click.ClickException('The companyID %s is not a valid companyID '
                                    'in companies table' % company_id)
-
-
-

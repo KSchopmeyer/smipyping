@@ -98,7 +98,8 @@ def cli(ctx, config_file, db_type, log_level, output_format, verbose,
     \b
         * Sweep ranges of ip addresses and ports to find wbem servers.
     """
-
+    # TODO add log components to cmd line
+    log_components = None
     if verbose:
         if ctx and ctx.default_map:
             for data_key in ctx.default_map.keys():
@@ -162,6 +163,8 @@ def cli(ctx, config_file, db_type, log_level, output_format, verbose,
             log_file = ctx.obj.log_file
         if log_level is None:
             log_level = ctx.obj.log_level
+        if log_components is None:
+            log_components = ctx.obj.components
         if provider_data is None:
             target_data = ctx.obj.target_data
         if output_format is None:
@@ -173,7 +176,8 @@ def cli(ctx, config_file, db_type, log_level, output_format, verbose,
     # its own command context different from the command context for the
     # command line.
     ctx.obj = ClickContext(ctx, config_file, db_type, db_info, log_level,
-                           log_file, target_data, output_format, verbose)
+                           log_file, log_components, target_data, output_format,
+                           verbose)
 
     # Invoke default command
     if ctx.invoked_subcommand is None:

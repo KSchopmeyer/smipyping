@@ -299,6 +299,10 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
                      test_result.execution_time,
                      fold_cell(target['Product'], 12)])
 
+    # fixed sort based on target id
+    # TODO expand sort so that it can sort on any field.
+    rows.sort(key=lambda x: x[0])
+
     context.spinner.stop()
 
     disabled_flag = ': Includes Disabled' if include_disabled else ''

@@ -26,10 +26,13 @@ notifications table
 
 """
 from __future__ import print_function, absolute_import
+import six
 
 import click
+from click_datetime import Datetime
 
-from smipyping import CompaniesTable, TargetsTable
+from smipyping import CompaniesTable, TargetsTable, UsersTable, \
+    NotificationsTable
 from smipyping._common import build_table_struct
 from .smicli import cli, CMD_OPTS_TXT
 from ._click_common import print_table
@@ -48,12 +51,12 @@ def notifications_group():
     """
     pass
 
+
 @notifications_group.command('list', options_metavar=CMD_OPTS_TXT)
-# @click.option('-i', '--targetIDs', default=None, type=int,
-#              multiple=True,
-#              required=False,
-#              help='Optional list of ids. If not supplied, all ids are used')
-# TODO move to multiple IDs.
+@click.option('-i', '--targetIDs', default=None, type=int,
+              multiple=True,
+              required=False,
+              help='Optional list of ids. If not supplied, all ids are used.')
 @click.option('-s', '--startdate', type=Datetime(format='%d/%m/%y'),
               default=None,
               required=False,
@@ -71,9 +74,6 @@ def notifications_group():
               required=False,
               help='Alternative to enddate. Number of days to report from'
                    ' startdate. "enddate" ignored if "numberofdays" set')
-@click.option('-t', '--targetId', type=int,
-              required=False,
-              help='Get results only for the defined targetID')
 @click.option('-u', '--userId', type=int,
               required=False,
               help='Get results only for the defined userID')
@@ -81,14 +81,14 @@ def notifications_group():
               help='If set only a summary is generated.')
 @click.pass_obj
 @click.pass_obj
-def notifications_list(context):  # pylint: disable=redefined-builtin
+def notifications_list(context, options):  # pylint: disable=redefined-builtin
     """
     List Notifications in the database.
 
     List notifications for a date range and optionally a company or
     user.
     """
-    context.execute_cmd(lambda: cmd_notifications_list(context))
+    context.execute_cmd(lambda: cmd_notifications_list(context, options))
 
 ############################################################
 #
@@ -96,20 +96,24 @@ def notifications_list(context):  # pylint: disable=redefined-builtin
 #
 ############################################################
 
-def cmd_notifications_list(context):
 
-
+def cmd_notifications_list(context, options):
+    """
+        List entries in the notfications table
+    """
     notifications_tbl = NotificationsTable.factory(context.db_info,
-                                                    context.db_type,
-                                                    context.verbose)
+                                                   context.db_type,
+                                                   context.verbose)
 
     headers = ['Target\nID', 'IP', 'Company', 'User', 'Time', 'Message']
 
     report_order = options['order']
 
-
-    target_id = options['targetid']
-    if target_id:
+    target_ids = options['targetids']
+    user_id = options['userId']
+    targets_tbl = TargetsTable.factory(context.db_info, context.db_type,
+                                       context.verbose)
+    for target_id in target_ids:
         try:
             context.target_data.get_target(target_id)  # noqa: F841
         except KeyError:
@@ -117,8 +121,40 @@ def cmd_notifications_list(context):
                                        'database %s.' %
                                        (target_id, context.target_data))
 
-    if user_id
+    users_tbl = UsersTable.factory(context.db_info, context.db_type,
+                                   context.verbose)
+    if user_id:
+        if user_id not in users_tbl:
+            raise click.ClickException('Invalid User id: user_id=%s not in '
+                                       'database %s.' %
+                                       (user_id, context.user_tbl))
 
+    user_notifications = []
+    if user_id:
+        for key, notification in six.iteritems(notifications_tbl):
+                if notification['UserID'] == user_id:
+                    user_notifications.append(key)
+
+    target_notifications = []
+    if target_ids:
+        for target_id in target_ids:
+            for key, notification in six.iteritems(notifications_tbl):
+                if notification['TargetID'] == target_id:
+                    target_notifications.append(key)
+
+    # TODO: finish the coding of the filters for targets and users
+
+    tbl_rows = []
+    for notification in notifications_tbl:
+        target = targets_tbl[notification['TargetID']]
+        user = users_tbl[notification['UserID']]
+        row = [notification['TargetID'],
+               target['IP'],
+               'Company',
+               'user',
+               notification['NotifyTime'],
+              notification['Message']]
+        tbl_rows.append(row)
 
     context.spinner.stop()
     print_table(tbl_rows, headers,
@@ -126,7 +162,3 @@ def cmd_notifications_list(context):
                        (options['startdate'],
                         options['enddate'])),
                 table_format=context.output_format)
-
-
-
-

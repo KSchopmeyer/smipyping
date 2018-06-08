@@ -14,11 +14,12 @@
 # limitations under the License.
 
 """
-smicli commands based on python click for operations on the smipyping
-data file.
+Implementation of the exlorer cmd group.
 """
 from __future__ import print_function, absolute_import
 
+import sys
+import traceback
 import click
 from pywbem import ValueMapping
 from smipyping._explore import Explorer
@@ -57,7 +58,29 @@ def explorer_group():
 @click.pass_obj
 def explore_all(context, **options):
     """
-    Execute the general explorer on the enabled providers in the database
+    Command group to explore servers
+
+
+    Execute the general explore operation on  some or all the providers in the
+    database.
+
+    This command explores the general characteristics of the server including:
+
+    Namespaces
+    Interop Namespace
+    Registered Profiles
+    General Server information
+
+    I can operate either in a parallel mode (multi-threaded) or single
+    thread (if for some reason there is an issue with the multithreading)
+
+    It generates a report to the the defined output as a table with the
+    formatting defined by the format option. Default is thread the requests
+    speeding up the explore significantly.
+
+    Note: There is an option to ping the server before executing the
+    explore simply to speed up the process for servers that are completely
+    not available. Default is to ping as the first step.
 
     """
     context.execute_cmd(lambda: cmd_explore_all(context, **options))
@@ -183,7 +206,7 @@ def report_server_info(servers, target_data, output_format,
         if server is not None and status == 'OK':
             version = server.version
             interop_ns = server.interop_ns
-            smi_profile_list = smi_version(server_tuple.server)
+            smi_profile_list = smi_versions(server_tuple.server)
             if smi_profile_list is not None:
                 cell_str = ", ". join(sorted(smi_profile_list))
                 smi_profiles = (fold_cell(cell_str, 14))
@@ -219,27 +242,30 @@ def report_server_info(servers, target_data, output_format,
                 table_format=output_format)
 
 
-def smi_version(server):
+def smi_versions(server):
     """
     Get the smi version used by this server from the SNIA profile
     information on the server.
     If it cannot be found in the registered profiles an exception is
-    generated (TypeError
+    generated (TypeError)
     """
-
     org_vm = ValueMapping.for_property(server, server.interop_ns,
                                        'CIM_RegisteredProfile',
                                        'RegisteredOrganization')
     try:
-        snia_server_profiles = server.get_selected_profiles('SNIA', 'SMI-S')
+        snia_server_profiles = server.get_selected_profiles(
+            registered_org='SNIA', registered_name='SMI-S')
     except TypeError as te:
-        print('smi_version type error in get_selected_profiles  exc=%s' % te)
-        print('get all profiles for this server')
-        print(server.profiles)
-    return
+        print('ERROR: Invalid profile definition caused exception')
+        return []
     versions = []
     for inst in snia_server_profiles:
-        org = org_vm.tovalues(inst['RegisteredOrganization'])  # noqa: F841
+        try:
+            org = org_vm.tovalues(inst['RegisteredOrganization'])  # noqa: F841
+        except TypeError as te:
+            print('ERROR: Invalid RegisteredOrganization property')
+            org = 0
+
         name = inst['RegisteredName']  # noqa: F841
         vers = inst['RegisteredVersion']
         versions.append(vers)
@@ -263,18 +289,19 @@ def print_smi_profile_info(servers, user_data, table_format):
             target_id = server_tuple.target_id
             entry = user_data.get_target(target_id)
             try:
-                versions = smi_version(server_tuple.server)
+                smi_versions = smi_versions(server_tuple.server)
             except Exception as ex:
-                print('Exception %s in smi_versions %s' % (ex,
+                # TODO make this an error log entry.
+                print('Exception %s in smi_version %s' % (ex,
                                                            server_tuple))
-                continue
+                smi_versions = []
 
             line = [entry['TargetID'],
                     server_tuple.url,
                     entry['CompanyName'],
                     entry['Product']]
-            if versions is not None:
-                cell_str = ", ". join(sorted(versions))
+            if smi_versions is not None:
+                cell_str = ", ". join(sorted(smi_versions))
                 line.append(fold_cell(cell_str, 14))
             table_data.append(line)
 

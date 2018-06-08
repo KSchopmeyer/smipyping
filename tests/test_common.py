@@ -149,19 +149,20 @@ class TestPickFromMultiplesList(object):
             assert pick_multiple_from_list(ctx, list_, prompt_txt) == [1, 2]
             prompt.assert_called_once_with(prompt_txt)
 
+
 class TestValidatePrompt(object):
     """
     Test the click_common validate prompt
     """
     def test_valid_pick(self):
         """Execute validateprompt"""
-        list_ = ["aaa", "bbb", "ccc"]
         prompt_txt = 'blah blah'
         with patch('smicli._click_common.prompt', return_value='y') as prompt:
-            ctx = ClickContext(None, None, None, None, None, None, None,
-                               None, None)
-            assert validate_prompt(prompt_txt) == True
+            ClickContext(None, None, None, None, None, None, None,
+                         None, None)
+            assert validate_prompt(prompt_txt) is True
             prompt.assert_called_once_with(u'blah blah valid (y/n): ')
+
 
 class TestPrintTable(object):
 

@@ -40,9 +40,12 @@ import six
 from .config import MAX_THREADS
 from ._scanport_syn import check_port_syn
 from ._scanport_tcp import check_port_tcp
-from ._logging import SWEEP_LOGGER_NAME, get_logger
+from ._logging import get_logger, logged_api_call, SWEEP_LOGGER_NAME
+
 
 __all__ = ['ServerSweep', 'SCAN_TYPES']
+
+LOG = get_logger(__name__)
 
 SCAN_TYPES = ['tcp', 'syn', 'all']
 
@@ -171,6 +174,7 @@ class ServerSweep(object):
             index += 1
             print(' %4s %s' % (index, test_addr))
 
+    @logged_api_call
     def scan_subnets(self):
         """
         Nonthreaded scan of IP addresses for open ports.
@@ -216,6 +220,7 @@ class ServerSweep(object):
             queue.task_done()
         return
 
+    @logged_api_call
     def scan_subnets_threaded(self):
         """
         Threaded scan of IP Addresses for open ports.
@@ -255,6 +260,7 @@ class ServerSweep(object):
         # returns list of ip addresses that were were found
         return results
 
+    @logged_api_call
     def expand_subnet_definition(self, net_def):
         """
         Get a list of IP addresses from the net_definition provided in net_def.
@@ -345,7 +351,7 @@ class ServerSweep(object):
 
         # product_get, a generator that iproduces results of merged lists
         for ip in itertools.product(*octet_lists):
-            yield '.'.join(map(str, ip))  # pylint: disable=bad-builtin
+            yield '.'.join(map(str, ip))
 
     def build_test_list(self):
         """
