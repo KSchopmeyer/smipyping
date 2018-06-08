@@ -32,10 +32,12 @@ from pywbem import WBEMConnection, WBEMServer, ValueMapping, Error, \
     ConnectionError, TimeoutError, AuthError
 from ._ping import ping_host
 from .config import PING_TIMEOUT, DEFAULT_USERNAME, DEFAULT_PASSWORD
-from ._logging import EXPLORE_LOGGER_NAME, get_logger, SmiPypingLoggers
+from ._logging import get_logger, SmiPypingLoggers, logged_api_call, \
+    EXPLORE_LOGGER_NAME
 
 __all__ = ['Explorer', ]
 
+LOG = get_logger(__name__)
 
 # named tuple for information about opened servers.
 ServerInfoTuple = namedtuple('ServerInfoTuple',
@@ -100,6 +102,7 @@ class Explorer(object):
                          self.explore_time)
         return servers
 
+    @logged_api_call
     def explore_non_threaded(self, target_list):
 
         servers = []
@@ -133,6 +136,7 @@ class Explorer(object):
 
         return servers
 
+    @logged_api_call
     def explore_threaded(self, target_list):
         """
         Threaded scan of IP Addresses for open ports.
@@ -182,6 +186,7 @@ class Explorer(object):
 
         return servers
 
+    @logged_api_call
     def explore_server(self, url, target, principal, credential):
         """ Explore a cim server for characteristics defined by
             the server class including namespaces, brand, version, etc. info.
@@ -322,14 +327,15 @@ class Explorer(object):
         if short_explore:
             return server
 
-        indication_profiles = server.get_selected_profiles('DMTF',
-                                                           'Indications')
+        indication_profiles = server.get_selected_profiles(
+            registered_org='DMTF',
+            registered_name='Indications')
 
         self.logger.info('Profiles for DMTF:Indications')
         for inst in indication_profiles:
             print_profile_info(org_vm, inst)
 
-        server_profiles = server.get_selected_profiles('SNIA')
+        server_profiles = server.get_selected_profiles(registered_org='SNIA')
 
         self.logger.info('SNIA Profiles:')
         for inst in server_profiles:

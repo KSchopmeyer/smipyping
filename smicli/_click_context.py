@@ -35,13 +35,14 @@ class ClickContext(object):
     """
 
     def __init__(self, ctx, config_file, db_type, db_info, log_level, log_file,
-                 target_data, output_format, verbose):
+                 log_components, target_data, output_format, verbose):
         self._config_file = config_file
         self._db_type = db_type
         self._db_info = db_info
         self._verbose = verbose
         self._log_level = log_level
         self._log_file = log_file
+        self._log_components = log_components
         self._target_data = target_data
         self._output_format = output_format
         self._spinner = click_spinner.Spinner()
@@ -89,16 +90,23 @@ class ClickContext(object):
     @property
     def log_level(self):
         """
-        :class:`py:bool`: verbose display flag
+        :class:`py:string`: string defining the log level
         """
         return self._log_level
 
     @property
     def log_file(self):
         """
-        :class:`py:bool`: verbose display flag
+        :class:`py:string`: Nname of file if log to file is specified
         """
         return self._log_file
+
+    @property
+    def log_components(self):
+        """
+        :class:`py:bool`: verbose display flag
+        """
+        return self._log_components
 
     @property
     def output_format(self):
