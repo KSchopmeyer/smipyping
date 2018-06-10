@@ -21,12 +21,18 @@
 from __future__ import print_function, absolute_import
 
 import os
+import sys
+import logging
+from logging import StreamHandler, NullHandler
+
 import click_repl
 import click
 
 from prompt_toolkit.history import FileHistory
 
 import smipyping
+from logging.handlers import SysLogHandler
+import platform
 
 from ._click_context import ClickContext
 
@@ -37,6 +43,44 @@ from ._click_common import DEFAULT_OUTPUT_FORMAT, \
     set_input_variable
 from ._tableoutput import TABLE_FORMATS
 
+DEFAULT_LOG = 'all=warning'
+DEFAULT_LOG_DESTINATION = 'file'
+LOG_LEVELS = ['critical', 'error', 'warning', 'info', 'debug']
+LOG_DESTINATIONS = ['file', 'stderr', 'none']
+
+GROUPS_LOGGER_NAME = 'smipyping.groups'
+CLI_LOGGER_NAME = 'smicli.cli'
+DEFAULT_SYSLOG_FACILITY = 'user'
+
+# List of values to try for the 'address' parameter when creating
+# a SysLogHandler object.
+# Key: Operating system type, as returned by platform.system(). For CygWin,
+# the returned value is 'CYGWIN_NT-6.1', which is special-cased to 'CYGWIN_NT'.
+# Value: List of values for the 'address' parameter; to be tried in the
+# specified order.
+SYSLOG_ADDRESSES = {
+    'Linux': ['/dev/log', ('localhost', 514)],
+    'Darwin': ['/var/run/syslog', ('localhost', 514)],  # OS-X
+    'Windows': [('localhost', 514)],
+    'CYGWIN_NT': ['/dev/log', ('localhost', 514)],  # Requires syslog-ng pkg
+}
+
+PYWBEM_LOGGER_NAME = 'pywbem'
+PYWBEM_HTTP_LOGGER_NAME ='pywbem.http'
+PYWBEM_API_LOGGER_NAME = 'pywbem.api'
+
+# Logger names by log component
+LOGGER_NAMES = {
+    'all': '',  # root logger
+    'api': smipyping.API_LOGGER_NAME,
+    'groups': GROUPS_LOGGER_NAME,
+    'cli': CLI_LOGGER_NAME
+    # 'console': CONSOLE_LOGGER_NAME,
+    'pywbem': PYWBEM_LOGGER_NAME
+    'pywbemhttp': PYWBEM_HTTP_LOGGER_NAME
+    'pywbemapi': PYWBEM_API_LOGGER_NAME
+}
+LOG_COMPONENTS = LOGGER_NAMES.keys()
 
 # Display of options in usage line
 GENERAL_OPTIONS_METAVAR = '[GENERAL-OPTIONS]'
@@ -54,6 +98,40 @@ DB_POSSIBLE_TYPES = ['csv', 'mysql', 'sqlite']
 DEFAULT_DB_CONFIG = {'targetfilename': 'targetdata_example.csv'}
 
 
+def reset_logger(log_comp):
+    """
+    Reset the logger for the specified log component to have exactly one
+    NullHandler.
+    """
+
+    name = LOGGER_NAMES[log_comp]
+    logger = logging.getLogger(name)
+
+    has_nh = False
+    for h in logger.handlers:
+        if not has_nh and isinstance(h, NullHandler):
+            has_nh = True
+            continue
+        logger.removeHandler(h)
+
+    if not has_nh:
+        nh = NullHandler()
+        logger.addHandler(nh)
+
+
+def setup_logger(log_comp, handler, level):
+    """
+    Setup the logger for the specified log component to add the specified
+    handler and to set it to the specified log level.
+    """
+
+    name = LOGGER_NAMES[log_comp]
+    logger = logging.getLogger(name)
+
+    logger.addHandler(handler)
+    logger.setLevel(level)
+
+
 @click.group(invoke_without_command=True,
              context_settings=CONTEXT_SETTINGS,
              options_metavar=GENERAL_OPTIONS_METAVAR)
@@ -65,11 +143,20 @@ DEFAULT_DB_CONFIG = {'targetfilename': 'targetdata_example.csv'}
               help="Database type. May be defined on cmd line, config file, "
                    " or through default. "
                    "Default is %s." % smipyping.DEFAULT_DBTYPE)
-@click.option('-l', '--log_level', type=str, envvar='SMI_LOG_LEVEL',
+@click.option('-l', '--log', type=str, envvar='SMI_LOG_LEVEL',
               required=False, default=None,
               help="Optional option to enable logging for the level "
                    " defined, by the parameter. Choices are: "
                    " " + "%s" % smipyping.LOG_LEVELS)
+@click.option('-l', '--log', type=str, metavar='COMP=LEVEL,...',
+              help="Set a component to a log level (COMP: [{comps}], "
+              "LEVEL: [{levels}], Default: {def_log}).".
+              format(comps='|'.join(LOG_COMPONENTS),
+                     levels='|'.join(LOG_LEVELS),
+                     def_log=DEFAULT_LOG))
+@click.option('--log-dest', type=click.Choice(LOG_DESTINATIONS),
+              help="Log destination for this command (Default: {def_dest}).".
+              format(def_dest=DEFAULT_LOG_DESTINATION))
 @click.option('-o', '--output-format', envvar='SMI_OUTPUT_FORMAT',
               type=click.Choice(TABLE_FORMATS),
               help="Output format (Default: {of}). pywbemcli may override "
@@ -80,7 +167,7 @@ DEFAULT_DB_CONFIG = {'targetfilename': 'targetdata_example.csv'}
               help='Display extra information about the processing.')
 @click.version_option(help="Show the version of this command and exit.")
 @click.pass_context
-def cli(ctx, config_file, db_type, log_level, output_format, verbose,
+def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
         provider_data=None, db_info=None, log_file=None):
     """
     Command line script for smicli.  This script executes a number
@@ -100,6 +187,7 @@ def cli(ctx, config_file, db_type, log_level, output_format, verbose,
     """
     # TODO add log components to cmd line
     log_components = None
+    syslog_facility = None
     if verbose:
         if ctx and ctx.default_map:
             for data_key in ctx.default_map.keys():
@@ -118,9 +206,9 @@ def cli(ctx, config_file, db_type, log_level, output_format, verbose,
         db_type = set_input_variable(ctx, db_type, 'dbtype',
                                      smipyping.DEFAULT_DBTYPE)
 
-        log_level = set_input_variable(ctx, log_level, 'log_level', None)
+        log = set_input_variable(ctx, log, 'log', None)
 
-        if log_level:
+        if log:
             if ctx.default_map and 'log_file' in ctx.default_map:
                 log_file = ctx.default_map['log_file']
             else:
@@ -161,10 +249,12 @@ def cli(ctx, config_file, db_type, log_level, output_format, verbose,
             db_info = ctx.obj.db_info
         if log_file is None:
             log_file = ctx.obj.log_file
-        if log_level is None:
+        # TODO we should be able to remove the log stuff from context
+        # if we completely create the loggers here.
+        if log is None:
             log_level = ctx.obj.log_level
         if log_components is None:
-            log_components = ctx.obj.components
+            log_components = ctx.obj.log_components
         if provider_data is None:
             target_data = ctx.obj.target_data
         if output_format is None:
@@ -172,11 +262,93 @@ def cli(ctx, config_file, db_type, log_level, output_format, verbose,
         if verbose is None:
             verbose = ctx.obj.verbose
 
+    # Now we have the effective values for the options as they should be used
+    # by the current command, regardless of the mode.
+
+    # Set up logging
+
+    if log_dest == 'syslog':
+        # The choices in SYSLOG_FACILITIES have been validated by click
+        # so we don't need to further check them.
+        facility = SysLogHandler.facility_names[syslog_facility]
+        system = platform.system()
+        if system.startswith('CYGWIN_NT'):
+            # Value is 'CYGWIN_NT-6.1'; strip off trailing version:
+            system = 'CYGWIN_NT'
+        try:
+            addresses = SYSLOG_ADDRESSES[system]
+        except KeyError:
+            raise NotImplementedError(
+                "Logging to syslog is not supported on this platform: {}".
+                format(system))
+        assert isinstance(addresses, list)
+        for address in addresses:
+            try:
+                handler = SysLogHandler(address=address, facility=facility)
+            except Exception as exc:
+                continue
+            break
+        else:
+            exc = sys.exc_info()[1]
+            exc_name = exc.__class__.__name__ if exc else None
+            raise RuntimeError(
+                "Creating SysLogHandler with addresses {!r} failed. "
+                "Failure on last address {!r} was: {}: {}".
+                format(addresses, address, exc_name, exc))
+        fs = '%(levelname)s -%(name)s-%(message)s'
+        handler.setFormatter(logging.Formatter(fs))
+    elif log_dest == 'stderr':
+        handler = StreamHandler(stream=sys.stderr)
+        fs = '%(asctime)s-%(levelname)s -%(name)s-%(message)s'
+        handler.setFormatter(logging.Formatter(fs))
+    elif log_dest == 'file':
+        if not log_file:
+            raise ValueError('Filename required if log destination '
+                             'is "file"')
+        handler = logging.FileHandler(log_file)
+        fs = '%(asctime)s-%(levelname)s -%(name)s-%(message)s'
+        handler.setFormatter(logging.Formatter(fs))
+    else:
+        # The choices in LOG_DESTINATIONS have been validated by click
+        assert log_dest == 'none'
+        handler = None
+
+    for lc in LOG_COMPONENTS:
+        reset_logger(lc)
+    log_specs = log.split(',')
+    for log_spec in log_specs:
+
+        # ignore extra ',' at begin, end or in between
+        if log_spec == '':
+            continue
+
+        try:
+            log_component, log_level = log_spec.split('=', 1)
+        except ValueError:
+            raise click.click_exception("Missing '=' in COMP=LEVEL "
+                                        "specification in "
+                                        "--log option: {ls}".
+                                        format(ls=log_spec))
+
+        level = getattr(logging, log_level.upper(), None)
+        if level is None:
+            raise click.click_exception("Invalid log level in COMP=LEVEL "
+                                        "specification in --log option: "
+                                        "{ls}".format(ls=log_spec))
+
+        if log_component not in LOG_COMPONENTS:
+            raise click.click_exception("Invalid log component in COMP=LEVEL "
+                                        "specification in --log option: {ls}".
+                                        format(ls=log_spec))
+
+        if handler:
+            setup_logger(log_component, handler, level)
+
     # Create a command context for each command: An interactive command has
     # its own command context different from the command context for the
     # command line.
     ctx.obj = ClickContext(ctx, config_file, db_type, db_info, log_level,
-                           log_file, log_components, target_data, output_format,
+                           log_file, log_component, target_data, output_format,
                            verbose)
 
     # Invoke default command

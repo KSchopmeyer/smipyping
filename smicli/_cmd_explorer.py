@@ -18,8 +18,6 @@ Implementation of the exlorer cmd group.
 """
 from __future__ import print_function, absolute_import
 
-import sys
-import traceback
 import click
 from pywbem import ValueMapping
 from smipyping._explore import Explorer
@@ -293,7 +291,7 @@ def print_smi_profile_info(servers, user_data, table_format):
             except Exception as ex:
                 # TODO make this an error log entry.
                 print('Exception %s in smi_version %s' % (ex,
-                                                           server_tuple))
+                                                          server_tuple))
                 smi_versions = []
 
             line = [entry['TargetID'],

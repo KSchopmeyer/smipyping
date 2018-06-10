@@ -34,13 +34,13 @@ class ClickContext(object):
         Manage the click context object
     """
 
-    def __init__(self, ctx, config_file, db_type, db_info, log_level, log_file,
+    def __init__(self, ctx, config_file, db_type, db_info, log, log_file,
                  log_components, target_data, output_format, verbose):
         self._config_file = config_file
         self._db_type = db_type
         self._db_info = db_info
         self._verbose = verbose
-        self._log_level = log_level
+        self._log = log
         self._log_file = log_file
         self._log_components = log_components
         self._target_data = target_data
