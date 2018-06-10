@@ -40,16 +40,19 @@ EXPLORE_LOGGER_NAME = 'smicli.explore'
 CIMPING_LOGGER_NAME = 'smicli.cimping'
 SWEEP_LOGGER_NAME = 'smicli.sweep'
 
-LOG_COMPONENTS = ['explore', 'cimping', 'sweep', 'all']
 
-# possible log output destinations
-LOG_DESTINATIONS = ['file', 'stderr', 'none']
-DEFAULT_LOG_LEVEL = 'debug'
 
-LOG_LEVELS = ['error', 'warning', 'info', 'debug']
-__all__ = ['SmiPypingLoggers', 'LOG_DESTINATIONS', 'LOG_LEVELS',
+__all__ = ['SmiPypingLoggers',
            'API_LOGGER_NAME', 'EXPLORE_LOGGER_NAME', 'CIMPING_LOGGER_NAME',
            'DEFAULT_LOG_LEVEL', 'SWEEP_LOGGER_NAME']
+
+
+# possible log output destinations
+# TODO These all get moved out of here to smicli.
+LOG_DESTINATIONS = ['file', 'stderr', 'none']
+DEFAULT_LOG_LEVEL = 'debug'
+LOG_LEVELS = ['critical', 'error', 'warning', 'info', 'debug']
+LOG_COMPONENTS = ['explore', 'cimping', 'sweep', 'all']
 
 
 def get_logger(name):
@@ -66,7 +69,9 @@ def get_logger(name):
         logger.addHandler(logging.NullHandler())
     return logger
 
-
+# TODO this function goes away completely so that the smipyping classes
+# simply have LOG and log to that by module name
+#
 class SmiPypingLoggers(object):
     """
     Create named loggers for smipyping
