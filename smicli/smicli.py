@@ -43,7 +43,7 @@ from ._click_common import DEFAULT_OUTPUT_FORMAT, \
     set_input_variable
 from ._tableoutput import TABLE_FORMATS
 
-DEFAULT_LOG = 'all=warning'
+DEFAULT_LOG = 'all=error'
 DEFAULT_LOG_DESTINATION = 'file'
 LOG_LEVELS = ['critical', 'error', 'warning', 'info', 'debug']
 LOG_DESTINATIONS = ['file', 'stderr', 'none']
@@ -74,11 +74,11 @@ LOGGER_NAMES = {
     'all': '',  # root logger
     'api': smipyping.API_LOGGER_NAME,
     'groups': GROUPS_LOGGER_NAME,
-    'cli': CLI_LOGGER_NAME
+    'cli': CLI_LOGGER_NAME,
     # 'console': CONSOLE_LOGGER_NAME,
-    'pywbem': PYWBEM_LOGGER_NAME
-    'pywbemhttp': PYWBEM_HTTP_LOGGER_NAME
-    'pywbemapi': PYWBEM_API_LOGGER_NAME
+    'pywbem': PYWBEM_LOGGER_NAME,
+    'pywbemhttp': PYWBEM_HTTP_LOGGER_NAME,
+    'pywbemapi': PYWBEM_API_LOGGER_NAME,
 }
 LOG_COMPONENTS = LOGGER_NAMES.keys()
 
@@ -143,11 +143,6 @@ def setup_logger(log_comp, handler, level):
               help="Database type. May be defined on cmd line, config file, "
                    " or through default. "
                    "Default is %s." % smipyping.DEFAULT_DBTYPE)
-@click.option('-l', '--log', type=str, envvar='SMI_LOG_LEVEL',
-              required=False, default=None,
-              help="Optional option to enable logging for the level "
-                   " defined, by the parameter. Choices are: "
-                   " " + "%s" % smipyping.LOG_LEVELS)
 @click.option('-l', '--log', type=str, metavar='COMP=LEVEL,...',
               help="Set a component to a log level (COMP: [{comps}], "
               "LEVEL: [{levels}], Default: {def_log}).".
@@ -188,6 +183,7 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
     # TODO add log components to cmd line
     log_components = None
     syslog_facility = None
+
     if verbose:
         if ctx and ctx.default_map:
             for data_key in ctx.default_map.keys():
@@ -208,13 +204,14 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
 
         log = set_input_variable(ctx, log, 'log', None)
 
-        if log:
-            if ctx.default_map and 'log_file' in ctx.default_map:
-                log_file = ctx.default_map['log_file']
-            else:
-                log_file = 'smicli.log'
-        else:
-            log_file = None
+        # if log:
+            # if ctx.default_map and 'log_file' in ctx.default_map:
+                # log_file = ctx.default_map['log_file']
+            # else:
+                # log_file = 'smicli.log'
+        # else:
+            # log_file = None
+        log_file = 'smicli_log'
 
         if ctx.default_map:
             db_info = ctx.default_map[db_type]
@@ -266,6 +263,12 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
     # by the current command, regardless of the mode.
 
     # Set up logging
+    if log is None:
+        log = DEFAULT_LOG
+    if log_dest is None:
+        log_dest = DEFAULT_LOG_DESTINATION
+    if log_file is None:
+        log_file = 'smicli.log'
 
     if log_dest == 'syslog':
         # The choices in SYSLOG_FACILITIES have been validated by click
@@ -310,11 +313,12 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
         handler.setFormatter(logging.Formatter(fs))
     else:
         # The choices in LOG_DESTINATIONS have been validated by click
-        assert log_dest == 'none'
+        # TODO assert log_dest == 'none'
         handler = None
 
     for lc in LOG_COMPONENTS:
         reset_logger(lc)
+
     log_specs = log.split(',')
     for log_spec in log_specs:
 

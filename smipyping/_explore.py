@@ -33,11 +33,14 @@ from pywbem import WBEMConnection, WBEMServer, ValueMapping, Error, \
 from ._ping import ping_host
 from .config import PING_TIMEOUT, DEFAULT_USERNAME, DEFAULT_PASSWORD
 from ._logging import get_logger, SmiPypingLoggers, logged_api_call, \
-    EXPLORE_LOGGER_NAME
+    EXPLORE_LOGGER_NAME, SMIPYPING_LOGGER_NAME
 
 __all__ = ['Explorer', ]
 
 LOG = get_logger(__name__)
+
+SMIPYPING_LOG = get_logger(SMIPYPING_LOGGER_NAME)
+
 
 # named tuple for information about opened servers.
 ServerInfoTuple = namedtuple('ServerInfoTuple',
@@ -327,9 +330,17 @@ class Explorer(object):
         if short_explore:
             return server
 
-        indication_profiles = server.get_selected_profiles(
-            registered_org='DMTF',
-            registered_name='Indications')
+        try:
+            indication_profiles = server.get_selected_profiles(
+                registered_org='DMTF',
+                registered_name='Indications')
+        except TypeError as te:
+            SMIPYPING_LOG.error('get_selected_profile failed for url %s '
+                                ' with TypeError %s traceback %s' %
+                                (server.conn.url), te, exc_info=True)
+            raise TypeError('Profile acquisition failed looking for profiless'
+                            'org=DMTF, Name=Indications in url %s' %
+                            server.conn.url)
 
         self.logger.info('Profiles for DMTF:Indications')
         for inst in indication_profiles:

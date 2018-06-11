@@ -72,12 +72,12 @@ class ConfigSectionSchema(object):  # pylint: disable=too-few-public-methods
         """
         filename = Param(type=str)    # filename for the csv file
 
-    @matches_section("log")  # pylint: disable=too-few-public-methods
-    class Log(SectionSchema):
-        """ Log config section schema"""
-        # name = Param(type=str)
-        log_file = Param(type=str)
-        log_level = Param(type=str)
+#    @matches_section("log")  # pylint: disable=too-few-public-methods
+#    class Log(SectionSchema):
+#        """ Log config section schema"""
+#        # name = Param(type=str)
+#        log_file = Param(type=str)
+#        log_level = Param(type=str)
 
 
 class ConfigFileProcessor(ConfigFileReader):
@@ -91,7 +91,7 @@ class ConfigFileProcessor(ConfigFileReader):
         ConfigSectionSchema.General,     # PRIMARY SCHEMA
         ConfigSectionSchema.Csv,
         ConfigSectionSchema.Mysql,
-        ConfigSectionSchema.Log
+        # ConfigSectionSchema.Log
     ]
 
     @classmethod
