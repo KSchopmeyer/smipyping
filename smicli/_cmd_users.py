@@ -58,6 +58,9 @@ def users_group():
 @click.option('--disable', default=False, is_flag=True,
               help='Disable notifications in the database for this '
               'user. Default is enabled')
+@click.option('-n', '--no_verify', default=False, is_flag=True,
+              help='Disable verification prompt before the change is '
+                   'executed.')
 @click.pass_obj
 def users_add(context, **options):  # pylint: disable=redefined-builtin
     """
@@ -65,6 +68,9 @@ def users_add(context, **options):  # pylint: disable=redefined-builtin
 
     Creates a new user with the defined parameters for the company defined
     by the required parameter companyID.
+
+    Verification that the operation is correct is requested before the change
+    is executed unless the `--no-verify' parameter is set.
 
     """
     context.execute_cmd(lambda: cmd_users_add(context, options))
@@ -81,8 +87,9 @@ def users_list(context):  # pylint: disable=redefined-builtin
 
 @users_group.command('delete', options_metavar=CMD_OPTS_TXT)
 @click.argument('ID', type=int, metavar='UserID', required=True, nargs=1)
-@click.option('-v', '--verify', is_flag=True, default=False,
-              help='Verify the deletion before deleting the user.')
+@click.option('-n', '--no-verify', is_flag=True, default=False,
+              help='Disable verification prompt before the delete is '
+                   'executed.')
 @click.pass_obj
 def users_delete(context, id, **options):  # pylint: disable=redefined-builtin
     """
@@ -114,8 +121,9 @@ def users_delete(context, id, **options):  # pylint: disable=redefined-builtin
 @click.option('--no_notifications', is_flag=True, default=False,
               help='Disable the notify statein the database for this '
               'user if this flag set.')
-@click.option('-v', '--verify', is_flag=True, default=False,
-              help='Verify the deletion before modifying the user.')
+@click.option('-n', '--no-verify', is_flag=True, default=False,
+              help='Disable verification prompt before the change is '
+                   'executed.')
 @click.pass_obj
 def users_modify(context, id, **options):  # pylint: disable=redefined-builtin
     """
@@ -128,7 +136,7 @@ def users_modify(context, id, **options):  # pylint: disable=redefined-builtin
     ex. smicli cimping ids 5 8 9
 
     """
-    context.execute_cmd(lambda: cmd_users_add(context, options))
+    context.execute_cmd(lambda: cmd_users_modify(context, options))
 
 
 @users_group.command('activate', options_metavar=CMD_OPTS_TXT)
@@ -226,12 +234,21 @@ def cmd_users_add(context, options):
     if company_id in companies_tbl:
         company = companies_tbl[company_id]['CompanyName']
         # TODO add verify before adding
-        click.echo('Adding %s %s in company %s(%s), email %s' %
+        click.echo('Adding %s %s in company=%s(%s), email=%s' %
                    (first_name, last_name, company, company_id, email))
-        # TODO add verify.
-        users_tbl.insert(first_name, last_name, email, company_id,
-                         active=active,
-                         notify=notify)
+
+        if options['no_verify']:
+            users_tbl.insert(first_name, last_name, email, company_id,
+                             active=active,
+                             notify=notify)
+        else:
+            if validate_prompt('Validate add this user?'):
+                users_tbl.insert(first_name, last_name, email, company_id,
+                                 active=active,
+                                 notify=notify)
+            else:
+                click.echo('Aborted Operation')
+                return
     else:
         raise click.ClickException('The companyID %s is not a valid companyID '
                                    'in companies table' % company_id)
@@ -245,7 +262,9 @@ def cmd_users_delete(context, id, options):
     user_id = id
 
     if user_id in users_tbl:
-        if options['verify']:
+        if options['no_verify']:
+            users_tbl.delete(user_id)
+        else:
             user = users_tbl[user_id]
             click.echo(user)
             context.spinner.stop()
@@ -254,8 +273,6 @@ def cmd_users_delete(context, id, options):
             else:
                 click.echo('Abort Operation')
                 return
-        else:
-            users_tbl.delete(user_id)
 
     else:
         raise click.ClickException('The UserID %s is not in the table' %
@@ -264,6 +281,10 @@ def cmd_users_delete(context, id, options):
 
 def cmd_users_modify(context, id, options):
     """Delete a user from the database."""
+
+    context.spinner.stop()
+    click.echo('Modify not implemented')
+    return
 
     users_tbl = UsersTable.factory(context.db_info, context.db_type,
                                    context.verbose)
