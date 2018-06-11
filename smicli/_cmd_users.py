@@ -37,7 +37,7 @@ def users_group():
     pass
 
 
-@users_group.command('new', options_metavar=CMD_OPTS_TXT)
+@users_group.command('add', options_metavar=CMD_OPTS_TXT)
 @click.option('-f', '--firstname', type=str,
               required=True,
               help='User first name.')
@@ -59,14 +59,15 @@ def users_group():
               help='Disable notifications in the database for this '
               'user. Default is enabled')
 @click.pass_obj
-def users_new(context, **options):  # pylint: disable=redefined-builtin
+def users_add(context, **options):  # pylint: disable=redefined-builtin
     """
-    Create a new user in the user table.
+    Add a new user in the user table.
 
-    Creates a new user with the defined parameters.
+    Creates a new user with the defined parameters for the company defined
+    by the required parameter companyID.
 
     """
-    context.execute_cmd(lambda: cmd_users_new(context, options))
+    context.execute_cmd(lambda: cmd_users_add(context, options))
 
 
 @users_group.command('list', options_metavar=CMD_OPTS_TXT)
@@ -127,7 +128,7 @@ def users_modify(context, id, **options):  # pylint: disable=redefined-builtin
     ex. smicli cimping ids 5 8 9
 
     """
-    context.execute_cmd(lambda: cmd_users_new(context, options))
+    context.execute_cmd(lambda: cmd_users_add(context, options))
 
 
 @users_group.command('activate', options_metavar=CMD_OPTS_TXT)
@@ -187,6 +188,7 @@ def cmd_users_list(context):
     users_tbl = UsersTable.factory(context.db_info, context.db_type,
                                    context.verbose)
 
+    # TODO modify all this so we get name field as standard
     headers = UsersTable.fields
     tbl_rows = []
     for user_id, data in six.iteritems(users_tbl):
@@ -201,7 +203,7 @@ def cmd_users_list(context):
                 table_format=context.output_format)
 
 
-def cmd_users_new(context, options):
+def cmd_users_add(context, options):
     """
     Add a new user to the table.
     """
@@ -219,8 +221,14 @@ def cmd_users_new(context, options):
     active = not options['inactive']
     notify = not options['disable']
 
+    context.spinner.stop()
     # TODO sept 2017 expand to include active and notify
     if company_id in companies_tbl:
+        company = companies_tbl[company_id]['CompanyName']
+        # TODO add verify before adding
+        click.echo('Adding %s %s in company %s(%s), email %s' %
+                   (first_name, last_name, company, company_id, email))
+        # TODO add verify.
         users_tbl.insert(first_name, last_name, email, company_id,
                          active=active,
                          notify=notify)
@@ -298,4 +306,4 @@ def cmd_users_activate(context, id, options):
             users_tbl.activate(user_id, active_flag)
             active_flag = users_tbl.is_active(user_id)
             click.echo('User %s set %s' % (user_id,
-                                          users_tbl.is_active_str(user_id)))
+                                           users_tbl.is_active_str(user_id)))

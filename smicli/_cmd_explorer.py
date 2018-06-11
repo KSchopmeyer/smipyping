@@ -19,7 +19,6 @@ Implementation of the exlorer cmd group.
 from __future__ import print_function, absolute_import
 
 import click
-from pywbem import ValueMapping
 from smipyping._explore import Explorer
 
 from .smicli import cli, CMD_OPTS_TXT
@@ -121,7 +120,8 @@ def cmd_explore_all(context, **options):
                         logfile=context.log_file,
                         log_level=context.log_level,
                         verbose=context.verbose,
-                        ping=options['ping'], threaded=options['thread'],
+                        ping=options['ping'],
+                        threaded=options['thread'],
                         output_format=context.output_format)
 
     # TODO: ks I believe that the following is irrelevent. It maps between
@@ -161,8 +161,10 @@ def cmd_explore_ids(context, ids, **options):
 
     explorer = Explorer('smicli', context.target_data,
                         verbose=context.verbose,
-                        ping=options['ping'], threaded=options['thread'],
-                        logfile=context.log_file, log_level=context.log_level,
+                        ping=options['ping'],
+                        threaded=options['thread'],
+                        logfile=context.log_file,
+                        log_level=context.log_level,
                         output_format=context.output_format)
 
     servers = explorer.explore_servers(ids)
@@ -246,27 +248,20 @@ def smi_versions(server):
     information on the server.
     If it cannot be found in the registered profiles an exception is
     generated (TypeError)
+    Returns empty if cannot be found.
+    TODO what do we do about the exception te that can happen from
+    get_selected_profiles
     """
-    org_vm = ValueMapping.for_property(server, server.interop_ns,
-                                       'CIM_RegisteredProfile',
-                                       'RegisteredOrganization')
     try:
         snia_server_profiles = server.get_selected_profiles(
             registered_org='SNIA', registered_name='SMI-S')
     except TypeError as te:
-        print('ERROR: Invalid profile definition caused exception')
+        click.echo('ERROR: Invalid profile definition caused exception for %s. '
+                   'exception %s'% (server.conn.url, te))
         return []
-    versions = []
-    for inst in snia_server_profiles:
-        try:
-            org = org_vm.tovalues(inst['RegisteredOrganization'])  # noqa: F841
-        except TypeError as te:
-            print('ERROR: Invalid RegisteredOrganization property')
-            org = 0
 
-        name = inst['RegisteredName']  # noqa: F841
-        vers = inst['RegisteredVersion']
-        versions.append(vers)
+    versions = [inst['RegisteredVersion'] for inst in snia_server_profiles]
+
     return versions
 
 
@@ -287,19 +282,19 @@ def print_smi_profile_info(servers, user_data, table_format):
             target_id = server_tuple.target_id
             entry = user_data.get_target(target_id)
             try:
-                smi_versions = smi_versions(server_tuple.server)
+                versions = smi_versions(server_tuple.server)
             except Exception as ex:
                 # TODO make this an error log entry.
                 print('Exception %s in smi_version %s' % (ex,
                                                           server_tuple))
-                smi_versions = []
+                versions = []
 
             line = [entry['TargetID'],
                     server_tuple.url,
                     entry['CompanyName'],
                     entry['Product']]
-            if smi_versions is not None:
-                cell_str = ", ". join(sorted(smi_versions))
+            if versions is not None:
+                cell_str = ", ". join(sorted(versions))
                 line.append(fold_cell(cell_str, 14))
             table_data.append(line)
 

@@ -36,9 +36,11 @@ except ImportError:
 # Also the log_components below must be built differently and the
 # from config class disappears.
 API_LOGGER_NAME = 'smipyping.api'
-EXPLORE_LOGGER_NAME = 'smicli.explore'
-CIMPING_LOGGER_NAME = 'smicli.cimping'
+EXPLORE_LOGGER_NAME = 'smipyping.explore'
+CIMPING_LOGGER_NAME = 'smipyping.cimping'
 SWEEP_LOGGER_NAME = 'smicli.sweep'
+
+SMIPYPING_LOGGER_NAME = 'smipyping'
 
 
 
@@ -252,7 +254,7 @@ def logged_api_call(func):
             del apicaller_module
 
         # Log only if the caller is not from our package
-        log_it = (apicaller_module_name.split('.')[0] != 'zhmcclient')
+        log_it = (apicaller_module_name.split('.')[0] != 'smipyping')
 
         if log_it:
             logger.debug("==> %s, args: %.500r, kwargs: %.500r",
