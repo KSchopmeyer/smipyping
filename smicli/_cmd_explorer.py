@@ -258,7 +258,7 @@ def smi_versions(server):
             registered_org='SNIA', registered_name='SMI-S')
     except TypeError as te:
         click.echo('ERROR: Invalid profile definition caused exception for %s. '
-                   'exception %s'% (server.conn.url, te))
+                   'exception %s' % (server.conn.url, te))
         return []
 
     versions = [inst['RegisteredVersion'] for inst in snia_server_profiles]

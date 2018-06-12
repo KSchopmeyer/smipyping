@@ -43,7 +43,6 @@ SWEEP_LOGGER_NAME = 'smicli.sweep'
 SMIPYPING_LOGGER_NAME = 'smipyping'
 
 
-
 __all__ = ['SmiPypingLoggers',
            'API_LOGGER_NAME', 'EXPLORE_LOGGER_NAME', 'CIMPING_LOGGER_NAME',
            'DEFAULT_LOG_LEVEL', 'SWEEP_LOGGER_NAME']
@@ -73,7 +72,8 @@ def get_logger(name):
 
 # TODO this function goes away completely so that the smipyping classes
 # simply have LOG and log to that by module name
-#
+
+
 class SmiPypingLoggers(object):
     """
     Create named loggers for smipyping

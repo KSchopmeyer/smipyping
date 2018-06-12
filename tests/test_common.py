@@ -119,11 +119,12 @@ class TestPickFromList(object):
         """Execute valid pick from a list"""
         list_ = ["aaa", "bbb", "ccc"]
         prompt_txt = 'pick me'
-        with patch('smicli._click_common.local_prompt', return_value='1') as local_prompt:
+        with patch('smicli._click_common.local_prompt', return_value='1') as \
+                local_prompt:
             ctx = ClickContext(None, None, None, None, None, None, None,
                                None, None, None)
             assert pick_from_list(ctx, list_, prompt_txt) == 1
-            prompt.assert_called_once_with(prompt_txt)
+            local_prompt.assert_called_once_with(prompt_txt)
 
 
 class TestPickFromMultiplesList(object):
@@ -132,7 +133,8 @@ class TestPickFromMultiplesList(object):
         """Execute valid pick from a multipleslist"""
         list_ = ["aaa", "bbb", "ccc"]
         prompt_txt = 'Select multiple entries by index or Ctrl-C to exit >'
-        with patch('smicli._click_common.local_prompt', return_value='1') as local_prompt:
+        with patch('smicli._click_common.local_prompt', return_value='1') as \
+                local_prompt:
             ctx = ClickContext(None, None, None, None, None, None, None,
                                None, None, None)
             assert pick_multiple_from_list(ctx, list_, prompt_txt) == [1]
@@ -157,30 +159,12 @@ class TestValidatePrompt(object):
     def test_valid_pick(self):
         """Execute validateprompt"""
         prompt_txt = 'blah blah'
-        with patch('smicli._click_common.local_prompt', return_value='y') as local_prompt:
+        with patch('smicli._click_common.local_prompt', return_value='y') as \
+                local_prompt:
             ClickContext(None, None, None, None, None, None, None,
                          None, None, None)
             assert validate_prompt(prompt_txt) is True
             local_prompt.assert_called_once_with(u'blah blah valid (y/n): ')
-
-class TestRealPrompt(object):
-    """
-    Test the click_common validate prompt
-    """
-    def test_valid_pick(self):
-        """Execute validateprompt"""
-        list_ = [u"aaa", u"bbb", u"ccc"]
-        prompt_txt = u'Pick from the above'
-
-        name = raw_input(prompt_txt)
-        print('name %s' % name)
-
-        ctx = ClickContext(None, None, None, None, None, None, None,
-                           None, None)
-        rtn = pick_multiple_from_list(ctx, list_, prompt_txt)
-
-        print('returned %s' % rtn)
-
 
 
 class TestPrintTable(object):

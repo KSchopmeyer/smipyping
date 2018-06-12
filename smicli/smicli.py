@@ -66,7 +66,7 @@ SYSLOG_ADDRESSES = {
 }
 
 PYWBEM_LOGGER_NAME = 'pywbem'
-PYWBEM_HTTP_LOGGER_NAME ='pywbem.http'
+PYWBEM_HTTP_LOGGER_NAME = 'pywbem.http'
 PYWBEM_API_LOGGER_NAME = 'pywbem.api'
 
 # Logger names by log component
@@ -204,6 +204,8 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
 
         log = set_input_variable(ctx, log, 'log', None)
 
+        # TODO fix this log problem so we can get log config from
+        # config file
         # if log:
             # if ctx.default_map and 'log_file' in ctx.default_map:
                 # log_file = ctx.default_map['log_file']

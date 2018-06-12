@@ -131,7 +131,6 @@ def display_cols(target_table, fields, show_disabled=True, output_format=None):
     """
     table_data = []
 
-
     if show_disabled:
         if 'ScanEnabled' not in fields:
             fields.append('ScanEnabled')
@@ -197,7 +196,6 @@ def cmd_target_disable(context, targetid, enable, options):
         target_record['ScanEnabled'] = False if enable is True else True
         return
         context.provider_data.write_updated_record(targetid)
-
 
     except Exception as ex:
         raise click.ClickException("%s: %s" % (ex.__class__.__name__, ex))

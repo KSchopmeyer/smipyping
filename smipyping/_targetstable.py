@@ -347,7 +347,7 @@ class TargetsTable(object):
             max_width = fmt_value[1]
             field_type = fmt_value[2]
             if isinstance(field_type, six.string_types) and field_value:
-                if max_width < len(field_str):
+                if max_width < len(field_value):
                     line.append('\n'.join(wrap(field_value, max_width)))
                 else:
                     line.append('%s' % field_value)
