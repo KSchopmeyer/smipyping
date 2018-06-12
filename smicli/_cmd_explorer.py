@@ -116,9 +116,10 @@ def cmd_explore_all(context, **options):
     """
 
     # TODO configure logging
+    # TODO fix the log_level stuff
     explorer = Explorer('smicli', context.target_data,
                         logfile=context.log_file,
-                        log_level=context.log_level,
+                        log_level=None,
                         verbose=context.verbose,
                         ping=options['ping'],
                         threaded=options['thread'],

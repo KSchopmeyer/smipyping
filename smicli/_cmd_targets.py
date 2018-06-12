@@ -21,7 +21,7 @@ from __future__ import print_function, absolute_import
 import click
 
 from .smicli import cli, CMD_OPTS_TXT
-from ._click_common import print_table
+from ._click_common import print_table, pick_target_id
 
 
 @cli.group('targets', options_metavar=CMD_OPTS_TXT)
@@ -80,11 +80,15 @@ def targets_fields(context):
 
 
 @targets_group.command('get', options_metavar=CMD_OPTS_TXT)
-@click.argument('TargetID', type=int, metavar='TargetID', required=True)
+@click.argument('TargetID', type=int, metavar='TargetID', required=False)
+@click.option('-i', '--interactive', is_flag=True,
+              help='If set, presents list of targets to chose.')
 @click.pass_obj
 def targets_get(context, targetid, **options):
     """
-    display details of a single record from Targets database.
+    Display details of single Targets database entry.
+
+    Use the `interactive` option to select the target from a list presented.
     """
     context.execute_cmd(lambda: cmd_targets_get(context, targetid, options))
 
@@ -93,13 +97,17 @@ def targets_get(context, targetid, **options):
 @click.argument('TargetID', type=int, metavar='TargetID', required=True)
 @click.option('-e', '--enable', is_flag=True,
               help='Enable the Target if it is disabled.')
+@click.option('-i', '--interactive', is_flag=True,
+              help='If set, presents list of targets to chose.')
 @click.pass_obj
-def targets_disable(context, targetid, enable, **options):
+def target_disable(context, targetid, enable, **options):
     """
     Disable a provider from scanning. This changes the database.
+
+    Use the `interactive` option to select the target from a list presented.
     """
-    context.execute_cmd(lambda: cmd_targets_disable(context, targetid,
-                                                    enable, options))
+    context.execute_cmd(lambda: cmd_target_disable(context, targetid,
+                                                   enable, options))
 
 
 ##############################################################
@@ -123,25 +131,29 @@ def display_cols(target_table, fields, show_disabled=True, output_format=None):
     """
     table_data = []
 
-    col_list = target_table.tbl_hdr(fields)
+
+    if show_disabled:
+        if 'ScanEnabled' not in fields:
+            fields.append('ScanEnabled')
 
     table_width = target_table.get_output_width(fields) + len(fields)
     fold = False if table_width < 80 else True
 
     for record_id in sorted(target_table.keys()):
         if show_disabled:
-            table_data.append(target_table.format_record(record_id, fields,
+            table_data.append(target_table.format_record(record_id,
+                                                         fields,
                                                          fold))
-
         else:
             if not target_table.disabled_target_id(record_id):
-                table_data.append(target_table.format_record(record_id, fields,
+                table_data.append(target_table.format_record(record_id,
+                                                             fields,
                                                              fold))
-
+    headers = target_table.tbl_hdr(fields)
     title = 'Target Providers Overview:'
     if show_disabled:
-        title = '%s including disabled' % title
-    print_table(table_data, headers=col_list, title=title,
+        title = '%s including disabled targets' % title
+    print_table(table_data, headers=headers, title=title,
                 table_format=output_format)
 
 
@@ -163,10 +175,16 @@ def display_all(target_table, fields=None, company=None,
                  output_format=output_format)
 
 
-def cmd_targets_disable(context, targetid, enable, options):
-    """Display the information fields for the targets dictionary."""
-
+def cmd_target_disable(context, targetid, enable, options):
+    """
+        Set the disable flag in a defined targetid
+    """
+    context.spinner.stop()
     try:
+        if options['interactive']:
+            targetid = pick_target_id(context)
+            if targetid is None:
+                return
         target_record = context.target_data.get_target(targetid)
 
         # TODO add test to see if already in correct state
@@ -176,13 +194,10 @@ def cmd_targets_disable(context, targetid, enable, options):
         if target_record['ScanEnabled'] == next_state:
             click.echo('State already same as proposed change')
             return
+        target_record['ScanEnabled'] = False if enable is True else True
         return
-        # TODO why the following
-        if target_record is not None:
-            target_record['ScanEnabled'] = False if enable is True else True
-            context.provider_data.write_updated_record(targetid)
-        else:
-            click.echo('Id %s invalid or not in table' % targetid)
+        context.provider_data.write_updated_record(targetid)
+
 
     except Exception as ex:
         raise click.ClickException("%s: %s" % (ex.__class__.__name__, ex))
@@ -190,7 +205,7 @@ def cmd_targets_disable(context, targetid, enable, options):
 
 def cmd_targets_info(context):
     """Display information on the targets config and data file."""
-
+    context.spinner.stop()
     click.echo('\nDB Info:\n  type=%s\n  config_file=%s' %
                (context.target_data.db_type, context.config_file))
 
@@ -205,6 +220,7 @@ def cmd_targets_info(context):
 def cmd_targets_fields(context):
     """Display the information fields for the providers dictionary."""
     fields = context.target_data.get_field_list()
+    context.spinner.stop()
     rows = []
     for field in fields:
         rows.append([field])
@@ -216,10 +232,14 @@ def cmd_targets_fields(context):
 def cmd_targets_get(context, targetid, options):
     """Display the fields of a single provider record."""
 
+    context.spinner.stop()
+    if options['interactive']:
+        targetid = pick_target_id(context)
+
     try:
         target_record = context.target_data.get_target(targetid)
 
-        # TODO need to order output.
+        # TODO: Future need to order output.
         for key in target_record:
             click.echo('%s: %s' % (key, target_record[key]))
 
@@ -238,6 +258,7 @@ def cmd_targets_list(context, options):
     """
     fields = list(options['fields'])
 
+    context.spinner.stop()
     if fields:
         if 'TargetID' not in fields:
             fields.insert(0, 'TargetID')  # always show TargetID
