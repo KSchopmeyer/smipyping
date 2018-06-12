@@ -58,11 +58,12 @@ SMICLI_HISTORY_FILE = '~/.smicli_history'
 DEFAULT_OUTPUT_FORMAT = 'simple'
 
 
-def prompt(txt):
+def local_prompt(txt):
     """ Single function for prompt. Aids mock tests.
     Issues prompt and returns.
     """
-    print('prompt output %s' % txt)
+    assert isinstance(txt, six.text_type)
+    # TODO WHAT IS THIS FOR print('prompt output %s' % txt)
     return prompt_toolkit.prompt(txt)
 
 
@@ -71,7 +72,7 @@ def validate_prompt(text=""):
     Issue prompt and get y/n response. Input parameter text is prepended to
     the prompt output.
     """
-    rslt = prompt(unicode('%s valid (y/n): ' % text))
+    rslt = prompt_toolkit.prompt(unicode('%s valid (y/n): ' % text))
     return True if rslt == 'y' else False
 
 
@@ -82,17 +83,17 @@ def pick_from_list(context, options, title):
 
     Parameters:
       options:
-        List of strings to select
+        List of strings, one per line of the selection
 
       title:
         Title to display before selection
 
     Retries until either integer within range of options list is input
-    or user enter no value. Ctrl_C ends even the REPL.
+    or user enters no value. Ctrl_C ends even the REPL.
 
-    Returns: Index of selected item
+    Returns: Index of selected item or None if user choses to not input
 
-    Exception: Returns ValueError if Ctrl-c input from console.
+    Exception: Returns ValueError if Ctrl-C input from console.
 
     TODO: This could be replaced by the python pick library that would use
     curses for the selection process.
@@ -102,20 +103,19 @@ def pick_from_list(context, options, title):
     index = -1
     for str_ in options:
         index += 1
-        print('%s: %s' % (index, str_))
+        print(u'%s: %s' % (index, str_))
     selection_txt = None
     while True:
         try:
-            selection_txt = prompt(
-                'Select an entry by index or enter Ctrl-C to exit >')
-            if selection_txt.isdigit():
-                selection = int(selection_txt)
-                if selection >= 0 and selection <= index:
-                    return selection
+            selection_txt = prompt_toolkit.prompt(
+                u'Select an entry by index or Ctrl-C to exit >')
+            selection = int(selection_txt)
+            if selection >= 0 and selection <= index:
+                return selection
         except ValueError:
             pass
         except KeyboardInterrupt:
-            raise ValueError
+            return None
         print('%s Invalid. Input integer between 0 and %s or Ctrl-C to '
               'exit.' % (selection_txt, index))
     context.spinner.start()
@@ -153,7 +153,7 @@ def pick_multiple_from_list(context, options, title):
     while True:
         selection_txt = None
         try:
-            response = prompt(
+            response = local_prompt(
                 'Select multiple entries by index or Ctrl-C to exit >')
             selections = response.split()
             for selection_txt in selections:
@@ -174,6 +174,29 @@ def pick_multiple_from_list(context, options, title):
         print('%s Invalid. Input list of integers between 0 and %s or Ctrl-C '
               'to exit.' % (selection_txt, index))
     context.spinner.start()
+
+
+def pick_target_id(context):
+    """
+    Interactive selection of target id from list presented on the console.
+
+      Parameters ()
+         The click_context which contains target data information.
+
+      Returns:
+        target_id selected or None if user enter ctrl-C
+    """
+    targets_list = context.target_data.keys()
+    display_options = []
+    for t in targets_list:
+        display_options.append(u'    %s %s %s' %
+                               (t, context.target_data[t]['IPAddress'],
+                                context.target_data[t]['CompanyName']))
+    index = pick_from_list(context, display_options, "Pick TargetID")
+    if index is None:
+        click.echo('Abort command')
+        return
+    return targets_list[index]
 
 
 def set_input_variable(ctx, var_, config_file_name, default_value):

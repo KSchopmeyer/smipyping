@@ -116,9 +116,10 @@ def cmd_explore_all(context, **options):
     """
 
     # TODO configure logging
+    # TODO fix the log_level stuff
     explorer = Explorer('smicli', context.target_data,
                         logfile=context.log_file,
-                        log_level=context.log_level,
+                        log_level=None,
                         verbose=context.verbose,
                         ping=options['ping'],
                         threaded=options['thread'],
@@ -257,7 +258,7 @@ def smi_versions(server):
             registered_org='SNIA', registered_name='SMI-S')
     except TypeError as te:
         click.echo('ERROR: Invalid profile definition caused exception for %s. '
-                   'exception %s'% (server.conn.url, te))
+                   'exception %s' % (server.conn.url, te))
         return []
 
     versions = [inst['RegisteredVersion'] for inst in snia_server_profiles]

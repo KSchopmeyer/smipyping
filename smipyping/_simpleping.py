@@ -50,8 +50,7 @@ from .config import PING_TEST_CLASS, PING_TIMEOUT, DEFAULT_USERNAME, \
     DEFAULT_PASSWORD
 
 from .config import MAX_THREADS
-from ._logging import CIMPING_LOGGER_NAME, get_logger, SmiPypingLoggers, \
-    logged_api_call
+from ._logging import CIMPING_LOGGER_NAME, get_logger, SmiPypingLoggers
 
 from ._pingstable import PingsTable
 

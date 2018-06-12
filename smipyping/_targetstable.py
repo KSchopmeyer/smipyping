@@ -59,7 +59,7 @@ class TargetsTable(object):
     """
 
     key_field = 'TargetID'
-    fields = [key_field, 'targetID', 'IPAddress', 'CompanyID', 'Namespace',
+    fields = [key_field, 'IPAddress', 'CompanyID', 'Namespace',
               'SMIVersion', 'Product', 'Principal', 'Credential',
               'CimomVersion', 'InteropNamespace', 'Notify', 'NotifyUsers',
               'ScanEnabled', 'Protocol', 'Port']
@@ -329,7 +329,7 @@ class TargetsTable(object):
         return hdr
 
     # TODO This is a formatter and should probably not be in this file
-    def format_record(self, record_id, field_list, fold=False):
+    def format_record(self, record_id, fields, fold=False):
         """Return the fields defined in field_list for the record_id in
         display format.
         String fields will be folded if their width is greater than the
@@ -340,18 +340,19 @@ class TargetsTable(object):
         record = self.get_target(record_id)
 
         line = []
-        for name in field_list:
-            field_str = record[name]
-            value = self.get_format_dict(name)
-            max_width = value[1]
-            field_type = value[2]
-            if isinstance(field_type, six.string_types) and field_str:
-                if max_width < len(field_str):
-                    line.append('\n'.join(wrap(field_str, max_width)))
+
+        for field_name in fields:
+            field_value = record[field_name]
+            fmt_value = self.get_format_dict(field_name)
+            max_width = fmt_value[1]
+            field_type = fmt_value[2]
+            if isinstance(field_type, six.string_types) and field_value:
+                if max_width < len(field_value):
+                    line.append('\n'.join(wrap(field_value, max_width)))
                 else:
-                    line.append('%s' % record[name])
+                    line.append('%s' % field_value)
             else:
-                line.append('%s' % record[name])
+                line.append('%s' % field_value)
         return line
 
     def disabled_target(self, target_record):
