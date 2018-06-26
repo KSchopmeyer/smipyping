@@ -38,15 +38,17 @@ def history_group():
     """
     Command group manages history(pings) table.
 
+    The history command group processes the database pings table.
+
     The pings table maintains entries with the results of the ``cimping all``
     subcommand.  Each entry contains the target id, the timestamp for the
     test, and the results of the test.
 
-    It includes commands to clean the table and also to create various reports
-    and tables of the history of tests on the WBEM servecaurs in the
+    It includes commands to clean the pings table and also to create various
+    reports and tables of the history of tests on the WBEM servecaurs in the
     targets table that are stored in the Pings table.
 
-    Because this table can be very large, there are subcommands to clean
+    Because the pings table can be very large, there are subcommands to clean
     entries out of the table based on program id, dates, etc.
 
     Rather than a simple list subcommand this subcommand includes a number of
@@ -119,6 +121,11 @@ def history_list(context, **options):  # pylint: disable=redefined-builtin
     List pings history from database within a time range.  This allows listing
     full list of pings, status summary or percetage OK responses.
 
+    This subcommand lists the ping table entries as a table with one
+    record per row.  Since the pings table can be very large, the output
+    of this subcommand can be large unless limited by date ranges and other
+    filters.
+
     """
     context.execute_cmd(lambda: cmd_history_list(context, options))
 
@@ -131,7 +138,11 @@ def history_stats(context, **options):  # pylint: disable=redefined-builtin
     """
     Get stats on pings in database.
 
-    TODO. This could well be just another option in list.
+    TThis subcommand shows only a limited set of statistics on the
+    entries in the pings database table based on the filters defined as
+    command input parameters.
+
+    TODO we need to grow this output to more statistical information
 
     """
     context.execute_cmd(lambda: cmd_history_stats(context, options))
@@ -157,9 +168,11 @@ def history_delete(context, **options):  # pylint: disable=redefined-builtin
     Delete records from history file.
 
     Delete records from the history file based on start date and end date
-    options
+    options and the optional list of target ids provided.
 
     ex. smicli history delete --startdate 09/09/17 --endate 09/10/17
+
+    WARNING: The default is to delete all records in the ping database table
 
     """
     context.execute_cmd(lambda: cmd_history_delete(context, options))
@@ -180,7 +193,13 @@ def history_delete(context, **options):  # pylint: disable=redefined-builtin
 @click.pass_obj
 def history_weekly(context, **options):  # pylint: disable=redefined-builtin
     """
-    Generate weekly report. This report includes percentage OK for each
+    Generate weekly report from ping history.
+
+    This subcommand generates a report on the status of each target id
+    in the targets table filtered by the start date and end date or number of
+    days input parameters
+
+    This report includes percentage OK for each
     target for today, this week, and the program and overall information on
     the target (company, product, SMIversion, contacts.)
 
@@ -221,7 +240,7 @@ def history_weekly(context, **options):  # pylint: disable=redefined-builtin
 def history_timeline(context, ids, **options):
     # pylint: disable=redefined-builtin
     """
-    Show history of status changes for IDs
+    Show history of status changes for IDs.
 
     Show a timeline of the history of status changes for the IDs listed.
 
@@ -261,8 +280,7 @@ def cmd_history_weekly(context, options):
 
     week_start = report_date - datetime.timedelta(days=report_date.weekday())
 
-    percentok_week = pings_tbl.get_percentok_by_id(
-        week_start)
+    percentok_week = pings_tbl.get_percentok_by_id(week_start)
 
     percentok_ytd = pings_tbl.get_percentok_by_id(
         cp['StartDate'],
@@ -353,7 +371,8 @@ def cmd_history_delete(context, options):
 
     record_count = pings_tbl.record_count()
 
-    # TODO Verify that you have correct data
+    # Verify that you have correct data
+    click.echo('Proposed delete')
 
     try:
         pings_tbl.delete_by_daterange(

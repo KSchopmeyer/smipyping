@@ -35,9 +35,12 @@ The following defines the help output for the `smicli  --help` subcommand
                                       Database type. May be defined on cmd line,
                                       config file,  or through default. Default is
                                       mysql.
-      -l, --log_level TEXT            Optional option to enable logging for the
-                                      level  defined, by the parameter. Choices
-                                      are:  ['error', 'warning', 'info', 'debug']
+      -l, --log COMP=LEVEL,...        Set a component to a log level (COMP: [all|c
+                                      li|pywbem|pywbemapi|pywbemhttp|api|groups],
+                                      LEVEL: [critical|error|warning|info|debug],
+                                      Default: all=error).
+      --log-dest [file|stderr|none]   Log destination for this command (Default:
+                                      file).
       -o, --output-format [table|plain|simple|grid|psql|rst|mediawiki|html]
                                       Output format (Default: simple). pywbemcli
                                       may override the format choice depending on
@@ -311,7 +314,7 @@ The following defines the help output for the `smicli companies --help` subcomma
     
     Commands:
       delete  Delete a program from the database.
-      list    List users in the database.
+      list    List Companies in the database.
       modify  Create fake cimping results in pings...
       new     Create a new user in the user table.
 
@@ -355,7 +358,7 @@ The following defines the help output for the `smicli companies list --help` sub
 
     Usage: smicli companies list [COMMAND-OPTIONS]
     
-      List users in the database.
+      List Companies in the database.
     
     Options:
       -h, --help  Show this message and exit.
@@ -445,7 +448,7 @@ The following defines the help output for the `smicli explorer --help` subcomman
       -h, --help  Show this message and exit.
     
     Commands:
-      all  Execute the general explorer on the enabled...
+      all  Command group to explore servers Execute the...
       ids  Execute the general explorer on the providers...
 
 
@@ -464,7 +467,26 @@ The following defines the help output for the `smicli explorer all --help` subco
 
     Usage: smicli explorer all [COMMAND-OPTIONS]
     
-      Execute the general explorer on the enabled providers in the database
+      Command group to explore servers
+    
+      Execute the general explore operation on  some or all the providers in the
+      database.
+    
+      This command explores the general characteristics of the server including:
+    
+      Namespaces Interop Namespace Registered Profiles General Server
+      information
+    
+      I can operate either in a parallel mode (multi-threaded) or single thread
+      (if for some reason there is an issue with the multithreading)
+    
+      It generates a report to the the defined output as a table with the
+      formatting defined by the format option. Default is thread the requests
+      speeding up the explore significantly.
+    
+      Note: There is an option to ping the server before executing the explore
+      simply to speed up the process for servers that are completely not
+      available. Default is to ping as the first step.
     
     Options:
       --ping / --no-ping         Ping the the provider as initial step in test.
@@ -540,15 +562,17 @@ The following defines the help output for the `smicli history --help` subcommand
     
       Command group manages history(pings) table.
     
+      The history command group processes the database pings table.
+    
       The pings table maintains entries with the results of the ``cimping all``
       subcommand.  Each entry contains the target id, the timestamp for the
       test, and the results of the test.
     
-      It includes commands to clean the table and also to create various reports
-      and tables of the history of tests on the WBEM servecaurs in the targets
-      table that are stored in the Pings table.
+      It includes commands to clean the pings table and also to create various
+      reports and tables of the history of tests on the WBEM servecaurs in the
+      targets table that are stored in the Pings table.
     
-      Because this table can be very large, there are subcommands to clean
+      Because the pings table can be very large, there are subcommands to clean
       entries out of the table based on program id, dates, etc.
     
       Rather than a simple list subcommand this subcommand includes a number of
@@ -566,8 +590,8 @@ The following defines the help output for the `smicli history --help` subcommand
       delete    Delete records from history file.
       list      List history of pings from database List...
       stats     Get stats on pings in database.
-      timeline  Show history of status changes for IDs Show a...
-      weekly    Generate weekly report.
+      timeline  Show history of status changes for IDs.
+      weekly    Generate weekly report from ping history.
 
 
 
@@ -614,9 +638,11 @@ The following defines the help output for the `smicli history delete --help` sub
       Delete records from history file.
     
       Delete records from the history file based on start date and end date
-      options
+      options and the optional list of target ids provided.
     
       ex. smicli history delete --startdate 09/09/17 --endate 09/10/17
+    
+      WARNING: The default is to delete all records in the ping database table
     
     Options:
       -s, --startdate DATE    Start date for pings to be deleted. Format is
@@ -647,6 +673,10 @@ The following defines the help output for the `smicli history list --help` subco
     
       List pings history from database within a time range.  This allows listing
       full list of pings, status summary or percetage OK responses.
+    
+      This subcommand lists the ping table entries as a table with one record
+      per row.  Since the pings table can be very large, the output of this
+      subcommand can be large unless limited by date ranges and other filters.
     
     Options:
       -s, --startdate DATE        Start date for ping records included. Format is
@@ -686,7 +716,11 @@ The following defines the help output for the `smicli history stats --help` subc
     
       Get stats on pings in database.
     
-      TODO. This could well be just another option in list.
+      TThis subcommand shows only a limited set of statistics on the entries in
+      the pings database table based on the filters defined as command input
+      parameters.
+    
+      TODO we need to grow this output to more statistical information
     
     Options:
       -S, --summary  If set only a summary is generated.
@@ -708,7 +742,7 @@ The following defines the help output for the `smicli history timeline --help` s
 
     Usage: smicli history timeline [COMMAND-OPTIONS] TargetIDs
     
-      Show history of status changes for IDs
+      Show history of status changes for IDs.
     
       Show a timeline of the history of status changes for the IDs listed.
     
@@ -748,9 +782,15 @@ The following defines the help output for the `smicli history weekly --help` sub
 
     Usage: smicli history weekly [COMMAND-OPTIONS]
     
-      Generate weekly report. This report includes percentage OK for each target
-      for today, this week, and the program and overall information on the
-      target (company, product, SMIversion, contacts.)
+      Generate weekly report from ping history.
+    
+      This subcommand generates a report on the status of each target id in the
+      targets table filtered by the start date and end date or number of days
+      input parameters
+    
+      This report includes percentage OK for each target for today, this week,
+      and the program and overall information on the target (company, product,
+      SMIversion, contacts.)
     
     Options:
       -d, --date DATE   Optional date to be used as basis for report in form
@@ -840,8 +880,8 @@ The following defines the help output for the `smicli programs delete --help` su
       Delete the program defined by the subcommand argument from the database.
     
     Options:
-      -v, --verify  Verify the deletion before deleting the program.
-      -h, --help    Show this message and exit.
+      -n, --no-verify  Do not verify the deletion before deleting the program.
+      -h, --help       Show this message and exit.
 
 
 
@@ -883,8 +923,12 @@ The following defines the help output for the `smicli programs new --help` subco
       Add new program to the database.
     
     Options:
-      -s, --startdate DATE    Start date for program.  [required]
-      -e, --enddate DATE      End date for program  [required]
+      -s, --startdate DATE    Start date for program. Format is dd/mm/yy where dd
+                              and mm are zero padded (ex. 01) and year is without
+                              century (ex. 17)  [required]
+      -e, --enddate DATE      End date for program. Format is dd/mm/yy where dd
+                              and mm are zero padded (ex. 01) and year is without
+                              century (ex. 17)  [required]
       -p, --programname TEXT  Descriptive name for program  [required]
       -h, --help              Show this message and exit.
 
@@ -1433,10 +1477,10 @@ The following defines the help output for the `smicli users --help` subcommand
     
     Commands:
       activate  Activate or deactivate a user.
+      add       Add a new user in the user table.
       delete    Delete a program from the database.
       list      List users in the database.
       modify    Create fake cimping results in pings...
-      new       Create a new user in the user table.
 
 
 
@@ -1467,6 +1511,44 @@ The following defines the help output for the `smicli users activate --help` sub
 
 
 
+.. _`smicli users add --help`:
+
+smicli users add --help
+^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli users add --help` subcommand
+
+
+::
+
+    Usage: smicli users add [COMMAND-OPTIONS]
+    
+      Add a new user in the user table.
+    
+      Creates a new user with the defined parameters for the company defined by
+      the required parameter companyID.
+    
+      Verification that the operation is correct is requested before the change
+      is executed unless the `--no-verify' parameter is set.
+    
+    Options:
+      -f, --firstname TEXT     User first name.  [required]
+      -l, --lastname TEXT      User last name  [required]
+      -e, --email TEXT         User email address.  [required]
+      -c, --companyID INTEGER  CompanyID for the company attached to this user
+                               [required]
+      --inactive               Set the active/inactive state in the database for
+                               this user. Default is active
+      --disable                Disable notifications in the database for this
+                               user. Default is enabled
+      -n, --no_verify          Disable verification prompt before the change is
+                               executed.
+      -h, --help               Show this message and exit.
+
+
+
 .. _`smicli users delete --help`:
 
 smicli users delete --help
@@ -1486,8 +1568,8 @@ The following defines the help output for the `smicli users delete --help` subco
       Delete the program defined by the subcommand argument from the database.
     
     Options:
-      -v, --verify  Verify the deletion before deleting the user.
-      -h, --help    Show this message and exit.
+      -n, --no-verify  Disable verification prompt before the delete is executed.
+      -h, --help       Show this message and exit.
 
 
 
@@ -1543,39 +1625,8 @@ The following defines the help output for the `smicli users modify --help` subco
                                user if this flag set.
       --no_notifications       Disable the notify statein the database for this
                                user if this flag set.
-      -v, --verify             Verify the deletion before modifying the user.
-      -h, --help               Show this message and exit.
-
-
-
-.. _`smicli users new --help`:
-
-smicli users new --help
-^^^^^^^^^^^^^^^^^^^^^^^
-
-
-
-The following defines the help output for the `smicli users new --help` subcommand
-
-
-::
-
-    Usage: smicli users new [COMMAND-OPTIONS]
-    
-      Create a new user in the user table.
-    
-      Creates a new user with the defined parameters.
-    
-    Options:
-      -f, --firstname TEXT     User first name.  [required]
-      -l, --lastname TEXT      User last name  [required]
-      -e, --email TEXT         User email address.  [required]
-      -c, --companyID INTEGER  CompanyID for the company attached to this user
-                               [required]
-      --inactive               Set the active/inactive state in the database for
-                               this user. Default is active
-      --disable                Disable notifications in the database for this
-                               user. Default is enabled
+      -n, --no-verify          Disable verification prompt before the change is
+                               executed.
       -h, --help               Show this message and exit.
 
 
