@@ -266,8 +266,8 @@ def cmd_users_delete(context, id, options):
             users_tbl.delete(user_id)
         else:
             user = users_tbl[user_id]
-            click.echo(user)
             context.spinner.stop()
+            click.echo(user)
             if validate_prompt('Delete user id %s' % user_id):
                 users_tbl.delete(user_id)
             else:

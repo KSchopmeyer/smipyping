@@ -54,6 +54,8 @@ Database structure
 The following diagram shows the interaction between the different tables
 in the database.
 
+::
+
     +----------+
     | Programs |
     | Table    |    +--------------+
@@ -206,4 +208,3 @@ a companies table.
 The following is an example of a row in a csv table:
 
     01,Inova,root/cimv2,,OpenPegasus,,,OpenPegasus,mypw,interop,http,5988,Enabled
-

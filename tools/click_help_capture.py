@@ -120,10 +120,10 @@ def get_subcmd_group_names(cmd, script_name):
 
     if exitcode:
         raise RuntimeError('Error, unexpected non-zero exit code %s'
-                           ' from %s call' % (script_name, exitcode))
+                           ' from %s call' % (exitcode, command))
     if len(std_err):
-        raise RuntimeError('Error. expected stderr (%s)returned from '
-                           '%s call.' % (script_name, std_err))
+        raise RuntimeError('Error. unexpected stderr (%s)returned from '
+                           '%s call.' % ( std_err, command))
 
     # Split stdout into list of lines
     lines = std_out.split('\n')
@@ -150,7 +150,7 @@ def get_subgroup_names(group_name, script_name):
     """
     subcmds_list = get_subcmd_group_names(group_name, script_name)
     space = ' ' if group_name else ''
-    
+
     return ['%s%s%s' % (group_name, space, name) for name in subcmds_list]
 
 

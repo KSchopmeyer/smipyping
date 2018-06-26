@@ -370,6 +370,5 @@ $(test_log_file): Makefile $(package_name)/*.py tests/*.py .coveragerc
 # Create the help text.rst files for each separate script
 
 $(doc_conf_dir)/smicli_help.rst: $(cli_package_name)/smicli.py $(cli_package_name)/_cmd*.py
-	tools/click_help_capture.py --help >$@
+	tools/click_help_capture.py >$@
 	@echo 'Done: Created smicli script help message file: $@'
-

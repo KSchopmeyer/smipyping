@@ -29,6 +29,7 @@ from ._cmd_users import *  # noqa: F401,F403
 from ._cmd_companies import *  # noqa: F401,F403
 from ._common_options import *  # noqa: F401,F403
 from ._click_configfile import *  # noqa: F401,F403
+from ._click_datetime import *  # noqa: F401,F403
 
 from ._click_common import *  # noqa: F401,F403
 from ._tableoutput import *  # noqa: F401,F403

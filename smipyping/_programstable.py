@@ -281,3 +281,70 @@ class MySQLProgramsTable(ProgramsTable):
             raise ValueError('Error: setup sql based targets table %r. '
                              'Exception: %r'
                              % (db_dict, ex))
+
+    def _load(self):
+        """
+        Load the internal dictionary from the database.
+        """
+        try:
+            # python-mysql-connector-dictcursor  # noqa: E501
+            cursor = self.connection.cursor(dictionary=True)
+
+            # fetchall returns tuple so need index to fields, not names
+            fields = ', '.join(self.fields)
+            sql = 'SELECT %s FROM %s' % (fields, self.table_name)
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+            for row in rows:
+                key = row[self.key_field]
+                self.data_dict[key] = row
+
+        except Exception as ex:
+            raise ValueError('Error: setup sql based targets table %r. '
+                             'Exception: %r'
+                             % (self.db_dict, ex))
+
+    def insert(self, start_date, end_date, program_name):
+        """
+        Write a new record to the programs table of the database
+
+        Exceptions: TODO
+
+        """
+        cursor = self.connection.cursor()
+
+        sql = ("INSERT INTO Programs "
+               "(ProgramName, StartDate, EndDate) "
+               "VALUES (%s, %s, %s)")
+        data = (program_name, start_date, end_date)
+
+        try:
+            cursor.execute(sql, data)
+            self.connection.commit()
+        except Exception as ex:
+            print('programs table.append failed: exception %r' % ex)
+            self.connection.rollback()
+            raise ex
+        finally:
+            self._load()
+            self.connection.close()
+
+    def delete(self, program_id):
+        """
+        Delete the record defined by user_id
+        """
+        cursor = self.connection.cursor()
+
+        sql = "DELETE FROM Programs WHERE ProgramID=%s"
+        try:
+            # TODO what is return on execute??
+            # pylint: disable=unused-variable
+            mydata = cursor.execute(sql, (program_id,))  # noqa F841
+            self.connection.commit()
+        except Exception as ex:
+            print('Programstable.delete failed: exception %r' % ex)
+            self.connection.rollback()
+            raise ex
+        finally:
+            self._load()
+            self.connection.close()

@@ -24,7 +24,7 @@ import six
 
 from smipyping import ProgramsTable
 from .smicli import cli, CMD_OPTS_TXT
-from ._click_common import print_table
+from ._click_common import print_table, validate_prompt
 
 
 @cli.group('programs', options_metavar=CMD_OPTS_TXT)
@@ -49,11 +49,15 @@ def programs_group():
 @click.option('-s', '--startdate', type=Datetime(format='%d/%m/%y'),
               default=None,
               required=True,
-              help='Start date for program.')
+              help='Start date for program. Format is dd/mm/yy'
+                   ' where dd and mm are zero padded (ex. 01) and year is'
+                   ' without century (ex. 17)')
 @click.option('-e', '--enddate', type=Datetime(format='%d/%m/%y'),
               default=None,
               required=True,
-              help='End date for program')
+              help='End date for program. Format is dd/mm/yy'
+                   ' where dd and mm are zero padded (ex. 01) and year is'
+                   ' without century (ex. 17)')
 @click.option('-p', '--programname', type=str,
               default=None,
               required=True,
@@ -78,8 +82,8 @@ def programs_list(context):  # pylint: disable=redefined-builtin
 
 @programs_group.command('delete', options_metavar=CMD_OPTS_TXT)
 @click.argument('ID', type=int, metavar='ProgramID', required=True, nargs=1)
-@click.option('-v', '--verify', is_flag=True,
-              help='Verify the deletion before deleting the program.')
+@click.option('-n', '--no-verify', is_flag=True,
+              help='Do not verify the deletion before deleting the program.')
 @click.pass_obj
 def programs_delete(context, id, options):  # pylint: disable=redefined-builtin
     """
@@ -142,9 +146,43 @@ def cmd_programs_list(context):
 
 
 def cmd_programs_new(context, options):
-    click.echo('Programs new NOT IMPLEMENTED')
+    """
+    Create a new program in the Programs table
+    """
+    start_date = options['startdate']
+    end_date = options['enddate']
+    program_name = options['programname']
+
+    programs_tbl = ProgramsTable.factory(context.db_info, context.db_type,
+                                         context.verbose)
+
+    click.echo('Adding program %s starts %s, ends %s' %
+               (program_name, start_date, end_date))
+
+    if validate_prompt('Validate add this program?'):
+        programs_tbl.insert(program_name, start_date, end_date)
 
 
-def cmd_programs_delete(context, options):
-    """Delete a program from the database."""
-    click.echo('Programs delete NOT IMPLEMENTED')
+def cmd_programs_delete(context, id, options):
+    """Delete a user from the database."""
+
+    programs_tbl = ProgramsTable.factory(context.db_info, context.db_type,
+                                         context.verbose)
+    program_id = id
+
+    if program_id in programs_tbl:
+        if options['no_verify']:
+            programs_tbl.delete(program_id)
+        else:
+            program = programs_tbl[program_id]
+            context.spinner.stop()
+            click.echo(program)
+            if validate_prompt('Delete program id %s' % program_id):
+                programs_tbl.delete(program_id)
+            else:
+                click.echo('Abort Operation')
+                return
+
+    else:
+        raise click.ClickException('The ProgramID %s is not in the table' %
+                                   program_id)
