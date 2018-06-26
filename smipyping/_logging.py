@@ -43,7 +43,6 @@ SWEEP_LOGGER_NAME = 'smicli.sweep'
 SMIPYPING_LOGGER_NAME = 'smipyping'
 
 
-
 __all__ = ['SmiPypingLoggers',
            'API_LOGGER_NAME', 'EXPLORE_LOGGER_NAME', 'CIMPING_LOGGER_NAME',
            'DEFAULT_LOG_LEVEL', 'SWEEP_LOGGER_NAME']
