@@ -72,7 +72,8 @@ def get_logger(name):
 
 # TODO this function goes away completely so that the smipyping classes
 # simply have LOG and log to that by module name
-#
+
+
 class SmiPypingLoggers(object):
     """
     Create named loggers for smipyping

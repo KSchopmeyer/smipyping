@@ -118,12 +118,13 @@ class TestPickFromList(object):
     def test_valid_pick(self):
         """Execute valid pick from a list"""
         list_ = ["aaa", "bbb", "ccc"]
-        prompt_txt = 'Select an entry by index or enter Ctrl-C to exit >'
-        with patch('smicli._click_common.prompt', return_value='1') as prompt:
+        prompt_txt = 'pick me'
+        with patch('smicli._click_common.local_prompt', return_value='1') as \
+                local_prompt:
             ctx = ClickContext(None, None, None, None, None, None, None,
-                               None, None)
+                               None, None, None)
             assert pick_from_list(ctx, list_, prompt_txt) == 1
-            prompt.assert_called_once_with(prompt_txt)
+            local_prompt.assert_called_once_with(prompt_txt)
 
 
 class TestPickFromMultiplesList(object):
@@ -132,22 +133,23 @@ class TestPickFromMultiplesList(object):
         """Execute valid pick from a multipleslist"""
         list_ = ["aaa", "bbb", "ccc"]
         prompt_txt = 'Select multiple entries by index or Ctrl-C to exit >'
-        with patch('smicli._click_common.prompt', return_value='1') as prompt:
+        with patch('smicli._click_common.local_prompt', return_value='1') as \
+                local_prompt:
             ctx = ClickContext(None, None, None, None, None, None, None,
-                               None, None)
+                               None, None, None)
             assert pick_multiple_from_list(ctx, list_, prompt_txt) == [1]
-            prompt.assert_called_once_with(prompt_txt)
+            local_prompt.assert_called_once_with(prompt_txt)
 
     def test_valid_pick2(self):
         """Execute valid pick from a multipleslist"""
         list_ = ["aaa", "bbb", "ccc"]
         prompt_txt = 'Select multiple entries by index or Ctrl-C to exit >'
-        with patch('smicli._click_common.prompt', return_value='1 2') as \
-                prompt:
+        with patch('smicli._click_common.local_prompt', return_value='1 2') as \
+                local_prompt:
             ctx = ClickContext(None, None, None, None, None, None, None,
                                None, None)
             assert pick_multiple_from_list(ctx, list_, prompt_txt) == [1, 2]
-            prompt.assert_called_once_with(prompt_txt)
+            local_prompt.assert_called_once_with(prompt_txt)
 
 
 class TestValidatePrompt(object):
@@ -157,11 +159,12 @@ class TestValidatePrompt(object):
     def test_valid_pick(self):
         """Execute validateprompt"""
         prompt_txt = 'blah blah'
-        with patch('smicli._click_common.prompt', return_value='y') as prompt:
+        with patch('smicli._click_common.local_prompt', return_value='y') as \
+                local_prompt:
             ClickContext(None, None, None, None, None, None, None,
-                         None, None)
+                         None, None, None)
             assert validate_prompt(prompt_txt) is True
-            prompt.assert_called_once_with(u'blah blah valid (y/n): ')
+            local_prompt.assert_called_once_with(u'blah blah valid (y/n): ')
 
 
 class TestPrintTable(object):
