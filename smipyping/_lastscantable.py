@@ -28,13 +28,14 @@ from __future__ import print_function, absolute_import
 import os
 import csv
 from mysql.connector import MySQLConnection
+from ._dbtablebase import DBTableBase
 
 #
 #  ScanID=1, LastScan=2016-10-28 09:00:01
 #
 
 
-class LastScanTable(object):
+class LastScanTable(DBTableBase):
     """
     Abstract class for LastScanTable
     This table contains a single entry, the last time a scan was executed.

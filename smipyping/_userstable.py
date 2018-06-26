@@ -31,11 +31,11 @@ import os
 import csv
 import six
 from mysql.connector import MySQLConnection
-
+from ._dbtablebase import DBTableBase
 __all__ = ['UsersTable']
 
 
-class UsersTable(object):
+class UsersTable(DBTableBase):
     """
     Abstract class for UsersTable
     This table contains a single entry, the last time a scan was executed.
@@ -83,38 +83,6 @@ class UsersTable(object):
             print('Users table factory inst %r' % inst)
 
         return inst
-
-    def __contains__(self, record_id):
-        """Determine if record_id is in targets dictionary."""
-        return record_id in self.data_dict
-
-    def __iter__(self):
-        """iterator for targets."""
-        return six.iterkeys(self.data_dict)
-
-    def iteritems(self):
-        """
-        Iterate through the property names (in their original lexical case).
-
-        Returns key and value
-        """
-        for key, val in self.data_dict.iteritems():
-            yield (key, val)
-
-    def keys(self):
-        """get all of the target_ids as a list"""
-        return list(self.data_dict.keys())
-
-    def __getitem__(self, record_id):
-        """Return the record for the defined record_id from the targets."""
-        return self.data_dict[record_id]
-
-    def __delitem__(self, record_id):
-        del self.data_dict[record_id]
-
-    def __len__(self):
-        """Return number of targets"""
-        return len(self.data_dict)
 
     def filter_records(self, field, target_value):
         """Get the set of user records for a field in the table that

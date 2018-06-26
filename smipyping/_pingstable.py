@@ -25,11 +25,12 @@ import csv
 import os
 import six
 from mysql.connector import MySQLConnection, Error
+from ._dbtablebase import DBTableBase
 
 __all__ = ['PingsTable']
 
 
-class PingsTable(object):
+class PingsTable(DBTableBase):
     """
     `PingID` int(11) unsigned NOT NULL AUTO_INCREMENT,
     `TargetID` int(11) unsigned NOT NULL,
@@ -80,38 +81,6 @@ class PingsTable(object):
         """Rep of pings data. This is really an empty dictionary"""
         return ('Pingtable db_type %s, db_dict %s rep count=%s' %
                 (self.db_type, self.db_dict, len(self.data_dict)))
-
-    def __contains__(self, record_id):
-        """Determine if record_id is in targets dictionary."""
-        return record_id in self.data_dict
-
-    def __iter__(self):
-        """iterator for targets."""
-        return six.iterkeys(self.data_dict)
-
-    def iteritems(self):
-        """
-        Iterate through the property names (in their original lexical case).
-
-        Returns key and value
-        """
-        for key, val in self.data_dict.iteritems():
-            yield (key, val)
-
-    def keys(self):
-        """get all of the target_ids as a list"""
-        return list(self.data_dict.keys())
-
-    def __getitem__(self, record_id):
-        """Return the record for the defined record_id from the targets."""
-        return self.data_dict[record_id]
-
-    def __delitem__(self, record_id):
-        del self.data_dict[record_id]
-
-    def __len__(self):
-        """Return number of targets"""
-        return len(self.data_dict)
 
 
 class CsvPingsTable(PingsTable):

@@ -28,13 +28,12 @@ from __future__ import print_function, absolute_import
 
 import os
 import csv
-import six
 from mysql.connector import MySQLConnection
-
+from ._dbtablebase import DBTableBase
 __all__ = ['NotificationsTable']
 
 
-class NotificationsTable(object):
+class NotificationsTable(DBTableBase):
     """
     Abstract class for NotificationsTable
     This table contains a single entry, the last time a scan was executed.
@@ -82,38 +81,6 @@ class NotificationsTable(object):
             print('Notifications table factory inst %r' % inst)
 
         return inst
-
-    def __contains__(self, record_id):
-        """Determine if record_id is in data dictionary."""
-        return record_id in self.data_dict
-
-    def __iter__(self):
-        """iterator for targets."""
-        return six.iterkeys(self.data_dict)
-
-    def iteritems(self):
-        """
-        Iterate through the property names (in their original lexical case).
-
-        Returns key and value
-        """
-        for key, val in self.data_dict.iteritems():
-            yield (key, val)
-
-    def keys(self):
-        """get all of the target_ids as a list"""
-        return list(self.data_dict.keys())
-
-    def __getitem__(self, record_id):
-        """Return the record for the defined record_id from the targets."""
-        return self.data_dict[record_id]
-
-    def __delitem__(self, record_id):
-        del self.data_dict[record_id]
-
-    def __len__(self):
-        """Return number of targets"""
-        return len(self.data_dict)
 
 
 class CsvNotificationsTable(NotificationsTable):

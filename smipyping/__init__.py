@@ -81,5 +81,6 @@ from ._scanport_tcp import *  # noqa: F401,F403
 from ._simpleping import *  # noqa: F401,F403
 from ._explore import *  # noqa: F401,F403
 from ._serversweep import *  # noqa: F401,F403
+from ._dbtablebase import *  # noqa: F401,F403
 
 from ._version import *  # noqa: F401,F403
