@@ -112,11 +112,20 @@ class TargetsTable(DBTableBase):
             provided, the default is a simple report format.
 
         """
-        self.data_dict = {}
-        self.db_dict = db_dict
-        self.verbose = verbose
+
+        super(TargetsTable, self).__init__(db_dict, db_type, verbose)
+
         self.output_format = output_format
-        self.db_type = db_type
+
+    def __str__(self):
+        """String info on targetdata. TODO. Put more info her"""
+        return ('type=%s db=%s, len=%s' % (self.db_type, self.db_xxx(),
+                                           len(self.data_dict)))
+
+    def __repr__(self):
+        """Rep of target data"""
+        return ('Targetdata db_type %s, rep count=%s' %
+                (self.db_type, len(self.data_dict)))
 
     def test_fieldnames(self, fields):
         """Test a list of field names"""
@@ -149,16 +158,6 @@ class TargetsTable(DBTableBase):
             print('Resulting targets factory inst %r' % inst)
 
         return inst
-
-    def __str__(self):
-        """String info on targetdata. TODO. Put more info her"""
-        return ('type=%s db=%s, len=%s' % (self.db_type, self.db_xxx(),
-                                           len(self.data_dict)))
-
-    def __repr__(self):
-        """Rep of target data"""
-        return ('Targetdata db_type %s, rep count=%s' %
-                (self.db_type, len(self.data_dict)))
 
     def get_field_list(self):
         """Return a list of the base table field names in the order defined."""

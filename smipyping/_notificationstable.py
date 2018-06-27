@@ -48,15 +48,6 @@ class NotificationsTable(DBTableBase):
         self.verbose = verbose
         self.data_dict = {}
 
-    def __str__(self):
-        """String info on Notificationstable. TODO. Put more info her"""
-        return ('len %s' % len(self.data_dict))
-
-    def __repr__(self):
-        """Rep of lastscan data"""
-        return ('Notifications db_type %s db_dict %s' %
-                (self.db_type, self.data_dict))
-
     @classmethod
     def factory(cls, db_dict, db_type, verbose):
         """Factory method to select subclass based on database type.

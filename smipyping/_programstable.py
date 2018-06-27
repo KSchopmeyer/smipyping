@@ -44,19 +44,7 @@ class ProgramsTable(DBTableBase):
     table_name = 'Program'
 
     def __init__(self, db_dict, db_type, verbose):
-        self.db_dict = db_dict
-        self.db_type = db_type
-        self.verbose = verbose
-        self.data_dict = {}
-
-    def __str__(self):
-        """String info on Programstable. TODO. Put more info her"""
-        return ('len %s' % len(self.data_dict))
-
-    def __repr__(self):
-        """Rep of Programstable data"""
-        return ('Programs db_type %s db len %s' %
-                (self.db_type, len(self.data_dict)))
+        super(ProgramsTable, self).__init__(db_dict, db_type, verbose)
 
     @classmethod
     def factory(cls, db_dict, db_type, verbose):

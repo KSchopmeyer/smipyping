@@ -46,10 +46,7 @@ class UsersTable(DBTableBase):
     table_name = 'Users'
 
     def __init__(self, db_dict, db_type, verbose):
-        self.db_dict = db_dict
-        self.db_type = db_type
-        self.verbose = verbose
-        self.data_dict = {}
+        super(UsersTable, self).__init__(db_dict, db_type, verbose)
 
     def __str__(self):
         """String info on Userstable. TODO. Put more info her"""

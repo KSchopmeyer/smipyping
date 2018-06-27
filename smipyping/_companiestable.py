@@ -43,10 +43,7 @@ class CompaniesTable(DBTableBase):
     table_name = 'Companies'
 
     def __init__(self, db_dict, db_type, verbose):
-        self.db_dict = db_dict
-        self.db_type = db_type
-        self.verbose = verbose
-        self.data_dict = {}
+        super(CompaniesTable, self).__init__(db_dict, db_type, verbose)
 
     def __str__(self):
         """String info on Companiestable. TODO. Put more info her"""

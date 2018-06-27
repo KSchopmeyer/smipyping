@@ -25,6 +25,25 @@ class DBTableBase(object):
     """
         Common methods that apply to all of the db tables
     """
+
+    table_name = ""  # name of the table db table that defines the class
+
+    def __init__(self, db_dict, db_type, verbose):
+        """Constructor for PingTable"""
+        self.db_dict = db_dict
+        self.verbose = verbose
+        self.db_type = db_type
+        self.data_dict = {}
+
+    def __str__(self):
+        """String info on table. TODO. Put more info here"""
+        return ('% len %s' % (self.table_name, len(self.data_dict)))
+
+    def __repr__(self):
+        """Rep of table data info"""
+        return ('% db_type %s db len %s' %
+                (self.table_name, self.db_type, len(self.data_dict)))
+
     def __contains__(self, record_id):
         """Determine if record_id is in data dictionary."""
         return record_id in self.data_dict
