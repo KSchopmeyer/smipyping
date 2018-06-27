@@ -27,13 +27,13 @@ from __future__ import print_function, absolute_import
 
 import os
 import csv
-import six
 from mysql.connector import MySQLConnection
+from ._dbtablebase import DBTableBase
 
 __all__ = ['CompaniesTable']
 
 
-class CompaniesTable(object):
+class CompaniesTable(DBTableBase):
     """
     Abstract class for CompaniesTable
     This table contains a single entry, the last time a scan was executed.
@@ -43,10 +43,7 @@ class CompaniesTable(object):
     table_name = 'Companies'
 
     def __init__(self, db_dict, db_type, verbose):
-        self.db_dict = db_dict
-        self.db_type = db_type
-        self.verbose = verbose
-        self.data_dict = {}
+        super(CompaniesTable, self).__init__(db_dict, db_type, verbose)
 
     def __str__(self):
         """String info on Companiestable. TODO. Put more info her"""
@@ -79,38 +76,6 @@ class CompaniesTable(object):
             print('Companies table factory inst %r' % inst)
 
         return inst
-
-    def __contains__(self, record_id):
-        """Determine if record_id is in targets dictionary."""
-        return record_id in self.data_dict
-
-    def __iter__(self):
-        """iterator for targets."""
-        return six.iterkeys(self.data_dict)
-
-    def iteritems(self):
-        """
-        Iterate through the property names (in their original lexical case).
-
-        Returns key and value
-        """
-        for key, val in self.data_dict.iteritems():
-            yield (key, val)
-
-    def keys(self):
-        """get all of the target_ids as a list"""
-        return list(self.data_dict.keys())
-
-    def __getitem__(self, record_id):
-        """Return the record for the defined record_id from the targets."""
-        return self.data_dict[record_id]
-
-    def __delitem__(self, record_id):
-        del self.data_dict[record_id]
-
-    def __len__(self):
-        """Return number of targets"""
-        return len(self.data_dict)
 
 
 class CsvCompaniesTable(CompaniesTable):

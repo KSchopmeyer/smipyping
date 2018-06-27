@@ -44,12 +44,14 @@ from textwrap import wrap
 import six
 from mysql.connector import MySQLConnection
 from ._configfile import read_config
+from ._dbtablebase import DBTableBase
 
 __all__ = ['TargetsTable']
 
 
-class TargetsTable(object):
-    """Abstract top level class for the Target Base.
+class TargetsTable(DBTableBase):
+    """
+    Class representing the targets db table.
 
     This base contains information on the targets, host systems, etc. in the
     environment.
@@ -64,6 +66,26 @@ class TargetsTable(object):
               'CimomVersion', 'InteropNamespace', 'Notify', 'NotifyUsers',
               'ScanEnabled', 'Protocol', 'Port']
     table_name = 'Targets'
+
+    # # Defines each record for the data base and outputs.
+    # # The Name is the database name for the property
+    # # The value tuple is display name and max width for the record
+    # # TODO this should be class level.
+    table_format_dict = OrderedDict([
+        ('TargetID', ('ID', 2, int)),
+        ('CompanyName', ('Company', 12, str)),
+        ('Namespace', ('Namespace', 12, str)),
+        ('SMIVersion', ('SMIVersion', 12, str)),
+        ('Product', ('Product', 15, str)),
+        ('Principal', ('Principal', 12, str)),
+        ('Credential', ('Credential', 12, str)),
+        ('CimomVersion', ('Version', 15, str)),
+        ('IPAddress', ('IP', 12, str)),
+        ('InteropNamespace', ('Interop', 8, str)),
+        ('Protocol', ('Prot', 5, str)),
+        ('Port', ('Port', 4, int)),
+        ('ScanEnabled', ('Enabled', 6, str)),
+        ])  # noqa: E123
 
     def __init__(self, db_dict, db_type, verbose, output_format):
         """Initialize the abstract Targets instance.
@@ -90,31 +112,20 @@ class TargetsTable(object):
             provided, the default is a simple report format.
 
         """
-        self.targets_dict = {}
-        self.db_dict = db_dict
-        self.verbose = verbose
-        self.output_format = output_format
-        # # Defines each record for the data base and outputs.
-        # # The Name is the database name for the property
-        # # The value tuple is display name and max width for the record
-        # # TODO this should be class level.
-        self.table_format_dict = OrderedDict([
-            ('TargetID', ('ID', 2, int)),
-            ('CompanyName', ('Company', 12, str)),
-            ('Namespace', ('Namespace', 12, str)),
-            ('SMIVersion', ('SMIVersion', 12, str)),
-            ('Product', ('Product', 15, str)),
-            ('Principal', ('Principal', 12, str)),
-            ('Credential', ('Credential', 12, str)),
-            ('CimomVersion', ('Version', 15, str)),
-            ('IPAddress', ('IP', 12, str)),
-            ('InteropNamespace', ('Interop', 8, str)),
-            ('Protocol', ('Prot', 5, str)),
-            ('Port', ('Port', 4, int)),
-            ('ScanEnabled', ('Enabled', 6, str)),
-            ])  # noqa: E123
 
-        self.db_type = db_type
+        super(TargetsTable, self).__init__(db_dict, db_type, verbose)
+
+        self.output_format = output_format
+
+    def __str__(self):
+        """String info on targetdata. TODO. Put more info her"""
+        return ('type=%s db=%s, len=%s' % (self.db_type, self.db_xxx(),
+                                           len(self.data_dict)))
+
+    def __repr__(self):
+        """Rep of target data"""
+        return ('Targetdata db_type %s, rep count=%s' %
+                (self.db_type, len(self.data_dict)))
 
     def test_fieldnames(self, fields):
         """Test a list of field names"""
@@ -148,31 +159,21 @@ class TargetsTable(object):
 
         return inst
 
-    def __str__(self):
-        """String info on targetdata. TODO. Put more info her"""
-        return ('type=%s db=%s, len=%s' % (self.db_type, self.db_xxx(),
-                                           len(self.targets_dict)))
-
-    def __repr__(self):
-        """Rep of target data"""
-        return ('Targetdata db_type %s, rep count=%s' %
-                (self.db_type, len(self.targets_dict)))
-
     def get_field_list(self):
         """Return a list of the base table field names in the order defined."""
         return list(self.table_format_dict)
 
     def __contains__(self, record_id):
         """Determine if record_id is in targets dictionary."""
-        return record_id in self.targets_dict
+        return record_id in self.data_dict
 
     def __iter__(self):
         """iterator for targets."""
-        return six.iter(self.targets_dict)
+        return six.iter(self.data_dict)
 
     def __iterkeys__(self):
         """iterator for targets."""
-        return six.iterkeys(self.targets_dict)
+        return six.iterkeys(self.data_dict)
 
     def iteritems(self):
         """
@@ -180,12 +181,12 @@ class TargetsTable(object):
 
         Returns key and value
         """
-        for key, val in self.targets_dict.iteritems():
+        for key, val in self.data_dict.iteritems():
             yield (key, val)
 
     def keys(self):
         """get all of the target_ids as a list"""
-        return list(self.targets_dict.keys())
+        return list(self.data_dict.keys())
 
     def __getitem__(self, record_id):
         """Return the record for the defined record_id from the targets.
@@ -201,15 +202,15 @@ class TargetsTable(object):
           Exceptions:
             KeyError if record_id not it table
         """
-        return self.targets_dict[record_id]
+        return self.data_dict[record_id]
 
     def __delitem__(self, record_id):
         """Delete the record_id in the table"""
-        del self.targets_dict[record_id]
+        del self.data_dict[record_id]
 
     def __len__(self):
         """Return number of targets"""
-        return len(self.targets_dict)
+        return len(self.data_dict)
 
     def get_format_dict(self, name):
         """Return tuple of display name and length for name."""
@@ -217,12 +218,12 @@ class TargetsTable(object):
 
     def get_enabled_targetids(self):
         """Get list of target ids that are marked enabled."""
-        return [x for x in self.targets_dict
+        return [x for x in self.data_dict
                 if not self.disabled_target_id(x)]
 
     def get_disabled_targetids(self):
         """Get list of target ids that are marked disabled"""
-        return [x for x in self.targets_dict
+        return [x for x in self.data_dict
                 if self.disabled_target_id(x)]
 
     # TODO we have multiple of these. See get dict_for_host,get_hostid_list
@@ -242,7 +243,7 @@ class TargetsTable(object):
         """
         # TODO clean up for PY 3
         return_list = []
-        for key, value in self.targets_dict.iteritems():
+        for key, value in self.data_dict.iteritems():
             ip_address = value["IPAddress"]
             port = value["Port"]
             # TODO port from database is a string. Should be int internal.
@@ -267,7 +268,7 @@ class TargetsTable(object):
         if not isinstance(target_id, six.integer_types):
             target_id = int(target_id)
 
-        return self.targets_dict[target_id]
+        return self.data_dict[target_id]
 
     def get_target_for_host(self, target_addr):
         """
@@ -281,7 +282,7 @@ class TargetsTable(object):
         If not found. Does not work completely because of multiple IPs
         """
         targets = []
-        for target_id, value in self.targets_dict.iteritems():
+        for target_id, value in self.data_dict.iteritems():
             if value['IPAddress'] == target_addr:
                 targets.append(target_id)
         return targets
@@ -295,7 +296,7 @@ class TargetsTable(object):
         """
         # TODO: ks fix this code. It is broken
         rtn = OrderedDict()
-        for key, value in self.targets_dict.items():
+        for key, value in self.data_dict.items():
             if ip_filter and re.match(ip_filter, value['IPAddress']):
                 rtn[key] = value
             if company_name_filter and \
@@ -314,7 +315,7 @@ class TargetsTable(object):
         output_list = []
         # TODO clean up for python 3
 
-        for _id, value in self.targets_dict.items():
+        for _id, value in self.data_dict.items():
             if self.verbose:
                 print('get_hostid_list value %s' % (value,))
             output_list.append(value['IPAddress'])
@@ -384,7 +385,7 @@ class TargetsTable(object):
         Exceptions:
             KeyError if target_id not in database
         """
-        return(self.disabled_target(self.targets_dict[target_id]))
+        return(self.disabled_target(self.data_dict[target_id]))
 
     def get_output_width(self, col_list):
         """
@@ -517,15 +518,15 @@ class MySQLTargetsTable(SQLTargetsTable):
                 targets_dict[key] = row
 
             # save the combined table for the other functions.
-            self.targets_dict = targets_dict
+            self.data_dict = targets_dict
         except Exception as ex:
             raise ValueError('Error: setup sql based targets table %r. '
                              'Exception: %r'
                              % (db_dict, ex))
         try:
             # set the companyname into the targets table
-            for target_key in self.targets_dict:
-                target = self.targets_dict[target_key]
+            for target_key in self.data_dict:
+                target = self.data_dict[target_key]
                 target['CompanyName'] = companies[target['CompanyID']]
 
         except Exception as ex:
@@ -579,7 +580,7 @@ class CsvTargetsTable(TargetsTable):
                 else:
                     result[key] = row
 
-        self.targets_dict = result
+        self.data_dict = result
 
     # TODO consolidate this to use predefined type.
     # TODO this is completely broken because filename applies to the
@@ -612,5 +613,5 @@ class CsvTargetsTable(TargetsTable):
         with open(file_name, 'wb') as f:
             writer = csv.DictWriter(f, fieldnames=self.get_field_list())
             writer.writeheader()
-            for key, value in sorted(self.targets_dict.iteritems()):
+            for key, value in sorted(self.data_dict.iteritems()):
                 writer.writerow(value)
