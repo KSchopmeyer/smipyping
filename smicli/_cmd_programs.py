@@ -19,7 +19,9 @@ targets to find WBEM servers.
 from __future__ import print_function, absolute_import
 
 import click
+from datetime import timedelta
 from click_datetime import Datetime
+from dateutil.relativedelta import relativedelta
 import six
 
 from smipyping import ProgramsTable
@@ -48,16 +50,20 @@ def programs_group():
 @programs_group.command('new', options_metavar=CMD_OPTS_TXT)
 @click.option('-s', '--startdate', type=Datetime(format='%d/%m/%y'),
               default=None,
-              required=True,
-              help='Start date for program. Format is dd/mm/yy'
-                   ' where dd and mm are zero padded (ex. 01) and year is'
-                   ' without century (ex. 17)')
+              required=False,
+              help='Start date for program. Format is dd/mm/yy '
+                   'where dd and mm are zero padded (ex. 01) and year is '
+                   'without century (ex. 17). This option is optional and if '
+                   'not supplied the day after the end of the latest program '
+                   'will be selected.')
 @click.option('-e', '--enddate', type=Datetime(format='%d/%m/%y'),
               default=None,
-              required=True,
-              help='End date for program. Format is dd/mm/yy'
-                   ' where dd and mm are zero padded (ex. 01) and year is'
-                   ' without century (ex. 17)')
+              required=False,
+              help='End date for program. Format is dd/mm/yy '
+                   'where dd and mm are zero padded (ex. 01) and year is '
+                   'without century (ex. 17). This field is optional and if '
+                   'not defined on the command line 12 montsh - 1 day after '
+                   'the start date will be used as the end date.')
 @click.option('-p', '--programname', type=str,
               default=None,
               required=True,
@@ -85,14 +91,15 @@ def programs_list(context):  # pylint: disable=redefined-builtin
 @click.option('-n', '--no-verify', is_flag=True,
               help='Do not verify the deletion before deleting the program.')
 @click.pass_obj
-def programs_delete(context, id, options):  # pylint: disable=redefined-builtin
+def programs_delete(context, id, **options):
+    # pylint: disable=redefined-builtin
     """
     Delete a program from the database.
 
     Delete the program defined by the subcommand argument from the
     database.
     """
-    context.execute_cmd(lambda: cmd_programs_delete(context))
+    context.execute_cmd(lambda: cmd_programs_delete(context, id, options))
 
 
 @programs_group.command('current', options_metavar=CMD_OPTS_TXT)
@@ -147,31 +154,52 @@ def cmd_programs_list(context):
 
 def cmd_programs_new(context, options):
     """
-    Create a new program in the Programs table
+    Create a new program in the Programs table. The start date and end date
+    are both optional. If not supplied, the startdate is set as the next
+    day after the end of the previous program and the end date as 12 months
+    minus one day after that
     """
-    start_date = options['startdate']
-    end_date = options['enddate']
-    program_name = options['programname']
-
     programs_tbl = ProgramsTable.factory(context.db_info, context.db_type,
                                          context.verbose)
+    if options['startdate']:
+        start_date = options['startdate']
+    else:
+        datetimes = [programs_tbl[pgm]['StartDate'] for pgm in programs_tbl]
+        start_date = max(datetimes)
+        start_date = start_date + relativedelta(months=12)
 
-    click.echo('Adding program %s starts %s, ends %s' %
+    if options['enddate']:
+        end_date = options['enddate']
+    else:
+        end_date = start_date + relativedelta(months=12) - timedelta(days=1)
+
+    program_name = options['programname']
+
+    context.spinner.stop()
+    click.echo('Adding program "%s", starts "%s", ends "%s"' %
                (program_name, start_date, end_date))
 
-    if validate_prompt('Validate add this program?'):
-        programs_tbl.insert(program_name, start_date, end_date)
+    if validate_prompt('Validate adding this program?'):
+        try:
+            programs_tbl.insert(program_name, start_date, end_date)
+        except Exception as ex:
+            click.ClickException('Insert of program=%s, start=%s, '
+                                 'end=%s into database failed. Exception %s' %
+                                 (program_name, start_date, end_date, ex))
+    else:
+        click.echo('Operation aborted by user')
+        return
 
 
 def cmd_programs_delete(context, id, options):
-    """Delete a user from the database."""
+    """Delete a user from the programs database."""
 
     programs_tbl = ProgramsTable.factory(context.db_info, context.db_type,
                                          context.verbose)
     program_id = id
 
     if program_id in programs_tbl:
-        if options['no_verify']:
+        if 'no_verify' in options:
             programs_tbl.delete(program_id)
         else:
             program = programs_tbl[program_id]
@@ -180,7 +208,7 @@ def cmd_programs_delete(context, id, options):
             if validate_prompt('Delete program id %s' % program_id):
                 programs_tbl.delete(program_id)
             else:
-                click.echo('Abort Operation')
+                click.echo('Operation aborted by user')
                 return
 
     else:
