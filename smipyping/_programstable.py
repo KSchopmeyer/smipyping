@@ -260,16 +260,17 @@ class MySQLProgramsTable(ProgramsTable):
                              'Exception: %r'
                              % (self.db_dict, ex))
 
-    def insert(self, start_date, end_date, program_name):
+    def insert(self, program_name, start_date, end_date):
         """
-        Write a new record to the programs table of the database
+        Write a new record to the programs table of the database at the
+        end of the database.
 
         Exceptions: TODO
 
         """
         cursor = self.connection.cursor()
 
-        sql = ("INSERT INTO Programs "
+        sql = ("INSERT INTO Program "
                "(ProgramName, StartDate, EndDate) "
                "VALUES (%s, %s, %s)")
         data = (program_name, start_date, end_date)
@@ -291,7 +292,7 @@ class MySQLProgramsTable(ProgramsTable):
         """
         cursor = self.connection.cursor()
 
-        sql = "DELETE FROM Programs WHERE ProgramID=%s"
+        sql = "DELETE FROM Program WHERE ProgramID=%s"
         try:
             # TODO what is return on execute??
             # pylint: disable=unused-variable

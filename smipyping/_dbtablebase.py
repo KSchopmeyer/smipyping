@@ -41,7 +41,7 @@ class DBTableBase(object):
 
     def __repr__(self):
         """Rep of table data info"""
-        return ('% db_type %s db len %s' %
+        return ('%s db_type %s db len %s' %
                 (self.table_name, self.db_type, len(self.data_dict)))
 
     def __contains__(self, record_id):
