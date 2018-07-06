@@ -62,7 +62,7 @@ def companies_new(context, **options):  # pylint: disable=redefined-builtin
 
 @companies_group.command('delete', options_metavar=CMD_OPTS_TXT)
 @click.argument('ID', type=int, metavar='UserID', required=True, nargs=1)
-@click.option('-v', '--verify', is_flag=True, default=False,
+@click.option('-n', '--no-verify', is_flag=True, default=False,
               help='Verify the deletion before deleting the user.')
 @click.pass_obj
 def companies_delete(context, id, **options):
@@ -113,10 +113,9 @@ def cmd_companies_list(context):
                                            context.verbose)
 
     headers = CompaniesTable.fields
-    tbl_rows = build_table_struct(headers, companies_tbl)
+    tbl_rows = build_table_struct(headers, companies_tbl, sort=True)
 
     context.spinner.stop()
-
     print_table(tbl_rows, headers, title=('Companies Table'),
                 table_format=context.output_format)
 
@@ -129,30 +128,43 @@ def cmd_companies_delete(context, id, options):
     company_id = id
 
     if company_id not in companies_tbl:
-        raise click.ClickException('The CompanyID %s is not in the table' %
-                                   company_id)
+        raise click.ClickException('The CompanyID %s is not in the companies '
+                                   'table' % company_id)
 
     # Validate not a companyID in targets table
     targets_tbl = TargetsTable.factory(context.db_info, context.db_type,
                                        context.verbose)
+
+    # TODO this should all move to smipyping processing, not in cli
     for target in targets_tbl:
-        if target.companyID == company_id:
-            raise click.ClickException('The CompanyID %s is used in the '
-                                       'targets table %s' % target)
-    if options['verify']:
+        if targets_tbl[target]['CompanyID'] == company_id:
+            raise click.ClickException(
+                'The CompanyID %s is used in the targets table %s' %
+                (company_id, targets_tbl[target]))
+
+    # validate not in users table
+    users_tbl = UsersTable.factory(context.db_info, context.db_type,
+                                   context.verbose)
+    for user in users_tbl:
+        if users_tbl[user]['CompanyID'] == company_id:
+            raise click.ClickException(
+                'The CompanyID %s is used in the users table %s' %
+                (company_id, users_tbl[target]))
+
+    if 'no_verify' in options:
+        companies_tbl.delete(company_id)
+    else:
         company = companies_tbl[company_id]
-        click.echo(company)
         context.spinner.stop()
-        if validate_prompt():
+        click.echo(company)
+        if validate_prompt('Delete company id %s' % company_id):
             companies_tbl.delete(company_id)
         else:
-            click.echo('Aborted Operation')
+            click.echo('Operation aborted by user')
             return
-    else:
-        companies_tbl.delete(company_id)
 
 
-def cmd_users_modify(context, id, options):
+def cmd_company_modify(context, id, options):
     """Modify the company name from the database."""
 
     companies_tbl = CompaniesTable.factory(context.db_info, context.db_type,
@@ -187,27 +199,22 @@ def verify_operation(context, action, modification, record):
 
 def cmd_companies_new(context, options):
     """
-    Add a new user to the table.
+    Add a new company to the table.
     """
-    first_name = options['firstname']
-    last_name = options['lastname']
-    email = options['email']
-    company_id = options['companyid']
-
     companies_tbl = CompaniesTable.factory(context.db_info, context.db_type,
                                            context.verbose)
 
-    users_tbl = UsersTable.factory(context.db_info, context.db_type,
-                                   context.verbose)
+    company_name = options['companyname']
+    context.spinner.stop()
+    click.echo('Adding company "%s""' % company_name)
 
-    active = not options['inactive']
-    notify = not options['disable']
-
-    # TODO sept 2017 expand to include active and notify
-    if company_id in companies_tbl:
-        users_tbl.insert(first_name, last_name, email, company_id,
-                         active=active,
-                         notify=notify)
+    if validate_prompt('Validate adding this company?'):
+        try:
+            companies_tbl.append(company_name)
+        except Exception as ex:
+            click.ClickException('Append of company=%s, '
+                                 'into database failed. Exception %s' %
+                                 (company_name, ex))
     else:
-        raise click.ClickException('The companyID %s is not a valid companyID '
-                                   'in companies table' % company_id)
+        click.echo('Operation aborted by user')
+        return

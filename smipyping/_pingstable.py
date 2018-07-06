@@ -78,6 +78,7 @@ class PingsTable(DBTableBase):
 
         return inst
 
+
 class CsvPingsTable(PingsTable):
     """
         Ping Table functions for csv based table

@@ -220,23 +220,8 @@ class MySQLProgramsTable(ProgramsTable):
             raise ValueError('Could not connect to sql database %r. '
                              ' Exception: %r'
                              % (db_dict, ex))
-        try:
-            # python-mysql-connector-dictcursor  # noqa: E501
-            cursor = connection.cursor(dictionary=True)
 
-            # fetchall returns tuple so need index to fields, not names
-            fields = ', '.join(self.fields)
-            select_statement = 'SELECT %s FROM %s' % (fields, self.table_name)
-            cursor.execute(select_statement)
-            rows = cursor.fetchall()
-            for row in rows:
-                key = row[self.key_field]
-                self.data_dict[key] = row
-
-        except Exception as ex:
-            raise ValueError('Error: setup sql based targets table %r. '
-                             'Exception: %r'
-                             % (db_dict, ex))
+        self._load()
 
     def _load(self):
         """
@@ -279,7 +264,7 @@ class MySQLProgramsTable(ProgramsTable):
             cursor.execute(sql, data)
             self.connection.commit()
         except Exception as ex:
-            print('programs table.append failed: exception %r' % ex)
+            print('Programs table.append failed: exception %r' % ex)
             self.connection.rollback()
             raise ex
         finally:

@@ -41,6 +41,8 @@ class ClickContext(object):
         self._db_info = db_info
         self._verbose = verbose
         self._log = log
+        # TODO fix log level
+        self._log_level = None
         self._log_file = log_file
         self._log_components = log_components
         self._target_data = target_data
