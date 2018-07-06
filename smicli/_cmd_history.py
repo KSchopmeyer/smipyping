@@ -212,28 +212,26 @@ def history_weekly(context, **options):  # pylint: disable=redefined-builtin
 @click.option('-s', '--startdate', type=Datetime(format='%d/%m/%y'),
               default=None,
               required=False,
-              help='Start date for ping records included. Format is dd/mm/yy'
-                   ' where dd and mm are zero padded (ex. 01) and year is'
-                   ' without century (ex. 17). Default is oldest record')
+              help='Start date for ping records included. Format is dd/mm/yy '
+                   'where dd and mm are zero padded (ex. 01) and year is '
+                   'without century (ex. 17). Default is oldest record')
 @click.option('-e', '--enddate', type=Datetime(format='%d/%m/%y'),
               default=None,
               required=False,
-              help='End date for ping records included. Format is dd/mm/yy'
-                   ' where dd and dm are zero padded (ex. 01) and year is'
-                   ' without century (ex. 17). Default is current datetime')
+              help='End date for ping records included. Format is dd/mm/yy '
+                   'where dd and dm are zero padded (ex. 01) and year is '
+                   'without century (ex. 17). Default  if neither `enddate` or '
+                   '`numberofdays` are defined is current datetime')
 # TODO make this test for positive int
 @click.option('-n', '--numberofdays', type=int,
               required=False,
               help='Alternative to enddate. Number of days to report from'
                    ' startdate. "enddate" ignored if "numberofdays" set')
-@click.option('-t', '--targetId', type=int,
-              required=False,
-              help='Get results only for the defined targetID')
-@click.option('-r', 'result', type=click.Choice(['full', 'status', '%ok']),
+@click.option('-r', '--result', type=click.Choice(['full', 'status', '%ok']),
               default='status',
               help='Display. "full" displays all records, "status" displays '
-                   'status summary by id. Default=status. "%ok" reports '
-                   'percentage pings OK by Id and total count.')
+                   'status summary by id. "%ok" reports percentage '
+                   'pings OK by Id and total count. Default="status". ')
 @click.option('-S' '--summary', is_flag=True, required=False, default=False,
               help='If set only a summary is generated.')
 @click.pass_obj
@@ -242,7 +240,12 @@ def history_timeline(context, ids, **options):
     """
     Show history of status changes for IDs.
 
-    Show a timeline of the history of status changes for the IDs listed.
+    Generates a report for the defined target IDs and the time period
+    defined by the options of the historical status of the defined
+    target ID. The --result option defines the report generated with
+    options for 1) "full" full list of history records 2) summary
+    status by target ID, or 3) "%OK" percentage of records that
+    report OK and total records for the period by target ID.
 
     """
     context.execute_cmd(lambda: cmd_history_timeline(context, ids, options))
@@ -319,13 +322,14 @@ def cmd_history_weekly(context, options):
             product = ''
             smi_version = ''
             emails = ''
+
         if target_id in percentok_today:
-            today_percent = percentok_today[target_id][0]
+            today_percent = "%s" % percentok_today[target_id][0]
         else:
             today_percent = 0
 
         if target_id in percentok_week:
-            week_percent = percentok_week[target_id][0]
+            week_percent = "%s" % percentok_week[target_id][0]
         else:
             week_percent = 0
 
