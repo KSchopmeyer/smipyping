@@ -163,55 +163,6 @@ class TargetsTable(DBTableBase):
         """Return a list of the base table field names in the order defined."""
         return list(self.table_format_dict)
 
-    def __contains__(self, record_id):
-        """Determine if record_id is in targets dictionary."""
-        return record_id in self.data_dict
-
-    def __iter__(self):
-        """iterator for targets."""
-        return six.iter(self.data_dict)
-
-    def __iterkeys__(self):
-        """iterator for targets."""
-        return six.iterkeys(self.data_dict)
-
-    def iteritems(self):
-        """
-        Iterate through the property names (in their original lexical case).
-
-        Returns key and value
-        """
-        for key, val in self.data_dict.iteritems():
-            yield (key, val)
-
-    def keys(self):
-        """get all of the target_ids as a list"""
-        return list(self.data_dict.keys())
-
-    def __getitem__(self, record_id):
-        """Return the record for the defined record_id from the targets.
-
-          Parameters:
-
-            record_id(:term:`integer)
-                Valid key in targets dictionary
-
-          Returns:
-            target record corresponding to the id
-
-          Exceptions:
-            KeyError if record_id not it table
-        """
-        return self.data_dict[record_id]
-
-    def __delitem__(self, record_id):
-        """Delete the record_id in the table"""
-        del self.data_dict[record_id]
-
-    def __len__(self):
-        """Return number of targets"""
-        return len(self.data_dict)
-
     def get_format_dict(self, name):
         """Return tuple of display name and length for name."""
         return self.table_format_dict[name]

@@ -183,14 +183,21 @@ class MySQLCompaniesTable(CompaniesTable):
             raise ValueError('Could not connect to sql database %r. '
                              ' Exception: %r'
                              % (db_dict, ex))
+
+        self._load()
+
+    def _load(self):
+        """
+        Load the internal dictionary from the database.
+        """
         try:
             # python-mysql-connector-dictcursor  # noqa: E501
-            cursor = connection.cursor(dictionary=True)
+            cursor = self.connection.cursor(dictionary=True)
 
             # fetchall returns tuple so need index to fields, not names
             fields = ', '.join(self.fields)
-            select_statement = 'SELECT %s FROM %s' % (fields, self.table_name)
-            cursor.execute(select_statement)
+            sql = 'SELECT %s FROM %s' % (fields, self.table_name)
+            cursor.execute(sql)
             rows = cursor.fetchall()
             for row in rows:
                 key = row[self.key_field]
@@ -199,4 +206,56 @@ class MySQLCompaniesTable(CompaniesTable):
         except Exception as ex:
             raise ValueError('Error: setup sql based targets table %r. '
                              'Exception: %r'
-                             % (db_dict, ex))
+                             % (self.db_dict, ex))
+
+    def append(self, company_name):
+        """
+        Write a new record to the programs table of the database at the
+        end of the database.
+
+        Exceptions: Exception TODO clarify valid exceptions.
+
+        """
+        cursor = self.connection.cursor()
+
+        # TODO insert new company fails  and inserts %s rather than name
+        #      This is an issue only with single value table. Removing the
+        #      quotes resutls in failure with SQL syntax programming error
+        #      1064
+        sql = ("INSERT INTO Companies "
+               "(CompanyName) "
+               "VALUES ('%s')")
+        data = (company_name)
+
+        try:
+            cursor.execute(sql, data)
+            self.connection.commit()
+        except Exception as ex:
+            print('Companies table.append failed: exception %r' % ex)
+            self.connection.rollback()
+            raise ex
+        finally:
+            self._load()
+            self.connection.close()
+
+    def delete(self, company_id):
+        """
+        Delete the record defined by user_id
+        """
+        cursor = self.connection.cursor()
+
+        # TODO: For all deletes, we need to manage table integrity
+
+        sql = "DELETE FROM Companies WHERE CompanyID=%s"
+        try:
+            # TODO what is return on execute??
+            # pylint: disable=unused-variable
+            mydata = cursor.execute(sql, (company_id,))  # noqa F841
+            self.connection.commit()
+        except Exception as ex:
+            print('Companies table.delete failed: exception %r' % ex)
+            self.connection.rollback()
+            raise ex
+        finally:
+            self._load()
+            self.connection.close()
