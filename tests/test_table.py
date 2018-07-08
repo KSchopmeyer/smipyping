@@ -118,7 +118,7 @@ class AsciiTableTests(TableTests):
         """Test print a simple table no header"""
 
         captured_output = StringIO()          # Create StringIO object
-        sys.stdout = captured_output                   # and redirect stdout.
+        sys.stdout = captured_output          # and redirect stdout.
         table = self.create_simple_table(table_format='simple', title=False)
         table.print_table()
         sys.stdout = sys.__stdout__  # pylint: disable=redefined-variable-type
@@ -332,19 +332,52 @@ class HtmlTableTests(TableTests):
         """Test a simple table with header"""
 
         captured_output = StringIO()          # Create StringIO object
-        sys.stdout = captured_output                   # and redirect stdout.
+        sys.stdout = captured_output          # and redirect stdout.
 
         table = self.create_folded_table(table_format='html', title=True)
         table.print_table()
 
         sys.stdout = sys.__stdout__  # pylint: disable=redefined-variable-type
         print('Captured\n%s' % captured_output.getvalue())
+        search_result = re.search(r'  <TD>this is a\nfolded\ncell</TD>',
+                                  captured_output.getvalue())
+        self.assertIsNotNone(search_result, 'Expected match')
+
+    def test_integers_table(self):
+        """
+        """
+        captured_output = StringIO()          # Create StringIO object
+        sys.stdout = captured_output          # and redirect stdout.
+        headers = ['col1', 'col2', 'col3']
+        rows = [['row1col1', 'row1col2', 'row1col3'],
+                [1, 2, 3],
+                [0, 1, 2]]
+        title = 'test_HTML_integers_table'
+
+        table = TableFormatter(rows, headers, title=title,
+                               table_format='html')
+        table.print_table()
+        sys.stdout = sys.__stdout__  # pylint: disable=redefined-variable-type
+        # print('Captured\n%s' % captured_output.getvalue())
+
+        match_result = re.search(r'<TH>col1</TH>',
+                                 captured_output.getvalue())
+        self.assertIsNotNone(match_result, 'Expected match %s to %s' %
+                             ('<TH>col3</TH>',
+                              captured_output.getvalue()))
+
+        search_result = re.search(r'<TD>row1col1</TD>',
+                                  captured_output.getvalue())
+        self.assertIsNotNone(search_result, 'Expected match')
+        search_result = re.search(r'<TD>0</TD>',
+                                  captured_output.getvalue())
+        self.assertIsNotNone(search_result, 'Expected match')
 
     def test_complex_table(self):
         """Test a simple table with header"""
 
         captured_output = StringIO()          # Create StringIO object
-        sys.stdout = captured_output                   # and redirect stdout.
+        sys.stdout = captured_output          # and redirect stdout.
         headers = ['col1', 'col2', 'col3']
         rows = [['row1col1', 'row1col2', 'row1col3'],
                 ['row2col1', 'row2col2', 'row2col3'],

@@ -271,7 +271,8 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
     results = simple_ping_list.ping_servers()
 
     # if saveresult set, update pings table with results.
-    if options['saveresult']:
+    save_result = options['saveresult']
+    if save_result:
         tbl_inst = PingsTable.factory(context.db_info, context.db_type,
                                       context.verbose)
         # if option set, append status to pings table
@@ -282,7 +283,7 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
             tbl_inst.append(result[0], result[1], timestamp)
 
     # print results of the scan.
-    headers = ['Id', 'Addr', 'Result', 'Exception', 'Time', 'company']
+    headers = ['Id', 'Addr', 'Result', 'Exception', 'Time', 'Company']
     rows = []
     for result in results:
         target_id = result[0]
@@ -305,8 +306,10 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
 
     context.spinner.stop()
 
-    disabled_flag = ': Includes Disabled' if include_disabled else ''
-    print_table(rows, headers, title='CIMPing Results%s:' % disabled_flag,
+    disabled_state = ': Includes Disabled' if include_disabled else ''
+    save_result_state = ': SaveResult' if save_result else ''
+    title = 'CIMPing Results%s%s:' % (disabled_state, save_result_state)
+    print_table(rows, headers, title=title,
                 table_format=context.output_format)
 
 

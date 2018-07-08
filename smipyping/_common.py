@@ -69,7 +69,6 @@ def get_list_index(str_list, selection):
         ValueError if the selection cannot be found in the list
 
     """
-    print('lstr_list %s' % str_list)
     l1 = [li.replace('\n', '').lower() for li in str_list]
     # l2 = [hi.lower() for hi in l1]
     # ValueError if match fails

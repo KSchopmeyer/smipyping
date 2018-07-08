@@ -264,11 +264,14 @@ class TableCell(object):  # pylint: disable=too-few-public-methods
             self.attribs['style'] = self.style
         for attr in self.attribs:
             attribs_str += ' %s="%s"' % (attr, self.attribs[attr])
-        if self.text:
+        if isinstance(self.text, six.integer_types):
             text = str(self.text)
         else:
-            # An empty cell should at least contain a non-breaking space
-            text = '&nbsp;'
+            if self.text:
+                text = str(self.text)
+            else:
+                # An empty cell should at least contain a non-breaking space
+                text = '&nbsp;'
         if self.header:
             return '  <TH%s>%s</TH>\n' % (attribs_str, text)
 

@@ -242,7 +242,6 @@ class MySQLPingsTable(SQLPingsTable):
         query = "SELECT COUNT(*) from Pings"
         cursor.execute(query)
         res = cursor.fetchone()
-        print('record_count %s' % res)
         return res[0]
 
     def close_connection(self):

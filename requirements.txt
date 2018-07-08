@@ -31,3 +31,4 @@ six>=1.10.0 # MIT
 sqlalchemy>=1.1.13
 tabulate>=0.7.7 # MIT
 wcwidth>=0.1.7 # MIT, from prompt_toolkit
+python-dateutil>=2.6.1
