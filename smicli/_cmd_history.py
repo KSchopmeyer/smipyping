@@ -279,6 +279,9 @@ def cmd_history_weekly(context, options):
     except ValueError as ve:
         raise click.ClickException('Error; no program defined %s ' % ve)
 
+    # set start date time to just after midnight for today
+    report_date = report_date.replace(minute=0, hour=0, second=0)
+
     percentok_today = pings_tbl.get_percentok_by_id(report_date)
 
     week_start = report_date - datetime.timedelta(days=report_date.weekday())

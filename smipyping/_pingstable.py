@@ -242,7 +242,6 @@ class MySQLPingsTable(SQLPingsTable):
         query = "SELECT COUNT(*) from Pings"
         cursor.execute(query)
         res = cursor.fetchone()
-        # TODO remove print('record_count %s' % res)
         return res[0]
 
     def close_connection(self):
@@ -318,13 +317,10 @@ class MySQLPingsTable(SQLPingsTable):
         Exceptions:
             ValueError if input parameters incorrect.
         """
-        # print('SELECT BY TARGET DATES start %s, end %s' % (start_date, end_date))
         start_date, end_date = self.compute_dates(
             start_date,
             end_date=end_date,
             number_of_days=number_of_days)
-        # print('SELECT2 BY TARGET DATES start %s, end %s' % (start_date, end_date))
-
 
         cursor = self.connection.cursor()
         try:
@@ -393,8 +389,6 @@ class MySQLPingsTable(SQLPingsTable):
             end_date=end_date,
             number_of_days=number_of_days,
             target_id=target_id)
-
-        # TODO remove print('STATUS_DICT %s' % status_dict)
 
         # create dictionary by target_id with value of [oks, total]
         percent_dict = {}
