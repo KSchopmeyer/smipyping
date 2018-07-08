@@ -59,11 +59,12 @@ DEFAULT_OUTPUT_FORMAT = 'simple'
 
 
 def local_prompt(txt):
-    """ Single function for prompt. Aids mock tests.
-    Issues prompt and returns.
+    """ Single function for prompt. This only exists to allow testing the
+    validate prompt code since this is mocked as part of the tests.
+    Issues promplt_toolkit prompt and returns with reponse.
     """
     assert isinstance(txt, six.text_type)
-    # TODO WHAT IS THIS FOR print('prompt output %s' % txt)
+
     return prompt_toolkit.prompt(txt)
 
 
@@ -72,7 +73,7 @@ def validate_prompt(text=""):
     Issue prompt and get y/n response. Input parameter text is prepended to
     the prompt output.
     """
-    rslt = prompt_toolkit.prompt(unicode('%s valid (y/n): ' % text))
+    rslt = local_prompt(unicode('%s valid (y/n): ' % text))
     return True if rslt == 'y' else False
 
 
@@ -99,25 +100,24 @@ def pick_from_list(context, options, title):
     curses for the selection process.
     """
     context.spinner.stop()
-    print(title)
+
+    click.echo(title)
     index = -1
     for str_ in options:
         index += 1
-        print(u'%s: %s' % (index, str_))
-    selection_txt = None
+        click.echo('%s: %s' % (index, str_))
+    selection = None
+    msg = 'Input integer between 0 and %s or Ctrl-C to exit selection: ' % index
     while True:
         try:
-            selection_txt = prompt_toolkit.prompt(
-                u'Select an entry by index or Ctrl-C to exit >')
-            selection = int(selection_txt)
+            selection = int(local_prompt(msg))
             if selection >= 0 and selection <= index:
                 return selection
         except ValueError:
             pass
         except KeyboardInterrupt:
-            return None
-        print('%s Invalid. Input integer between 0 and %s or Ctrl-C to '
-              'exit.' % (selection_txt, index))
+            raise ValueError
+        click.echo('%s Invalid. %s' % (selection, msg))
     context.spinner.start()
 
 

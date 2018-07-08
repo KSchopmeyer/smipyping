@@ -325,6 +325,7 @@ class AsciiTableTests(TableTests):
         self.assertEqual(actual, expected,
                          'Actual:\n%s\nExpected:\n%s\n' % (actual, expected))
 
+
 class HtmlTableTests(TableTests):
     """Tests on the asciitable module"""
     def test_folded_table(self):
@@ -371,7 +372,6 @@ class HtmlTableTests(TableTests):
         search_result = re.search(r'<TD>0</TD>',
                                   captured_output.getvalue())
         self.assertIsNotNone(search_result, 'Expected match')
-
 
     def test_complex_table(self):
         """Test a simple table with header"""

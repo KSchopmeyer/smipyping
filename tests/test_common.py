@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # (C) Copyright 2017 Inova Development Inc.
 # All Rights Reserved
 #
@@ -118,7 +116,8 @@ class TestPickFromList(object):
     def test_valid_pick(self):
         """Execute valid pick from a list"""
         list_ = ["aaa", "bbb", "ccc"]
-        prompt_txt = 'pick me'
+        prompt_txt = 'Input integer between 0 and 2 or Ctrl-C to exit ' \
+                     'selection: '
         with patch('smicli._click_common.local_prompt', return_value='1') as \
                 local_prompt:
             ctx = ClickContext(None, None, None, None, None, None, None,
@@ -147,7 +146,7 @@ class TestPickFromMultiplesList(object):
         with patch('smicli._click_common.local_prompt', return_value='1 2') as \
                 local_prompt:
             ctx = ClickContext(None, None, None, None, None, None, None,
-                               None, None)
+                               None, None, None)
             assert pick_multiple_from_list(ctx, list_, prompt_txt) == [1, 2]
             local_prompt.assert_called_once_with(prompt_txt)
 

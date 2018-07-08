@@ -31,9 +31,8 @@ import six
 import click
 from click_datetime import Datetime
 
-from smipyping import CompaniesTable, TargetsTable, UsersTable, \
+from smipyping import TargetsTable, UsersTable, \
     NotificationsTable
-from smipyping._common import build_table_struct
 from .smicli import cli, CMD_OPTS_TXT
 from ._click_common import print_table
 
@@ -107,8 +106,6 @@ def cmd_notifications_list(context, options):
 
     headers = ['Target\nID', 'IP', 'Company', 'User', 'Time', 'Message']
 
-    report_order = options['order']
-
     target_ids = options['targetids']
     user_id = options['userId']
     targets_tbl = TargetsTable.factory(context.db_info, context.db_type,
@@ -153,7 +150,7 @@ def cmd_notifications_list(context, options):
                'Company',
                'user',
                notification['NotifyTime'],
-              notification['Message']]
+               notification['Message']]
         tbl_rows.append(row)
 
     context.spinner.stop()
