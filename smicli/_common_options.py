@@ -55,3 +55,8 @@ namespace_option = [                     # pylint: disable=invalid-name
                  required=False, metavar='<name>',
                  help='Namespace to use for this operation. If not defined '
                       'all namespaces are used')]
+
+no_verify_option = [              # pylint: disable=invalid-name
+    click.option('-N', '--no_verify', default=False, is_flag=True,
+                 help='Disable verification prompt before the change is '
+                      'executed.')]

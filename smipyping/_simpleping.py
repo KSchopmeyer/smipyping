@@ -73,7 +73,7 @@ class SimplePingList(object):
         of thedatabase.
 
     """
-    def __init__(self, target_data, target_ids=None, verbose=None, logfile=None,
+    def __init__(self, targets_tbl, target_ids=None, verbose=None, logfile=None,
                  log_level=None, include_disabled=False):
         """
         Saves the input parameters and sets up local variables for the
@@ -81,7 +81,7 @@ class SimplePingList(object):
 
         Parameters:
 
-            target_data(:class:`~smipyping.TargetData`)
+            targets_tbl(:class:`~smipyping.TargetsTbl`)
                Instance of the TargetData class with the targets from the
                database.
 
@@ -106,14 +106,14 @@ class SimplePingList(object):
         Exceptions:
             KeyError if a target_id is not in the database.
         """
-        self.target_data = target_data
+        self.targets_tbl = targets_tbl
 
         if include_disabled:
             self.target_ids = target_ids if target_ids else \
-                target_data.keys()
+                targets_tbl.keys()
         else:
             self.target_ids = target_ids if target_ids else \
-                target_data.get_enabled_targetids()
+                targets_tbl.get_enabled_targetids()
 
         self.verbose = verbose
         self.logfile = logfile
@@ -132,7 +132,7 @@ class SimplePingList(object):
             results = work[1]   # get results list from work
             # check_result, error = self.check_port(work[0])
             simpleping = SimplePing(target_id=work[0],
-                                    target_data=self.target_data)
+                                    targets_tbl=self.targets_tbl)
             test_result = simpleping.test_server()
             # append target_id and results to results list.
             results.append((work[0], test_result))
@@ -229,7 +229,7 @@ class SimplePing(object):
         return cls.error_code[result_type]
 
     def __init__(self, server=None, namespace=None, user=None, password=None,
-                 timeout=None, target_id=None, target_data=None, ping=True,
+                 timeout=None, target_id=None, targets_tbl=None, ping=True,
                  certfile=None, keyfile=None, verify_cert=False,
                  debug=False, verbose=None, logfile=None, log_level=None):
         """
@@ -252,7 +252,7 @@ class SimplePing(object):
 
             target_id
 
-            target_data
+            targets_tbl
 
             ping
 
@@ -282,9 +282,9 @@ class SimplePing(object):
             raise ValueError('SimplePing must define server or target_id')
         if server and target_id:
             raise ValueError('Use either server or target_id, not both')
-        if target_id and not target_data:
-            raise ValueError('target_data required to use target_id')
-        self.target_data = target_data
+        if target_id and not targets_tbl:
+            raise ValueError('targets_tbl required to use target_id')
+        self.targets_tbl = targets_tbl
         self.target_id = target_id
 
         if verbose:
@@ -294,7 +294,7 @@ class SimplePing(object):
                 print('SimplePing id %s' % target_id)
 
         if self.target_id:
-            target_record = self.target_data[self.target_id]
+            target_record = self.targets_tbl[self.target_id]
             self.url = '%s://%s' % (target_record['Protocol'],
                                     target_record['IPAddress'])
 
@@ -535,21 +535,21 @@ class SimplePing(object):
                          (rtn_tuple,))
         return rtn_tuple
 
-    # def set_param_from_targetdata(self, target_id, target_data):
+    # def set_param_from_targetdata(self, target_id, targets_tbl):
     #    """
-    #    Set the required fields from data in the target_data base
+    #    Set the required fields from data in the targets_tbl base
 
-    #    Get the connection information from the target_data base and save in
+    #    Get the connection information from the targets_tbl base and save in
     #    the SimplePing instance
     #    """
 
-    #    target_record = target_data[target_id]
+    #    target_record = targets_tbl[target_id]
     #    self. set_param_from_targetrecord(target_record, target_id)
 
     def set_connect_from_targetrecord(self, target_record, target_id):
         """
         Set the required fields from the provided target_record in the
-        target_database
+        targets_tbl
 
         This sets the fields from either the database or defaults if the
         fields do not exist in the database

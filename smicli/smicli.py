@@ -231,10 +231,11 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
 
         # use db info to get target info.
         try:
-            target_data = smipyping.TargetsTable.factory(
+            targets_tbl = smipyping.TargetsTable.factory(
                 db_info, db_type, verbose, output_format=output_format)
         except ValueError as ve:
-            raise click.ClickException("%s: %s" % (ve.__class__.__name__, ve))
+            raise click.ClickException("Invalid database. Targets table "
+                                       "load fails. Exception %s" % ve)
 
     else:
         # We are processing an interactive command.
@@ -255,7 +256,7 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
         if log_components is None:
             log_components = ctx.obj.log_components
         if provider_data is None:
-            target_data = ctx.obj.target_data
+            targets_tbl = ctx.obj.targets_tbl
         if output_format is None:
             output_format = ctx.obj.output_format
         if verbose is None:
@@ -354,7 +355,7 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
     # its own command context different from the command context for the
     # command line.
     ctx.obj = ClickContext(ctx, config_file, db_type, db_info, log_level,
-                           log_file, log_component, target_data, output_format,
+                           log_file, log_component, targets_tbl, output_format,
                            verbose)
 
     # Invoke default command

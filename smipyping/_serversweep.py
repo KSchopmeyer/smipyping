@@ -55,7 +55,7 @@ class ServerSweep(object):
     Class to define the functionality to execute port sweeps of
     IP address and ports to find potential WBEM Servers.
     """
-    def __init__(self, net_defs, ports, target_data=None, no_threads=False,
+    def __init__(self, net_defs, ports, targets_tbl=None, no_threads=False,
                  min_octet_val=1, max_octet_val=254, verbose=False,
                  scan_type='tcp'):
         """
@@ -93,7 +93,7 @@ class ServerSweep(object):
         self.max_octet_val = max_octet_val
         self.ports = ports
         self.no_threads = no_threads
-        self.target_data = target_data
+        self.targets_tbl = targets_tbl
         self.verbose = verbose
         self.total_sweep_time = None
         self.total_pings = None
@@ -391,8 +391,8 @@ class ServerSweep(object):
             for open_host in open_hosts:
                 ip_address = '%s:%s' % (open_host[0], open_host[1])
                 status = ''
-                if self.target_data is not None:
-                    record_list = self.target_data.get_targets_host(open_host)
+                if self.targets_tbl is not None:
+                    record_list = self.targets_tbl.get_targets_host(open_host)
                     status = 'known' if record_list else 'unknown'
                 if unknown_only and status == 'unknown':
                     print('%s %s' % (ip_address, status), file=f1)
@@ -435,12 +435,12 @@ class ServerSweep(object):
 
             for host_data in open_hosts:
                 ip_address = '%s:%s' % (host_data[0], host_data[1])
-                if self.target_data is not None:
-                    record_list = self.target_data.get_targets_host(host_data)
+                if self.targets_tbl is not None:
+                    record_list = self.targets_tbl.get_targets_host(host_data)
                     if record_list:
                         # TODO this should be a list since there may be
                         # multiples for single ip address
-                        entry = self.target_data.get_target(record_list[0])
+                        entry = self.targets_tbl.get_target(record_list[0])
                         if entry is not None:
                             known += 1
                             rows.append([ip_address,

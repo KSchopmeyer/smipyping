@@ -24,6 +24,7 @@ import six
 from smipyping import UsersTable, CompaniesTable
 from .smicli import cli, CMD_OPTS_TXT
 from ._click_common import validate_prompt, print_table
+from ._common_options import add_options, no_verify_option
 
 
 @cli.group('users', options_metavar=CMD_OPTS_TXT)
@@ -58,9 +59,7 @@ def users_group():
 @click.option('--disable', default=False, is_flag=True,
               help='Disable notifications in the database for this '
               'user. Default is enabled')
-@click.option('-n', '--no_verify', default=False, is_flag=True,
-              help='Disable verification prompt before the change is '
-                   'executed.')
+@add_options(no_verify_option)
 @click.pass_obj
 def users_add(context, **options):  # pylint: disable=redefined-builtin
     """
@@ -296,6 +295,8 @@ def cmd_users_modify(context, id, options):
     company_id = options['companyid']
     activate = _test_active(options)
 
+    # TODO modify only fields that exist
+    # TODO validate before modify
     if user_id in users_tbl:
         # TODO validate data
         users_tbl.modify(user_id, first_name, last_name, email, company_id,

@@ -382,21 +382,6 @@ class SQLTargetsTable(TargetsTable):
     def db_xxx(self):
         return '%s' % self.db_dict
 
-    def write_updated_record(self, recordid):
-        """
-        Update the database record
-        """
-        pass
-        # TODO this untested.
-        # cursor.execute ("""
-        #   UPDATE tblTableName
-        #   SET Year=%s, Month=%s, Day=%s, Hour=%s, Minute=%s
-        #   WHERE Server=%s
-        # """,
-        # (Year, Month, Day, Hour, Minute, ServerID))
-
-        # connect.commit()
-
 
 class MySQLTargetsTable(SQLTargetsTable):
     """
@@ -423,10 +408,10 @@ class MySQLTargetsTable(SQLTargetsTable):
                                          password=db_dict['password'])
 
             if connection.is_connected():
+                self.connection = connection
                 if verbose:
                     print('sql db connection established. host %s, db %s' %
                           (db_dict['host'], db_dict['database']))
-                self.connection = connection
             else:
                 print('SQL database connection failed. host %s, db %s' %
                       (db_dict['host'], db_dict['database']))
@@ -436,10 +421,36 @@ class MySQLTargetsTable(SQLTargetsTable):
                              ' Exception: %r'
                              % (db_dict, ex))
 
-        # get companies table
+        self._load()
+
+    def _load(self):
+        """
+        Load the internal dictionary from the database.
+        """
+        try:
+            cursor = self.connection.cursor(dictionary=True)
+            # python-mysql-connector-dictcursor  # noqa: E501
+
+            # fetchall returns tuple so need index to fields, not names
+            fields = ', '.join(self.fields)
+            sql = 'SELECT %s FROM %s' % (fields, self.table_name)
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+            for row in rows:
+                key = row[self.key_field]
+                self.data_dict[key] = row
+
+        except Exception as ex:
+            raise ValueError('Error: setup sql based targets table %r. '
+                             'Exception: %r'
+                             % (self.db_dict, ex))
+
+        # get companies table and insert into targets table:
+        # TODO we should not be doing this in this manner but with a
+        # join.
         try:
             # python-mysql-connector-dictcursor  # noqa: E501
-            cursor = connection.cursor(dictionary=True)
+            cursor = self.connection.cursor(dictionary=True)
 
             # get the companies table
             cursor.execute('SELECT CompanyID, CompanyName FROM Companies')
@@ -456,24 +467,6 @@ class MySQLTargetsTable(SQLTargetsTable):
         except Exception as ex:
             raise ValueError('Could not create companies table %r Exception: %r'
                              % (rows, ex))
-        # get targets table
-        try:
-            targets_dict = {}
-            # fetchall returns tuple so need index to fields, not names
-            fields = ', '.join(self.fields)
-            select = 'SELECT %s FROM %s' % (fields, self.table_name)
-            cursor.execute(select)
-            rows = cursor.fetchall()
-            for row in rows:
-                key = row[self.key_field]
-                targets_dict[key] = row
-
-            # save the combined table for the other functions.
-            self.data_dict = targets_dict
-        except Exception as ex:
-            raise ValueError('Error: setup sql based targets table %r. '
-                             'Exception: %r'
-                             % (db_dict, ex))
         try:
             # set the companyname into the targets table
             for target_key in self.data_dict:
@@ -482,7 +475,45 @@ class MySQLTargetsTable(SQLTargetsTable):
 
         except Exception as ex:
             raise ValueError('Error: putting Company Name in table %r error %s'
-                             % (db_dict, ex))
+                             % (self.db_dict, ex))
+
+    def update(self, target_id, changes):
+        """
+        Update the database record defined by target_id with the dictionary
+        of items defined by changes where each item is an entry in the
+        target record. Update does NOT test if the new value is the same
+        as the original value.
+        """
+        cursor = self.connection.cursor()
+
+        # dynamically build the update sql based on the changes dictionary
+        set_names = "SET "
+        values = []
+        comma = False
+        for key, value in changes.items():
+            if comma:
+                set_names = set_names + ", "
+            else:
+                comma = True
+            set_names = set_names + "{0} = %s".format(key)
+            values.append(value)
+
+        values.append(target_id)
+        sql = "Update Targets " + set_names
+
+        # append targetid component
+        sql = sql + " WHERE TargetID=%s"
+
+        try:
+            cursor.execute(sql, tuple(values))
+            self.connection.commit()
+        except Exception as ex:
+            print('Targets table failed: exception %r' % ex)
+            self.connection.rollback()
+            raise ex
+        finally:
+            self._load()
+            self.connection.close()
 
 
 class CsvTargetsTable(TargetsTable):

@@ -110,7 +110,7 @@ def pick_from_list(context, options, title):
     msg = 'Input integer between 0 and %s or Ctrl-C to exit selection: ' % index
     while True:
         try:
-            selection = int(local_prompt(msg))
+            selection = int(local_prompt(unicode(msg)))
             if selection >= 0 and selection <= index:
                 return selection
         except ValueError:
@@ -154,7 +154,7 @@ def pick_multiple_from_list(context, options, title):
         selection_txt = None
         try:
             response = local_prompt(
-                'Select multiple entries by index or Ctrl-C to exit >')
+                u'Select multiple entries by index or Ctrl-C to exit >')
             selections = response.split()
             for selection_txt in selections:
                 if selection_txt.isdigit():
@@ -186,13 +186,13 @@ def pick_target_id(context):
       Returns:
         target_id selected or None if user enter ctrl-C
     """
-    targets_list = context.target_data.keys()
+    targets_list = context.targets_tbl.keys()
     display_options = []
     for t in targets_list:
         display_options.append(u'    %s %s %s' %
-                               (t, context.target_data[t]['IPAddress'],
-                                context.target_data[t]['CompanyName']))
-    index = pick_from_list(context, display_options, "Pick TargetID")
+                               (t, context.targets_tbl[t]['IPAddress'],
+                                context.targets_tbl[t]['CompanyName']))
+    index = pick_from_list(context, display_options, "Pick TargetID:")
     if index is None:
         click.echo('Abort command')
         return
