@@ -117,7 +117,7 @@ def cmd_explore_all(context, **options):
 
     # TODO configure logging
     # TODO fix the log_level stuff
-    explorer = Explorer('smicli', context.target_data,
+    explorer = Explorer('smicli', context.targets_tbl,
                         logfile=context.log_file,
                         log_level=None,
                         verbose=context.verbose,
@@ -127,14 +127,14 @@ def cmd_explore_all(context, **options):
 
     # TODO: ks I believe that the following is irrelevent. It maps between
     # hosts and targets and so does not gain much
-    hosts = context.target_data.get_hostid_list()
+    hosts = context.targets_tbl.get_hostid_list()
     targets = []
     for host in hosts:
         if context.verbose:
             print('targets extend host %s, rtns %s' %
-                  (host, context.target_data.get_target_for_host(host)))
+                  (host, context.targets_tbl.get_target_for_host(host)))
 
-        targets.extend(context.target_data.get_target_for_host(host))
+        targets.extend(context.targets_tbl.get_target_for_host(host))
 
     targets = set(targets)
 
@@ -143,7 +143,7 @@ def cmd_explore_all(context, **options):
     # print results
     # TODO make this part of normal print services
     context.spinner.stop()
-    report_server_info(servers, context.target_data, context.output_format,
+    report_server_info(servers, context.targets_tbl, context.output_format,
                        report=options['report'])
 
 
@@ -154,13 +154,13 @@ def cmd_explore_ids(context, ids, **options):
     # TODO: ks redo this code to use the record once it is acquired.
     for id_ in ids:
         try:
-            targ_rec = context.target_data.get_target(id_)  # noqa: F841
+            targ_rec = context.targets_tbl.get_target(id_)  # noqa: F841
         except Exception as ex:
             raise click.ClickException('Invalid TargetID=%s. Not in database. '
                                        '%s: %s' % (id,
                                                    ex.__class__.__name__, ex))
 
-    explorer = Explorer('smicli', context.target_data,
+    explorer = Explorer('smicli', context.targets_tbl,
                         verbose=context.verbose,
                         ping=options['ping'],
                         threaded=options['thread'],
@@ -170,7 +170,7 @@ def cmd_explore_ids(context, ids, **options):
 
     servers = explorer.explore_servers(ids)
     context.spinner.stop()
-    report_server_info(servers, context.target_data,
+    report_server_info(servers, context.targets_tbl,
                        context.output_format,
                        report=options['report'])
 
@@ -181,7 +181,7 @@ def cmd_explore_ids(context, ids, **options):
 ############################################################
 
 
-def report_server_info(servers, target_data, output_format,
+def report_server_info(servers, targets_tbl, output_format,
                        table_format='table',
                        columns=None, report='full'):
     """ Display a table of info from the server scan
@@ -200,7 +200,7 @@ def report_server_info(servers, target_data, output_format,
         server = server_tuple.server
         status = server_tuple.status
         target_id = server_tuple.target_id
-        target = target_data.get_target(target_id)
+        target = targets_tbl.get_target(target_id)
         version = ''
         interop_ns = ''
         smi_profiles = ''

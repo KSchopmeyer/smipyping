@@ -189,7 +189,7 @@ def provider_classes(context, **options):
 
 def cmd_provider_ping(context, options):
     """Ping the defined target"""
-    targets = context.target_data
+    targets = context.targets_tbl
     target_id = options['targetid']
 
     try:
@@ -219,7 +219,7 @@ def get_profile_info(org_vm, inst):
 
 def cmd_provider_profiles(context, options):
     """Return tuple of info of autonomous profiles for this server"""
-    targets = context.target_data
+    targets = context.targets_tbl
     target_id = options['targetid']
     server = connect_target(targets, target_id)
 
@@ -262,7 +262,7 @@ def connect_target(targets, target_id):
 
 def cmd_provider_namespaces(context, options):
     """Display interop namespace name"""
-    targets = context.target_data
+    targets = context.targets_tbl
     target_id = options['targetid']
     server = connect_target(targets, target_id)
     try:
@@ -284,7 +284,7 @@ def cmd_provider_namespaces(context, options):
 
 def cmd_provider_interop(context, options):
     """Display interop namespace name"""
-    targets = context.target_data
+    targets = context.targets_tbl
     target_id = options['targetid']
     server = connect_target(targets, target_id)
     try:
@@ -305,7 +305,7 @@ def cmd_provider_interop(context, options):
 
 def cmd_provider_info(context, options):
     """Search get brand info for a set of providers"""
-    targets = context.target_data
+    targets = context.targets_tbl
     target_id = options['targetid']
     server = connect_target(targets, target_id)
 
@@ -336,7 +336,7 @@ def cmd_provider_classes(context, options):
     Execute the command for get class and display the result. The result is
     a list of classes/namespaces
     """
-    targets = context.target_data
+    targets = context.targets_tbl
     target_id = options['targetid']
     server = connect_target(targets, target_id)
 

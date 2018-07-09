@@ -19,9 +19,11 @@ data file.
 from __future__ import print_function, absolute_import
 
 import click
+import six
 
 from .smicli import cli, CMD_OPTS_TXT
-from ._click_common import print_table, pick_target_id
+from ._click_common import print_table, pick_target_id, validate_prompt
+from ._common_options import add_options, no_verify_option
 
 
 @cli.group('targets', options_metavar=CMD_OPTS_TXT)
@@ -110,6 +112,54 @@ def target_disable(context, targetid, enable, **options):
                                                    enable, options))
 
 
+@targets_group.command('modify', options_metavar=CMD_OPTS_TXT)
+@click.argument('TargetID', type=str, metavar='TargetID', required=True)
+@click.option('-e', '--enable', is_flag=True,
+              help='Enable the Target if it is disabled.')
+@click.option('-i', '--ipaddress', type=str,
+              required=False,
+              help='Modify the IP address if this option is included.')
+@click.option('-p', '--port', type=str,    # TODO integer only
+              required=False,
+              help='Modify the port field. If 5988 or 5989, also sets the '
+                   'protocol field to https if 5989 or http if 5988')
+@click.option('-P', '--principal', type=str,
+              required=False,
+              help='Modify the Principal field.')
+@click.option('-c', '--credential', type=str,
+              required=False,
+              help='Modify the Credential field.')
+@click.option('-R', '--product', type=str,
+              required=False,
+              help='Modify the the Product field.')
+@click.option('-I', '--interopnamespace', type=str,
+              required=False,
+              help='Modify the InteropNamespace field.')
+@add_options(no_verify_option)
+@click.pass_obj
+def target_modify(context, targetid, enable, **options):
+    """
+    Modify the fields of an record in the Targets table.
+
+    This changes the database permanently
+
+    Use the `interactive` option to select the target from a list presented.
+    """
+    context.execute_cmd(lambda: cmd_target_modify(context, targetid, options))
+
+# TODO fields not included in modify.
+# CompanyName
+# SMIVesion
+# ProtocolError
+# CompanyID
+# CimomVersion
+# Namespace
+# ScanEnabled
+# NotifyUsers
+# Notify
+# enable
+
+
 ##############################################################
 #  targets processing commands
 ##############################################################
@@ -120,7 +170,7 @@ def display_cols(target_table, fields, show_disabled=True, output_format=None):
 
     This gets the
     data from the targets data based on the col_list and prepares a table
-    based on those target_data colums
+    based on those targets_tbl colums
 
     Parameters:
       fields: list of strings defining the targets_data columns to be
@@ -174,18 +224,103 @@ def display_all(target_table, fields=None, company=None,
                  output_format=output_format)
 
 
+def get_target_id(context, targetid, options):
+    """
+        Get the target based on the value of targetid.  If targetid is an
+        integer, get targetid directly and generate exception if this fails.
+        If it is ? use the interactive pick_target_id.
+        This function executes the pick function if the targetid is "?" or
+        if the interactive flag is set
+    """
+
+    context.spinner.stop()
+    print('GET_TARGET0_ID targetit=%s options=%s' % (targetid, options))
+
+    if 'interactive' in options:
+        targetid = pick_target_id(context)
+    elif isinstance(targetid, six.integer_types):
+        try:
+            context.targets_tbl.get_target(targetid)
+            return targetid
+        except KeyError as ke:
+            raise click.ClickException("Targed ID %s  not valid: exception %s" %
+                                       (targetid, ke))
+    elif isinstance(targetid, six.string_types):
+        if targetid == "?":
+            targetid = pick_target_id(context)
+        else:
+            try:
+                targetid = int(targetid)
+            except ValueError:
+                click.ClickException('TargetID must be integer or "?" not %s' %
+                                     targetid)
+        if targetid is None:
+            click.echo("Operation aborted by user.")
+    return targetid
+
+
+def cmd_target_modify(context, targetid, options):
+    """
+    Modify the fields of a target.  Any of the field defined by options can
+    be modified.
+    """
+    # get targetid if options are for interactive request and validate that
+    # it is valid. Returns None if interactive request is aborted
+    targetid = get_target_id(context, targetid, options)
+    print('MODIFY rtn %s' % targetid)
+    if targetid is None:
+        return
+
+    # create dictionary of changes requested
+    changes = {}
+    changes['IPAddress'] = options.get('ipaddress', None)
+    changes['Port'] = options.get('port', None)
+    changes['Principal'] = options.get('principal', None)
+    changes['Credentials'] = options.get('credentials', None)
+    changes['Product'] = options.get('product', None)
+
+    for key, value in changes.items():
+        if value is None:
+            del changes[key]
+    target_record = context.targets_tbl[targetid]
+
+    if not changes:
+        click.echo('No changes requested')
+        return
+
+    if 'Port' in changes:
+        if changes['Port'] <= 0:
+            click.ClickException("Port must be positive integer not %s" %
+                                 changes['Port'])
+        if changes['Port'] == 5988:
+            changes['Protocol'] = 'http'
+        elif changes['Port'] == 5989:
+            changes['Protocol'] = 'https'
+
+    if options['no_verify']:
+        context.targets_tbl.update(targetid, changes)
+    else:
+        context.spinner.stop()
+        click.echo('Proposed changes:')
+        for key, value in changes.items():
+            click.echo('  %s: "%s" to "%s"' % (key, target_record[key], value))
+        if validate_prompt('Modify target id %s' % targetid):
+            context.targets_tbl.update(targetid, changes)
+        else:
+            click.echo('Operation aborted by user.')
+            return
+
+
 def cmd_target_disable(context, targetid, enable, options):
     """
         Set the disable flag in a defined targetid
     """
-    context.spinner.stop()
-    try:
-        if options['interactive']:
-            targetid = pick_target_id(context)
-            if targetid is None:
-                return
-        target_record = context.target_data.get_target(targetid)
+    targetid = get_target_id(context, targetid, options)
+    if targetid is None:
+        return
 
+    target_record = context.targets_tbl[targetid]
+    try:
         # TODO add test to see if already in correct state
         next_state = 'Enabled' if enable else 'Disabled'
         click.echo('Current Status=%s proposed change=%s'
@@ -194,8 +329,8 @@ def cmd_target_disable(context, targetid, enable, options):
             click.echo('State already same as proposed change')
             return
         target_record['ScanEnabled'] = False if enable is True else True
-        return
-        context.provider_data.write_updated_record(targetid)
+
+        context.targets_tbl.write_updated_record(targetid)
 
     except Exception as ex:
         raise click.ClickException("%s: %s" % (ex.__class__.__name__, ex))
@@ -205,7 +340,7 @@ def cmd_targets_info(context):
     """Display information on the targets config and data file."""
     context.spinner.stop()
     click.echo('\nDB Info:\n  type=%s\n  config_file=%s' %
-               (context.target_data.db_type, context.config_file))
+               (context.targets_tbl.db_type, context.config_file))
 
     if context.db_info:
         for key in context.db_info:
@@ -217,7 +352,7 @@ def cmd_targets_info(context):
 
 def cmd_targets_fields(context):
     """Display the information fields for the providers dictionary."""
-    fields = context.target_data.get_field_list()
+    fields = context.targets_tbl.get_field_list()
     context.spinner.stop()
     rows = []
     for field in fields:
@@ -235,7 +370,7 @@ def cmd_targets_get(context, targetid, options):
         targetid = pick_target_id(context)
 
     try:
-        target_record = context.target_data.get_target(targetid)
+        target_record = context.targets_tbl.get_target(targetid)
 
         # TODO: Future need to order output.
         for key in target_record:
@@ -262,13 +397,13 @@ def cmd_targets_list(context, options):
             fields.insert(0, 'TargetID')  # always show TargetID
 
     try:
-        context.target_data.test_fieldnames(fields)
+        context.targets_tbl.test_fieldnames(fields)
     except KeyError as ke:
         raise click.ClickException("%s: Invalid field name: %s" %
                                    (ke.__class__.__name__, ke))
 
     try:
-        display_all(context.target_data, list(fields),
+        display_all(context.targets_tbl, list(fields),
                     show_disabled=options['disabled'],
                     company=None, output_format=context.output_format)
 

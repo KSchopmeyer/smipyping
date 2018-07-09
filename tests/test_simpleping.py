@@ -70,7 +70,7 @@ class SimplePingTests(unittest.TestCase):
         self.assertIsNotNone(match_result)
 
     def test_target_id(self):
-        """Test with valid target id and no target_data"""
+        """Test with valid target id and no targets_tbl"""
         try:
             SimplePing(target_id=4)
             self.fail("Expected exception")
@@ -104,20 +104,20 @@ class SimplePingCsvListSetup(unittest.TestCase):
         test_config_file = os.path.join(SCRIPT_DIR, TEST_CONFIG_FILE_NAME)
         db_config = read_config(test_config_file, dbtype)
         db_config['directory'] = os.path.dirname(test_config_file)
-        self.target_data = TargetsTable.factory(db_config, dbtype, False)
+        self.targets_tbl = TargetsTable.factory(db_config, dbtype, False)
 
 
 class SimplePingCsvListTests(SimplePingCsvListSetup):
     """test SimplepingList ability to create a list of targets"""
     def test_no_ids(self):
         """ Test with no ids"""
-        spl = SimplePingList(self.target_data)
+        spl = SimplePingList(self.targets_tbl)
         self.assertTrue(spl > 0)
         self.assertTrue(len(spl.target_ids), 47)
 
     def test_with_ids(self):
         """Test with a specific ID"""
-        spl = SimplePingList(self.target_data, target_ids=[4])
+        spl = SimplePingList(self.targets_tbl, target_ids=[4])
         self.assertTrue(len(spl.target_ids), 1)
 
 

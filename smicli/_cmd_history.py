@@ -305,8 +305,8 @@ def cmd_history_weekly(context, options):
 
     tbl_rows = []
     for target_id, value in six.iteritems(percentok_ytd):
-        if target_id in context.target_data:
-            target = context.target_data[target_id]
+        if target_id in context.targets_tbl:
+            target = context.targets_tbl[target_id]
             company = target.get('CompanyName', 'empty')
             company = fold_cell(company, 15)
             product = target.get('Product', 'empty')
@@ -367,11 +367,11 @@ def cmd_history_delete(context, options):
     # TODO standard function for target_id valid test
     if target_id:
         try:
-            context.target_data.get_target(target_id)  # noqa: F841
+            context.targets_tbl.get_target(target_id)  # noqa: F841
         except KeyError:
             raise click.ClickException('Invalid Target: target_id=%s not in '
                                        'database %s.' %
-                                       (target_id, context.target_data))
+                                       (target_id, context.targets_tbl))
 
     pings_tbl = PingsTable.factory(context.db_info, context.db_type,
                                    context.verbose)
@@ -419,7 +419,7 @@ def cmd_history_create(context, options):
     Create a set of ping records in the database.  This is a test function
     """
     # construct cimping for the complete set of targets
-    simple_ping_list = SimplePingList(context.target_data,
+    simple_ping_list = SimplePingList(context.targets_tbl,
                                       target_ids=options['ids'],
                                       logfile=context.log_file,
                                       log_level=context.log_level,
@@ -440,7 +440,7 @@ def cmd_history_create(context, options):
     rows = []
     for result in results:
         target_id = result[0]
-        target = context.target_data[target_id]
+        target = context.targets_tbl[target_id]
         test_result = result[1]
 
         addr = '%s://%s' % (target['Protocol'], target['IPAddress'])
@@ -466,11 +466,11 @@ def cmd_history_list(context, options):
     target_id = options['targetid']
     if target_id:
         try:
-            context.target_data.get_target(target_id)  # noqa: F841
+            context.targets_tbl.get_target(target_id)  # noqa: F841
         except KeyError:
             raise click.ClickException('Invalid Target: target_id=%s not in '
                                        'database %s.' %
-                                       (target_id, context.target_data))
+                                       (target_id, context.targets_tbl))
 
     pings_tbl = PingsTable.factory(context.db_info, context.db_type,
                                    context.verbose)
@@ -487,8 +487,8 @@ def cmd_history_list(context, options):
         for row in rows:
             target_id = row[1]
             ping_id = row[0]
-            if target_id in context.target_data:
-                target = context.target_data[target_id]
+            if target_id in context.targets_tbl:
+                target = context.targets_tbl[target_id]
                 company = target.get('CompanyName', ' empty')
                 ip = target.get('IPAddress', 'empty')
             else:
@@ -511,8 +511,8 @@ def cmd_history_list(context, options):
         # find all status and convert to report format
         tbl_rows = []
         for target_id, value in six.iteritems(results):
-            if target_id in context.target_data:
-                target = context.target_data[target_id]
+            if target_id in context.targets_tbl:
+                target = context.targets_tbl[target_id]
                 company = target.get('CompanyName', ' empty')
                 ip = target.get('IPAddress', 'empty')
             else:
@@ -535,8 +535,8 @@ def cmd_history_list(context, options):
         # create report of id,  company, product and %ok / total counts
         tbl_rows = []
         for target_id, value in six.iteritems(percentok_dict):
-            if target_id in context.target_data:
-                target = context.target_data[target_id]
+            if target_id in context.targets_tbl:
+                target = context.targets_tbl[target_id]
                 company = target.get('CompanyName', 'empty')
                 product = target.get('Product', 'empty')
                 ip = target.get('IPAddress', 'empty')
@@ -567,11 +567,11 @@ def cmd_history_timeline(context, ids, options):
 
     for id_ in ids:
         try:
-            context.target_data.get_target(id_)  # noqa: F841
+            context.targets_tbl.get_target(id_)  # noqa: F841
         except KeyError:
             raise click.ClickException('Invalid Target: target_id=%s not in '
                                        'database %s.' %
-                                       (id_, context.target_data))
+                                       (id_, context.targets_tbl))
 
     pings_tbl = PingsTable.factory(context.db_info, context.db_type,
                                    context.verbose)
@@ -600,8 +600,8 @@ def cmd_history_timeline(context, ids, options):
                 if prev_pingtime:
                     timediff = ping_time - prev_pingtime
                 prev_pingtime = ping_time
-                if target_id in context.target_data:
-                    target = context.target_data[target_id]
+                if target_id in context.targets_tbl:
+                    target = context.targets_tbl[target_id]
                     company = target.get('CompanyName', ' empty')
                     ip = target.get('IPAddress', 'empty')
                 else:

@@ -116,12 +116,12 @@ class TargetsTableTest(CsvTableTests):
 
     @unittest.skip("fails with csv")
     def test_display_disabled(self):
-        # target_data = self.get_target_data()
+        # targets_tbl = self.get_targets_tbl()
         self.target_table.display_disabled('simple')
 
     @unittest.skip("Deoe not work for CSV")
     def test_enabled_target(self):
-        # target_data = self.get_target_data()
+        # targets_tbl = self.get_targets_tbl()
         self.target_table.display_disabled('simple')
         self.assertFalse(
             self.target_table.disabled_target(self.target_table[4]))

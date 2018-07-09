@@ -61,13 +61,13 @@ class Explorer(object):
     WBEM Server
     """
 
-    def __init__(self, prog, target_data, logfile=None, log_level=None,
+    def __init__(self, prog, targets_tbl, logfile=None, log_level=None,
                  debug=None, ping=None, verbose=None, threaded=False,
                  output_format='simple'):
         """Initialize instance attributes."""
         self.verbose = verbose
         self.ping = ping
-        self.target_data = target_data
+        self.targets_tbl = targets_tbl
         self.timeout = None
         self.prog = prog
         self.debug = debug
@@ -111,7 +111,7 @@ class Explorer(object):
         servers = []
         # #### TODO move this all back to IDs and stop mapping host to id.
         for target_id in target_list:
-            target = self.target_data[target_id]
+            target = self.targets_tbl[target_id]
 
             # get variables for the connection and logs
             url = '%s://%s' % (target['Protocol'], target['IPAddress'])
@@ -126,7 +126,7 @@ class Explorer(object):
             # TODO too much swapping between entities.
             # TODO need a target class since this goes back to top dict to
             # get info
-            if self.target_data.disabled_target(target):
+            if self.targets_tbl.disabled_target(target):
                 s = ServerInfoTuple(url=url, server=None, status='DISABLE',
                                     target_id=target_id, time=0)
                 servers.append(s)
@@ -152,7 +152,7 @@ class Explorer(object):
         # #### TODO move this all back to IDs and stop mapping host to id.
         threads_ = []
         for target_id in target_list:
-            target = self.target_data[target_id]
+            target = self.targets_tbl[target_id]
 
             # get variables for the connection and logs
             url = '%s://%s' % (target['Protocol'], target['IPAddress'])
@@ -167,7 +167,7 @@ class Explorer(object):
             # TODO too much swapping between entities.
             # TODO need a target class since this goes back to top dict to
             # get info
-            if self.target_data.disabled_target(target):
+            if self.targets_tbl.disabled_target(target):
                 s = ServerInfoTuple(url=url, server=None, status='DISABLE',
                                     target_id=target_id, time=0)
                 servers.append(s)

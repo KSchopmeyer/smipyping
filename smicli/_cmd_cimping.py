@@ -263,7 +263,7 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
     # cimping the complete set of targets
     include_disabled = options['disabled']
 
-    simple_ping_list = SimplePingList(context.target_data, None,
+    simple_ping_list = SimplePingList(context.targets_tbl, None,
                                       logfile=context.log_file,
                                       log_level=context.log_level,
                                       verbose=context.verbose,
@@ -287,7 +287,7 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
     rows = []
     for result in results:
         target_id = result[0]
-        target = context.target_data[target_id]
+        target = context.targets_tbl[target_id]
         test_result = result[1]
 
         addr = '%s://%s' % (target['Protocol'], target['IPAddress'])
@@ -320,15 +320,15 @@ def cmd_cimping_ids(context, ids, options):  # pylint: disable=redefined-builtin
     """
     for id_ in ids:
         try:
-            context.target_data.get_target(id_)  # noqa: F841
+            context.targets_tbl.get_target(id_)  # noqa: F841
         except KeyError:
             raise click.ClickException('Invalid Target: target_id=%s not in '
                                        'database %s.' %
-                                       (id_, context.target_data))
+                                       (id_, context.targets_tbl))
 
     for id_ in ids:
         simpleping = SimplePing(target_id=id_, timeout=options['timeout'],
-                                target_data=context.target_data,
+                                targets_tbl=context.targets_tbl,
                                 ping=not options['no_ping'],
                                 logfile=context.log_file,
                                 log_level=context.log_level)
@@ -349,13 +349,13 @@ def cmd_cimping_id(context, id, options):  # pylint: disable=redefined-builtin
     interactive mode
     """
     try:
-        context.target_data.get_target(id)  # noqa: F841
+        context.targets_tbl.get_target(id)  # noqa: F841
     except KeyError:
         raise click.ClickException('Invalid Target: ID=%s not in database'
-                                   ' %s.' % (id, context.target_data))
+                                   ' %s.' % (id, context.targets_tbl))
 
     simpleping = SimplePing(target_id=id, timeout=options['timeout'],
-                            target_data=context.target_data,
+                            targets_tbl=context.targets_tbl,
                             ping=not options['no_ping'],
                             logfile=context.log_file,
                             log_level=context.log_level)

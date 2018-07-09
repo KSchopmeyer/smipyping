@@ -35,7 +35,7 @@ class ClickContext(object):
     """
 
     def __init__(self, ctx, config_file, db_type, db_info, log, log_file,
-                 log_components, target_data, output_format, verbose):
+                 log_components, targets_tbl, output_format, verbose):
         self._config_file = config_file
         self._db_type = db_type
         self._db_info = db_info
@@ -45,7 +45,7 @@ class ClickContext(object):
         self._log_level = None
         self._log_file = log_file
         self._log_components = log_components
-        self._target_data = target_data
+        self._targets_tbl = targets_tbl
         self._output_format = output_format
         self._spinner = click_spinner.Spinner()
 
@@ -118,11 +118,11 @@ class ClickContext(object):
         return self._output_format
 
     @property
-    def target_data(self):
+    def targets_tbl(self):
         """
-        :term:`target_data file`: Dictionary of provider data
+        :term:`targets_tbl file`: Dictionary of provider data
         """
-        return self._target_data
+        return self._targets_tbl
 
     @property
     def spinner(self):
@@ -135,7 +135,7 @@ class ClickContext(object):
         """
         Call the cmd executor defined by cmd with the spinner
         """
-        if self._target_data is None:
+        if self._targets_tbl is None:
             raise click.ClickException("No provider targets database defined")
         self.spinner.start()
         try:

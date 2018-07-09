@@ -112,11 +112,11 @@ def cmd_notifications_list(context, options):
                                        context.verbose)
     for target_id in target_ids:
         try:
-            context.target_data.get_target(target_id)  # noqa: F841
+            context.targets_tbl.get_target(target_id)  # noqa: F841
         except KeyError:
             raise click.ClickException('Invalid Target: target_id=%s not in '
                                        'database %s.' %
-                                       (target_id, context.target_data))
+                                       (target_id, context.targets_tbl))
 
     users_tbl = UsersTable.factory(context.db_info, context.db_type,
                                    context.verbose)

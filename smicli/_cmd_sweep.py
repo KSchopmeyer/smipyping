@@ -136,7 +136,7 @@ def cmd_sweep_nets(context, options):
     print('options %s' % options)
     sweep = ServerSweep(list(options['subnet']),
                         options['port'],
-                        target_data=context.target_data,
+                        targets_tbl=context.targets_tbl,
                         no_threads=options['no_threads'],
                         min_octet_val=options['MinOctetVal'],
                         max_octet_val=options['MaxOctetVal'],
