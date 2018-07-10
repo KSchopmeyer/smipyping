@@ -30,7 +30,7 @@ from smicli._click_common import pick_from_list, pick_multiple_from_list, \
     print_table, validate_prompt
 from smicli._click_context import ClickContext
 
-from smipyping._common import get_list_index, filter_stringlist
+from smipyping._common import get_list_index, filter_stringlist, StrList
 
 VERBOSE = True
 
@@ -225,3 +225,30 @@ class TestPrintTable(object):
         self.compare_results(actual, exp_stdout_template)
 
         assert actual == exp_stdout_template
+
+
+class TestVersionsClass(object):
+    """
+    """
+    @pytest.mark.parametrize(
+        "ver_in, exp_str, exp_repr, exp_exc_type", [
+            [['1.2.3', '2.3.4'], '1.2.3, 2.3.4', ['1.2.3', '2.3.4'], None],
+            ['1.2.3, 2.3.4', '1.2.3, 2.3.4', ['1.2.3', '2.3.4'], None],
+            ['1.2.3/2.3.4', '1.2.3, 2.3.4', ['1.2.3', '2.3.4'], None],
+            ['1.2.3 2.3.4', '1.2.3, 2.3.4', ['1.2.3', '2.3.4'], None],
+            [['1.2.3', '2.3.4', '1.2.3, 2.3.4', ['1.2.3', '2.3.4'], None],
+        ]
+    )
+    def test_versions(self, ver_in, exp_str, exp_repr, exp_exc_type):
+        """
+            Test the variations of input and results.
+        """
+
+        if exp_exc_type:
+            with pytest.raises(exp_exc_type):
+                v = StrList(ver_in)
+        else:
+            v = StrList(ver_in)
+            print('REPR %r' % v)
+            assert v.list_form == exp_repr
+            assert str(v) == exp_str

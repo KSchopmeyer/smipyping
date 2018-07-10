@@ -109,3 +109,49 @@ def build_table_struct(fields, db_table, max_width=None, sort=False):
         tbl_rows.sort(key=lambda x: x[0])
 
     return tbl_rows
+
+
+class StrList(object):
+    """
+    Manage the list of strings. Since this list has multiple forms (
+    list of strings, formatted string, etc.), this class maps between the
+    different versions.
+
+    TODO
+    """
+    def __init__(self, input, chars=None):
+        """
+        Create an internal variable that is a list of the value of each
+        version definition in the list
+        Used to manage lists of SMI versions because the string form of this
+        list can have multiple forms (1.2/2.3, 1.2, 2.3, 1.2 1.3)
+
+        TODO test if only chars in chars are in string.
+        """
+        if isinstance(input, six.string_types):
+            if '/' in input:
+                self._list_form = input.split("/")
+            elif ',' in input:
+                self.self._list_form = input.split("/")
+            elif " " in input:
+                self._list_form = input.split("/")
+        elif isinstance(input, list):
+            self._list_form = input
+        elif isinstance(input, tuple):
+            self._list_form = list(input)
+
+        else:
+            raise ValueError("Versions Strlist %s not valid type" % input)
+
+        for v in self._list_form:
+            v.strip()
+
+    def __repr__(self):
+        """
+            Return string of versions separated by ",
+        """
+        return ", ".join(self.list_form)
+
+    @property
+    def list_form(self):
+        return self._list_form
