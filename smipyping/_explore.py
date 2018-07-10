@@ -239,7 +239,6 @@ class Explorer(object):
                 _ = server.profiles  # noqa: F841
 
             cmd_time = time.time() - start_time
-
             svr_tuple = ServerInfoTuple(url=url, server=server,
                                         target_id=target_id,
                                         status='OK',

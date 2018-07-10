@@ -30,7 +30,7 @@ from smicli._click_common import pick_from_list, pick_multiple_from_list, \
     print_table, validate_prompt
 from smicli._click_context import ClickContext
 
-from smipyping._common import get_list_index, filter_stringlist
+from smipyping._common import get_list_index, filter_stringlist, StrList
 
 VERBOSE = True
 
@@ -225,3 +225,33 @@ class TestPrintTable(object):
         self.compare_results(actual, exp_stdout_template)
 
         assert actual == exp_stdout_template
+
+
+RE = r'^[0-9.]*$'
+
+
+class TestVersionsClass(object):
+    """
+    """
+    @pytest.mark.parametrize(
+        "ver_in, re, exp_str, exp_repr, exp_exc_type", [
+            [['1.2.3', '2.3.4'], RE, '1.2.3, 2.3.4', ['1.2.3', '2.3.4'], None],
+            ['1.2.3, 2.3.4', RE, '1.2.3, 2.3.4', ['1.2.3', '2.3.4'], None],
+            ['1.2.3/2.3.4', RE, '1.2.3, 2.3.4', ['1.2.3', '2.3.4'], None],
+            ['1.2.3 2.3.4', RE, '1.2.3, 2.3.4', ['1.2.3', '2.3.4'], None],
+            [['1.2.3', '2.3.4'], RE, '1.2.3, 2.3.4', ['1.2.3', '2.3.4'], None],
+            # TODO extend for errors, regex and input
+        ]
+    )
+    def test_versions(self, ver_in, re, exp_str, exp_repr, exp_exc_type):
+        """
+            Test the variations of input and results.
+        """
+
+        if exp_exc_type:
+            with pytest.raises(exp_exc_type):
+                v = StrList(ver_in, chars=re)
+        else:
+            v = StrList(ver_in, re)
+            assert v.list_ == exp_repr
+            assert str(v) == exp_str

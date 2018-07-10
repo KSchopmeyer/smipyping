@@ -21,6 +21,7 @@ from __future__ import print_function, absolute_import
 import click
 from smipyping._explore import Explorer
 
+from smipyping._common import StrList
 from .smicli import cli, CMD_OPTS_TXT
 from ._click_common import fold_cell, print_table
 
@@ -59,25 +60,35 @@ def explore_all(context, **options):
 
 
     Execute the general explore operation on  some or all the providers in the
-    database.
+    database and generate a report on the results.
 
     This command explores the general characteristics of the server including:
 
-    Namespaces
-    Interop Namespace
-    Registered Profiles
+      * Company - From the targets database
+
+      * Product = From the targets database
+
+      * SMI Profiles   - As defined by the server itself
+
+      * Interop Namespace - Ad defined by the server
+
+      * Status - General status (i.e. CIMPing status)
+
+      * Time - Time to execute the tests
+
     General Server information
 
-    I can operate either in a parallel mode (multi-threaded) or single
-    thread (if for some reason there is an issue with the multithreading)
+    It executes the server requests in parallel mode (multi-threaded) or by
+    setting a command line options single thread (if for some reason there is
+    an issue with the multithreading)
 
     It generates a report to the the defined output as a table with the
-    formatting defined by the format option. Default is thread the requests
-    speeding up the explore significantly.
+    formatting defined by the global format option. Default is thread the
+    requests speeding up the explore significantly.
 
-    Note: There is an option to ping the server before executing the
+    There is an option to ping the server before executing the
     explore simply to speed up the process for servers that are completely
-    not available. Default is to ping as the first step.
+    not available. The default is to ping as the first step.
 
     """
     context.execute_cmd(lambda: cmd_explore_all(context, **options))
@@ -209,8 +220,18 @@ def report_server_info(servers, targets_tbl, output_format,
             interop_ns = server.interop_ns
             smi_profile_list = smi_versions(server_tuple.server)
             if smi_profile_list is not None:
+                sorted(smi_profile_list)
                 cell_str = ", ". join(sorted(smi_profile_list))
-                smi_profiles = (fold_cell(cell_str, 14))
+                smi_profiles = fold_cell(cell_str, 14)
+                # compare the new tuples against those in targe_tbl
+                target_smi_profiles = target['SMIVersion']
+                regex = r'^[0-9.]*$'
+                c1 = StrList(smi_profile_list, match=regex)
+                c2 = StrList(target_smi_profiles, match=regex)
+                if set(c1.list_) != set(c2.list_):
+                    print('SMI_PROFILES COMPARE svr=%s\ntarget=%s' %
+                          (smi_profiles, target_smi_profiles))
+
         disp_time = None
         if server_tuple.time <= 60:
             disp_time = "%.2fs" % (round(server_tuple.time, 1))
