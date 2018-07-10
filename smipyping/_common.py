@@ -117,41 +117,69 @@ class StrList(object):
     list of strings, formatted string, etc.), this class maps between the
     different versions.
 
-    TODO
+    Parameters:
+
+      input (:term:`string` or list of :term:`string`)
+        String or list of strings to manage.  Converted to list of strings
+        containing only the chars in the parameter chars. Any other chars
+        returns ValueError exception
+
+      chars (:term:`string`):
+        Set of characters that are allowed in each string in the resulting list
+
+      fold (:term:`integer` or None)
+        If integer, the string output is folded using the parameter as the
+        max length before folding.
+
     """
-    def __init__(self, input, chars=None):
+    def __init__(self, input, match=None):
         """
         Create an internal variable that is a list of the value of each
         version definition in the list
         Used to manage lists of SMI versions because the string form of this
         list can have multiple forms (1.2/2.3, 1.2, 2.3, 1.2 1.3)
 
+        Parameters:
+
+
         TODO test if only chars in chars are in string.
         """
+        self._list_ = []
         if isinstance(input, six.string_types):
             if '/' in input:
-                self._list_form = input.split("/")
+                self._list_ = input.split("/")
             elif ',' in input:
-                self.self._list_form = input.split("/")
+                self._list_ = input.split(",")
             elif " " in input:
-                self._list_form = input.split("/")
+                self._list_ = input.split(" ")
         elif isinstance(input, list):
-            self._list_form = input
+            self._list_ = input
         elif isinstance(input, tuple):
-            self._list_form = list(input)
-
+            self._list_ = list(input)
         else:
             raise ValueError("Versions Strlist %s not valid type" % input)
 
-        for v in self._list_form:
-            v.strip()
+        self._list_ = [item.strip() for item in self._list_]
+        for item in self._list_:
+            if match and re.match(match, item) is None:
+                raise ValueError('String "%s" does not match regex %s' %
+                                 (item, match))
+
+    def __str__(self):
+        """
+            Return string of versions separated by ",
+        """
+        return ", ".join(self._list_)
 
     def __repr__(self):
         """
             Return string of versions separated by ",
         """
-        return ", ".join(self.list_form)
+        return ", ".join(self._list_)
 
     @property
-    def list_form(self):
-        return self._list_form
+    def list_(self):
+        """
+            Return the list form of the input
+        """
+        return self._list_

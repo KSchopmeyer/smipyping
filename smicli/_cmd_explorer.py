@@ -21,6 +21,7 @@ from __future__ import print_function, absolute_import
 import click
 from smipyping._explore import Explorer
 
+from smipyping._common import StrList
 from .smicli import cli, CMD_OPTS_TXT
 from ._click_common import fold_cell, print_table
 
@@ -221,10 +222,15 @@ def report_server_info(servers, targets_tbl, output_format,
             if smi_profile_list is not None:
                 sorted(smi_profile_list)
                 cell_str = ", ". join(sorted(smi_profile_list))
-                smi_profiles = (fold_cell(cell_str, 14))
+                smi_profiles = fold_cell(cell_str, 14)
                 # compare the new tuples against those in targe_tbl
                 target_smi_profiles = target['SMIVersion']
-                #print('SMI_PROFILES COMPARE svr=%s\ntarget=%s' % (smi_profiles, target_smi_profiles))
+                regex = r'^[0-9.]*$'
+                c1 = StrList(smi_profile_list, match=regex)
+                c2 = StrList(target_smi_profiles, match=regex)
+                if set(c1.list_) != set(c2.list_):
+                    print('SMI_PROFILES COMPARE svr=%s\ntarget=%s' %
+                          (smi_profiles, target_smi_profiles))
 
         disp_time = None
         if server_tuple.time <= 60:
