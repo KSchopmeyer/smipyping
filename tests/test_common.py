@@ -253,6 +253,5 @@ class TestVersionsClass(object):
                 v = StrList(ver_in, chars=re)
         else:
             v = StrList(ver_in, re)
-            print('REPR %r' % v)
             assert v.list_ == exp_repr
             assert str(v) == exp_str

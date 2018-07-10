@@ -25,7 +25,8 @@ import six
 
 from smipyping import SimplePingList, PingsTable, ProgramsTable, UsersTable
 from .smicli import cli, CMD_OPTS_TXT
-from ._click_common import fold_cell, print_table
+from ._click_common import fold_cell, print_table, validate_prompt, \
+    get_target_id
 
 from smipyping._common import get_list_index
 
@@ -106,13 +107,15 @@ def history_create(context, **options):  # pylint: disable=redefined-builtin
 @click.option('-t', '--targetId', type=int,
               required=False,
               help='Get results only for the defined targetID')
-@click.option('-r', 'result', type=click.Choice(['full', 'status', '%ok']),
+@click.option('-r', 'result', type=click.Choice(['full', 'status', '%ok',
+                                                 'count']),
               default='status',
               help='Display. "full" displays all records, "status" displays '
                    'status summary by id. Default=status. "%ok" reports '
                    'percentage pings OK by Id and total count.')
-@click.option('-S' '--summary', is_flag=True, required=False, default=False,
-              help='If set only a summary is generated.')
+#  TODO determine if there is any reason for this
+# @click.option('-S', '--summary', is_flag=True, required=False, default=False,
+#               help='If set only a summary is generated.')
 @click.pass_obj
 def history_list(context, **options):  # pylint: disable=redefined-builtin
     """
@@ -123,24 +126,21 @@ def history_list(context, **options):  # pylint: disable=redefined-builtin
 
     This subcommand lists the ping table entries as a table with one
     record per row.  Since the pings table can be very large, the output
-    of this subcommand can be large unless limited by date ranges and other
-    filters.
+    of this subcommand can be large unless limited by date ranges and the
+    result filters.
 
     """
     context.execute_cmd(lambda: cmd_history_list(context, options))
 
 
 @history_group.command('stats', options_metavar=CMD_OPTS_TXT)
-@click.option('-S', '--summary', is_flag=True, required=False, default=False,
-              help='If set only a summary is generated.')
 @click.pass_obj
 def history_stats(context, **options):  # pylint: disable=redefined-builtin
     """
     Get stats on pings in database.
 
-    TThis subcommand shows only a limited set of statistics on the
-    entries in the pings database table based on the filters defined as
-    command input parameters.
+    This subcommand only shows the count of records and the oldest and
+    newest record in the pings database
 
     TODO we need to grow this output to more statistical information
 
@@ -150,14 +150,16 @@ def history_stats(context, **options):  # pylint: disable=redefined-builtin
 
 @history_group.command('delete', options_metavar=CMD_OPTS_TXT)
 @click.option('-s', '--startdate', type=Datetime(format='%d/%m/%y'),
-              default=datetime.datetime.now(),
-              required=False,
+              required=True,
               help='Start date for pings to be deleted. Format is dd/mm/yy')
 @click.option('-e', '--enddate', type=Datetime(format='%d/%m/%y'),
-              default=datetime.datetime.now(),
-              required=False,
+              required=True,
               help='End date for pings to be deleted. Format is dd/mm/yy')
-@click.option('-t', '--targetID', type=int,
+@click.option('-n', '--numberofdays', type=int,
+              required=False,
+              help='Alternative to enddate. Number of days to report from'
+                   ' startdate. "enddate" ignored if "numberofdays" set')
+@click.option('-t', '--TargetID', type=int,
               required=False,
               help='Optional targetID. If included, delete ping records only '
                    'for the defined targetID. Otherwise all ping records in '
@@ -172,7 +174,11 @@ def history_delete(context, **options):  # pylint: disable=redefined-builtin
 
     ex. smicli history delete --startdate 09/09/17 --endate 09/10/17
 
-    WARNING: The default is to delete all records in the ping database table
+    Because this could accidently delete all history records, this command
+    specifically requires that the user provide both the start date and either
+    the enddate or number of days. It makes no assumptions about dates.
+
+    It also requires verification before deleting any records.
 
     """
     context.execute_cmd(lambda: cmd_history_delete(context, options))
@@ -229,11 +235,12 @@ def history_weekly(context, **options):  # pylint: disable=redefined-builtin
                    ' startdate. "enddate" ignored if "numberofdays" set')
 @click.option('-r', '--result', type=click.Choice(['full', 'status', '%ok']),
               default='status',
-              help='Display. "full" displays all records, "status" displays '
+              help='"full" displays all records, "status" displays '
                    'status summary by id. "%ok" reports percentage '
                    'pings OK by Id and total count. Default="status". ')
-@click.option('-S' '--summary', is_flag=True, required=False, default=False,
-              help='If set only a summary is generated.')
+# TODO this is worthless right now
+# @click.option('-S', '--summary', is_flag=True, required=False, default=False,
+#              help='If set only a summary is generated.')
 @click.pass_obj
 def history_timeline(context, ids, **options):
     # pylint: disable=redefined-builtin
@@ -361,36 +368,63 @@ def cmd_history_delete(context, options):
         Delete records from the pings table based on start date, end date,
         and optional id.
 
+        This command requires explicit start_date and end_date or number_of_days
+        and does not allow making assumptions for these dates.
     """
-    target_id = options['targetid']
-
-    # TODO standard function for target_id valid test
-    if target_id:
-        try:
-            context.targets_tbl.get_target(target_id)  # noqa: F841
-        except KeyError:
-            raise click.ClickException('Invalid Target: target_id=%s not in '
-                                       'database %s.' %
-                                       (target_id, context.targets_tbl))
+    targetid = None
+    if 'TargetID' in options:
+        targetid = options['TargetID']
+        targetid = get_target_id(context, targetid, options)
+        if targetid is None:
+            return
 
     pings_tbl = PingsTable.factory(context.db_info, context.db_type,
                                    context.verbose)
 
-    record_count = pings_tbl.record_count()
+    before_record_count = pings_tbl.record_count()
+    number_of_days = options['numberofdays']
+    start_date = options['startdate']
+    end_date = options['enddate']
 
-    # Verify that you have correct data
-    click.echo('Proposed delete')
+    if number_of_days and end_date:
+        raise ValueError('Simultaneous enddate %s and number of days %s '
+                         'parameters not allowed' %
+                         (end_date, number_of_days))
+
+    if end_date is None and number_of_days is None:
+        raise click.ClickException("Either explicit end-date or "
+                                   "number-of-days required.")
+
+    if number_of_days:
+        end_date = start_date + datetime.timedelta(days=number_of_days)
+
+    if targetid:
+        click.echo('Proposed deletions for target_id=%s, startdate: %s, '
+                   'end_date: %s' %
+                   (targetid, start_date, end_date))
+    else:
+        click.echo('Proposed deletions for all targets: startdate: %s, '
+                   'end_date: %s' % (start_date, end_date))
+
+    # rmv_count = pings_tbl.count_by_daterange(start_date, end_date,
+    #                                          target_id=targetid)
+    rows = pings_tbl.select_by_daterange(start_date, end_date,
+                                         target_id=targetid)
+    count = len(rows)
+    context.spinner.stop()
+    target_display = targetid if targetid else "All Targets"
+    if not validate_prompt('Delete %s records %s' % (count, target_display)):
+        click.echo('Operation aborted by user.')
+        return
 
     try:
         pings_tbl.delete_by_daterange(
-            options['startdate'],
-            end_date=options['enddate'],
-            number_of_days=options['numberofdays'],
-            target_id=target_id)
+            start_date,
+            end_date,
+            target_id=targetid)
 
-        context.spinner.stop()
         click.echo('Delete finished. removed %s records' %
-                   (pings_tbl.record_count() - record_count))
+                   (pings_tbl.record_count() - before_record_count))
     except Exception as ex:
         raise click.ClickException("Exception on db update; %s: %s" %
                                    (ex.__class__.__name__, ex))
@@ -409,9 +443,6 @@ def cmd_history_stats(context, options):
     click.echo('Total=%s records\noldest: %s\nnewest: %s' %
                (count, oldest, newest))
     # TODO add by pgm, etc. options
-
-    # get first and last record.
-    # if verbose output, get count by program
 
 
 def cmd_history_create(context, options):
@@ -435,7 +466,7 @@ def cmd_history_create(context, options):
         print('ping data %s %s %s' % (result[0], result[1], timestamp))
         pings_tbl.append(result[0], result[1], timestamp)
 
-    # print results of the scan.
+    # displayresults of the scan.
     headers = ['id', 'addr', 'result', 'exception', 'time', 'company']
     rows = []
     for result in results:
@@ -499,7 +530,7 @@ def cmd_history_list(context, options):
             tbl_row = [ping_id, target_id, ip, company, timestamp, status]
             tbl_rows.append(tbl_row)
 
-    # if status show counts of ping records by status
+    # if result == status show counts of ping records by status by target
     elif options['result'] == 'status':
         headers = ['id', 'ip', 'company', 'status', 'count']
 
@@ -524,6 +555,7 @@ def cmd_history_list(context, options):
                 row = [target_id, ip, company, status, value[key]]
                 tbl_rows.append(row)
 
+    # Shows summary records indicating % ok for the period defined
     elif options['result'] == '%ok':
         headers = ['id', 'ip', 'company', 'product', '%OK', 'total']
 
@@ -547,15 +579,47 @@ def cmd_history_list(context, options):
             row = [target_id, ip, company, product, value[0], value[2]]
             tbl_rows.append(row)
 
+    # show count of records for date range
+    elif options['result'] == 'count':
+        headers = ['TargetID', 'Records', 'Company', 'IP']
+
+        rows = pings_tbl.select_by_daterange(
+            options['startdate'],
+            end_date=options['enddate'],
+            number_of_days=options['numberofdays'],
+            target_id=target_id)
+        tbl_rows = []
+        count_tbl = {}
+        for row in rows:
+            target_id = row[1]
+            if target_id in context.targets_tbl:
+                target = context.targets_tbl[target_id]
+                company = target.get('CompanyName', ' empty')
+                ip = target.get('IPAddress', 'empty')
+            else:
+                company = "%s id unknown" % target_id
+                ip = '??'
+
+            if target_id in count_tbl:
+                x = count_tbl[target_id]
+                count_tbl[target_id] = (x[0] + 1, x[1], x[2])
+            else:
+                count_tbl[target_id] = (1, company, ip)
+
+        for target_id, value in six.iteritems(count_tbl):
+            row = [target_id, value[0], value[1], value[2]]
+            tbl_rows.append(row)
+
     else:
         raise click.ClickException('Invalid result: %s'
                                    % (options['result']))
 
     context.spinner.stop()
     print_table(tbl_rows, headers,
-                title=('Ping Status for %s to %s' %
+                title=('Ping Status for %s to %s, table_type: %s' %
                        (options['startdate'],
-                        options['enddate'])),
+                        options['enddate'],
+                        options['result'])),
                 table_format=context.output_format)
 
 

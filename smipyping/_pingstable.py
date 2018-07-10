@@ -282,7 +282,6 @@ class MySQLPingsTable(SQLPingsTable):
 
         if end_date is None:
             end_date = datetime.datetime.now()
-
         return (start_date, end_date)
 
     def select_by_daterange(self, start_date, end_date=None,
@@ -403,11 +402,11 @@ class MySQLPingsTable(SQLPingsTable):
             percent_dict[target_id_] = (percent_ok, ok_count, total)
         return percent_dict
 
-    def delete_by_daterange(self, start_date, end_date=None,
-                            number_of_days=None, target_id=None):
+    def delete_by_daterange(self, start_date, end_date, target_id=None):
         """
         Deletes records from the database based on start_date, end_date and
-        optional target_id
+        optional target_id. This requires start date and end date explicitly
+        and does not allow number of days paramter
 
         Parameters:
 
@@ -416,17 +415,15 @@ class MySQLPingsTable(SQLPingsTable):
             timestamp in the database is used.
 
           end_date(:class:`py:datetime.datetime` or `None`):
-            The end datetime for the scan.  If `None`, the current date time
-            is used
+            The end datetime for the scan.
+
+          Target_id: Optional target it to filter delete request.
 
         Exceptions:
             Database error if the execute failed.
 
         """
         cursor = self.connection.cursor()
-
-        if end_date is None and number_of_days is None:
-            end_date = datetime.datetime.now()
 
         try:
             try:
@@ -447,6 +444,37 @@ class MySQLPingsTable(SQLPingsTable):
 
             self.connection.commit()
 
+        finally:
+            cursor.close()
+
+    # TODO this always returns an error and an incomplete end-date. the
+    # input is correct however. Appears to be an issue with the SQL syntac
+    # and in particular, the combination of COUNT and the WHERE clause
+    def count_by_daterange(self, start_date, end_date=None,
+                           number_of_days=None, target_id=None):
+        """
+        Counts the number of records by date range and ID
+
+        """
+        cursor = self.connection.cursor()
+
+        start_date, end_date = self.compute_dates(
+            start_date,
+            end_date=end_date,
+            number_of_days=number_of_days)
+        print('COUNT_BY %r %r' % (start_date, end_date))
+
+        try:
+            if target_id is None:
+                cursor.execute('COUNT(*)  '
+                               'FROM Pings '
+                               'WHERE Timestamp BETWEEN %s AND %s',
+                               (start_date, end_date))
+            else:
+                cursor.execute('COUNT(*) '
+                               'FROM Pings WHERE TargetID = %s AND '
+                               'Timestamp BETWEEN %s AND %s',
+                               (target_id, start_date, end_date))
         finally:
             cursor.close()
 

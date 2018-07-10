@@ -16,22 +16,32 @@ very simple installations or a sql database for more complex installations).
 The database contains the following tables:
 
 1. Companies - A table of the companies responsibile for the servers. This
-   relates each company to one or more Targets
-2. Targets - A table of the WBEM Servers to be tested with smipyping.  This includes key information
-   about each server that cannot be derived from knowing only the host name
-   of the server including passwords. Any information that can be derived
-   from the servers themselves is normally not maintained in this table.
+   relates each company to one or more targets in the targets table and relates
+   users in the users table to companies.
+
+2. Targets - A table of the WBEM Servers to be tested with smipyping.  This
+   includes key information about each server that cannot be derived from
+   knowing only the host name of the server including passwords. Any
+   information that can be derived from the servers themselves is normally not
+   maintained in this table.
+
 3. Users - A table of users primarily as a means of contacting the personnel
    responsible for each server and as a desination for reports. This table
    relates each user to an entry in the companies table.
+
 4. Pings - A table that is augmented when status checks are run on
    the servers. It provides historical information on the status of
    those checks for each server (up/down, etc.). This table is updated when
    the command ``smicli cimping all --saveresult`` is run adding the status
    of each server test to the pings table.  Each status entry identifies
    the target, time, and status returned from the ping.
+
 5. Notifications - A table showing what notifications of server status
    changes have been sent.
+
+6. Programs - A table showing the programs defined by SMI.  This is only used
+   to define a program for each year and only used to send the regular weekly
+   report.  Each program includes a name, start date, and end date.
 
 
 We intend to make this database as general but as simple as possible however,
@@ -197,6 +207,9 @@ is the schema for smipyping version 0.7.0::
     ) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=81 ;
 
 CSV database
+^^^^^^^^^^^^
+
+**NOTE:** The CSV database capabilityh is currently disabled.
 
 The schema for a csv database is simply the column names as shown below.
 
@@ -208,3 +221,57 @@ a companies table.
 The following is an example of a row in a csv table:
 
     01,Inova,root/cimv2,,OpenPegasus,,,OpenPegasus,mypw,interop,http,5988,Enabled
+
+
+Database Installationsetup
+--------------
+
+MySQL Database
+^^^^^^^^^^^^^^
+
+The MySQL Dabase setup involves several steps including:
+
+1. Install database software consistent with the OS
+
+2. Install the SMIStatus schema name
+
+3. Install the database from a previous download of the database or from the schema to create empty tables.
+
+Install MySQL Database
+
+This step is OS dependent.   Note, that for the time being we are using MySQL 5.7 or its equivalent
+more information on the stability of the new MySQL database 8.0 release.
+
+See information on MySQL database installation appropriate for the OS
+
+Create the SMIStatus Database.
+
+This step is normally required before the database can be loaded from an existing dump or from the schema.
+The instructions below assume that the cmd line `mysql` utility that is part of MySQL is being used to
+install the db
+
+1. With MySQL installed and running
+
+   a. Start the mysql utility (mysql -u xxxx -p)
+   b. Determine if this db is installed (SHOW DATABASES)
+   c. If SMIStatus is not installed
+      DATABASE CREATE SMIStatus
+   d. Again do SHOW DATABASES to insure it is created.
+   e. exit:
+   f. mysql -u xxx -p < (Name of sql dump file?
+
+2. Be sure the password and user name are correct in the smicli.ini file:
+
+    #
+    # Logon credentials for the mysql database.
+    #
+    user = (Name of mysql user)
+    password = (MySQL password for the defined user)
+
+3. Confirm that the db install worked by testing several smicli commands that access the db including:
+   a smicli users list
+   b. smicli programs list
+   c. smicli targets list
+
+
+

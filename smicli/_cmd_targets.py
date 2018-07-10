@@ -19,10 +19,10 @@ data file.
 from __future__ import print_function, absolute_import
 
 import click
-import six
 
 from .smicli import cli, CMD_OPTS_TXT
-from ._click_common import print_table, pick_target_id, validate_prompt
+from ._click_common import print_table, pick_target_id, validate_prompt, \
+    get_target_id
 from ._common_options import add_options, no_verify_option
 
 
@@ -224,41 +224,6 @@ def display_all(target_table, fields=None, company=None,
                  output_format=output_format)
 
 
-def get_target_id(context, targetid, options):
-    """
-        Get the target based on the value of targetid.  If targetid is an
-        integer, get targetid directly and generate exception if this fails.
-        If it is ? use the interactive pick_target_id.
-        This function executes the pick function if the targetid is "?" or
-        if the interactive flag is set
-    """
-
-    context.spinner.stop()
-    print('GET_TARGET0_ID targetit=%s options=%s' % (targetid, options))
-
-    if 'interactive' in options:
-        targetid = pick_target_id(context)
-    elif isinstance(targetid, six.integer_types):
-        try:
-            context.targets_tbl.get_target(targetid)
-            return targetid
-        except KeyError as ke:
-            raise click.ClickException("Targed ID %s  not valid: exception %s" %
-                                       (targetid, ke))
-    elif isinstance(targetid, six.string_types):
-        if targetid == "?":
-            targetid = pick_target_id(context)
-        else:
-            try:
-                targetid = int(targetid)
-            except ValueError:
-                click.ClickException('TargetID must be integer or "?" not %s' %
-                                     targetid)
-        if targetid is None:
-            click.echo("Operation aborted by user.")
-    return targetid
-
-
 def cmd_target_modify(context, targetid, options):
     """
     Modify the fields of a target.  Any of the field defined by options can
@@ -267,7 +232,7 @@ def cmd_target_modify(context, targetid, options):
     # get targetid if options are for interactive request and validate that
     # it is valid. Returns None if interactive request is aborted
     targetid = get_target_id(context, targetid, options)
-    print('MODIFY rtn %s' % targetid)
+    # TODO print('MODIFY rtn %s' % targetid)
     if targetid is None:
         return
 
@@ -301,9 +266,13 @@ def cmd_target_modify(context, targetid, options):
         context.targets_tbl.update(targetid, changes)
     else:
         context.spinner.stop()
-        click.echo('Proposed changes:')
+        click.echo('Proposed changes for id: %s company: %s, product: %s:' %
+                   (targetid, target_record[targetid]['Company'],
+                    target_record['Product']))
         for key, value in changes.items():
-            click.echo('  %s: "%s" to "%s"' % (key, target_record[key], value))
+            click.echo('  %s: "%s" to "%s"' % (targetid,
+                                               target_record[targetid],
+                                               value))
         if validate_prompt('Modify target id %s' % targetid):
             context.targets_tbl.update(targetid, changes)
         else:

@@ -123,7 +123,9 @@ def sweep_todo(context, **options):  # pylint: disable=redefined-builtin
 
 def cmd_sweep_nets(context, options):
     """
-    TODO
+    Build the list of subnets to sweep from the inputs and execute the
+    server sweep over that subnet.  Upon the completion, create a report
+    defining servers found in the sweep.
     """
     # Sweep the servers and display result
     if options['scantype'] != 'tcp':
