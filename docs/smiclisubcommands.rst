@@ -61,30 +61,44 @@ The command groups available for smicli are:
    to explore status and state of providers including profiles, namespaces,
    general size of tables, etc.
 
-3. **provider:** -  Command group for provider operations. This allows users to
-   explore providers (targets) in detail.
+3. **provider:** -  Command group for detailed provider operations. This allows
+   users to explore providers (targets) in detail.
 
-4. **sweep:** -     Command group to sweep for servers. Allows testing all addresses
-   in a range of ip address for possible WBEM Servers and determining if these
-   are already in the targets table.
+4. **sweep:** -     Command group to sweep for servers. Allows testing all
+   addresses in a range of ip address for possible WBEM Servers and determining
+   if these are already in the targets table. Typically a search would be
+   executed for all IP addresses in a known subnet and for selected ports.
 
 5. **history:** -   Command group to manage the history (pings) table. This includes
    a number of reports to summarize history of individual and all provider
-   status over time periods.6. **programs:**   Command group to process the
-   programs table. Provides the capability to list and modify entries.
+   status over time periods.
+
+6. **programs:**   Command group to view and manage the
+   programs table. This table is the definition of a single SMI program and
+   defines the program name, start date and end date.
+   Provides the capability to list and modify entries.
 
 6. **targets:** -   Command group for managing targets data.  This is the table of
    providers currently defined and includes information on the address, security,
    etc on each entry.  Normally it includes information that cannot be
-   retrievied from the providers themselves.
+   retrievied from the providers themselves.  This subcommand allows listing
+   and managing the entries of the targets table.
 
-7. **companies:** - Command group to manage the companies table.  This group provides
-   viewing and modifying entries in the table.
+7. **companies:** - Command group to manage the companies table.  The companies
+   table defines the company names of the each company involved and has
+   references in the targets table, and the users table so that the entries
+   in these tables can be linked to a company
+   This group provides viewing and managing entries in the table.
 
-8. **users:**  -    Command group to process the users table. This group provides
-   viewing and   modifying entries in the table.
+8. **users:**  - Command group to process the users table. The users table
+   defines users associated with a company including email addresses so that
+   notifications, reports, etc. can be forwarded to users concerning status
+   and status changes of the targets. This group provides
+   viewing and managing entries in the table.
 
-9. **notifications** - Command group to manage the notifications table
+9. **notifications** - Command group to manage the notifications table. The
+   notifications table is a history of notifications sent concerning changes
+   to target status.
 
 10. **help:**  -  Show help message for interactive mode.
 

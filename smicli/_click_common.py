@@ -30,7 +30,8 @@ from ._tableoutput import HtmlTable
 
 __all__ = ['DEFAULT_CONFIG_FILE', 'SMICLI_PROMPT', 'SMICLI_HISTORY_FILE',
            'DEFAULT_SMICLI_CONFIG_FILES', 'pick_from_list',
-           'pick_multiple_from_list', 'print_table', 'fold_cell']
+           'pick_multiple_from_list', 'print_table', 'fold_cell',
+           'get_target_id']
 
 USE_TABULATE = False
 #: Default configuration file for smipyping cli
@@ -195,8 +196,68 @@ def pick_target_id(context):
     index = pick_from_list(context, display_options, "Pick TargetID:")
     if index is None:
         click.echo('Abort command')
-        return
+        return None
     return targets_list[index]
+
+
+def get_target_id(context, targetid, options=None):
+    """
+        Get the target based on the value of targetid or the value of the
+        interactive option.  If targetid is an
+        integer, get targetid directly and generate exception if this fails.
+        If it is ? use the interactive pick_target_id.
+        If options exist test for 'interactive' option and if set, call
+        pick_target_id
+        This function executes the pick function if the targetid is "?" or
+        if options is not None and the interactive flag is set
+
+        This is a support function for any subcommand requiring the target id
+
+        This support function always tests the target_id to against the
+        targets table.
+
+        Returns:
+            Returns integer target_id of a valid targetstbl TargetID
+
+        raises:
+          KeyError if target_id not in table
+    """
+
+    context.spinner.stop()
+    print('GET_TARGET_ID target_id=%s options=%s' % (targetid, options))
+
+    if options and 'interactive' in options:
+        targetid = pick_target_id(context)
+    elif isinstance(targetid, six.integer_types):
+        try:
+            context.targets_tbl.get_target(targetid)
+            context.spinner.start()
+            return targetid
+        except KeyError as ke:
+            raise click.ClickException("Target ID %s  not valid: exception %s" %
+                                       (targetid, ke))
+    elif isinstance(targetid, six.string_types):
+        if targetid == "?":
+            targetid = pick_target_id(context)
+        else:
+            try:
+                targetid = int(targetid)
+            except ValueError:
+                click.ClickException('TargetID must be integer or "?" not %s' %
+                                     targetid)
+            try:
+                context.targets_tbl.get_target(targetid)
+                context.spinner.start()
+                return targetid
+            except KeyError as ke:
+                raise click.ClickException("Target ID %s  not valid: "
+                                           "exception %s" %
+                                           (targetid, ke))
+
+        if targetid is None:
+            click.echo("Operation aborted by user.")
+    context.spinner.start()
+    return targetid
 
 
 def set_input_variable(ctx, var_, config_file_name, default_value):
