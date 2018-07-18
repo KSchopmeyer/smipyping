@@ -1,7 +1,7 @@
 # Control file for Travis CI (http://travis-ci.org)
 # Must be located in the root directory of the Git repository.
 
-# Pywbemtools uses pbr to determine its version, which uses the newest tag
+# smipyping uses pbr to determine its version, which uses the newest tag
 # it finds back in the commit history. We need to make sure that tag
 # gets cloned, so we increase the depth of the shallow repo clone Travis
 # creates, beyond its default of 50.
@@ -31,11 +31,11 @@ sudo: required
 # Note: pypy is excluded because M2Crypto does not install.
 matrix:
   include:
-    - os: linux
-      language: python
-      python: "2.7"
-      env:
-        - PACKAGE_LEVEL=minimum
+#    - os: linux
+#      language: python
+#      python: "2.7"
+#      env:
+#        - PACKAGE_LEVEL=minimum
     - os: linux
       language: python
       python: "2.7"
@@ -46,11 +46,11 @@ matrix:
 #      python: "3.4"
 #      env:
 #        - PACKAGE_LEVEL=minimum
-    - os: linux
-      language: python
-      python: "3.4"
-      env:
-        - PACKAGE_LEVEL=latest
+#    - os: linux
+#      language: python
+#      python: "3.4"
+#      env:
+#        - PACKAGE_LEVEL=latest
 #    - os: linux
 #      language: python
 #      python: "3.5"
