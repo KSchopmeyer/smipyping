@@ -108,16 +108,17 @@ def pick_from_list(context, options, title):
         index += 1
         click.echo('%s: %s' % (index, str_))
     selection = None
-    msg = 'Input integer between 0 and %s or Ctrl-C to exit selection: ' % index
+    msg = 'Input integer between 0 and %s or Enter to abort selection: ' % index
     while True:
         try:
-            selection = int(local_prompt(unicode(msg)))
+            selection = local_prompt(unicode(msg))
+            if not selection:
+                return None
+            selection = int(selection)
             if selection >= 0 and selection <= index:
                 return selection
         except ValueError:
             pass
-        except KeyboardInterrupt:
-            raise ValueError
         click.echo('%s Invalid. %s' % (selection, msg))
     context.spinner.start()
 
@@ -155,7 +156,9 @@ def pick_multiple_from_list(context, options, title):
         selection_txt = None
         try:
             response = local_prompt(
-                u'Select multiple entries by index or Ctrl-C to exit >')
+                u'Select multiple entries by index or Enter to abort >')
+            if not response:
+                return None
             selections = response.split()
             for selection_txt in selections:
                 if selection_txt.isdigit():
@@ -170,10 +173,8 @@ def pick_multiple_from_list(context, options, title):
             return selection_list
         except ValueError:
             selection_list = None
-        except KeyboardInterrupt:
-            raise ValueError
-        print('%s Invalid. Input list of integers between 0 and %s or Ctrl-C '
-              'to exit.' % (selection_txt, index))
+        print('%s Invalid. Input list of integers between 0 and %s or Enter '
+              'to abort selection.' % (selection_txt, index))
     context.spinner.start()
 
 
@@ -189,11 +190,15 @@ def pick_target_id(context):
     """
     targets_list = context.targets_tbl.keys()
     display_options = []
+
     for t in targets_list:
         display_options.append(u'    %s %s %s' %
                                (t, context.targets_tbl[t]['IPAddress'],
                                 context.targets_tbl[t]['CompanyName']))
-    index = pick_from_list(context, display_options, "Pick TargetID:")
+    try:
+        index = pick_from_list(context, display_options, "Pick TargetID:")
+    except ValueError:
+        pass
     if index is None:
         click.echo('Abort command')
         return None
@@ -224,11 +229,13 @@ def get_target_id(context, targetid, options=None):
     """
 
     context.spinner.stop()
-    print('GET_TARGET_ID target_id=%s options=%s' % (targetid, options))
 
-    if options and 'interactive' in options:
+    if options and 'interactive' in options and options['interactive']:
+        print('interactive')
+        context.spinner.stop()
         targetid = pick_target_id(context)
     elif isinstance(targetid, six.integer_types):
+        print('integer')
         try:
             context.targets_tbl.get_target(targetid)
             context.spinner.start()
@@ -238,21 +245,24 @@ def get_target_id(context, targetid, options=None):
                                        (targetid, ke))
     elif isinstance(targetid, six.string_types):
         if targetid == "?":
+            context.spinner.stop()
             targetid = pick_target_id(context)
         else:
             try:
                 targetid = int(targetid)
             except ValueError:
-                click.ClickException('TargetID must be integer or "?" not %s' %
-                                     targetid)
+                raise click.ClickException('TargetID must be integer or "?" '
+                                           'not %s' % targetid)
             try:
                 context.targets_tbl.get_target(targetid)
                 context.spinner.start()
                 return targetid
             except KeyError as ke:
-                raise click.ClickException("Target ID %s  not valid: "
-                                           "exception %s" %
+                raise click.ClickException("TargetID %s  not found in Targets "
+                                           "table: exception %s" %
                                            (targetid, ke))
+    else:
+        raise click.ClickException("Target")
 
         if targetid is None:
             click.echo("Operation aborted by user.")

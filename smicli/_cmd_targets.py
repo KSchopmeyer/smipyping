@@ -21,8 +21,7 @@ from __future__ import print_function, absolute_import
 import click
 
 from .smicli import cli, CMD_OPTS_TXT
-from ._click_common import print_table, pick_target_id, validate_prompt, \
-    get_target_id
+from ._click_common import print_table, validate_prompt, get_target_id
 from ._common_options import add_options, no_verify_option
 
 
@@ -82,8 +81,8 @@ def targets_fields(context):
 
 
 @targets_group.command('get', options_metavar=CMD_OPTS_TXT)
-@click.argument('TargetID', type=int, metavar='TargetID', required=False)
-@click.option('-i', '--interactive', is_flag=True,
+@click.argument('TargetID', type=str, metavar='TargetID', required=False)
+@click.option('-i', '--interactive', is_flag=True, default=False,
               help='If set, presents list of targets to chose.')
 @click.pass_obj
 def targets_get(context, targetid, **options):
@@ -96,8 +95,8 @@ def targets_get(context, targetid, **options):
 
 
 @targets_group.command('disable', options_metavar=CMD_OPTS_TXT)
-@click.argument('TargetID', type=int, metavar='TargetID', required=True)
-@click.option('-e', '--enable', is_flag=True,
+@click.argument('TargetID', type=str, metavar='TargetID', required=True)
+@click.option('-e', '--enable', is_flag=True, default=False,
               help='Enable the Target if it is disabled.')
 @click.option('-i', '--interactive', is_flag=True,
               help='If set, presents list of targets to chose.')
@@ -232,7 +231,6 @@ def cmd_target_modify(context, targetid, options):
     # get targetid if options are for interactive request and validate that
     # it is valid. Returns None if interactive request is aborted
     targetid = get_target_id(context, targetid, options)
-    # TODO print('MODIFY rtn %s' % targetid)
     if targetid is None:
         return
 
@@ -334,20 +332,22 @@ def cmd_targets_fields(context):
 def cmd_targets_get(context, targetid, options):
     """Display the fields of a single provider record."""
 
-    context.spinner.stop()
-    if options['interactive']:
-        targetid = pick_target_id(context)
+    targetid = get_target_id(context, targetid, options)
+    if targetid is None:
+        return
 
+    context.spinner.start()
     try:
         target_record = context.targets_tbl.get_target(targetid)
 
         # TODO: Future need to order output.
+        context.spinner.stop()
         for key in target_record:
             click.echo('%s: %s' % (key, target_record[key]))
 
     except KeyError as ke:
-        click.echo('TargetID %s not in the database.' % targetid)
-        raise click.ClickException("%s: %s" % (ke.__class__.__name__, ke))
+        raise click.ClickException("TargetID %s not in database: %s" %
+                                   (targetid, ke))
 
     except Exception as ex:
         raise click.ClickException("%s: %s" % (ex.__class__.__name__, ex))
