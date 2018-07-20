@@ -55,7 +55,7 @@ def users_group():
               help='CompanyID for the company attached to this user')
 @click.option('--inactive', default=False, is_flag=True,
               help='Set the active/inactive state in the database for this '
-              'user. Default is active')
+              'user. An inactive user is ignored. Default is active')
 @click.option('--disable', default=False, is_flag=True,
               help='Disable notifications in the database for this '
               'user. Default is enabled')
@@ -126,13 +126,16 @@ def users_delete(context, id, **options):  # pylint: disable=redefined-builtin
 @click.pass_obj
 def users_modify(context, id, **options):  # pylint: disable=redefined-builtin
     """
-    Create fake cimping results in pings database.
+    Modify fields of a user in the user database.
 
-    Execute simple cim ping against the list of ids provided for target servers
-    in the database defined by each id in the list of ids creates a table
-    showing result.
+    This allows modifications of the fields for a particular specified by
+    the user id on input.
 
-    ex. smicli cimping ids 5 8 9
+    The user id must be specified in this command because that id should be
+    known to be able to define fields to modify.
+
+    ex. smicli users modify 9 -n fred
+    # changes the first name of the user with user id 9.
 
     """
     context.execute_cmd(lambda: cmd_users_modify(context, options))
@@ -282,8 +285,6 @@ def cmd_users_modify(context, id, options):
     """Delete a user from the database."""
 
     context.spinner.stop()
-    click.echo('Modify not implemented')
-    return
 
     users_tbl = UsersTable.factory(context.db_info, context.db_type,
                                    context.verbose)

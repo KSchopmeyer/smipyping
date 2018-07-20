@@ -89,7 +89,8 @@ def targets_get(context, targetid, **options):
     """
     Display details of single Targets database entry.
 
-    Use the `interactive` option to select the target from a list presented.
+    Use the `interactive` option or "?" for Target ID to select the target from
+    a list presented.
     """
     context.execute_cmd(lambda: cmd_targets_get(context, targetid, options))
 
@@ -105,7 +106,8 @@ def target_disable(context, targetid, enable, **options):
     """
     Disable a provider from scanning. This changes the database.
 
-    Use the `interactive` option to select the target from a list presented.
+    Use the `interactive` option  or "?" for target id to select the target
+    from a list presented.
     """
     context.execute_cmd(lambda: cmd_target_disable(context, targetid,
                                                    enable, options))
