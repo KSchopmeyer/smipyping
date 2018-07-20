@@ -411,7 +411,7 @@ class MySQLUsersTable(UsersTable):
             cursor.execute(sql)
             self.connection.commit()
         except Exception as ex:
-            print('userstable.append failed: exception %r' % ex)
+            print('userstable.modify failed: exception %s' % ex)
             self.connection.rollback()
             raise ex
         finally:
