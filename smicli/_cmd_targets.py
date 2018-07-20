@@ -98,7 +98,7 @@ def targets_get(context, targetid, **options):
 @click.argument('TargetID', type=str, metavar='TargetID', required=True)
 @click.option('-e', '--enable', is_flag=True, default=False,
               help='Enable the Target if it is disabled.')
-@click.option('-i', '--interactive', is_flag=True,
+@click.option('-i', '--interactive', is_flag=True, default=False,
               help='If set, presents list of targets to chose.')
 @click.pass_obj
 def target_disable(context, targetid, enable, **options):
@@ -113,7 +113,7 @@ def target_disable(context, targetid, enable, **options):
 
 @targets_group.command('modify', options_metavar=CMD_OPTS_TXT)
 @click.argument('TargetID', type=str, metavar='TargetID', required=True)
-@click.option('-e', '--enable', is_flag=True,
+@click.option('-e', '--enable', is_flag=True, default=False,
               help='Enable the Target if it is disabled.')
 @click.option('-i', '--ipaddress', type=str,
               required=False,
