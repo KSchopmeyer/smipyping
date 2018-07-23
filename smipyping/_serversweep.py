@@ -37,6 +37,9 @@ import Queue
 import itertools
 import six
 
+from pywbem import WBEMConnection, Error, AuthError, TimeoutError, \
+    CIMError, ConnectionError, CIM_ERR_INVALID_NAMESPACE
+
 from .config import MAX_THREADS
 from ._scanport_syn import check_port_syn
 from ._scanport_tcp import check_port_tcp
@@ -48,6 +51,12 @@ __all__ = ['ServerSweep', 'SCAN_TYPES']
 LOG = get_logger(__name__)
 
 SCAN_TYPES = ['tcp', 'syn', 'all']
+
+INTEROP_NAMESPACES = [
+    'interop',
+    'root/interop',
+    'root/PG_Interop',
+]
 
 
 class ServerSweep(object):
@@ -100,6 +109,16 @@ class ServerSweep(object):
         self.scan_type = scan_type
         self.logger = get_logger(SWEEP_LOGGER_NAME)
         self.kill_threads = False
+        self._sweep_time = 0
+
+    @property
+    def sweep_time(self):
+        """
+        Returns the total time for the process of sweeping the
+        defined servers. This does not include the subsequent analysis
+        time.
+        """
+        return self._sweep_time
 
     def check_port(self, test_address):
         """
@@ -399,72 +418,138 @@ class ServerSweep(object):
                 else:
                     print('%s %s' % (ip_address, status), file=f1)
 
-    def print_open_hosts_report(self, open_hosts):
+    def prep_open_hosts_report(self, open_hosts):
         """
-        Output report of the entries found.
+        Prepare a detailed set of information on items in the open_host list.
+
+        This includes the following:
+
+          * determine if the openhost is in the targets table. If it exists
+            add info from the targets_table including CompanyName, etc
+
+          * if it is not in the targets table, determine if it can be accessed
+            with any of the possible principals and credentials and if it
+            will return a CIM Response that is not an error.
 
         If userdata is found, include the userdata info including CompanyName,
         Product, etc.
-        """
-        print('\n')
-        if self.total_sweep_time <= 60:
-            execution_time = "%.2f sec" % (round(self.total_sweep_time, 1))
-        else:
-            execution_time = "%.2f min" % (self.total_sweep_time / 60)
 
-        range_txt = '%s:%s' % (self.min_octet_val, self.max_octet_val)
+        Returns:
+
+          rows(list of list of strings): Rows for display of data. Each row
+            contains fields for url(ipaddress:port), targetId if open host
+            found in target table
+          count of know found
+          count of unknown found
+
+        """
+        if self.total_sweep_time <= 60:
+            self._sweep_time = "%.2f sec" % (round(self.total_sweep_time, 1))
+        else:
+            self._sweep_time = "%.2f min" % (self.total_sweep_time / 60)
 
         unknown = 0
         known = 0
         rows = []
 
-        headers = ['IPAddress', 'CompanyName', 'Product', 'Error']
-
-        title = 'Open WBEMServers:subnet(s)=%s\n' \
-                'port(s)=%s range=%s, scan_type=%s time=%s\n' \
-                '    total pings=%s pings answered=%s' \
-                % (self.net_defs, self.ports, range_txt, self.scan_type,
-                   execution_time, self.total_pings, len(open_hosts))
-
-        if open_hosts:    # if open_hosts not zero
+        if open_hosts:
             # open_hosts.sort(key=lambda ip: map(int, ip.split('.')))
             # TODO this probably requires ordered dict rather than dictionary to
             # keep order. We are not outputing in full order. Note that
             # ip address itself is not good ordering since not all octets are
             # 3 char
-
+            cred_target_ids = self.targets_tbl.get_unique_creds()
             for host_data in open_hosts:
                 ip_address = '%s:%s' % (host_data[0], host_data[1])
                 if self.targets_tbl is not None:
-                    record_list = self.targets_tbl.get_targets_host(host_data)
-                    if record_list:
-                        # TODO this should be a list since there may be
-                        # multiples for single ip address
-                        entry = self.targets_tbl.get_target(record_list[0])
-                        if entry is not None:
-                            known += 1
-                            rows.append([ip_address,
-                                         entry['CompanyName'],
-                                         entry['Product'],
-                                         entry['SMIVersion']])
-                        else:
-                            unknown += 1
-                            print('Invalid entry %s %s %s' % (
-                                record_list[0], ip_address,
-                                "Not in user data"))
-                            rows.append([ip_address, "Not in base", "", ""])
+                    # Test for address already in table.
+                    targets_list = self.targets_tbl.get_targets_host(host_data)
+                    if targets_list:
+                        for targetid in targets_list:
+                            entry = self.targets_tbl.get_target(targetid)
+                            if entry is None:
+                                unknown += 1
+                                rows.append([ip_address, "Not in targets table",
+                                                         "", ""])
+                            else:
+                                known += 1
+                                rows.append(
+                                    [ip_address, entry['CompanyName'],
+                                     entry['Product'],
+                                     'SMI_VER %s' % entry['SMIVersion']])
                     else:
+                        status = self.test_host_params(cred_target_ids,
+                                                       host_data)
                         unknown += 1
-                        rows.append([ip_address, "Unknown"])
+                        rows.append([ip_address, "Unknown", "", status])
+
                 # no host info requested.
                 else:
                     rows.append([ip_address])
-        else:
-            print('No WBEM Servers found:subnet(s)=%s port(s)=%s range %s, %s' %
-                  (self.net_defs, self.ports, range_txt, execution_time))
+        return(rows, known, unknown)
 
-        # TODO this s a messy return
-        return(rows, headers, title, known, unknown, execution_time)
+    def test_host_params(self, cred_target_ids, host_data):
+        """
+        A open hostname, port has been found. This method tests possible
+        WBEMConnection parameters to determine there are any known passwords
+        that will be accepted or CIMOperations that will work and reports
+        the issues.  This helps determine if it is a real WBEM Server
+        """
+        # test if we can contact address with known creds
+        ip_address = '%s:%s' % (host_data[0], host_data[1])
+        status = "Unknown"
+        for cred in cred_target_ids:
+            scheme = 'http' if host_data[1] == 5988 else 'https'
+            host_url = "%s://%s" % (scheme, ip_address)
+            test_namespace = 'interop'
+            try:
+                self.test_host(host_url, test_namespace, principal=cred[0],
+                               credential=cred[1])
+                status = 'Found: usr=%s pw=%s ns=%s' % (cred[0], cred[1],
+                                                        test_namespace)
+                break
+            except CIMError as ce:
+                # if CIMError namespace try other namespaces
+                if ce.status_code == CIM_ERR_INVALID_NAMESPACE:
+                    for ns in INTEROP_NAMESPACES:
+                        try:
+                            print('TRY %s NS %s' % (host_url, ns))
+                            self.test_host(host_url, ns, principal=cred[0],
+                                           credential=cred[1])
+                            status = "Found %s %s %s" % (cred[0],
+                                                         cred[1], ns)
+                        except CIMError as cex:
+                            if cex.status_code != CIM_ERR_INVALID_NAMESPACE:
+                                print('Testother namespaces ip %s ns %s er %s'
+                                      % (host_url, ns, cex))
+                                break
+                    break
+                status = 'CIMError %s' % ce
+
+            # first ConnectionError returns failure
+            except ConnectionError as ce:
+                status = "ConnectionError %r" % ce
+                break
+
+            # repeates for all creds
+            except AuthError:
+                status = "Authorize fail with known users/pwds"
+
+            # First timeout causes failure
+            except TimeoutError:
+                status = ('Server Timeout')
+                break
+
+            # Repeats for all cred
+            except Error as er:
+                status = "Error %s" % er
+
+            # Repeats for all Cred
+            except Exception as ex:  # pylint: disable broad-except
+                status = 'General Exception %s' % ex
+                break
+
+        return status
 
     def sweep_servers(self):
         """
@@ -503,3 +588,34 @@ class ServerSweep(object):
         self.total_sweep_time = time.time() - start_time
 
         return(open_hosts)
+
+    def test_host(self, hosturl, namespace, principal=None, credential=None,
+                  timeout=10):
+        """
+        Builds a WBEMConnection and trys to contact the server defined by
+        ip address, port, principal, credential
+
+        If a single command executes returns True
+        """
+
+        creds = None
+
+        if principal is not None or credential is not None:
+            creds = (principal, credential)
+
+        conn = WBEMConnection(hosturl, creds, default_namespace=namespace,
+                              no_verification=True,
+                              timeout=timeout)
+        # conn.debug = self.debug
+        # if self.verbose:
+        #    print(self.get_connection_info(conn))
+
+        try:
+            conn.EnumerateClasses()
+            return
+        except Error as er:
+            raise er
+        except Exception as ex:
+            print('ERROR TESTSERVER url %s principal %s cred=%s er %s %r' %
+                  (hosturl, principal, credential, ex, ex))
+            raise ex

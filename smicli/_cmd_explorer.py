@@ -106,7 +106,7 @@ def explore_all(context, **options):
               default='full',
               help='Generate full or brief (fewer columns) report')
 @click.pass_obj
-def explore_id(context, ids, **options):
+def explore_ids(context, ids, **options):
     """
     Execute the general explorer on the providers defined by id.  Multiple
     ids may be supplied (ex. id 5 6 7)

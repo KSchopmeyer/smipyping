@@ -178,7 +178,7 @@ class TargetsTable(DBTableBase):
                 if self.disabled_target_id(x)]
 
     # TODO we have multiple of these. See get dict_for_host,get_hostid_list
-    def get_targets_host(self, host_id):
+    def get_targets_host(self, host_data):
         """
         If an record for `host_data` exists return that record,
         otherwise return None.
@@ -195,10 +195,9 @@ class TargetsTable(DBTableBase):
         # TODO clean up for PY 3
         return_list = []
         for key, value in self.data_dict.iteritems():
-            ip_address = value["IPAddress"]
             port = value["Port"]
             # TODO port from database is a string. Should be int internal.
-            if ip_address == host_id[0] and int(port) == host_id[1]:
+            if value["IPAddress"] == host_data[0] and int(port) == host_data[1]:
                 return_list.append(key)
 
         return return_list
@@ -347,6 +346,25 @@ class TargetsTable(DBTableBase):
             value = self.get_format_dict(name)
             total_width += value[1]
         return total_width
+
+    def get_unique_creds(self):
+        """
+        Get the set of Credentials and Principal that represents the
+        unique combination of both.  The result could be used to test with
+        all Principals/Credentials knows in the db.
+
+        Return list of targetIDs that represent unique sets of Principal and
+        Credential
+        """
+        creds = {k: '%s%s' % (v['Principal'], v['Credential'])
+                 for k, v in self.data_dict.iteritems()}
+        ucreds = dict([[v, k] for k, v in creds.items()])
+        unique_keys = dict([[v, k] for k, v in ucreds.items()])
+
+        unique_creds = [(self.data_dict[k]['Principal'],
+                         self.data_dict[k]['Credential']) for k in unique_keys]
+
+        return unique_creds
 
     def db_info(self):
         """get info on the database used"""

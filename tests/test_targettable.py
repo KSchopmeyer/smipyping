@@ -114,6 +114,9 @@ class TargetsTableTest(CsvTableTests):
         self.assertTrue(4 not in ids)
         self.assertTrue(6 in ids)
 
+    def test_get_unique_creds(self):
+        print(self.target_table.get_unique_creds())
+
     @unittest.skip("fails with csv")
     def test_display_disabled(self):
         # targets_tbl = self.get_targets_tbl()

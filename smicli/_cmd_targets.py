@@ -43,7 +43,8 @@ def targets_group():
 @targets_group.command('list', options_metavar=CMD_OPTS_TXT)
 @click.option('-f', '--fields', multiple=True, type=str, default=None,
               help='Define specific fields for output. It always includes '
-                   ' TargetID. Ex. -f TargetID -f CompanyName '
+                   'TargetID. Mulitple fields can be specified by repeating '
+                   'the option.\nEx. -f TargetID -f CompanyName '
                    'Default: a Standard list of fields')
 # @click.option('-c', '--company', type=str, default=None,
 #              help='regex filter to filter selected companies.')
