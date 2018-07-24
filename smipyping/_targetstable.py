@@ -418,7 +418,9 @@ class MySQLTargetsTable(SQLTargetsTable):
         super(MySQLTargetsTable, self).__init__(db_dict, dbtype, verbose,
                                                 output_format)
 
-        # Connect to database
+        self.connectdb(db_dict, verbose)
+
+    def connectdb(self, db_dict, verbose):
         try:
             connection = MySQLConnection(host=db_dict['host'],
                                          database=db_dict['database'],
@@ -495,7 +497,7 @@ class MySQLTargetsTable(SQLTargetsTable):
             raise ValueError('Error: putting Company Name in table %r error %s'
                              % (self.db_dict, ex))
 
-    def update(self, target_id, changes):
+    def update_fields(self, target_id, changes):
         """
         Update the database record defined by target_id with the dictionary
         of items defined by changes where each item is an entry in the
@@ -503,7 +505,6 @@ class MySQLTargetsTable(SQLTargetsTable):
         as the original value.
         """
         cursor = self.connection.cursor()
-
         # dynamically build the update sql based on the changes dictionary
         set_names = "SET "
         values = []
@@ -531,7 +532,7 @@ class MySQLTargetsTable(SQLTargetsTable):
             raise ex
         finally:
             self._load()
-            self.connection.close()
+            cursor.close()
 
 
 class CsvTargetsTable(TargetsTable):

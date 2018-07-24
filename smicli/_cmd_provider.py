@@ -19,7 +19,6 @@ data file.
 """
 from __future__ import print_function, absolute_import
 
-# from pprint import pprint as pp  # noqa: F401
 import click
 import six
 
@@ -27,10 +26,11 @@ from pywbem import WBEMServer, WBEMConnection, Error, ValueMapping
 
 from smipyping._ping import ping_host
 from smipyping.config import PING_TIMEOUT
-from smipyping._common import filter_stringlist
+from smipyping import filter_stringlist
+
 from .smicli import cli, CMD_OPTS_TXT
 from ._common_options import add_options, namespace_option
-from ._click_common import print_table
+from ._click_common import print_table, get_target_id
 
 
 @cli.group('provider', options_metavar=CMD_OPTS_TXT)
@@ -51,68 +51,69 @@ def provider_group():
 
 
 @provider_group.command('ping', options_metavar=CMD_OPTS_TXT)
-@click.option('-t', '--targetid', type=int, required=False,
-              help='Define a specific target ID from the database to '
-                   ' use. Multiples are allowed.')
+@click.argument('TargetID', type=str, metavar='TargetID', required=False)
+@click.option('-i', '--interactive', is_flag=True, default=False,
+              help='If set, presents list of targets to chose.')
 @click.option('--timeout', type=int, required=False, default=PING_TIMEOUT,
               help='Timeout for the ping in seconds.'
                    ' ' + '(Default %s.' % PING_TIMEOUT)
 @click.pass_obj
-def provider_ping(context, **options):
+def provider_ping(context, targetid, **options):
     """
     Ping the provider defined by targetid.
 
-    The options include providerid which defines one or more provider id's
-    to be displayed.
+    The TargetID defines a single provider (See targets table). It may
+    be picked from a list by entering ? or the --interactive option.
 
     The company options allows searching by company name in the provider
     base.
     """
-    context.execute_cmd(lambda: cmd_provider_ping(context, options))
+    context.execute_cmd(lambda: cmd_provider_ping(context, targetid, options))
 
 
 @provider_group.command('info', options_metavar=CMD_OPTS_TXT)
-@click.option('-t', '--targetid', type=int, required=False,
-              help='Define a specific target ID from the database to '
-                   ' use. Multiples are allowed.')
+@click.argument('TargetID', type=str, metavar='TargetID', required=False)
+@click.option('-i', '--interactive', is_flag=True, default=False,
+              help='If set, presents list of targets to chose.')
 @click.pass_obj
-def provider_info(context, **options):
+def provider_info(context, targetid, **options):
     """
-    Display the brand information for the providers defined by the options.
+    Display general info for the provider.
 
-    The options include providerid which defines one or more provider id's
-    to be displayed.
+    The TargetID defines a single provider (See targets table). It may
+    be picked from a list by entering ? or the --interactive option.
 
     The company options allows searching by company name in the provider
     base.
     """
-    context.execute_cmd(lambda: cmd_provider_info(context, options))
+    context.execute_cmd(lambda: cmd_provider_info(context, targetid, options))
 
 
 @provider_group.command('interop', options_metavar=CMD_OPTS_TXT)
-@click.option('-t', '--targetid', type=int, required=False,
-              help='Define a specific target ID from the database to '
-                   ' use. Multiples are allowed.')
+@click.argument('TargetID', type=str, metavar='TargetID', required=False)
+@click.option('-i', '--interactive', is_flag=True, default=False,
+              help='If set, presents list of targets to chose.')
 @click.pass_obj
-def provider_interop(context, **options):
+def provider_interop(context, targetid, **options):
     """
     Display the brand information for the providers defined by the options.
 
-    The options include providerid which defines one or more provider id's
-    to be displayed.
+    The TargetID defines a single provider (See targets table). It may
+    be picked from a list by entering ? or the --interactive option.
 
     The company options allows searching by company name in the provider
     base.
     """
-    context.execute_cmd(lambda: cmd_provider_interop(context, options))
+    context.execute_cmd(lambda: cmd_provider_interop(context, targetid,
+                                                     options))
 
 
 @provider_group.command('namespaces', options_metavar=CMD_OPTS_TXT)
-@click.option('-t', '--targetid', type=int, required=False,
-              help='Define a specific target ID from the database to '
-                   ' use. Multiples are allowed.')
+@click.argument('TargetID', type=str, metavar='TargetID', required=False)
+@click.option('-i', '--interactive', is_flag=True, default=False,
+              help='If set, presents list of targets to chose.')
 @click.pass_obj
-def provider_namespaces(context, **options):
+def provider_namespaces(context, targetid, **options):
     """
     Display the brand information for the providers defined by the options.
 
@@ -122,37 +123,41 @@ def provider_namespaces(context, **options):
     The company options allows searching by company name in the provider
     base.
     """
-    context.execute_cmd(lambda: cmd_provider_namespaces(context, options))
+    context.execute_cmd(lambda: cmd_provider_namespaces(context, targetid,
+                                                        options))
 
 
 @provider_group.command('profiles', options_metavar=CMD_OPTS_TXT)
-@click.option('-t', '--targetid', type=int, required=False,
-              help='Define a specific target ID from the database to '
-                   ' use. Multiple options are allowed.')
-@click.option('-o', '--organization', type=int, required=False,
+@click.argument('TargetID', type=str, metavar='TargetID', required=False)
+@click.option('-i', '--interactive', is_flag=True, default=False,
+              help='If set, presents list of targets to chose.')
+@click.option('-o', '--organization', type=str, required=False,
               help='Optionally specify organization for the profiles')
-@click.option('-n', '--name', type=int, required=False,
+@click.option('-n', '--name', type=str, required=False,
               help='Optionally specify name for the profiles')
-@click.option('-v', '--version', type=int, required=False,
+@click.option('-v', '--version', type=str, required=False,
               help='Optionally specify versionfor the profiles')
 @click.pass_obj
-def provider_profiles(context, **options):
+def provider_profiles(context, targetid, **options):
     """
-    profile information
+    Display registered profile information for provider
 
-    The options include providerid which defines one or more provider id's
-    to be displayed.
+    The TargetID defines a single provider (See targets table). It may
+    be picked from a list by entering ? or the --interactive option.
 
-    The company options allows searching by company name in the provider
-    base.
+    The other options allow the selection of a subset of the profiles
+    from the server by organization name, profile name, or profile version.
+
+    ex. smicli provider profiles 4 -o SNIA
     """
-    context.execute_cmd(lambda: cmd_provider_profiles(context, options))
+    context.execute_cmd(lambda: cmd_provider_profiles(context, targetid,
+                                                      options))
 
 
 @provider_group.command('classes', options_metavar=CMD_OPTS_TXT)
-@click.option('-t', '--targetid', type=int, required=False,
-              help='Define a specific target ID from the database to '
-                   ' use. Multiple options are allowed.')
+@click.argument('TargetID', type=str, metavar='TargetID', required=False)
+@click.option('-i', '--interactive', is_flag=True, default=False,
+              help='If set, presents list of targets to chose.')
 @click.option('-c', '--classname', type=str, metavar='CLASSNAME regex',
               required=False,
               help='Regex that filters the classnames to return only those '
@@ -164,7 +169,7 @@ def provider_profiles(context, **options):
               help='Return only the count of classes in the namespace(s)')
 @add_options(namespace_option)
 @click.pass_obj
-def provider_classes(context, **options):
+def provider_classes(context, targetid, **options):
     """
     Find all classes that match CLASSNAME.
 
@@ -180,24 +185,21 @@ def provider_classes(context, **options):
 
     The namespace option limits the search to the defined namespace.
     """
-    context.execute_cmd(lambda: cmd_provider_classes(context, options))
+    context.execute_cmd(lambda: cmd_provider_classes(context, targetid,
+                                                     options))
 
 #########################################################################
 ##
 #########################################################################
 
 
-def cmd_provider_ping(context, options):
+def cmd_provider_ping(context, targetid, options):
     """Ping the defined target"""
-    targets = context.targets_tbl
-    target_id = options['targetid']
+    targetid = get_target_id(context, targetid, options)
+    if targetid is None:
+        return
 
-    try:
-        target = targets[target_id]
-    except Exception as ex:
-        raise click.ClickException("%s: %s" % (ex.__class__.__name__, ex))
-
-    ip_address = target['IPAddress']
+    ip_address = context.targets_tbl[targetid]['IPAddress']
 
     result = ping_host(ip_address, options['timeout'])
 
@@ -217,19 +219,27 @@ def get_profile_info(org_vm, inst):
     return org, name, vers
 
 
-def cmd_provider_profiles(context, options):
+def cmd_provider_profiles(context, targetid, options):
     """Return tuple of info of autonomous profiles for this server"""
-    targets = context.targets_tbl
-    target_id = options['targetid']
-    server = connect_target(targets, target_id)
+    targetid = get_target_id(context, targetid, options)
+    if targetid is None:
+        return
+    server = connect_target(context.targets_tbl, targetid)
 
-    org_vm = ValueMapping.for_property(server, server.interop_ns,
+    found_server_profiles = server.get_selected_profiles(
+        registered_org=options['organization'],
+        registered_name=options['name'])
+
+    org_vm = ValueMapping.for_property(server,
+                                       server.interop_ns,
                                        'CIM_RegisteredProfile',
                                        'RegisteredOrganization')
+
     rows = []
-    for inst in server.profiles:
+    for inst in found_server_profiles:
         row = get_profile_info(org_vm, inst)
         rows.append(row)
+
     headers = ['Organization', 'Registered Name', 'Version']
 
     print_table(rows, headers, title='Advertised management profiles:',
@@ -260,11 +270,12 @@ def connect_target(targets, target_id):
     return server
 
 
-def cmd_provider_namespaces(context, options):
+def cmd_provider_namespaces(context, targetid, options):
     """Display interop namespace name"""
-    targets = context.targets_tbl
-    target_id = options['targetid']
-    server = connect_target(targets, target_id)
+    targetid = get_target_id(context, targetid, options)
+    if targetid is None:
+        return
+    server = connect_target(context.targets_tbl, targetid)
     try:
         # execute the namespaces just to get the data
         namespaces = server.namespaces
@@ -282,11 +293,13 @@ def cmd_provider_namespaces(context, options):
         raise click.ClickException("%s: %s" % (er.__class__.__name__, er))
 
 
-def cmd_provider_interop(context, options):
+def cmd_provider_interop(context, targetid, options):
     """Display interop namespace name"""
-    targets = context.targets_tbl
-    target_id = options['targetid']
-    server = connect_target(targets, target_id)
+    targetid = get_target_id(context, targetid, options)
+    if targetid is None:
+        return
+    server = connect_target(context.targets_tbl, targetid)
+
     try:
         # execute the interop request before stopping spinner
         interop_ns = server.interop_ns
@@ -303,11 +316,12 @@ def cmd_provider_interop(context, options):
         raise click.ClickException("%s: %s" % (er.__class__.__name__, er))
 
 
-def cmd_provider_info(context, options):
+def cmd_provider_info(context, targetid, options):
     """Search get brand info for a set of providers"""
-    targets = context.targets_tbl
-    target_id = options['targetid']
-    server = connect_target(targets, target_id)
+    targetid = get_target_id(context, targetid, options)
+    if targetid is None:
+        return
+    server = connect_target(context.targets_tbl, targetid)
 
     try:
         # execute the namespaces to force contact with server before
@@ -331,14 +345,15 @@ def cmd_provider_info(context, options):
         raise click.ClickException("%s: %s" % (er.__class__.__name__, er))
 
 
-def cmd_provider_classes(context, options):
+def cmd_provider_classes(context, targetid, options):
     """
     Execute the command for get class and display the result. The result is
     a list of classes/namespaces
     """
-    targets = context.targets_tbl
-    target_id = options['targetid']
-    server = connect_target(targets, target_id)
+    targetid = get_target_id(context, targetid, options)
+    if targetid is None:
+        return
+    server = connect_target(context.targets_tbl, targetid)
 
     if options['namespace']:
         ns_names = options['namespace']

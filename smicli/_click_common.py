@@ -262,10 +262,10 @@ def get_target_id(context, targetid, options=None):
                                            "table: exception %s" %
                                            (targetid, ke))
     else:
-        raise click.ClickException("Target")
+        raise click.ClickException("TargetID %s could not process" % targetid)
 
-        if targetid is None:
-            click.echo("Operation aborted by user.")
+    if targetid is None:
+        click.echo("Operation aborted by user.")
     context.spinner.start()
     return targetid
 

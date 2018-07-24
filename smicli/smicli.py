@@ -68,11 +68,12 @@ SYSLOG_ADDRESSES = {
 PYWBEM_LOGGER_NAME = 'pywbem'
 PYWBEM_HTTP_LOGGER_NAME = 'pywbem.http'
 PYWBEM_API_LOGGER_NAME = 'pywbem.api'
+SMIPYPING_API_LOGGER_NAME = 'smipyping.api'
 
 # Logger names by log component
 LOGGER_NAMES = {
     'all': '',  # root logger
-    'api': smipyping.API_LOGGER_NAME,
+    'api': SMIPYPING_API_LOGGER_NAME,
     'groups': GROUPS_LOGGER_NAME,
     'cli': CLI_LOGGER_NAME,
     # 'console': CONSOLE_LOGGER_NAME,

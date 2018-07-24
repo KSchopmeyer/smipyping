@@ -18,13 +18,13 @@ Tests for functions in smipyping/_common.py
 from __future__ import print_function, absolute_import
 import os
 import sys
-import pytest
 from mock import patch
 # from testfixtures import OutputCapture
 try:
     from StringIO import StringIO
 except ImportError:
     from io import StringIO
+import pytest
 
 from smicli._click_common import pick_from_list, pick_multiple_from_list, \
     print_table, validate_prompt
@@ -227,6 +227,7 @@ class TestPrintTable(object):
         assert actual == exp_stdout_template
 
 
+# Regular expression used in TestVersionsClass
 RE = r'^[0-9.]*$'
 
 
@@ -240,6 +241,8 @@ class TestVersionsClass(object):
             ['1.2.3/2.3.4', RE, '1.2.3, 2.3.4', ['1.2.3', '2.3.4'], None],
             ['1.2.3 2.3.4', RE, '1.2.3, 2.3.4', ['1.2.3', '2.3.4'], None],
             [['1.2.3', '2.3.4'], RE, '1.2.3, 2.3.4', ['1.2.3', '2.3.4'], None],
+            ['1.2.3', RE, '1.2.3', ['1.2.3'], None],
+            # ['1.2.3, 1.2.3', RE, '1.2.3', ['1.2.3'], None],
             # TODO extend for errors, regex and input
         ]
     )
@@ -253,5 +256,19 @@ class TestVersionsClass(object):
                 v = StrList(ver_in, chars=re)
         else:
             v = StrList(ver_in, re)
-            assert v.list_ == exp_repr
+            assert sorted(v.items) == sorted(exp_repr)
             assert str(v) == exp_str
+
+    @pytest.mark.parametrize(
+        "input1,input2, exp_rslt", [
+            [['1.2.3', '2.3.4'], ['1.2.3', '2.3.4'], True],
+            [['1.2.3', '2.3.5'], ['1.2.3', '2.3.4'], False],
+
+        ]
+    )
+    def test_equal_versions(self, input1, input2, exp_rslt):
+        """Test the equals method"""
+
+        v1s = StrList(input1)
+        v2s = StrList(input2)
+        assert v1s.equal(v2s) == exp_rslt

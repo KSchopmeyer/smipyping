@@ -170,9 +170,8 @@ def display_cols(target_table, fields, show_disabled=True, output_format=None):
     """
     Display the columns of data defined by the fields parameter.
 
-    This gets the
-    data from the targets data based on the col_list and prepares a table
-    based on those targets_tbl colums
+    This gets the data from the targets data based on the col_list and prepares
+    a table based on those targets_tbl colums
 
     Parameters:
       fields: list of strings defining the targets_data columns to be
@@ -188,6 +187,8 @@ def display_cols(target_table, fields, show_disabled=True, output_format=None):
             fields.append('ScanEnabled')
 
     table_width = target_table.get_output_width(fields) + len(fields)
+    # TODO. the above is incorrect in that some fields are of indeterminate
+    # length.  The definition in targetstable is not correct.
     fold = False if table_width < 80 else True
 
     for record_id in sorted(target_table.keys()):

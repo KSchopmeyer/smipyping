@@ -22,6 +22,7 @@ from __future__ import absolute_import, unicode_literals
 
 import re
 import six
+from smicli._click_common import fold_cell
 
 __all__ = ['get_list_index', 'build_table_struct', 'filter_stringlist']
 
@@ -119,7 +120,7 @@ class StrList(object):
 
     Parameters:
 
-      input (:term:`string` or list of :term:`string`)
+      inputs (:term:`string` or list of :term:`string`)
         String or list of strings to manage.  Converted to list of strings
         containing only the chars in the parameter chars. Any other chars
         returns ValueError exception
@@ -132,7 +133,7 @@ class StrList(object):
         max length before folding.
 
     """
-    def __init__(self, input, match=None):
+    def __init__(self, inputs, match=None):
         """
         Create an internal variable that is a list of the value of each
         version definition in the list
@@ -144,42 +145,65 @@ class StrList(object):
 
         TODO test if only chars in chars are in string.
         """
-        self._list_ = []
-        if isinstance(input, six.string_types):
-            if '/' in input:
-                self._list_ = input.split("/")
-            elif ',' in input:
-                self._list_ = input.split(",")
-            elif " " in input:
-                self._list_ = input.split(" ")
-        elif isinstance(input, list):
-            self._list_ = input
-        elif isinstance(input, tuple):
-            self._list_ = list(input)
+        self._items = None
+        if isinstance(inputs, six.string_types):
+            if '/' in inputs:
+                self._items = set(inputs.split("/"))
+            elif ',' in inputs:
+                self._items = set(inputs.split(","))
+            elif " " in inputs:
+                self._items = set(inputs.split(" "))
+            else:
+                self._items = set([inputs])
+        elif isinstance(inputs, list):
+            self._items = set(inputs)
+        elif isinstance(inputs, tuple):
+            self._items = set(list(input))
         else:
             raise ValueError("Versions Strlist %s not valid type" % input)
 
-        self._list_ = [item.strip() for item in self._list_]
-        for item in self._list_:
+        self._items = [item.strip() for item in self._items]
+        for item in self._items:
             if match and re.match(match, item) is None:
                 raise ValueError('String "%s" does not match regex %s' %
                                  (item, match))
+        self._items = sorted(self._items)
 
     def __str__(self):
         """
             Return string of versions separated by ",
         """
-        return ", ".join(self._list_)
+        return ", ".join(self._items)
 
     def __repr__(self):
         """
             Return string of versions separated by ",
         """
-        return ", ".join(self._list_)
+        return ", ".join(self._items)
+
+    def str_by_sep(self, separator="/"):
+        """
+        Create single string output with defined separator
+        """
+        return separator.join(self._items)
 
     @property
-    def list_(self):
+    def items(self):
         """
             Return the list form of the input
         """
-        return self._list_
+        return self._items
+
+    def equal(self, strlist,):
+        """
+        Compare one StrList to another strlist for equality of items.
+        This compares the objects string by string after sorting and defining
+        a set for each to eliminate non-unique items
+        """
+        return self.items == strlist.items
+
+    def folded_str(self, length):
+        """
+        Return a folded string based on len argument of the string
+        """
+        return fold_cell(str(self), length)
