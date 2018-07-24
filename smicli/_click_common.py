@@ -231,7 +231,6 @@ def get_target_id(context, targetid, options=None):
     context.spinner.stop()
 
     if options and 'interactive' in options and options['interactive']:
-        print('interactive')
         context.spinner.stop()
         targetid = pick_target_id(context)
     elif isinstance(targetid, six.integer_types):

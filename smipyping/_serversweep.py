@@ -52,6 +52,7 @@ LOG = get_logger(__name__)
 
 SCAN_TYPES = ['tcp', 'syn', 'all']
 
+# TODO Future: use pywbem.servers to automatically handle this
 INTEROP_NAMESPACES = [
     'interop',
     'root/interop',
