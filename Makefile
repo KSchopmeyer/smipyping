@@ -258,7 +258,9 @@ pylint: pylint.log
 install: _pip
 	@echo 'Installing runtime requirements with PACKAGE_LEVEL=$(PACKAGE_LEVEL)'
 	$(PIP_CMD) install $(pip_level_opts) .
-	$(PYTHON_CMD) -c "import smipyping; print('Import: ok')"
+	# $(PYTHON_CMD) -c "import smipyping; print('Import: ok')"
+	which smicli
+	smicli --version
 	@echo 'Done: Installed $(package_name) into current Python environment.'
 	@echo '$@ done.'
 
