@@ -90,6 +90,8 @@ def explore_all(context, **options):
     explore simply to speed up the process for servers that are completely
     not available. The default is to ping as the first step.
 
+    ex: smicli explore ids 15 18
+
     """
     context.execute_cmd(lambda: cmd_explore_all(context, **options))
 
@@ -106,7 +108,7 @@ def explore_all(context, **options):
               default='full',
               help='Generate full or brief (fewer columns) report')
 @click.pass_obj
-def explore_id(context, ids, **options):
+def explore_ids(context, ids, **options):
     """
     Execute the general explorer on the providers defined by id.  Multiple
     ids may be supplied (ex. id 5 6 7)
@@ -127,7 +129,7 @@ def cmd_explore_all(context, **options):
     """
 
     # TODO configure logging
-    # TODO fix the log_level stuff
+    # TODO fix the log_level processing.
     explorer = Explorer('smicli', context.targets_tbl,
                         logfile=context.log_file,
                         log_level=None,
@@ -150,6 +152,8 @@ def cmd_explore_all(context, **options):
     targets = set(targets)
 
     servers = explorer.explore_servers(targets)
+
+    validate_servers(servers, context.targets_tbl)
 
     # print results
     # TODO make this part of normal print services
@@ -180,10 +184,60 @@ def cmd_explore_ids(context, ids, **options):
                         output_format=context.output_format)
 
     servers = explorer.explore_servers(ids)
+
+    validate_servers(servers, context.targets_tbl)
+
     context.spinner.stop()
     report_server_info(servers, context.targets_tbl,
                        context.output_format,
                        report=options['report'])
+
+
+def validate_servers(servers, targets_tbl):
+    """
+    Validate the fields in the targetid against the data received from the
+    server.  This allows updating the following fields from data received
+    from the server:
+
+      * SMIVERSION
+      * interop namespace
+    """
+    # TODO this should be in explorer, not in the cmd_processor.
+    # print('SERVERS %r' % (servers))
+    for server_tuple in servers:
+        server = server_tuple.server
+        status = server_tuple.status
+        target_id = server_tuple.target_id
+        target = targets_tbl.get_target(target_id)
+        if server is not None and status == 'OK':
+            svr_profile_list = smi_versions(server_tuple.server)
+            sorted(svr_profile_list)
+            # print('SVR_PROFILE_LIST')
+            target_smi_profiles = target['SMIVersion']
+            # TODO print('TARGET_SMI_PROFILES %r' % target_smi_profiles)
+            regex = r'^[0-9.]*$'
+            server_smi_profiles = StrList(svr_profile_list, match=regex)
+            target_smi_profiles = StrList(target_smi_profiles, match=regex)
+            # print('SERVER %s\nTARGET %s' %
+            #      (server_smi_profiles,target_smi_profiles))
+            if not server_smi_profiles.equal(target_smi_profiles):
+                # print('SMI_PROFILES COMPARE2 svr=%s\ntarget=%s' %
+                #       (server_smi_profiles, target_smi_profiles))
+
+                changes = {"SMIVersion": server_smi_profiles.str_by_sep("/")}
+                try:
+                    targets_tbl.update_fields(target_id, changes)
+                except Exception as ex:
+                    raise click.ClickException('Targets DB update failed '
+                                               'targetid=%s changes=%r' %
+                                               (target_id, changes))
+
+                # TODO this should become audit log and expand to list
+                #      all changes. Right now it assumes SMIVersion 0nly
+                click.echo('Updated targetid=%s field=%s "%s" to "%s"' %
+                           (target_id, 'SMIVersion', target_smi_profiles,
+                            server_smi_profiles))
+
 
 ##############################################################
 #
@@ -223,14 +277,6 @@ def report_server_info(servers, targets_tbl, output_format,
                 sorted(smi_profile_list)
                 cell_str = ", ". join(sorted(smi_profile_list))
                 smi_profiles = fold_cell(cell_str, 14)
-                # compare the new tuples against those in targe_tbl
-                target_smi_profiles = target['SMIVersion']
-                regex = r'^[0-9.]*$'
-                c1 = StrList(smi_profile_list, match=regex)
-                c2 = StrList(target_smi_profiles, match=regex)
-                if set(c1.list_) != set(c2.list_):
-                    print('SMI_PROFILES COMPARE svr=%s\ntarget=%s' %
-                          (smi_profiles, target_smi_profiles))
 
         disp_time = None
         if server_tuple.time <= 60:

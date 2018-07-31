@@ -20,6 +20,7 @@ servers.
 from __future__ import print_function, absolute_import
 
 import click
+import time
 
 from smipyping import ServerSweep,\
     DEFAULT_SWEEP_PORT, SCAN_TYPES
@@ -94,25 +95,8 @@ def sweep_nets(context, **options):  # pylint: disable=redefined-builtin
     Execute sweep on the ip/port combinations defined by the --subnet and
     --port options
     """
-    print('context.ex sweep_nets %s %s' % (context, options))
     context.execute_cmd(lambda: cmd_sweep_nets(context, options))
 
-
-@sweep_group.command('todo', options_metavar=CMD_OPTS_TXT)
-@click.option('-s', '--subnet', type=str, required=True, multiple=True,
-              help='blah blah')
-@click.option('-D', '--dryrun', default=False, type=bool, required=False,
-              help='Set the debug parameter for the pywbem call. Displays '
-                   'detailed information on the call and response.'
-                   ' ' + '(Default: %s.' % False)
-@click.pass_obj
-def sweep_todo(context, **options):  # pylint: disable=redefined-builtin
-    """
-    Execute sweep on the ip/port combinations defined by the --subnet and
-    --port options
-    """
-    print('context.ex sweep_nets %s %s' % (context, options))
-    context.execute_cmd(lambda: cmd_sweep_todo(context, options))
 
 #####################################################################
 #
@@ -135,7 +119,9 @@ def cmd_sweep_nets(context, options):
     click.echo('Start sweep for subnets %s, port %s, range %s:%s' %
                (options['subnet'], options['port'], options['MinOctetVal'],
                 options['MaxOctetVal']))
-    print('options %s' % options)
+
+    start_time = time.time()   # Scan start time
+
     sweep = ServerSweep(list(options['subnet']),
                         options['port'],
                         targets_tbl=context.targets_tbl,
@@ -152,22 +138,38 @@ def cmd_sweep_nets(context, options):
 
         open_servers = sweep.sweep_servers()
 
-        rows, headers, title, known, unknown, execution_time = \
-            sweep.print_open_hosts_report(open_servers)
+        headers = ['IPAddress', 'CompanyName', 'Product', 'Status']
+
+        rows, known, unknown = sweep.prep_open_hosts_report(open_servers)
+
+        range_txt = '%s:%s' % (options['MinOctetVal'], options['MaxOctetVal'])
+        title = 'Open WBEMServers:subnet(s)=%s\n' \
+                'port(s)=%s range=%s, scan type=%s scan time=%s\n' \
+                '    total pings=%s pings answered=%s' \
+                % (sweep.net_defs, options['port'], range_txt,
+                   options['scantype'],
+                   sweep.sweep_time, sweep.total_pings, len(open_servers))
+
+        execution_time = time.time() - start_time
+        if execution_time <= 60:
+            execution_time = "%.2f sec" % (round(execution_time, 1))
+        else:
+            execution_time = "%.2f min" % (execution_time / 60)
+
+        context.spinner.stop()
         if rows:
             print_table(rows, headers=headers, title=title)
+        else:
+            range_txt = '%s:%s' % (options['MinOctetVal'],
+                                   options['MaxOctetVal'])
+
+            click.echo('No WBEM Servers found:subnet(s)=%s port(s)=%s '
+                       'range %s, %s' % (sweep.net_defs, sweep.ports, range_txt,
+                                         sweep.sweep_time))
         # TODO: Should the following  be in the report???
-        print('\nScan Results: Found=%s, Unknown=%s, Total=%s Time=%s'
-              % (known, unknown, (known + unknown), execution_time))
-
-
-def cmd_sweep_todo(context, options):
-    """
-    TODO  Do not know what this one is for
-    """
-    print('cmd_sweep_nets %s %s' % (context, options))
-
-
-# options subnets, ports, min)ctetval, maxOctetVal, scantype, dryrun, threads
+        click.echo('\nScan Results: Found=%s, Unknown=%s, Total=%s '
+                   'Sweep time=%s Total time=%s' %
+                   (known, unknown, (known + unknown), sweep.sweep_time,
+                    execution_time))
 
 # what about database as option???

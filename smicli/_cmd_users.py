@@ -55,7 +55,7 @@ def users_group():
               help='CompanyID for the company attached to this user')
 @click.option('--inactive', default=False, is_flag=True,
               help='Set the active/inactive state in the database for this '
-              'user. Default is active')
+              'user. An inactive user is ignored. Default is active')
 @click.option('--disable', default=False, is_flag=True,
               help='Disable notifications in the database for this '
               'user. Default is enabled')
@@ -112,13 +112,10 @@ def users_delete(context, id, **options):  # pylint: disable=redefined-builtin
 @click.option('-e', '--email', type=str,
               required=False,
               help='User email address.')
-@click.option('-p', '--programID', type=int, default=None, required=False,
+@click.option('-c', '--CompanyID', type=int, default=None, required=False,
               help='CompanyID for the company attached to this user')
-@click.option('--inactive', is_flag=True, default=False,
-              help='Set the inactive state in the database for this '
-              'user if this flag set.')
 @click.option('--no_notifications', is_flag=True, default=False,
-              help='Disable the notify statein the database for this '
+              help='Disable the notify state in the database for this '
               'user if this flag set.')
 @click.option('-n', '--no-verify', is_flag=True, default=False,
               help='Disable verification prompt before the change is '
@@ -126,29 +123,32 @@ def users_delete(context, id, **options):  # pylint: disable=redefined-builtin
 @click.pass_obj
 def users_modify(context, id, **options):  # pylint: disable=redefined-builtin
     """
-    Create fake cimping results in pings database.
+    Modify fields of a user in the user database.
 
-    Execute simple cim ping against the list of ids provided for target servers
-    in the database defined by each id in the list of ids creates a table
-    showing result.
+    This allows modifications of the fields for a particular specified by
+    the user id on input.
 
-    ex. smicli cimping ids 5 8 9
+    The user id must be specified in this command because that id should be
+    known to be able to define fields to modify.
+
+    ex. smicli users modify 9 -n fred
+    # changes the first name of the user with user id 9.
 
     """
-    context.execute_cmd(lambda: cmd_users_modify(context, options))
+    context.execute_cmd(lambda: cmd_users_modify(context, id, options))
 
 
 @users_group.command('activate', options_metavar=CMD_OPTS_TXT)
 @click.argument('ID', type=int, metavar='UserID', required=True, nargs=1)
 @click.option('--active/--inactive', default=False, required=False,
               help='Set the active/inactive state in the database for this '
-              'user. Default is to attempt set user to inactive')
+              'user. Default is to attempt set user to inactive.')
 @click.pass_obj
 def users_activate(context, id, **options):
     """
     Activate or deactivate a user.
 
-    This sets the user defined by the UserID argument to either active
+    This sets the user defined by the id argument to either active
     or Inactive.  When a user is inactive they are no longer shown in
     tables that involve user information such as the weekly report.
     """
@@ -166,6 +166,7 @@ def _test_active(options):
     """
     Test the activate options. This has 3 possible values.
     """
+    print('TEST_ACTIVE %s' % options)
     if options['active']:
         activate = True
     elif options['inactive']:
@@ -282,7 +283,7 @@ def cmd_users_modify(context, id, options):
     """Delete a user from the database."""
 
     context.spinner.stop()
-    click.echo('Modify not implemented')
+    click.echo("Modify operation NOT implemented")
     return
 
     users_tbl = UsersTable.factory(context.db_info, context.db_type,

@@ -29,7 +29,7 @@ from smipyping.config import DEFAULT_NAMESPACE, DEFAULT_OPERATION_TIMEOUT, \
 
 from .smicli import cli, CMD_OPTS_TXT
 from ._common_options import add_options
-from ._click_common import fold_cell, print_table
+from ._click_common import fold_cell, print_table, get_target_id
 
 #
 #   Common options for the Ping group
@@ -141,7 +141,7 @@ def cimping_host(context, host, **options):
 # TODO: This differs from pattern. targetid is an argument, not options
 
 @cimping_group.command('ids', options_metavar=CMD_OPTS_TXT)
-@click.argument('IDs', type=int, metavar='TargetIDs', required=True, nargs=-1)
+@click.argument('ids', type=int, metavar='TargetIDs', required=True, nargs=-1)
 @add_options(timeout_option)
 @add_options(no_ping_option)
 @add_options(debug_option)
@@ -161,12 +161,15 @@ def cimping_ids(context, ids, **options):  # pylint: disable=redefined-builtin
 
 
 @cimping_group.command('id', options_metavar=CMD_OPTS_TXT)
-@click.argument('ID', type=int, metavar='TargetID', required=True)
+@click.argument('id', type=str, metavar='TargetID', required=False)
 @add_options(timeout_option)
+@click.option('-i', '--interactive', is_flag=True, default=False,
+              help='If set, presents list of targets to chose.')
 @add_options(no_ping_option)
 @add_options(debug_option)
 @click.pass_obj
-def cimping_id(context, id, **options):  # pylint: disable=redefined-builtin
+def cimping_id(context, id, **options):
+    # pylint: disable=redefined-builtin
     """
     Cimping  one target from database.
 
@@ -174,8 +177,11 @@ def cimping_id(context, id, **options):  # pylint: disable=redefined-builtin
     database and returns exit code in accord with response. Exits interactive
     mode and returns exit code corresponding to test result.
 
-    This test can specifically be used to get a cmd line exit code corresponding
-    to the status of a given target WBEM Server.
+    This test sets a cmd line exit code corresponding to the status of a given
+    target WBEM Server.
+
+    This subcommand will interactively let user select the TargetID if the
+    --interactive mode is selected or "?" is entered for the TargetID.
 
     ex. smicli cimping 5
     """
@@ -256,7 +262,7 @@ def cmd_cimping_host(context, host, options):
 
 def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
     """
-    Execute a simple ping of a target wbem server based on the target_ids
+    Execute a simple ping of a target wbem server based using all of the targets
     from the database provided with the input parameters.
     """
 
@@ -283,7 +289,8 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
             tbl_inst.append(result[0], result[1], timestamp)
 
     # print results of the scan.
-    headers = ['Id', 'Addr', 'Result', 'Exception', 'Time', 'Company']
+    headers = ['Id', 'Addr', 'Result', 'Exception', 'Time', 'Company',
+               'Product']
     rows = []
     for result in results:
         target_id = result[0]
@@ -298,6 +305,7 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
                      ('%s:%s' % (test_result.type, test_result.code)),
                      fold_cell(exception, 12),
                      test_result.execution_time,
+                     fold_cell(target['CompanyName'], 12),
                      fold_cell(target['Product'], 12)])
 
     # fixed sort based on target id
@@ -342,12 +350,16 @@ def cmd_cimping_ids(context, ids, options):  # pylint: disable=redefined-builtin
         print_ping_result(simpleping, test_result, context.verbose)
 
 
-def cmd_cimping_id(context, id, options):  # pylint: disable=redefined-builtin
+def cmd_cimping_id(context, id, options):
+    # pylint: disable=redefined-builtin
     """
     Execute one simple ping of a target wbem server based on the target_ids
     from the database provided with the input parameters. Closes
     interactive mode
     """
+    id = get_target_id(context, id, options)
+    if id is None:
+        return
     try:
         context.targets_tbl.get_target(id)  # noqa: F841
     except KeyError:

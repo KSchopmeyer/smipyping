@@ -21,8 +21,7 @@ from __future__ import print_function, absolute_import
 import click
 
 from .smicli import cli, CMD_OPTS_TXT
-from ._click_common import print_table, pick_target_id, validate_prompt, \
-    get_target_id
+from ._click_common import print_table, validate_prompt, get_target_id
 from ._common_options import add_options, no_verify_option
 
 
@@ -44,7 +43,8 @@ def targets_group():
 @targets_group.command('list', options_metavar=CMD_OPTS_TXT)
 @click.option('-f', '--fields', multiple=True, type=str, default=None,
               help='Define specific fields for output. It always includes '
-                   ' TargetID. Ex. -f TargetID -f CompanyName '
+                   'TargetID. Mulitple fields can be specified by repeating '
+                   'the option.\nEx. -f TargetID -f CompanyName '
                    'Default: a Standard list of fields')
 # @click.option('-c', '--company', type=str, default=None,
 #              help='regex filter to filter selected companies.')
@@ -82,31 +82,33 @@ def targets_fields(context):
 
 
 @targets_group.command('get', options_metavar=CMD_OPTS_TXT)
-@click.argument('TargetID', type=int, metavar='TargetID', required=False)
-@click.option('-i', '--interactive', is_flag=True,
+@click.argument('TargetID', type=str, metavar='TargetID', required=False)
+@click.option('-i', '--interactive', is_flag=True, default=False,
               help='If set, presents list of targets to chose.')
 @click.pass_obj
 def targets_get(context, targetid, **options):
     """
     Display details of single Targets database entry.
 
-    Use the `interactive` option to select the target from a list presented.
+    Use the `interactive` option or "?" for Target ID to select the target from
+    a list presented.
     """
     context.execute_cmd(lambda: cmd_targets_get(context, targetid, options))
 
 
 @targets_group.command('disable', options_metavar=CMD_OPTS_TXT)
-@click.argument('TargetID', type=int, metavar='TargetID', required=True)
-@click.option('-e', '--enable', is_flag=True,
+@click.argument('TargetID', type=str, metavar='TargetID', required=True)
+@click.option('-e', '--enable', is_flag=True, default=False,
               help='Enable the Target if it is disabled.')
-@click.option('-i', '--interactive', is_flag=True,
+@click.option('-i', '--interactive', is_flag=True, default=False,
               help='If set, presents list of targets to chose.')
 @click.pass_obj
 def target_disable(context, targetid, enable, **options):
     """
     Disable a provider from scanning. This changes the database.
 
-    Use the `interactive` option to select the target from a list presented.
+    Use the `interactive` option  or "?" for target id to select the target
+    from a list presented.
     """
     context.execute_cmd(lambda: cmd_target_disable(context, targetid,
                                                    enable, options))
@@ -114,7 +116,7 @@ def target_disable(context, targetid, enable, **options):
 
 @targets_group.command('modify', options_metavar=CMD_OPTS_TXT)
 @click.argument('TargetID', type=str, metavar='TargetID', required=True)
-@click.option('-e', '--enable', is_flag=True,
+@click.option('-e', '--enable', is_flag=True, default=False,
               help='Enable the Target if it is disabled.')
 @click.option('-i', '--ipaddress', type=str,
               required=False,
@@ -168,9 +170,8 @@ def display_cols(target_table, fields, show_disabled=True, output_format=None):
     """
     Display the columns of data defined by the fields parameter.
 
-    This gets the
-    data from the targets data based on the col_list and prepares a table
-    based on those targets_tbl colums
+    This gets the data from the targets data based on the col_list and prepares
+    a table based on those targets_tbl colums
 
     Parameters:
       fields: list of strings defining the targets_data columns to be
@@ -186,6 +187,8 @@ def display_cols(target_table, fields, show_disabled=True, output_format=None):
             fields.append('ScanEnabled')
 
     table_width = target_table.get_output_width(fields) + len(fields)
+    # TODO. the above is incorrect in that some fields are of indeterminate
+    # length.  The definition in targetstable is not correct.
     fold = False if table_width < 80 else True
 
     for record_id in sorted(target_table.keys()):
@@ -232,7 +235,6 @@ def cmd_target_modify(context, targetid, options):
     # get targetid if options are for interactive request and validate that
     # it is valid. Returns None if interactive request is aborted
     targetid = get_target_id(context, targetid, options)
-    # TODO print('MODIFY rtn %s' % targetid)
     if targetid is None:
         return
 
@@ -334,20 +336,22 @@ def cmd_targets_fields(context):
 def cmd_targets_get(context, targetid, options):
     """Display the fields of a single provider record."""
 
-    context.spinner.stop()
-    if options['interactive']:
-        targetid = pick_target_id(context)
+    targetid = get_target_id(context, targetid, options)
+    if targetid is None:
+        return
 
+    context.spinner.start()
     try:
         target_record = context.targets_tbl.get_target(targetid)
 
         # TODO: Future need to order output.
+        context.spinner.stop()
         for key in target_record:
             click.echo('%s: %s' % (key, target_record[key]))
 
     except KeyError as ke:
-        click.echo('TargetID %s not in the database.' % targetid)
-        raise click.ClickException("%s: %s" % (ke.__class__.__name__, ke))
+        raise click.ClickException("TargetID %s not in database: %s" %
+                                   (targetid, ke))
 
     except Exception as ex:
         raise click.ClickException("%s: %s" % (ex.__class__.__name__, ex))
