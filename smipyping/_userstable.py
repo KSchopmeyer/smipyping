@@ -22,7 +22,6 @@ Define the Users table and provide for import from multiple bases.
     CompanyID = Column(Integer, ForeignKey("Companies.CompanyID"))
     Active = Column(Enum('Active', 'Inactive'), nullable=False)
     Notify = Column(Enum('Enabled', 'Disabled'), nullable=False)
-
 """
 
 from __future__ import print_function, absolute_import
@@ -33,6 +32,8 @@ import six
 from mysql.connector import MySQLConnection
 from ._dbtablebase import DBTableBase
 __all__ = ['UsersTable']
+
+from ._logging import AUDIT_LOGGER_NAME, get_logger
 
 
 class UsersTable(DBTableBase):
@@ -385,6 +386,8 @@ class MySQLUsersTable(UsersTable):
 
           notify(:class:`py:bool`):
 
+        TODO: Deprecate This method
+
         Exceptions:
 
         """
@@ -417,3 +420,50 @@ class MySQLUsersTable(UsersTable):
         finally:
             self._load()
             self.connection.close()
+
+    def update_fields(self, userid, changes):
+        """
+        Update the database record defined by target_id with the dictionary
+        of items defined by changes where each item is an entry in the
+        target record. Update does NOT test if the new value is the same
+        as the original value.
+        """
+        cursor = self.connection.cursor()
+        # dynamically build the update sql based on the changes dictionary
+        set_names = "SET "
+        values = []
+        comma = False
+        for key, value in changes.items():
+            if comma:
+                set_names = set_names + ", "
+            else:
+                comma = True
+            set_names = set_names + "{0} = %s".format(key)
+            values.append(value)
+
+        values.append(userid)
+        sql = "Update Users " + set_names
+
+        # append targetid component
+        sql = sql + " WHERE UserID=%s"
+
+        change_str = ""
+        for key, value in changes.items():
+            change_str += "%s:%s " % (key, value)
+        try:
+            cursor.execute(sql, tuple(values))
+            self.connection.commit()
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+
+            audit_logger.info('UserTable userId %s,update fields %s' %
+                              (userid, change_str))
+        except Exception as ex:
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+            audit_logger.error('UserTable userid %s failed SQL update. SQL=%s '
+                               'Changes %s exception %s'
+                               % (userid, sql, change_str))
+            self.connection.rollback()
+            raise ex
+        finally:
+            self._load()
+            cursor.close()

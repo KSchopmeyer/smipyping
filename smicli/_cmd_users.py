@@ -23,8 +23,108 @@ import six
 
 from smipyping import UsersTable, CompaniesTable
 from .smicli import cli, CMD_OPTS_TXT
-from ._click_common import validate_prompt, print_table
+from ._click_common import validate_prompt, print_table, pick_from_list
 from ._common_options import add_options, no_verify_option
+
+
+def pick_userid(context, users_tbl):
+    """
+    Interactive selection of target id from list presented on the console.
+
+      Parameters ()
+         The click_context which contains target data information.
+
+      Returns:
+        target_id selected or None if user enter ctrl-C
+    """
+    users_keys = users_tbl.keys()
+    display_options = []
+
+    companies_tbl = CompaniesTable.factory(context.db_info, context.db_type,
+                                           context.verbose)
+
+    for t in users_keys:
+        user_item = users_tbl[t]
+        if not user_item['CompanyID'] in companies_tbl:
+            # TODO log error
+            print('ERROR: Company ID %s does not exist' %
+                  user_item['CompanyID'])
+            # TODO removed because we did not use company name in display
+            # company_name = "%s_missing" % user_item['CompanyID']
+        # else:
+            # company_name = companies_tbl[user_item['CompanyID']]
+            # ['CompanyName']
+        display_options.append(u'   id=%s, %s %s, %s' %
+                               (t, user_item['FirstName'],
+                                user_item['Lastname'],
+                                user_item['Email']))
+    try:
+        index = pick_from_list(context, display_options, "Pick UserID:")
+    except ValueError:
+        pass
+    if index is None:
+        click.echo('Abort command')
+        return None
+    return users_keys[index]
+
+
+def get_userid(context, users_tbl, userid, options=None):
+    """
+        Get the user based on the value of userid or the value of the
+        interactive option.  If userid is an
+        integer, get targetid directly and generate exception if this fails.
+        If it is ? use the interactive pick_target_id.
+        If options exist test for 'interactive' option and if set, call
+        pick_target_id
+        This function executes the pick function if the targetid is "?" or
+        if options is not None and the interactive flag is set
+
+        This support function always tests the userid to against the
+        targets table.
+
+        Returns:
+            Returns integer user_id of a valid targetstbl TargetID
+
+        raises:
+          KeyError if user_id not in table
+    """
+    context.spinner.stop()
+    if options and 'interactive' in options and options['interactive']:
+        context.spinner.stop()
+        userid = pick_userid(context, users_tbl)
+    elif isinstance(userid, six.integer_types):
+        try:
+            userid = users_tbl[userid]
+            context.spinner.start()
+            return userid
+        except KeyError as ke:
+            raise click.ClickException("UserID %s  not valid: exception %s" %
+                                       (userid, ke))
+    elif isinstance(userid, six.string_types):
+        if userid == "?":
+            context.spinner.stop()
+            userid = pick_userid(context, users_tbl)
+        else:
+            try:
+                userid = int(userid)
+            except ValueError:
+                raise click.ClickException('UserID must be integer or "?" '
+                                           'not %s' % userid)
+            try:
+                users_tbl[userid]
+                context.spinner.start()
+                return userid
+            except KeyError as ke:
+                raise click.ClickException("UserID %s  not found in Users "
+                                           "table: exception %s" %
+                                           (userid, ke))
+    else:
+        raise click.ClickException('UserID %s. Requires UserID, ? or '
+                                   '--interactive option' % userid)
+    if userid is None:
+        click.echo("Operation aborted by user.")
+    context.spinner.start()
+    return userid
 
 
 @cli.group('users', options_metavar=CMD_OPTS_TXT)
@@ -85,23 +185,30 @@ def users_list(context):  # pylint: disable=redefined-builtin
 
 
 @users_group.command('delete', options_metavar=CMD_OPTS_TXT)
-@click.argument('ID', type=int, metavar='UserID', required=True, nargs=1)
+@click.argument('UserID', type=str, metavar='UserID', required=False)
 @click.option('-n', '--no-verify', is_flag=True, default=False,
               help='Disable verification prompt before the delete is '
                    'executed.')
+@click.option('-i', '--interactive', is_flag=True, default=False,
+              help='If set, presents list of users from which one can be '
+                   'chosen.')
 @click.pass_obj
-def users_delete(context, id, **options):  # pylint: disable=redefined-builtin
+def users_delete(context, userid, **options):
     """
-    Delete a program from the database.
+    Delete a user from the database.
 
-    Delete the program defined by the subcommand argument from the
+    Delete the program user by the subcommand argument from the
     database.
+
+    The user to be deleted may be specified by a) specific user id, b) the
+    interactive mode option, or c) using '?' as the user id argument which also
+    initiates the interactive mode options
     """
-    context.execute_cmd(lambda: cmd_users_delete(context, id, options))
+    context.execute_cmd(lambda: cmd_users_delete(context, userid, options))
 
 
 @users_group.command('modify', options_metavar=CMD_OPTS_TXT)
-@click.argument('ID', type=int, metavar='UserID', required=True, nargs=1)
+@click.argument('UserID', type=str, metavar='UserID', required=False)
 @click.option('-f', '--firstname', type=str,
               required=False,
               help='User first name.')
@@ -120,39 +227,53 @@ def users_delete(context, id, **options):  # pylint: disable=redefined-builtin
 @click.option('-n', '--no-verify', is_flag=True, default=False,
               help='Disable verification prompt before the change is '
                    'executed.')
+@click.option('-i', '--interactive', is_flag=True, default=False,
+              help='If set, presents list of users from which one can be '
+                   'chosen.')
 @click.pass_obj
-def users_modify(context, id, **options):  # pylint: disable=redefined-builtin
+def users_modify(context, userid, **options):
     """
     Modify fields of a user in the user database.
 
     This allows modifications of the fields for a particular specified by
     the user id on input.
 
-    The user id must be specified in this command because that id should be
-    known to be able to define fields to modify.
+    The user to be modified may be specified by a) specific user id, b) the
+    interactive mode option, or c) using '?' as the user id argument which also
+    initiates the interactive mode options
 
     ex. smicli users modify 9 -n fred
     # changes the first name of the user with user id 9.
 
     """
-    context.execute_cmd(lambda: cmd_users_modify(context, id, options))
+    context.execute_cmd(lambda: cmd_users_modify(context, userid, options))
 
 
 @users_group.command('activate', options_metavar=CMD_OPTS_TXT)
-@click.argument('ID', type=int, metavar='UserID', required=True, nargs=1)
+@click.argument('UserID', type=str, metavar='UserID', required=False)
 @click.option('--active/--inactive', default=False, required=False,
               help='Set the active/inactive state in the database for this '
-              'user. Default is to attempt set user to inactive.')
+                   'user. Default is to attempt set user to inactive.')
+@click.option('-i', '--interactive', is_flag=True, default=False,
+              help='If set, presents list of users from which one can be '
+                   'chosen.')
 @click.pass_obj
-def users_activate(context, id, **options):
+def users_activate(context, userid, **options):
     """
     Activate or deactivate a user.
 
     This sets the user defined by the id argument to either active
     or Inactive.  When a user is inactive they are no longer shown in
     tables that involve user information such as the weekly report.
+
+    The user to be activated or deactivated may be specified by a) specific
+    user id, b) the interactive mode option, or c) using '?' as the user id
+    argument which also initiates the interactive mode options.
+
+    Example:
+        smicli users ? --activate
     """
-    context.execute_cmd(lambda: cmd_users_activate(context, id, options))
+    context.execute_cmd(lambda: cmd_users_activate(context, userid, options))
 
 
 ######################################################################
@@ -166,7 +287,6 @@ def _test_active(options):
     """
     Test the activate options. This has 3 possible values.
     """
-    print('TEST_ACTIVE %s' % options)
     if options['active']:
         activate = True
     elif options['inactive']:
@@ -254,79 +374,103 @@ def cmd_users_add(context, options):
                                    'in companies table' % company_id)
 
 
-def cmd_users_delete(context, id, options):
+def cmd_users_delete(context, userid, options):
     """Delete a user from the database."""
-
     users_tbl = UsersTable.factory(context.db_info, context.db_type,
                                    context.verbose)
-    user_id = id
 
-    if user_id in users_tbl:
+    userid = get_userid(context, users_tbl, userid, options)
+    if userid is None:
+        return
+
+    if userid in users_tbl:
         if options['no_verify']:
-            users_tbl.delete(user_id)
+            users_tbl.delete(userid)
         else:
-            user = users_tbl[user_id]
+            user = users_tbl[userid]
             context.spinner.stop()
-            click.echo(user)
-            if validate_prompt('Delete user id %s' % user_id):
-                users_tbl.delete(user_id)
+            click.echo('id=%s %s %s; %s' % (userid, user['FirstName'],
+                                            user['Lastname'], user['Email']))
+            if validate_prompt('Delete user id %s' % userid):
+                users_tbl.delete(userid)
             else:
                 click.echo('Abort Operation')
                 return
 
     else:
         raise click.ClickException('The UserID %s is not in the table' %
-                                   user_id)
+                                   userid)
 
 
-def cmd_users_modify(context, id, options):
-    """Delete a user from the database."""
-
-    context.spinner.stop()
-    click.echo("Modify operation NOT implemented")
-    return
+def cmd_users_modify(context, userid, options):
+    """Modify selected fields of a user in the database."""
 
     users_tbl = UsersTable.factory(context.db_info, context.db_type,
                                    context.verbose)
-    user_id = id
 
-    first_name = options['firstname']
-    last_name = options['lastname']
-    email = options['email']
-    company_id = options['companyid']
-    activate = _test_active(options)
+    userid = get_userid(context, users_tbl, userid, options)
+    if userid is None:
+        return
 
-    # TODO modify only fields that exist
-    # TODO validate before modify
-    if user_id in users_tbl:
-        # TODO validate data
-        users_tbl.modify(user_id, first_name, last_name, email, company_id,
-                         activate)
+    changes = {}
+    changes['FirstName'] = options.get('firstname', None)
+    changes['Lastname'] = options.get('lastname', None)
+    changes['Email'] = options.get('email', None)
+    changes['CompanyID'] = options.get('companyid', None)
+
+    for key, value in changes.items():
+        if value is None:
+            del changes[key]
+
+    if not changes:
+        click.echo('No changes requested')
+        return
+
+    user_record = users_tbl[userid]
+
+    if options['no_verify']:
+        context.targets_tbl.update(userid, changes)
     else:
-        raise click.ClickException('The UserID %s is not in the table' %
-                                   user_id)
+        context.spinner.stop()
+        click.echo('Proposed changes for id: %s, %s %s, email: %s:' %
+                   (userid, user_record['FirstName'],
+                    user_record['Lastname'],
+                    user_record['Email']))
+        for key, value in changes.items():
+            click.echo('  %s: "%s" to "%s"' % (key,
+                                               user_record[key],
+                                               value))
+        if validate_prompt('Modify user id %s' % userid):
+            users_tbl.update_fields(userid, changes)
+        else:
+            click.echo('Operation aborted by user.')
+            return
 
 
-def cmd_users_activate(context, id, options):
+def cmd_users_activate(context, userid, options):
     """
         Set the user active flag if change required
     """
 
     users_tbl = UsersTable.factory(context.db_info, context.db_type,
                                    context.verbose)
-    user_id = id
-    is_active = users_tbl.is_active(user_id)
+
+    userid = get_userid(context, users_tbl, userid, options)
+    if userid is None:
+        return
+
+    is_active = users_tbl.is_active(userid)
     active_flag = options['active']
     context.spinner.stop()
-    if user_id in users_tbl:
+    if userid in users_tbl:
         if active_flag and is_active:
-            click.echo('User %s already active' % user_id)
+            click.echo('User %s already active' % userid)
             return
         elif not active_flag and not is_active:
-            click.echo('User %s already inactive' % user_id)
+            click.echo('User %s already inactive' % userid)
             return
         else:
-            users_tbl.activate(user_id, active_flag)
-            active_flag = users_tbl.is_active(user_id)
-            click.echo('User %s set %s' % (user_id,
-                                           users_tbl.is_active_str(user_id)))
+            users_tbl.activate(userid, active_flag)
+            active_flag = users_tbl.is_active(userid)
+            click.echo('User %s set %s' % (userid,
+                                           users_tbl.is_active_str(userid)))

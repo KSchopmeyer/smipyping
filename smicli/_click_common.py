@@ -234,7 +234,6 @@ def get_target_id(context, targetid, options=None):
         context.spinner.stop()
         targetid = pick_target_id(context)
     elif isinstance(targetid, six.integer_types):
-        print('integer')
         try:
             context.targets_tbl.get_target(targetid)
             context.spinner.start()
