@@ -223,8 +223,8 @@ The following is an example of a row in a csv table:
     01,Inova,root/cimv2,,OpenPegasus,,,OpenPegasus,mypw,interop,http,5988,Enabled
 
 
-Database Installationsetup
---------------
+Database Installation and Setup
+-------------------------------
 
 MySQL Database
 ^^^^^^^^^^^^^^
@@ -272,6 +272,3 @@ install the db
    a smicli users list
    b. smicli programs list
    c. smicli targets list
-
-
-
