@@ -137,21 +137,29 @@ def target_disable(context, targetid, enable, **options):
 @click.option('-I', '--interopnamespace', type=str,
               required=False,
               help='Modify the InteropNamespace field.')
+@click.option('-n', '--namespace', type=str,
+              required=False,
+              help='Modify the namespace field.')
 @add_options(no_verify_option)
 @click.pass_obj
 def target_modify(context, targetid, enable, **options):
     """
-    Modify the fields of an record in the Targets table.
+    Modify fields of an record in the Targets table.
 
     This changes the database permanently
 
-    Use the `interactive` option to select the target from a list presented.
+    Use the `interactive` option or "?" for Target ID to select the target from
+    a list presented.
+
+    Not all fields are defined for modification. Today the fields of
+    CompanyName, SMIVersion, CimomVersion, ScanEnabled, NotifyUsers
+    Notify, and enable cannot be modified with this subcommand.
     """
     context.execute_cmd(lambda: cmd_target_modify(context, targetid, options))
 
 # TODO fields not included in modify.
 # CompanyName
-# SMIVesion
+# SMIVersion
 # ProtocolError
 # CompanyID
 # CimomVersion
@@ -245,6 +253,8 @@ def cmd_target_modify(context, targetid, options):
     changes['Principal'] = options.get('principal', None)
     changes['Credentials'] = options.get('credentials', None)
     changes['Product'] = options.get('product', None)
+    changes['InteropNamespace'] = options.get('interopnamespace', None)
+    changes['Namespace'] = options.get('namespace', None)
 
     for key, value in changes.items():
         if value is None:
@@ -269,14 +279,14 @@ def cmd_target_modify(context, targetid, options):
     else:
         context.spinner.stop()
         click.echo('Proposed changes for id: %s company: %s, product: %s:' %
-                   (targetid, target_record[targetid]['Company'],
+                   (targetid, target_record['CompanyName'],
                     target_record['Product']))
         for key, value in changes.items():
             click.echo('  %s: "%s" to "%s"' % (targetid,
-                                               target_record[targetid],
+                                               target_record[key],
                                                value))
         if validate_prompt('Modify target id %s' % targetid):
-            context.targets_tbl.update(targetid, changes)
+            context.targets_tbl.update_fields(targetid, changes)
         else:
             click.echo('Operation aborted by user.')
             return

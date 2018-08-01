@@ -38,7 +38,8 @@ from ._click_context import ClickContext
 
 from ._click_common import SMICLI_PROMPT, SMICLI_HISTORY_FILE
 from ._click_configfile import CONTEXT_SETTINGS
-# from .smipyping._logging import LOG_LEVELS
+# TODO fix this
+# from .smipyping._logging import AUDIT_LOGGER_NAME
 from ._click_common import DEFAULT_OUTPUT_FORMAT, \
     set_input_variable
 from ._tableoutput import TABLE_FORMATS
@@ -51,6 +52,8 @@ LOG_DESTINATIONS = ['file', 'stderr', 'none']
 GROUPS_LOGGER_NAME = 'smipyping.groups'
 CLI_LOGGER_NAME = 'smicli.cli'
 DEFAULT_SYSLOG_FACILITY = 'user'
+
+AUDIT_LOGGER_NAME = 'smipyping.audit'
 
 # List of values to try for the 'address' parameter when creating
 # a SysLogHandler object.
@@ -214,7 +217,7 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
         #        # log_file = 'smicli.log'
         # else:
         #    # log_file = None
-        log_file = 'smicli_log'
+        log_file = 'smicli_log.log'
 
         if ctx.default_map:
             db_info = ctx.default_map[db_type]
@@ -224,6 +227,15 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
             print('WARNING: No Database info provided for database type %s'
                   % db_type)
         config_file_dir = os.path.dirname(os.getcwd())
+
+        # Enable the hidden loggers.
+        logger = logging.getLogger(AUDIT_LOGGER_NAME)
+        logger.setLevel(logging.INFO)
+        handler = logging.FileHandler(log_file)
+        formatter = logging.Formatter('%(asctime)s-%(name)s-%(message)s')
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+
         db_info['directory'] = config_file_dir
         if verbose:
             print('db_info %s' % db_info)
