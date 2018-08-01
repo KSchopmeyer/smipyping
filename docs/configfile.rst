@@ -15,7 +15,7 @@ command line.  However, in general the config file makes the use of `smicli`
 This file includes information about:
 
 * The database. Identifies the database type, and other configuration information
-so that the database can be opened
+  so that the database can be opened
 
 * output report formats - Default output format for reports
 
@@ -73,4 +73,3 @@ The following is an example of an smicli configuration file
     [log]
     # define the level of logging
     loglevel = debug
-
