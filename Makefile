@@ -254,15 +254,52 @@ check: flake8.log
 pylint: pylint.log
 	@echo '$@ done.'
 
+pywbem_os_setup.sh:
+	wget -q http://pywbem.readthedocs.io/en/latest/_downloads/pywbem_os_setup.sh
+	chmod 755 pywbem_os_setup.sh
+
+pywbem_os_setup.bat:
+	wget -q http://pywbem.readthedocs.io/en/latest/_downloads/pywbem_os_setup.bat
+	chmod 755 pywbem_os_setup.bat
+
+install_os_pywbem.done: pywbem_os_setup.sh pywbem_os_setup.bat
+ifeq ($(PLATFORM),Windows)
+	cmd /c pywbem_os_setup.bat install
+else
+	./pywbem_os_setup.sh install
+endif
+	touch install_os_pywbem.done
+	@echo 'Done: Installed prerequisite OS-level packages for pywbem.'
+
 .PHONY: install
-install: _pip
-	@echo 'Installing runtime requirements with PACKAGE_LEVEL=$(PACKAGE_LEVEL)'
-	$(PIP_CMD) install $(pip_level_opts) .
-	# $(PYTHON_CMD) -c "import smipyping; print('Import: ok')"
-	which smicli
-	smicli --version
-	@echo 'Done: Installed $(package_name) into current Python environment.'
+install: install.done
 	@echo '$@ done.'
+#install: _pip
+#	@echo 'Installing runtime requirements with PACKAGE_LEVEL=$(PACKAGE_LEVEL)'
+#	$(PIP_CMD) install $(pip_level_opts) .
+#	# $(PYTHON_CMD) -c "import smipyping; print('Import: ok')"
+#	which smicli
+#	smicli --version
+#	@echo 'Done: Installed $(package_name) into current Python environment.'
+#	@echo '$@ done.'
+
+install.done: install_os_pywbem.done requirements.txt setup.py setup.cfg
+	$(PYTHON_CMD) -m pip install $(pip_level_opts) pip setuptools wheel
+	$(PIP_CMD) install $(pip_level_opts) -r requirements.txt
+	$(PIP_CMD) install $(pip_level_opts) -e .
+	$(PYTHON_CMD) -c "import pywbemcli; print('Import: ok')"
+	pywbemcli --version
+	touch install.done
+	@echo 'Done: Installed $(package_name) and its installation and runtime prereqs.'
+
+.PHONY: develop
+develop: develop.done
+	@echo '$@ done.'
+
+develop.done: install.done dev-requirements.txt
+	$(PIP_CMD) install $(pip_level_opts) -r dev-requirements.txt
+	touch develop.done
+	@echo 'Done: Installed Python development prereqs for $(package_name).'
 
 .PHONY: uninstall
 uninstall:

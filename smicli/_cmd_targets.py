@@ -53,7 +53,8 @@ def targets_group():
                    'set enabled in the database are shown.'
                    ' ' + '(Default: %s.' % False)
 @click.option('-o', '--order', type=str, default=None,
-              help='sort by the defined field name. NOT IMPLEMENTED')
+              help='Sort by the defined field name. Names are viewed with the '
+                   'targets fields subcommand')
 # TODO sort by a particular field
 @click.pass_obj
 def targets_list(context, **options):
@@ -174,22 +175,28 @@ def target_modify(context, targetid, enable, **options):
 #  targets processing commands
 ##############################################################
 
-def display_cols(target_table, fields, show_disabled=True, output_format=None):
+def display_cols(target_table, fields, show_disabled=True, order=None,
+                 output_format=None):
     """
     Display the columns of data defined by the fields parameter.
 
     This gets the data from the targets data based on the col_list and prepares
-    a table based on those targets_tbl colums
+    and displays a table based on those targets_tbl colums.
 
     Parameters:
       fields: list of strings defining the targets_data columns to be
         displayed.
 
+      target_table: The targets table from the database
+
+      order (:term: `string`): None or name of field upon which the table will
+        be sorted for output
+
       show_disabled(:class:`py:bool`)
+        If True, show disabled entries. If not True, entries marked disabled
+        are ignored
 
     """
-    table_data = []
-
     if show_disabled:
         if 'ScanEnabled' not in fields:
             fields.append('ScanEnabled')
@@ -199,21 +206,36 @@ def display_cols(target_table, fields, show_disabled=True, output_format=None):
     # length.  The definition in targetstable is not correct.
     fold = False if table_width < 80 else True
 
-    for record_id in sorted(target_table.keys()):
-        if show_disabled:
-            table_data.append(target_table.format_record(record_id,
-                                                         fields,
-                                                         fold))
+    if show_disabled:
+        target_ids = sorted(target_table.keys())
+    else:
+        target_ids = sorted(target_table.get_enabled_targetids())
+
+    # If order defined check to see if valid field
+    if order:
+        if order not in target_table.get_field_list():
+            raise click.ClickException("--order option defines invalid field %s"
+                                       % order)
         else:
-            if not target_table.disabled_target_id(record_id):
-                table_data.append(target_table.format_record(record_id,
-                                                             fields,
-                                                             fold))
+            # create dictionary with order value as key and targetid as value
+            order_dict = {target_table[targetid][order]: targetid
+                          for targetid in target_ids}
+            # TODO this may be inefficient means to sort by keys and get values
+            # into list
+            target_ids = []
+            for key in sorted(order_dict.keys()):
+                target_ids.append(order_dict[key])
+
+    rows = []
+    for targetid in target_ids:
+        rows.append(target_table.format_record(targetid, fields, fold))
+
     headers = target_table.tbl_hdr(fields)
-    title = 'Target Providers Overview:'
+    title = 'Target Providers Overview: '
     if show_disabled:
         title = '%s including disabled targets' % title
-    print_table(table_data, headers=headers, title=title,
+
+    print_table(rows, headers=headers, title=title,
                 table_format=output_format)
 
 
@@ -221,7 +243,7 @@ STANDARD_FIELDS_DISPLAY_LIST = ['TargetID', 'IPAddress', 'Port', 'Protocol',
                                 'CompanyName', 'Product', 'CimomVersion']
 
 
-def display_all(target_table, fields=None, company=None,
+def display_all(target_table, fields=None, company=None, order=None,
                 show_disabled=True, output_format=None):
     """Display all entries in the base. If fields does not exist,
        display a standard list of fields from the database.
@@ -231,7 +253,7 @@ def display_all(target_table, fields=None, company=None,
         fields = STANDARD_FIELDS_DISPLAY_LIST
     else:
         fields = fields
-    display_cols(target_table, fields, show_disabled=show_disabled,
+    display_cols(target_table, fields, show_disabled=show_disabled, order=order,
                  output_format=output_format)
 
 
@@ -387,7 +409,7 @@ def cmd_targets_list(context, options):
 
     try:
         display_all(context.targets_tbl, list(fields),
-                    show_disabled=options['disabled'],
+                    show_disabled=options['disabled'], order=options['order'],
                     company=None, output_format=context.output_format)
 
     except Exception as ex:

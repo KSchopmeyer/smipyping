@@ -1,0 +1,1709 @@
+
+.. _`smicli Help Command Details`:
+
+smicli Help Command Details
+===========================
+
+
+This section defines the help output for each smicli command group and subcommand.
+
+
+
+The following defines the help output for the `smicli  --help` subcommand
+
+
+::
+
+    Usage: smicli [GENERAL-OPTIONS] COMMAND [ARGS]...
+    
+      Command line script for smicli.  This script executes a number of
+      subcommands to:
+    
+          * Explore one or more smi servers for basic WBEM information and
+            additional information specific to SMI.
+    
+          * Manage a database that defines smi servers, users, company names
+            and history. It supports two forms of the data base, sql database
+            and csv file.
+    
+          * Sweep ranges of ip addresses and ports to find wbem servers.
+    
+    Options:
+      -c, --config_file TEXT          Configuration file to use for config
+                                      information.
+      -d, --db_type [csv|mysql|sqlite]
+                                      Database type. May be defined on cmd line,
+                                      config file,  or through default. Default is
+                                      mysql.
+      -l, --log COMP=LEVEL,...        Set a component to a log level (COMP: [all|c
+                                      li|pywbem|pywbemapi|pywbemhttp|api|groups],
+                                      LEVEL: [critical|error|warning|info|debug],
+                                      Default: all=error).
+      --log-dest [file|stderr|none]   Log destination for this command (Default:
+                                      file).
+      -o, --output-format [table|plain|simple|grid|psql|rst|mediawiki|html]
+                                      Output format (Default: simple). pywbemcli
+                                      may override the format choice depending on
+                                      the operation since not all formats apply to
+                                      all output data types.
+      -v, --verbose                   Display extra information about the
+                                      processing.
+      --version                       Show the version of this command and exit.
+      -h, --help                      Show this message and exit.
+    
+    Commands:
+      cimping    Command group to do simpleping.
+      companies  Command group handles companies table.
+      explorer   Command group to explore providers.
+      help       Show help message for interactive mode.
+      history    Command group manages history(pings) table.
+      programs   Command group to handle programs table.
+      provider   Command group for provider operations.
+      repl       Enter interactive (REPL) mode (default).
+      sweep      Command group to sweep for servers.
+      targets    Command group for managing targets data.
+      users      Command group to handle users table.
+
+
+
+.. _`smicli cimping --help`:
+
+smicli cimping --help
+---------------------
+
+
+
+The following defines the help output for the `smicli cimping --help` subcommand
+
+
+::
+
+    Usage: smicli cimping [COMMAND-OPTIONS] COMMAND [ARGS]...
+    
+      Command group to do simpleping.
+    
+      This command group executes a simple ping on the target defined by the
+      subcommand.  This allows targets to be defined in a number of ways
+      including:
+    
+        - Complete target identification (url, etc.) (host)
+    
+        - Target Id in the database.
+    
+        - All targets in the database.
+    
+      Simple ping is defined as opening a connection to a wbem server and
+      executing a single command on that server, normally a getClass with a well
+      known CIMClass.
+    
+    Options:
+      -h, --help  Show this message and exit.
+    
+    Commands:
+      all   CIMPing all enabled targets in database.
+      host  cimping wbem server defined by hostname.
+      id    Cimping one target from database.
+      ids   Cimping a list of targets from database.
+
+
+
+.. _`smicli cimping all --help`:
+
+smicli cimping all --help
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli cimping all --help` subcommand
+
+
+::
+
+    Usage: smicli cimping all [COMMAND-OPTIONS]
+    
+      CIMPing all enabled targets in database.
+    
+      Executes the ping on all enabledtargets in the targets table of the
+      database.
+    
+      Creates a table of results and optionally logs status of each in the Pings
+      table (saveresult option)
+    
+      ex. smicli cimping all
+    
+    Options:
+      -t, --timeout INTEGER  Timeout in sec for the operation. (Default: 10.)
+      --no-ping              Disable network ping of the wbem server before
+                             executing the cim request. (Default: True.)
+      -s, --saveresult       Save the result of each cimping test of a wbem server
+                             to the database Pings table for future analysis.
+                             (Default: False.
+      -d, --disabled         If set include disabled targets in the cimping scan.
+                             (Default: False.
+      -d, --debug            Set the debug parameter for the pywbem call. Displays
+                             detailed information on the call and response.
+                             (Default: False.)
+      -h, --help             Show this message and exit.
+
+
+
+.. _`smicli cimping host --help`:
+
+smicli cimping host --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli cimping host --help` subcommand
+
+
+::
+
+    Usage: smicli cimping host [COMMAND-OPTIONS] HOST NAME
+    
+      cimping wbem server defined by hostname.
+    
+         Host name or url of the WBEM server in this format:
+    
+               [{scheme}://]{host}[:{port}]
+    
+            - scheme: Defines the protocol to use;
+    
+               - "https" for HTTPs protocol
+    
+                - "http" for HTTP protocol.
+    
+              Default: "https".
+    
+            - host: Defines host name as follows:
+    
+                 - short or fully qualified DNS hostname,
+    
+                 - literal IPV4 address(dotted)
+    
+                 - literal IPV6 address (RFC 3986) with zone
+    
+                   identifier extensions(RFC 6874)
+    
+                   supporting "-" or %%25 for the delimiter.
+    
+            - port: Defines the WBEM server port to be used
+    
+              Defaults:
+    
+                 - HTTP  - 5988
+    
+                 - HTTPS - 5989
+    
+    Options:
+      -n, --namespace TEXT     Namespace for the operation. (Default: root/cimv2.
+      -u, --user TEXT          Optional user name for the operation. (Default:
+                               smilab.
+      -p, --password TEXT      Optional password for the operation. (Default;
+                               F00sb4ll.
+      -t, --timeout INTEGER    Namespace for the operation. (Default: 10.
+      --no-ping BOOLEAN        Disable network ping ofthe wbem server before
+                               executing the cim request. (Default: True.
+      -d--debug BOOLEAN        Set the debug parameter for the pywbem call.
+                               Displays detailed information on the call and
+                               response. (Default: False.
+      -c--verify_cert BOOLEAN  Request that the client verify the server cert.
+                               (Default: False.
+      --certfile TEXT          Client certificate file for authenticating with the
+                               WBEM server. If option specified the client
+                               attempts to execute mutual authentication. Default:
+                               Simple authentication.
+      --keyfile TEXT           Client private key file for authenticating with the
+                               WBEM server. Not required if private key is part of
+                               the certfile option. Not allowed if no certfile
+                               option. Default: No client key file. Client private
+                               key should then be part  of the certfile
+      -h, --help               Show this message and exit.
+
+
+
+.. _`smicli cimping id --help`:
+
+smicli cimping id --help
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli cimping id --help` subcommand
+
+
+::
+
+    Usage: smicli cimping id [COMMAND-OPTIONS] TargetID
+    
+      Cimping  one target from database.
+    
+      Executes a simple ping against one target wbem servers in the target
+      database and returns exit code in accord with response. Exits interactive
+      mode and returns exit code corresponding to test result.
+    
+      This test sets a cmd line exit code corresponding to the status of a given
+      target WBEM Server.
+    
+      This subcommand will interactively let user select the TargetID if the
+      --interactive mode is selected or "?" is entered for the TargetID.
+    
+      ex. smicli cimping 5
+    
+    Options:
+      -t, --timeout INTEGER  Timeout in sec for the operation. (Default: 10.)
+      -i, --interactive      If set, presents list of targets to chose.
+      --no-ping              Disable network ping of the wbem server before
+                             executing the cim request. (Default: True.)
+      -d, --debug            Set the debug parameter for the pywbem call. Displays
+                             detailed information on the call and response.
+                             (Default: False.)
+      -h, --help             Show this message and exit.
+
+
+
+.. _`smicli cimping ids --help`:
+
+smicli cimping ids --help
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli cimping ids --help` subcommand
+
+
+::
+
+    Usage: smicli cimping ids [COMMAND-OPTIONS] TargetIDs
+    
+      Cimping a list of targets from database.
+    
+      Execute simple cim ping against the list of ids provided for target
+      servers in the database defined by each id in the list of ids creates a
+      table showing result.
+    
+      ex. smicli cimping ids 5 8 9
+    
+    Options:
+      -t, --timeout INTEGER  Timeout in sec for the operation. (Default: 10.)
+      --no-ping              Disable network ping of the wbem server before
+                             executing the cim request. (Default: True.)
+      -d, --debug            Set the debug parameter for the pywbem call. Displays
+                             detailed information on the call and response.
+                             (Default: False.)
+      -h, --help             Show this message and exit.
+
+
+
+.. _`smicli companies --help`:
+
+smicli companies --help
+-----------------------
+
+
+
+The following defines the help output for the `smicli companies --help` subcommand
+
+
+::
+
+    Usage: smicli companies [COMMAND-OPTIONS] COMMAND [ARGS]...
+    
+      Command group handles companies table.
+    
+      Includes commands to view and modify the Companies table in the database.
+    
+    Options:
+      -h, --help  Show this message and exit.
+    
+    Commands:
+      delete  Delete a program from the database.
+      list    List Companies in the database.
+      modify  Create fake cimping results in pings...
+      new     Create a new user in the user table.
+
+
+
+.. _`smicli companies delete --help`:
+
+smicli companies delete --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli companies delete --help` subcommand
+
+
+::
+
+    Usage: smicli companies delete [COMMAND-OPTIONS] UserID
+    
+      Delete a program from the database.
+    
+      Delete the program defined by the subcommand argument from the database.
+    
+    Options:
+      -n, --no-verify  Verify the deletion before deleting the user.
+      -h, --help       Show this message and exit.
+
+
+
+.. _`smicli companies list --help`:
+
+smicli companies list --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli companies list --help` subcommand
+
+
+::
+
+    Usage: smicli companies list [COMMAND-OPTIONS]
+    
+      List Companies in the database.
+    
+    Options:
+      -h, --help  Show this message and exit.
+
+
+
+.. _`smicli companies modify --help`:
+
+smicli companies modify --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli companies modify --help` subcommand
+
+
+::
+
+    Usage: smicli companies modify [COMMAND-OPTIONS] UserID
+    
+      Create fake cimping results in pings database.
+    
+      Execute simple cim ping against the list of ids provided for target
+      servers in the database defined by each id in the list of ids creates a
+      table showing result.
+    
+      ex. smicli cimping ids 5 8 9
+    
+    Options:
+      -c, --companyname TEXT  User first name.
+      -v, --verify            Verify the modification before modifying the user.
+      -h, --help              Show this message and exit.
+
+
+
+.. _`smicli companies new --help`:
+
+smicli companies new --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli companies new --help` subcommand
+
+
+::
+
+    Usage: smicli companies new [COMMAND-OPTIONS]
+    
+      Create a new user in the user table.
+    
+      Creates a new user with the defined parameters.
+    
+    Options:
+      -c, --companyname TEXT  Company name for company to add to table.
+                              [required]
+      -h, --help              Show this message and exit.
+
+
+
+.. _`smicli explorer --help`:
+
+smicli explorer --help
+----------------------
+
+
+
+The following defines the help output for the `smicli explorer --help` subcommand
+
+
+::
+
+    Usage: smicli explorer [COMMAND-OPTIONS] COMMAND [ARGS]...
+    
+      Command group to explore providers.
+    
+      This group of commands provides the tools for general explore of all
+      providers defined in the database.
+    
+      The explore queries the providers and generates information on their state
+      and status including if active, namespaces, profiles, etc. It also
+      normally generates a log of all activity.
+    
+      This information is generated by accessing the provider itself.
+    
+    Options:
+      -h, --help  Show this message and exit.
+    
+    Commands:
+      all  Command group to explore servers Execute the...
+      ids  Execute the general explorer on the providers...
+
+
+
+.. _`smicli explorer all --help`:
+
+smicli explorer all --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli explorer all --help` subcommand
+
+
+::
+
+    Usage: smicli explorer all [COMMAND-OPTIONS]
+    
+      Command group to explore servers
+    
+      Execute the general explore operation on  some or all the providers in the
+      database and generate a report on the results.
+    
+      This command explores the general characteristics of the server including:
+    
+        * Company - From the targets database
+    
+        * Product = From the targets database
+    
+        * SMI Profiles   - As defined by the server itself
+    
+        * Interop Namespace - Ad defined by the server
+    
+        * Status - General status (i.e. CIMPing status)
+    
+        * Time - Time to execute the tests
+    
+      General Server information
+    
+      It executes the server requests in parallel mode (multi-threaded) or by
+      setting a command line options single thread (if for some reason there is
+      an issue with the multithreading)
+    
+      It generates a report to the the defined output as a table with the
+      formatting defined by the global format option. Default is thread the
+      requests speeding up the explore significantly.
+    
+      There is an option to ping the server before executing the explore simply
+      to speed up the process for servers that are completely not available. The
+      default is to ping as the first step.
+    
+      ex: smicli explore ids 15 18
+    
+    Options:
+      --ping / --no-ping         Ping the the provider as initial step in test.
+                                 Default: ping
+      --thread / --no-thread     Run test multithreaded.  Much faster. Default:
+                                 thread
+      -r, --report [full|brief]  Generate full or brief (fewer columns) report
+      -h, --help                 Show this message and exit.
+
+
+
+.. _`smicli explorer ids --help`:
+
+smicli explorer ids --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli explorer ids --help` subcommand
+
+
+::
+
+    Usage: smicli explorer ids [COMMAND-OPTIONS] TargetIDs
+    
+      Execute the general explorer on the providers defined by id.  Multiple ids
+      may be supplied (ex. id 5 6 7)
+    
+    Options:
+      --ping / --no-ping         Ping the the provider as initial step in test.
+                                 Default: ping
+      --thread / --no-thread     Run test multithreaded.  Much faster. Default:
+                                 thread
+      -r, --report [full|brief]  Generate full or brief (fewer columns) report
+      -h, --help                 Show this message and exit.
+
+
+
+.. _`smicli help --help`:
+
+smicli help --help
+------------------
+
+
+
+The following defines the help output for the `smicli help --help` subcommand
+
+
+::
+
+    Usage: smicli help [OPTIONS]
+    
+      Show help message for interactive mode.
+    
+    Options:
+      -h, --help  Show this message and exit.
+
+
+
+.. _`smicli history --help`:
+
+smicli history --help
+---------------------
+
+
+
+The following defines the help output for the `smicli history --help` subcommand
+
+
+::
+
+    Usage: smicli history [COMMAND-OPTIONS] COMMAND [ARGS]...
+    
+      Command group manages history(pings) table.
+    
+      The history command group processes the database pings table.
+    
+      The pings table maintains entries with the results of the ``cimping all``
+      subcommand.  Each entry contains the target id, the timestamp for the
+      test, and the results of the test.
+    
+      It includes commands to clean the pings table and also to create various
+      reports and tables of the history of tests on the WBEM servecaurs in the
+      targets table that are stored in the Pings table.
+    
+      Because the pings table can be very large, there are subcommands to clean
+      entries out of the table based on program id, dates, etc.
+    
+      Rather than a simple list subcommand this subcommand includes a number of
+      reports to view the table for:
+    
+        - changes to status for particular targets.   - Consolidated history
+        over time periods   - Snapshots of the full set of entries over periods
+        of time.
+    
+    Options:
+      -h, --help  Show this message and exit.
+    
+    Commands:
+      create    TODO: Delete this or move somewhere in a test...
+      delete    Delete records from history file.
+      list      List history of pings from database List...
+      stats     Get stats on pings in database.
+      timeline  Show history of status changes for IDs.
+      weekly    Generate weekly report from ping history.
+
+
+
+.. _`smicli history create --help`:
+
+smicli history create --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli history create --help` subcommand
+
+
+::
+
+    Usage: smicli history create [COMMAND-OPTIONS]
+    
+      TODO: Delete this or move somewhere in a test catagory.
+    
+    Options:
+      -i, --ids INTEGER    Optional list of ids. If not supplied, all id's are
+                           used
+      -d, --datetime DATE  Timestamp for the ping history. format for input
+                           ismin:hour:day/month/year. The minute and hour are
+                           optional. Default current datetime
+      -h, --help           Show this message and exit.
+
+
+
+.. _`smicli history delete --help`:
+
+smicli history delete --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli history delete --help` subcommand
+
+
+::
+
+    Usage: smicli history delete [COMMAND-OPTIONS]
+    
+      Delete records from history file.
+    
+      Delete records from the history file based on start date and end date
+      options and the optional list of target ids provided.
+    
+      ex. smicli history delete --startdate 09/09/17 --endate 09/10/17
+    
+      Because this could accidently delete all history records, this command
+      specifically requires that the user provide both the start date and either
+      the enddate or number of days. It makes no assumptions about dates.
+    
+      It also requires verification before deleting any records.
+    
+    Options:
+      -s, --startdate DATE        Start date for pings to be deleted. Format is
+                                  dd/mm/yy  [required]
+      -e, --enddate DATE          End date for pings to be deleted. Format is
+                                  dd/mm/yy  [required]
+      -n, --numberofdays INTEGER  Alternative to enddate. Number of days to report
+                                  from startdate. "enddate" ignored if
+                                  "numberofdays" set
+      -t, --TargetID INTEGER      Optional targetID. If included, delete ping
+                                  records only for the defined targetID. Otherwise
+                                  all ping records in the defined time period are
+                                  deleted.
+      -h, --help                  Show this message and exit.
+
+
+
+.. _`smicli history list --help`:
+
+smicli history list --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli history list --help` subcommand
+
+
+::
+
+    Usage: smicli history list [COMMAND-OPTIONS]
+    
+      List history of pings from database
+    
+      List pings history from database within a time range.  This allows listing
+      full list of pings, status summary or percetage OK responses.
+    
+      This subcommand lists the ping table entries as a table with one record
+      per row.  Since the pings table can be very large, the output of this
+      subcommand can be large unless limited by date ranges and the result
+      filters.
+    
+    Options:
+      -s, --startdate DATE        Start date for ping records included. Format is
+                                  dd/mm/yy where dd and mm are zero padded (ex.
+                                  01) and year is without century (ex. 17).
+                                  Default is oldest record
+      -e, --enddate DATE          End date for ping records included. Format is
+                                  dd/mm/yy where dd and dm are zero padded (ex.
+                                  01) and year is without century (ex. 17).
+                                  Default is current datetime
+      -n, --numberofdays INTEGER  Alternative to enddate. Number of days to report
+                                  from startdate. "enddate" ignored if
+                                  "numberofdays" set
+      -t, --targetId INTEGER      Get results only for the defined targetID
+      -r [full|status|%ok|count]  Display. "full" displays all records, "status"
+                                  displays status summary by id. Default=status.
+                                  "%ok" reports percentage pings OK by Id and
+                                  total count.
+      -h, --help                  Show this message and exit.
+
+
+
+.. _`smicli history stats --help`:
+
+smicli history stats --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli history stats --help` subcommand
+
+
+::
+
+    Usage: smicli history stats [COMMAND-OPTIONS]
+    
+      Get stats on pings in database.
+    
+      This subcommand only shows the count of records and the oldest and newest
+      record in the pings database
+    
+      TODO we need to grow this output to more statistical information
+    
+    Options:
+      -h, --help  Show this message and exit.
+
+
+
+.. _`smicli history timeline --help`:
+
+smicli history timeline --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli history timeline --help` subcommand
+
+
+::
+
+    Usage: smicli history timeline [COMMAND-OPTIONS] TargetIDs
+    
+      Show history of status changes for IDs.
+    
+      Generates a report for the defined target IDs and the time period defined
+      by the options of the historical status of the defined target ID. The
+      --result option defines the report generated with options for 1) "full"
+      full list of history records 2) summary status by target ID, or 3) "%OK"
+      percentage of records that report OK and total records for the period by
+      target ID.
+    
+    Options:
+      -s, --startdate DATE            Start date for ping records included. Format
+                                      is dd/mm/yy where dd and mm are zero padded
+                                      (ex. 01) and year is without century (ex.
+                                      17). Default is oldest record
+      -e, --enddate DATE              End date for ping records included. Format
+                                      is dd/mm/yy where dd and dm are zero padded
+                                      (ex. 01) and year is without century (ex.
+                                      17). Default  if neither `enddate` or
+                                      `numberofdays` are defined is current
+                                      datetime
+      -n, --numberofdays INTEGER      Alternative to enddate. Number of days to
+                                      report from startdate. "enddate" ignored if
+                                      "numberofdays" set
+      -r, --result [full|status|%ok]  "full" displays all records, "status"
+                                      displays status summary by id. "%ok" reports
+                                      percentage pings OK by Id and total count.
+                                      Default="status".
+      -h, --help                      Show this message and exit.
+
+
+
+.. _`smicli history weekly --help`:
+
+smicli history weekly --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli history weekly --help` subcommand
+
+
+::
+
+    Usage: smicli history weekly [COMMAND-OPTIONS]
+    
+      Generate weekly report from ping history.
+    
+      This subcommand generates a report on the status of each target id in the
+      targets table filtered by the start date and end date or number of days
+      input parameters
+    
+      This report includes percentage OK for each target for today, this week,
+      and the program and overall information on the target (company, product,
+      SMIversion, contacts.)
+    
+    Options:
+      -d, --date DATE   Optional date to be used as basis for report in form
+                        dd/mm/yy. Default is the today. This option allows reports
+                        to be generated for previous periods.
+      -o, --order TEXT  Sort order of the columns for the report output.  This can
+                        be any of the column headers (case independent). Default:
+                        Company
+      -h, --help        Show this message and exit.
+
+
+
+.. _`smicli programs --help`:
+
+smicli programs --help
+----------------------
+
+
+
+The following defines the help output for the `smicli programs --help` subcommand
+
+
+::
+
+    Usage: smicli programs [COMMAND-OPTIONS] COMMAND [ARGS]...
+    
+      Command group to handle programs table.
+    
+      The programs table defines programs in terms of start and end dates so
+      that other commands can use specific programs to manage their tables.
+      Normally a program is one year long and includes it start date, end date,
+      and a program name.
+    
+      There are subcommands to create,modify, delete program entries and a list
+      command that shows all entries in the table.
+    
+    Options:
+      -h, --help  Show this message and exit.
+    
+    Commands:
+      current  Get info on current program.
+      delete   Delete a program from the database.
+      list     List programs in the database.
+      new      Add new program to the database.
+
+
+
+.. _`smicli programs current --help`:
+
+smicli programs current --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli programs current --help` subcommand
+
+
+::
+
+    Usage: smicli programs current [COMMAND-OPTIONS]
+    
+      Get info on current program.
+    
+      Search database for current program and display info on this program
+    
+    Options:
+      -h, --help  Show this message and exit.
+
+
+
+.. _`smicli programs delete --help`:
+
+smicli programs delete --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli programs delete --help` subcommand
+
+
+::
+
+    Usage: smicli programs delete [COMMAND-OPTIONS] ProgramID
+    
+      Delete a program from the database.
+    
+      Delete the program defined by the subcommand argument from the database.
+    
+    Options:
+      -n, --no-verify  Do not verify the deletion before deleting the program.
+      -h, --help       Show this message and exit.
+
+
+
+.. _`smicli programs list --help`:
+
+smicli programs list --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli programs list --help` subcommand
+
+
+::
+
+    Usage: smicli programs list [COMMAND-OPTIONS]
+    
+      List programs in the database.
+    
+    Options:
+      -h, --help  Show this message and exit.
+
+
+
+.. _`smicli programs new --help`:
+
+smicli programs new --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli programs new --help` subcommand
+
+
+::
+
+    Usage: smicli programs new [COMMAND-OPTIONS]
+    
+      Add new program to the database.
+    
+    Options:
+      -s, --startdate DATE    Start date for program. Format is dd/mm/yy where dd
+                              and mm are zero padded (ex. 01) and year is without
+                              century (ex. 17). This option is optional and if not
+                              supplied the day after the end of the latest program
+                              will be selected.
+      -e, --enddate DATE      End date for program. Format is dd/mm/yy where dd
+                              and mm are zero padded (ex. 01) and year is without
+                              century (ex. 17). This field is optional and if not
+                              defined on the command line 12 montsh - 1 day after
+                              the start date will be used as the end date.
+      -p, --programname TEXT  Descriptive name for program  [required]
+      -h, --help              Show this message and exit.
+
+
+
+.. _`smicli provider --help`:
+
+smicli provider --help
+----------------------
+
+
+
+The following defines the help output for the `smicli provider --help` subcommand
+
+
+::
+
+    Usage: smicli provider [COMMAND-OPTIONS] COMMAND [ARGS]...
+    
+      Command group for provider operations.
+    
+      This group of commands provides commands to query the providers defined by
+      entries in the targets database.  This includes commands like ping, get
+      basic info, get namespace info, get profile information. for individual
+      providers.
+    
+      It differs from the explore group in that it provides tools to process
+      individual providers in the database rather than try to explore the entire
+      set of providers.
+    
+    Options:
+      -h, --help  Show this message and exit.
+    
+    Commands:
+      classes     Find all classes that match CLASSNAME.
+      info        Display general info for the provider.
+      interop     Display the brand information for the...
+      namespaces  Display the brand information for the...
+      ping        Ping the provider defined by targetid.
+      profiles    Display registered profile information for...
+
+
+
+.. _`smicli provider classes --help`:
+
+smicli provider classes --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli provider classes --help` subcommand
+
+
+::
+
+    Usage: smicli provider classes [COMMAND-OPTIONS] TargetID
+    
+      Find all classes that match CLASSNAME.
+    
+      Find all  class names in the namespace(s) of the defined WBEMServer that
+      match the CLASSNAME regular expression argument. The CLASSNAME argument
+      may be either a complete classname or a regular expression that can be
+      matched to one or more classnames. To limit the filter to a single
+      classname, terminate the classname with $.
+    
+      The regular expression is anchored to the beginning of CLASSNAME and is
+      case insensitive. Thus pywbem_ returns all classes that begin with
+      PyWBEM_, pywbem_, etc.
+    
+      The namespace option limits the search to the defined namespace.
+    
+    Options:
+      -i, --interactive               If set, presents list of targets to chose.
+      -c, --classname CLASSNAME regex
+                                      Regex that filters the classnames to return
+                                      only those that match the regex. This is a
+                                      case insensitive, anchored regex. Thus,
+                                      "CIM_" returns all classnames that start
+                                      with "CIM_". To return an exact classname
+                                      append "$" to the classname
+      -s, --summary                   Return only the count of classes in the
+                                      namespace(s)
+      -n, --namespace <name>          Namespace to use for this operation. If not
+                                      defined all namespaces are used
+      -h, --help                      Show this message and exit.
+
+
+
+.. _`smicli provider info --help`:
+
+smicli provider info --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli provider info --help` subcommand
+
+
+::
+
+    Usage: smicli provider info [COMMAND-OPTIONS] TargetID
+    
+      Display general info for the provider.
+    
+      The TargetID defines a single provider (See targets table). It may be
+      picked from a list by entering ? or the --interactive option.
+    
+      The company options allows searching by company name in the provider base.
+    
+    Options:
+      -i, --interactive  If set, presents list of targets to chose.
+      -h, --help         Show this message and exit.
+
+
+
+.. _`smicli provider interop --help`:
+
+smicli provider interop --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli provider interop --help` subcommand
+
+
+::
+
+    Usage: smicli provider interop [COMMAND-OPTIONS] TargetID
+    
+      Display the brand information for the providers defined by the options.
+    
+      The TargetID defines a single provider (See targets table). It may be
+      picked from a list by entering ? or the --interactive option.
+    
+      The company options allows searching by company name in the provider base.
+    
+    Options:
+      -i, --interactive  If set, presents list of targets to chose.
+      -h, --help         Show this message and exit.
+
+
+
+.. _`smicli provider namespaces --help`:
+
+smicli provider namespaces --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli provider namespaces --help` subcommand
+
+
+::
+
+    Usage: smicli provider namespaces [COMMAND-OPTIONS] TargetID
+    
+      Display the brand information for the providers defined by the options.
+    
+      The options include providerid which defines one or more provider id's to
+      be displayed.
+    
+      The company options allows searching by company name in the provider base.
+    
+    Options:
+      -i, --interactive  If set, presents list of targets to chose.
+      -h, --help         Show this message and exit.
+
+
+
+.. _`smicli provider ping --help`:
+
+smicli provider ping --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli provider ping --help` subcommand
+
+
+::
+
+    Usage: smicli provider ping [COMMAND-OPTIONS] TargetID
+    
+      Ping the provider defined by targetid.
+    
+      The TargetID defines a single provider (See targets table). It may be
+      picked from a list by entering ? or the --interactive option.
+    
+      The company options allows searching by company name in the provider base.
+    
+    Options:
+      -i, --interactive  If set, presents list of targets to chose.
+      --timeout INTEGER  Timeout for the ping in seconds. (Default 2.
+      -h, --help         Show this message and exit.
+
+
+
+.. _`smicli provider profiles --help`:
+
+smicli provider profiles --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli provider profiles --help` subcommand
+
+
+::
+
+    Usage: smicli provider profiles [COMMAND-OPTIONS] TargetID
+    
+      Display registered profile information for provider
+    
+      The TargetID defines a single provider (See targets table). It may be
+      picked from a list by entering ? or the --interactive option.
+    
+      The other options allow the selection of a subset of the profiles from the
+      server by organization name, profile name, or profile version.
+    
+      ex. smicli provider profiles 4 -o SNIA
+    
+    Options:
+      -i, --interactive        If set, presents list of targets to chose.
+      -o, --organization TEXT  Optionally specify organization for the profiles
+      -n, --name TEXT          Optionally specify name for the profiles
+      -v, --version TEXT       Optionally specify versionfor the profiles
+      -h, --help               Show this message and exit.
+
+
+
+.. _`smicli repl --help`:
+
+smicli repl --help
+------------------
+
+
+
+The following defines the help output for the `smicli repl --help` subcommand
+
+
+::
+
+    Usage: smicli repl [OPTIONS]
+    
+      Enter interactive (REPL) mode (default).
+    
+      This subcommand enters the interactive mode where subcommands can be
+      executed without exiting the progarm and loads any existing command
+      history file.
+    
+    Options:
+      -h, --help  Show this message and exit.
+
+
+
+.. _`smicli sweep --help`:
+
+smicli sweep --help
+-------------------
+
+
+
+The following defines the help output for the `smicli sweep --help` subcommand
+
+
+::
+
+    Usage: smicli sweep [COMMAND-OPTIONS] COMMAND [ARGS]...
+    
+      Command group to sweep for servers.
+    
+      Sweeping for servers involves pinging in one form or another possible
+      ip/port combinations to find open ports.
+    
+      This group sweeps servers in a defined range looking for open WBEMServers.
+    
+    Options:
+      -h, --help  Show this message and exit.
+    
+    Commands:
+      nets  Execute sweep on the ip/port combinations...
+
+
+
+.. _`smicli sweep nets --help`:
+
+smicli sweep nets --help
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli sweep nets --help` subcommand
+
+
+::
+
+    sweep_group
+    Usage: smicli sweep nets [COMMAND-OPTIONS]
+    
+      Execute sweep on the ip/port combinations defined by the --subnet and
+      --port options
+    
+    Options:
+      -s, --subnet TEXT             IP subnets to scan (ex. 10.1.132). One subnet
+                                    per option Each subnet string is itself a
+                                    definition that consists of period separated
+                                    octets that are used to create the individual
+                                    ip addresses to be tested:   * Integers: Each
+                                    integer is in the range 0-255       ex.
+                                    10.1.2.9   * Octet range definition: A range
+                                    expansion is in the      form: int-int which
+                                    defines the mininum and maximum       values
+                                    for that octet (ex 10.1.132-134) or   *
+                                    Integer lists: A range list is in the form:
+                                    int,int,int
+                                         and defines the set of values
+                                    for that octet. Missing octet definitions are
+                                    expanded to the value range defined by the min
+                                    and max octet value parameters All octets of
+                                    the ip address can use any of the 3
+                                    definitions.
+                                    Examples: 10.1.132,134 expands to
+                                    addresses in 10.1.132 and 10.1.134. where the
+                                    last octet is the range 1 to 254  [required]
+      -p, --port INTEGER RANGE      Port(s) to test. This argument may be define
+                                    multiple  ports. Ex. -p 5988 -p 5989.
+                                    Default=5989
+      -t, --scantype [tcp|syn|all]  Set scan type: %s. Some scan types require
+                                    privilege mode. (Default: tcp.)
+      -m INTEGER RANGE              Minimum expanded value for any octet that is
+                                    not specifically included in a net definition.
+                                    Default = 1
+      -M INTEGER RANGE              Maximum expanded value for any octet that is
+                                    not specifically included in a net definition.
+                                    Default = 254
+      -D, --dryrun                  Display list of systems/ports to be scanned
+                                    but do not  scan. This is a diagnostic tool
+                                    (Default: False.)
+      --no_threads                  Disable multithread scan.  This should only be
+                                    used if there are issues with the multithread
+                                    scan. It is MUCH  slower. (Default: False.)
+      -h, --help                    Show this message and exit.
+
+
+
+.. _`smicli targets --help`:
+
+smicli targets --help
+---------------------
+
+
+
+The following defines the help output for the `smicli targets --help` subcommand
+
+
+::
+
+    Usage: smicli targets [COMMAND-OPTIONS] COMMAND [ARGS]...
+    
+      Command group for managing targets data.
+    
+      This command group enables operations for viewing and management of data
+      on the target providers as defined in a database.
+    
+      The targets database defines the providers to be pinged, tested, etc.
+      including all information to access the provider and links to other data
+      such as company, etc.
+    
+    Options:
+      -h, --help  Show this message and exit.
+    
+    Commands:
+      disable  Disable a provider from scanning.
+      fields   Display field names in targets database.
+      get      Display details of single Targets database...
+      info     Show target database config information
+      list     Display the entries in the targets database.
+      modify   Modify fields of an record in the Targets...
+
+
+
+.. _`smicli targets disable --help`:
+
+smicli targets disable --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli targets disable --help` subcommand
+
+
+::
+
+    Usage: smicli targets disable [COMMAND-OPTIONS] TargetID
+    
+      Disable a provider from scanning. This changes the database.
+    
+      Use the `interactive` option  or "?" for target id to select the target
+      from a list presented.
+    
+    Options:
+      -e, --enable       Enable the Target if it is disabled.
+      -i, --interactive  If set, presents list of targets to chose.
+      -h, --help         Show this message and exit.
+
+
+
+.. _`smicli targets fields --help`:
+
+smicli targets fields --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli targets fields --help` subcommand
+
+
+::
+
+    Usage: smicli targets fields [COMMAND-OPTIONS]
+    
+      Display field names in targets database.
+    
+    Options:
+      -h, --help  Show this message and exit.
+
+
+
+.. _`smicli targets get --help`:
+
+smicli targets get --help
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli targets get --help` subcommand
+
+
+::
+
+    Usage: smicli targets get [COMMAND-OPTIONS] TargetID
+    
+      Display details of single Targets database entry.
+    
+      Use the `interactive` option or "?" for Target ID to select the target
+      from a list presented.
+    
+    Options:
+      -i, --interactive  If set, presents list of targets to chose.
+      -h, --help         Show this message and exit.
+
+
+
+.. _`smicli targets info --help`:
+
+smicli targets info --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli targets info --help` subcommand
+
+
+::
+
+    Usage: smicli targets info [COMMAND-OPTIONS]
+    
+      Show target database config information
+    
+    Options:
+      -h, --help  Show this message and exit.
+
+
+
+.. _`smicli targets list --help`:
+
+smicli targets list --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli targets list --help` subcommand
+
+
+::
+
+    Usage: smicli targets list [COMMAND-OPTIONS]
+    
+      Display the entries in the targets database.
+    
+    Options:
+      -f, --fields TEXT  Define specific fields for output. It always includes
+                         TargetID. Mulitple fields can be specified by repeating
+                         the option.
+                         Ex. -f TargetID -f CompanyName Default: a
+                         Standard list of fields
+      -d, --disabled     Show disabled targets. Otherwise only targets that are
+                         set enabled in the database are shown. (Default: False.
+      -o, --order TEXT   sort by the defined field name. NOT IMPLEMENTED
+      -h, --help         Show this message and exit.
+
+
+
+.. _`smicli targets modify --help`:
+
+smicli targets modify --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli targets modify --help` subcommand
+
+
+::
+
+    Usage: smicli targets modify [COMMAND-OPTIONS] TargetID
+    
+      Modify fields of an record in the Targets table.
+    
+      This changes the database permanently
+    
+      Use the `interactive` option or "?" for Target ID to select the target
+      from a list presented.
+    
+      Not all fields are defined for modification. Today the fields of
+      CompanyName, SMIVersion, CimomVersion, ScanEnabled, NotifyUsers Notify,
+      and enable cannot be modified with this subcommand.
+    
+    Options:
+      -e, --enable                 Enable the Target if it is disabled.
+      -i, --ipaddress TEXT         Modify the IP address if this option is
+                                   included.
+      -p, --port TEXT              Modify the port field. If 5988 or 5989, also
+                                   sets the protocol field to https if 5989 or
+                                   http if 5988
+      -P, --principal TEXT         Modify the Principal field.
+      -c, --credential TEXT        Modify the Credential field.
+      -R, --product TEXT           Modify the the Product field.
+      -I, --interopnamespace TEXT  Modify the InteropNamespace field.
+      -n, --namespace TEXT         Modify the namespace field.
+      -N, --no_verify              Disable verification prompt before the change
+                                   is executed.
+      -h, --help                   Show this message and exit.
+
+
+
+.. _`smicli users --help`:
+
+smicli users --help
+-------------------
+
+
+
+The following defines the help output for the `smicli users --help` subcommand
+
+
+::
+
+    Usage: smicli users [COMMAND-OPTIONS] COMMAND [ARGS]...
+    
+      Command group to handle users table.
+    
+      Includes subcommands to list entries in the users table in the database
+      and to create, modify, delete specific entries.
+    
+    Options:
+      -h, --help  Show this message and exit.
+    
+    Commands:
+      activate  Activate or deactivate a user.
+      add       Add a new user in the user table.
+      delete    Delete a user from the database.
+      list      List users in the database.
+      modify    Modify fields of a user in the user database.
+
+
+
+.. _`smicli users activate --help`:
+
+smicli users activate --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli users activate --help` subcommand
+
+
+::
+
+    Usage: smicli users activate [COMMAND-OPTIONS] UserID
+    
+      Activate or deactivate a user.
+    
+      This sets the user defined by the id argument to either active or
+      Inactive.  When a user is inactive they are no longer shown in tables that
+      involve user information such as the weekly report.
+    
+      The user to be activated or deactivated may be specified by a) specific
+      user id, b) the interactive mode option, or c) using '?' as the user id
+      argument which also initiates the interactive mode options.
+    
+      Example:     smicli users ? --activate
+    
+    Options:
+      --active / --inactive  Set the active/inactive state in the database for
+                             this user. Default is to attempt set user to
+                             inactive.
+      -i, --interactive      If set, presents list of users from which one can be
+                             chosen.
+      -h, --help             Show this message and exit.
+
+
+
+.. _`smicli users add --help`:
+
+smicli users add --help
+^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli users add --help` subcommand
+
+
+::
+
+    Usage: smicli users add [COMMAND-OPTIONS]
+    
+      Add a new user in the user table.
+    
+      Creates a new user with the defined parameters for the company defined by
+      the required parameter companyID.
+    
+      Verification that the operation is correct is requested before the change
+      is executed unless the `--no-verify' parameter is set.
+    
+    Options:
+      -f, --firstname TEXT     User first name.  [required]
+      -l, --lastname TEXT      User last name  [required]
+      -e, --email TEXT         User email address.  [required]
+      -c, --companyID INTEGER  CompanyID for the company attached to this user
+                               [required]
+      --inactive               Set the active/inactive state in the database for
+                               this user. An inactive user is ignored. Default is
+                               active
+      --disable                Disable notifications in the database for this
+                               user. Default is enabled
+      -N, --no_verify          Disable verification prompt before the change is
+                               executed.
+      -h, --help               Show this message and exit.
+
+
+
+.. _`smicli users delete --help`:
+
+smicli users delete --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli users delete --help` subcommand
+
+
+::
+
+    Usage: smicli users delete [COMMAND-OPTIONS] UserID
+    
+      Delete a user from the database.
+    
+      Delete the program user by the subcommand argument from the database.
+    
+      The user to be deleted may be specified by a) specific user id, b) the
+      interactive mode option, or c) using '?' as the user id argument which
+      also initiates the interactive mode options
+    
+    Options:
+      -n, --no-verify    Disable verification prompt before the delete is
+                         executed.
+      -i, --interactive  If set, presents list of users from which one can be
+                         chosen.
+      -h, --help         Show this message and exit.
+
+
+
+.. _`smicli users list --help`:
+
+smicli users list --help
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli users list --help` subcommand
+
+
+::
+
+    Usage: smicli users list [COMMAND-OPTIONS]
+    
+      List users in the database.
+    
+    Options:
+      -h, --help  Show this message and exit.
+
+
+
+.. _`smicli users modify --help`:
+
+smicli users modify --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli users modify --help` subcommand
+
+
+::
+
+    Usage: smicli users modify [COMMAND-OPTIONS] UserID
+    
+      Modify fields of a user in the user database.
+    
+      This allows modifications of the fields for a particular specified by the
+      user id on input.
+    
+      The user to be modified may be specified by a) specific user id, b) the
+      interactive mode option, or c) using '?' as the user id argument which
+      also initiates the interactive mode options
+    
+      ex. smicli users modify 9 -n fred # changes the first name of the user
+      with user id 9.
+    
+    Options:
+      -f, --firstname TEXT     User first name.
+      -l, --lastname TEXT      User last name
+      -e, --email TEXT         User email address.
+      -c, --CompanyID INTEGER  CompanyID for the company attached to this user
+      --no_notifications       Disable the notify state in the database for this
+                               user if this flag set.
+      -n, --no-verify          Disable verification prompt before the change is
+                               executed.
+      -i, --interactive        If set, presents list of users from which one can
+                               be chosen.
+      -h, --help               Show this message and exit.
+
+
