@@ -55,6 +55,8 @@ ERRORS = 0
 
 VERBOSE = False
 
+HELP_DICT = {}
+
 
 def rst_headline(title, level):
     """
@@ -91,9 +93,6 @@ def print_rst_verbatum_text(text_str):
     # empty line. This indents by two char the complete test_str except
     # the first line
     print('%s\n' % indent(text_str, 4))
-
-
-HELP_DICT = {}
 
 
 def get_subcmd_group_names(cmd, script_name):
@@ -160,7 +159,7 @@ def create_help_cmd_list(script_name):
     """
     # Result list of assembled help subcmds
     help_groups_result = []
-    # start with empty group, the top level (i.e. pywbemcli --help).
+    # start with empty group, the top level (i.e. smicli --help).
     # This is list of names to process and is extended as we process
     # each group.
     group_names = [""]

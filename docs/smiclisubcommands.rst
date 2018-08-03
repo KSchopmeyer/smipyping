@@ -25,7 +25,7 @@ smicli subcommands
 
 Generally the structure of smicli is:
 
-pywbemcli <general options> <cmd-group> <subcommand> <subcommand arguments> <subcommand options>
+smicli <general options> <cmd-group> <subcommand> <subcommand arguments> <subcommand options>
 
 Generally each command group is a noun, referencing some entity (ex. targets
 refers to operation on the targets (definitions of wbem servers to be tested).

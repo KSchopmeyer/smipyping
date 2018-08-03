@@ -158,7 +158,7 @@ def setup_logger(log_comp, handler, level):
               format(def_dest=DEFAULT_LOG_DESTINATION))
 @click.option('-o', '--output-format', envvar='SMI_OUTPUT_FORMAT',
               type=click.Choice(TABLE_FORMATS),
-              help="Output format (Default: {of}). pywbemcli may override "
+              help="Output format (Default: {of}). smicli may override "
                    "the format choice depending on the operation since not "
                    "all formats apply to all output data types."
               .format(of=DEFAULT_OUTPUT_FORMAT))

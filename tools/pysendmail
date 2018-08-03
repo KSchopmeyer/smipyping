@@ -49,7 +49,6 @@ def build_message(msg, fromaddr=None, toaddrs=None, subject=None, cc=None,
             payload += '\n%s' % line
         msg.set_payload(payload)
 
-    # Add the From: and To: headers at the start!
     return (msg)
 
 

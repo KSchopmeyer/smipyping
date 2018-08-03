@@ -287,8 +287,8 @@ install.done: install_os_pywbem.done requirements.txt setup.py setup.cfg
 	$(PYTHON_CMD) -m pip install $(pip_level_opts) pip setuptools wheel
 	$(PIP_CMD) install $(pip_level_opts) -r requirements.txt
 	$(PIP_CMD) install $(pip_level_opts) -e .
-	$(PYTHON_CMD) -c "import pywbemcli; print('Import: ok')"
-	pywbemcli --version
+	$(PYTHON_CMD) -c "import smicli; print('Import: ok')"
+	smicli --version
 	touch install.done
 	@echo 'Done: Installed $(package_name) and its installation and runtime prereqs.'
 
