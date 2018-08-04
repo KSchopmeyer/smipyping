@@ -1,0 +1,166 @@
+#!/usr/bin/env python
+from __future__ import print_function
+
+import os
+import sys
+import email.message
+import smtplib
+import argparse as _argparse
+
+
+def prompt(prompt):
+    return raw_input(prompt).strip()
+
+
+DEFAULTFROMADDR = 'wildsmiuser@gmail.com'
+
+USR = 'wildsmiuser@gmail.com'
+PW = 'Pa$$w0rdPa$$w0rd'
+SMTP_SERVER = 'smtp.gmail.com:587'
+
+
+def build_message(msg, fromaddr=None, toaddrs=None, subject=None, cc=None,
+                  payload=None):
+    """
+    Build the components of the message that were not provided on input. This
+    function does a console request for any input argument with value None
+    and adds the result to
+    """
+    msg['From'] = fromaddr if fromaddr else prompt("From: ")
+    msg['To'] = " ".join(toaddrs) if toaddrs else prompt("To: ")
+
+    if not cc:
+        cc = prompt("CC: ")
+    if cc:
+        msg['CC'] = cc
+    msg['Subject'] = subject if subject else prompt("Subject: ")
+    if payload:
+        msg.set_payload(payload)
+    else:
+        print("Enter message, end with ^D (Unix) or ^Z (Windows):")
+        payload = ""
+        while 1:
+            try:
+                line = raw_input()
+            except EOFError:
+                break
+            if not line:
+                break
+            payload += '\n%s' % line
+        msg.set_payload(payload)
+
+    return (msg)
+
+
+def send_msg(message, verbose):
+    """
+    Try to send the message using the python smtplib. This always sends through
+    tls.
+    """
+    try:
+        server = smtplib.SMTP(SMTP_SERVER)
+        if verbose:
+            server.set_debuglevel(1)
+        server.ehlo()
+        server.starttls()
+        server.login(USR, PW)
+        if verbose:
+            print('sendmail from %s, to %s, msg %s' % (msg['From'], msg['To'],
+                                                       message.as_string()))
+        server.sendmail(msg['From'], msg['To'], message.as_string())
+        print('Msg sent from %s to %s' % (msg['From'], msg['To']))
+        server.close
+        server.quit()
+    except Exception as ex:
+        print('SEND msg from %s to %s\n failed with exception %s' %
+              (msg['From'], msg['To'], ex))
+        sys.exit(1)
+
+
+if __name__ == '__main__':
+
+    prog = os.path.basename(sys.argv[0])
+    usage = '%(prog)s [options] server'
+    desc = """
+
+Send mail message based on the input parameters.  This mail sender bypasses
+any system level email and uses specifically gmail and a gmail account defined
+in the software.
+"""
+    epilog = """
+Examples:
+  %s --to a.b@blah.com --to x.y@ bb.com --from --subject --file msg.txt
+
+  %s
+  Asks for each input
+""" % (prog, prog)
+
+    argparser = _argparse.ArgumentParser(
+        prog=prog, usage=usage, description=desc, epilog=epilog)
+
+    email_arggroup = argparser.add_argument_group(
+        'Email message content options')
+    email_arggroup.add_argument(
+        '-t', '--to', metavar='to', nargs='*', dest='toaddrs',
+        help='Email address to send to. Accepts multiple email addresses. '
+             'If no --to paramter is defined, the to address is requested in a '
+             'prompt.')
+
+    email_arggroup.add_argument(
+        '-f', '--from', metavar='from', dest='fromaddr',
+        help='A single from email address.')
+
+    email_arggroup.add_argument(
+        '-c', '--cc', metavar='CC', dest='fromaddr',
+        help='None or more email addresses separated by spaces.')
+
+    email_arggroup.add_argument(
+        '-s', '--subject', metavar='subject', dest='subject',
+        help='Subject line for the email.')
+
+    email_arggroup.add_argument(
+        '-m', '--message', metavar='message', dest='message',
+        help='Message content for the email.')
+
+    email_arggroup.add_argument(
+        '-F', '--file', metavar='message-file', dest='message_file',
+        help='File name containing message content for the email.')
+
+    general_arggroup = argparser.add_argument_group(
+        'General options')
+    general_arggroup.add_argument(
+        '-v', '--verbose', dest='verbose',
+        action='store_true', default=False,
+        help='Print more messages while processing')
+
+    args = argparser.parse_args()
+
+    if args.message and args.message_file:
+        argparser.error('Message and message-file options together not allowed')
+
+    if args.message_file:
+        if not os.path.isfile(args.message_file):
+            argparser.error("Message_file %s does not exist" %
+                            args.message_file)
+        with open(args.message_file, 'r') as msgfile:
+            msg_text = msgfile.read()
+    else:
+        msg_text = args.message
+
+    if args.verbose:
+        print('ARGS %r' % args)
+
+    msg = email.message.Message()
+    if args.message_file:
+        if args.message_file.endswith('html'):
+            msg.add_header('Content-Type', 'text/html')
+
+    msg = build_message(msg, fromaddr=args.fromaddr,
+                        toaddrs=args.toaddrs,
+                        subject=args.subject,
+                        payload=msg_text)
+
+    if args.verbose:
+        print('Assembled Message:\n%s' % msg.as_string())
+
+    send_msg(msg, args.verbose)

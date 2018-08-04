@@ -17,7 +17,7 @@
 # limitations under the License.
 
 """
-    Execute and test the validity of the help output from pywbemcli
+    Execute and test the validity of the help output from smicli
 """
 
 from __future__ import print_function, absolute_import
@@ -35,7 +35,7 @@ SCRIPT_DIR = os.path.dirname(__file__)
 # each test is defined as
 #   name,
 #   list of:
-#       list of components of pywbemcli help function to execute
+#       list of components of smicli help function to execute
 #       list of text pieces that must be in result
 # TODO ks Mar 17 Some day we should match the entire test result but lets keep
 #    it simple until code stabilizes.
@@ -61,7 +61,7 @@ class ContainerMeta(type):
             Defines the test method that we generate for each test
             and returns the method.
 
-            Each test builds the pywbemcli command executes it and tests the
+            Each test builds the smicli command executes it and tests the
             results
             """
             test_config_file = os.path.join(SCRIPT_DIR, TEST_CONFIG_FILE_NAME)
@@ -69,7 +69,7 @@ class ContainerMeta(type):
             def test(self):  # pylint: disable=missing-docstring
                 command = 'smicli -c %s  %s --help' % (test_config_file,
                                                        cmd_str)
-                # Disable python warnings for pywbemcli call.See issue #42
+                # Disable python warnings for smicli call.See issue #42
                 command = 'export PYTHONWARNINGS="" && %s' % command
                 proc = Popen(command, shell=True, stdout=PIPE, stderr=PIPE)
                 std_out, std_err = proc.communicate()

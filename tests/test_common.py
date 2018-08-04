@@ -116,7 +116,7 @@ class TestPickFromList(object):
     def test_valid_pick(self):
         """Execute valid pick from a list"""
         list_ = ["aaa", "bbb", "ccc"]
-        prompt_txt = 'Input integer between 0 and 2 or Ctrl-C to exit ' \
+        prompt_txt = 'Input integer between 0 and 2 or Enter to abort ' \
                      'selection: '
         with patch('smicli._click_common.local_prompt', return_value='1') as \
                 local_prompt:
@@ -131,7 +131,7 @@ class TestPickFromMultiplesList(object):
     def test_valid_pick(self):
         """Execute valid pick from a multipleslist"""
         list_ = ["aaa", "bbb", "ccc"]
-        prompt_txt = 'Select multiple entries by index or Ctrl-C to exit >'
+        prompt_txt = 'Select multiple entries by index or Enter to abort >'
         with patch('smicli._click_common.local_prompt', return_value='1') as \
                 local_prompt:
             ctx = ClickContext(None, None, None, None, None, None, None,
@@ -142,7 +142,7 @@ class TestPickFromMultiplesList(object):
     def test_valid_pick2(self):
         """Execute valid pick from a multipleslist"""
         list_ = ["aaa", "bbb", "ccc"]
-        prompt_txt = 'Select multiple entries by index or Ctrl-C to exit >'
+        prompt_txt = 'Select multiple entries by index or Enter to abort >'
         with patch('smicli._click_common.local_prompt', return_value='1 2') as \
                 local_prompt:
             ctx = ClickContext(None, None, None, None, None, None, None,

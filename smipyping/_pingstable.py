@@ -212,7 +212,7 @@ class MySQLPingsTable(SQLPingsTable):
                       (db_dict['host'], db_dict['database']))
                 raise ValueError('Connection to database failed')
             self.connection = connection
-        except Exception as ex:
+        except Error as ex:
             raise ValueError('Could not connect to sql database %r. '
                              ' Exception: %r'
                              % (db_dict, ex))
@@ -437,7 +437,7 @@ class MySQLPingsTable(SQLPingsTable):
                                    'FROM Pings WHERE TargetID = %s AND '
                                    'Timestamp BETWEEN %s AND %s',
                                    (target_id, start_date, end_date))
-            except(Error) as err:
+            except Error as err:
                 print(err)
                 self.connection.rollback()
                 raise

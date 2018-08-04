@@ -30,6 +30,9 @@ from ._click_common import fold_cell, print_table, validate_prompt, \
 
 from smipyping._common import get_list_index
 
+from smipyping._logging import AUDIT_LOGGER_NAME, get_logger
+# AUDIT_LOGGER_NAME = 'smipyping.audit'
+
 # default sort order for weekly table is the company row
 DEFAULT_WEEKLY_TBL_SORT = 'Company'
 
@@ -41,12 +44,12 @@ def history_group():
 
     The history command group processes the database pings table.
 
-    The pings table maintains entries with the results of the ``cimping all``
-    subcommand.  Each entry contains the target id, the timestamp for the
-    test, and the results of the test.
+    The pings table maintains entries with the results of the ``cimping all
+    -s`` subcommand.  Each history entry contains the target id, the timestamp
+    for the test, and the results of the test.
 
     It includes commands to clean the pings table and also to create various
-    reports and tables of the history of tests on the WBEM servecaurs in the
+    reports and tables of the history of tests on the WBEM servers in the
     targets table that are stored in the Pings table.
 
     Because the pings table can be very large, there are subcommands to clean
@@ -82,11 +85,6 @@ def history_create(context, **options):  # pylint: disable=redefined-builtin
 
 
 @history_group.command('list', options_metavar=CMD_OPTS_TXT)
-# @click.option('-i', '--targetIDs', default=None, type=int,
-#              multiple=True,
-#              required=False,
-#              help='Optional list of ids. If not supplied, all ids are used')
-# TODO move to multiple IDs.
 @click.option('-s', '--startdate', type=Datetime(format='%d/%m/%y'),
               default=None,
               required=False,
@@ -104,14 +102,18 @@ def history_create(context, **options):  # pylint: disable=redefined-builtin
               required=False,
               help='Alternative to enddate. Number of days to report from'
                    ' startdate. "enddate" ignored if "numberofdays" set')
-@click.option('-t', '--targetId', type=int,
+@click.option('-t', '--targetId', type=str,
               required=False,
-              help='Get results only for the defined targetID')
-@click.option('-r', 'result', type=click.Choice(['full', 'status', '%ok',
-                                                 'count']),
+              help='Get results only for the defined targetID. If the value '
+                   'is "?" a select list is provided to the console to select '
+                   'the target WBEM server from the targets table.')
+@click.option('-r', 'result', type=click.Choice(['full', 'changes', 'status',
+                                                 '%ok', 'count']),
               default='status',
-              help='Display. "full" displays all records, "status" displays '
-                   'status summary by id. Default=status. "%ok" reports '
+              help='Display history records or status info on records. '
+                   '"full" displays all records, "changes" displays records '
+                   'that change status, "status"(default) displays '
+                   'status summary by target. "%ok" reports '
                    'percentage pings OK by Id and total count.')
 #  TODO determine if there is any reason for this
 # @click.option('-S', '--summary', is_flag=True, required=False, default=False,
@@ -121,14 +123,20 @@ def history_list(context, **options):  # pylint: disable=redefined-builtin
     """
     List history of pings from database
 
-    List pings history from database within a time range.  This allows listing
-    full list of pings, status summary or percetage OK responses.
+    The listing may be filtered a date range with the --startdate, --enddate,
+    and --numberofdays options.  It may also be filtered to only show a single
+    target WBEM server from the targets table with the `--targetid` option
 
-    This subcommand lists the ping table entries as a table with one
-    record per row.  Since the pings table can be very large, the output
-    of this subcommand can be large unless limited by date ranges and the
-    result filters.
+    The output of this subcommand is determined by the `--result` option which
+    provides for:
 
+      * `full` - all records defined by the input parameters
+
+      * `status` - listing records by status (i.e. OK, etc.) and
+        count of records for that status
+
+      * `%ok` - listing the percentage of records that have 'OK' status and
+        the total number of ping records
     """
     context.execute_cmd(lambda: cmd_history_list(context, options))
 
@@ -375,8 +383,6 @@ def cmd_history_delete(context, options):
     if 'TargetID' in options:
         targetid = options['TargetID']
         targetid = get_target_id(context, targetid, options)
-        if targetid is None:
-            return
 
     pings_tbl = PingsTable.factory(context.db_info, context.db_type,
                                    context.verbose)
@@ -490,45 +496,60 @@ def cmd_history_create(context, options):
                 table_format=context.output_format)
 
 
+def get_target_info(context, target_id, ping_record):
+    """Get the CompanyName,IP address, and product from the target table and
+       return the data as a tuple
+       This accounts for possible error in the tables in particular since the
+       mysql db is fairly loose and all changes of targets are not accounted
+       for in the pings history table.
+    """
+    if target_id in context.targets_tbl:
+        target = context.targets_tbl[target_id]
+        company = target.get('CompanyName', 'empty')
+        product = target.get('Product', 'empty')
+        ip = target.get('IPAddress', 'empty')
+    else:
+        audit_logger = get_logger(AUDIT_LOGGER_NAME)
+        audit_logger.info('Pings Table invalid TargetID %s ping_record %r' %
+                          (target_id, ping_record))
+        company = "No target"
+        ip = ''
+        product = ''
+    return (company, ip, product)
+
+
 def cmd_history_list(context, options):
     """
     Show history for the defined start and end dates
     """
-    target_id = options['targetid']
-    if target_id:
-        try:
-            context.targets_tbl.get_target(target_id)  # noqa: F841
-        except KeyError:
-            raise click.ClickException('Invalid Target: target_id=%s not in '
-                                       'database %s.' %
-                                       (target_id, context.targets_tbl))
+    target_id = get_target_id(context, options['targetid'], options,
+                              allow_none=True)
 
     pings_tbl = PingsTable.factory(context.db_info, context.db_type,
                                    context.verbose)
+    output_tbl_rows = []
     # if full, show all records in base that match options
-    if options['result'] == 'full':
+    if options['result'] == 'full' or options['result'] == 'changes':
         headers = ['Pingid', 'Id', 'Ip', 'Company', 'Timestamp', 'Status']
 
-        rows = pings_tbl.select_by_daterange(
+        pings = pings_tbl.select_by_daterange(
             options['startdate'],
             end_date=options['enddate'],
             number_of_days=options['numberofdays'],
             target_id=target_id)
-        tbl_rows = []
-        for row in rows:
-            target_id = row[1]
-            ping_id = row[0]
-            if target_id in context.targets_tbl:
-                target = context.targets_tbl[target_id]
-                company = target.get('CompanyName', ' empty')
-                ip = target.get('IPAddress', 'empty')
-            else:
-                company = "%s id unknown" % target_id
-                ip = '??'
-            timestamp = datetime.datetime.strftime(row[2], '%d/%m/%y:%H:%M:%S')
-            status = row[3]
+        previous_status = None
+        for ping in pings:
+            target_id = ping[1]
+            ping_id = ping[0]
+            company, ip, product = get_target_info(context, target_id, ping)
+
+            timestamp = datetime.datetime.strftime(ping[2], '%d/%m/%y:%H:%M:%S')
+            status = ping[3]
+            if options['result'] == 'changes' and previous_status == status:
+                continue
             tbl_row = [ping_id, target_id, ip, company, timestamp, status]
-            tbl_rows.append(tbl_row)
+            output_tbl_rows.append(tbl_row)
+            previous_status = status
 
     # if result == status show counts of ping records by status by target
     elif options['result'] == 'status':
@@ -540,20 +561,14 @@ def cmd_history_list(context, options):
             number_of_days=options['numberofdays'],
             target_id=target_id)
         # find all status and convert to report format
-        tbl_rows = []
         for target_id, value in six.iteritems(results):
-            if target_id in context.targets_tbl:
-                target = context.targets_tbl[target_id]
-                company = target.get('CompanyName', ' empty')
-                ip = target.get('IPAddress', 'empty')
-            else:
-                company = "%s id unknown" % target_id
-                ip = '??'
+            company, ip, product = get_target_info(context, target_id, ping)
+
             for key in value:
                 # restrict status output to 20 char.
                 status = (key[:20] + '..') if len(key) > 20 else key
                 row = [target_id, ip, company, status, value[key]]
-                tbl_rows.append(row)
+                output_tbl_rows.append(row)
 
     # Shows summary records indicating % ok for the period defined
     elif options['result'] == '%ok':
@@ -565,41 +580,25 @@ def cmd_history_list(context, options):
             number_of_days=options['numberofdays'],
             target_id=target_id)
         # create report of id,  company, product and %ok / total counts
-        tbl_rows = []
         for target_id, value in six.iteritems(percentok_dict):
-            if target_id in context.targets_tbl:
-                target = context.targets_tbl[target_id]
-                company = target.get('CompanyName', 'empty')
-                product = target.get('Product', 'empty')
-                ip = target.get('IPAddress', 'empty')
-            else:
-                company = "No target"
-                ip = ''
-                product = ''
+            company, ip, product = get_target_info(context, target_id, value)
+
             row = [target_id, ip, company, product, value[0], value[2]]
-            tbl_rows.append(row)
+            output_tbl_rows.append(row)
 
     # show count of records for date range
     elif options['result'] == 'count':
         headers = ['TargetID', 'Records', 'Company', 'IP']
 
-        rows = pings_tbl.select_by_daterange(
+        pings = pings_tbl.select_by_daterange(
             options['startdate'],
             end_date=options['enddate'],
             number_of_days=options['numberofdays'],
             target_id=target_id)
-        tbl_rows = []
         count_tbl = {}
-        for row in rows:
-            target_id = row[1]
-            if target_id in context.targets_tbl:
-                target = context.targets_tbl[target_id]
-                company = target.get('CompanyName', ' empty')
-                ip = target.get('IPAddress', 'empty')
-            else:
-                company = "%s id unknown" % target_id
-                ip = '??'
-
+        for ping in pings:
+            target_id = ping[1]
+            company, ip, product = get_target_info(context, target_id, ping)
             if target_id in count_tbl:
                 x = count_tbl[target_id]
                 count_tbl[target_id] = (x[0] + 1, x[1], x[2])
@@ -608,14 +607,14 @@ def cmd_history_list(context, options):
 
         for target_id, value in six.iteritems(count_tbl):
             row = [target_id, value[0], value[1], value[2]]
-            tbl_rows.append(row)
+            output_tbl_rows.append(row)
 
     else:
         raise click.ClickException('Invalid result: %s'
                                    % (options['result']))
 
     context.spinner.stop()
-    print_table(tbl_rows, headers,
+    print_table(output_tbl_rows, headers,
                 title=('Ping Status for %s to %s, table_type: %s' %
                        (options['startdate'],
                         options['enddate'],
