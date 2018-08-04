@@ -383,8 +383,6 @@ def cmd_history_delete(context, options):
     if 'TargetID' in options:
         targetid = options['TargetID']
         targetid = get_target_id(context, targetid, options)
-        if targetid is None:
-            return
 
     pings_tbl = PingsTable.factory(context.db_info, context.db_type,
                                    context.verbose)

@@ -28,7 +28,7 @@ from __future__ import print_function, absolute_import
 
 import os
 import csv
-from mysql.connector import MySQLConnection
+from mysql.connector import MySQLConnection, Error
 from ._dbtablebase import DBTableBase
 __all__ = ['NotificationsTable']
 
@@ -171,7 +171,7 @@ class MySQLNotificationsTable(NotificationsTable):
                       (db_dict['host'], db_dict['database']))
                 raise ValueError('Connection to database failed')
             self.connection = connection
-        except Exception as ex:
+        except Error as ex:
             raise ValueError('Could not connect to sql database %r. '
                              ' Exception: %r'
                              % (db_dict, ex))
@@ -192,3 +192,59 @@ class MySQLNotificationsTable(NotificationsTable):
             raise ValueError('Error: setup sql based targets table %r. '
                              'Exception: %r'
                              % (db_dict, ex))
+
+    def delete_by_daterange(self, start_date, end_date, target_id=None):
+        """
+        Deletes records from the database based on start_date, end_date and
+        optional target_id. This requires start date and end date explicitly
+        and does not allow number of days paramter
+
+        Parameters:
+
+          start_date(:class:`py:datetime.datetime` or `None`):
+            The starttime for the select statement. If `None' the oldest
+            timestamp in the database is used.
+
+          end_date(:class:`py:datetime.datetime` or `None`):
+            The end datetime for the scan.
+
+          Target_id: Optional target it to filter delete request.
+
+        Exceptions:
+            Database error if the execute failed.
+
+        """
+        cursor = self.connection.cursor()
+
+        try:
+            try:
+                if target_id is None:
+                    cursor.execute('DELETE  '
+                                   'FROM Notifications '
+                                   'WHERE NotifyTime BETWEEN %s AND %s',
+                                   (start_date, end_date))
+                else:
+                    cursor.execute('DELETE '
+                                   'FROM Notifications WHERE TargetID = %s AND '
+                                   'NotifyTime BETWEEN %s AND %s',
+                                   (target_id, start_date, end_date))
+            except Error as err:
+                print(err)
+                self.connection.rollback()
+                raise
+
+            self.connection.commit()
+
+        finally:
+            cursor.close()
+
+
+    def record_count(self):
+        """
+        Get count of records in pings table
+        """
+        cursor = self.connection.cursor()
+        query = "SELECT COUNT(*) from Notifications"
+        cursor.execute(query)
+        res = cursor.fetchone()
+        return res[0]

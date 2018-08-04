@@ -29,7 +29,7 @@ from ._click_common import print_table, validate_prompt
 @cli.group('companies', options_metavar=CMD_OPTS_TXT)
 def companies_group():
     """
-    Command group handles companies table.
+    Command group for Companies table.
 
     Includes commands to view and modify the Companies table in the database.
     """
