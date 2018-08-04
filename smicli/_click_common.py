@@ -205,7 +205,7 @@ def pick_target_id(context):
     return targets_list[index]
 
 
-def get_target_id(context, targetid, options=None):
+def get_target_id(context, targetid, options=None, allow_none=False):
     """
         Get the target based on the value of targetid or the value of the
         interactive option.  If targetid is an
@@ -221,13 +221,31 @@ def get_target_id(context, targetid, options=None):
         This support function always tests the target_id to against the
         targets table.
 
+        Parameters:
+
+          context(): Current click context
+
+          targetid(:term:`string` or :term:`integer` or None):
+            The targets database target id as a string or integer or the
+            string "?" or the value None
+
+          options: The click options.  Used to determine if --interactive mode
+            is defined
+
+          allow_none(:class:`py:bool`):
+            If True, None is allowed as a value and returned. Otherwise
+            None is considered invalid. This is used to separate the cases
+            where the target id is an option that may have a None value vs.
+            those cases where it is a required parameter.
+
         Returns:
             Returns integer target_id of a valid targetstbl TargetID
 
         raises:
-          KeyError if target_id not in table
+          KeyError if target_id not in table and allow_none is False
     """
-
+    if allow_none and targetid is None:
+        return targetid
     context.spinner.stop()
 
     if options and 'interactive' in options and options['interactive']:
