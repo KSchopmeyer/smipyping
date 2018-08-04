@@ -188,11 +188,6 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
     log_components = None
     syslog_facility = None
 
-    if verbose:
-        if ctx and ctx.default_map:
-            for data_key in ctx.default_map.keys():
-                print('ctx default map data key %s' % data_key)
-
     if ctx.obj is None:
         # We are in command mode or are processing the command line options in
         # interactive mode.
@@ -224,8 +219,8 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
         else:
             # NEED DEFAULT for dbinfo
             db_info = {}
-            print('WARNING: No Database info provided for database type %s'
-                  % db_type)
+            click.ClickException('WARNING: No Database info provided for '
+                                 ''database type %s'% db_type)
         config_file_dir = os.path.dirname(os.getcwd())
 
         # Enable the hidden loggers.
@@ -251,7 +246,7 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
                                        "load fails. Exception %s" % ve)
 
     else:
-        # We are processing an interactive command.
+        # Processing an interactive command.
         # We apply the option defaults from the command line options.
         # Move info from the inherited context to the current context.
         if config_file is None:
