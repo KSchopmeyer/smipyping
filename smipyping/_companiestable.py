@@ -29,6 +29,7 @@ import os
 import csv
 from mysql.connector import MySQLConnection
 from ._dbtablebase import DBTableBase
+from ._logging import get_logger, AUDIT_LOGGER_NAME
 
 __all__ = ['CompaniesTable']
 
@@ -230,8 +231,14 @@ class MySQLCompaniesTable(CompaniesTable):
         try:
             cursor.execute(sql, data)
             self.connection.commit()
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+            audit_logger.info('Companies Table append '
+                              'CompanyName %s', company_name)
         except Exception as ex:
-            print('Companies table.append failed: exception %r' % ex)
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+            audit_logger.error('Companies Table append '
+                               'CompanyName %s Failed. Exception %s',
+                               company_name, ex)
             self.connection.rollback()
             raise ex
         finally:
@@ -244,18 +251,71 @@ class MySQLCompaniesTable(CompaniesTable):
         """
         cursor = self.connection.cursor()
 
-        # TODO: For all deletes, we need to manage table integrity
+        # TODO: For all deletes, we need to manage table integrity. I.e.
+        # check other tables that use company ID before delete.  That should
+        # be sql responsibility
 
         sql = "DELETE FROM Companies WHERE CompanyID=%s"
         try:
-            # TODO what is return on execute??
             # pylint: disable=unused-variable
             mydata = cursor.execute(sql, (company_id,))  # noqa F841
             self.connection.commit()
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+            audit_logger.info('Companies Table delete CompanyID %s', company_id)
         except Exception as ex:
-            print('Companies table.delete failed: exception %r' % ex)
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+            audit_logger.error('Companies Table delete'
+                               'CompanyID %s Failed. Exception %s',
+                               company_id, ex)
             self.connection.rollback()
             raise ex
         finally:
             self._load()
             self.connection.close()
+
+    def update_fields(self, companyid, changes):
+        """
+        Update the database record defined by target_id with the dictionary
+        of items defined by changes where each item is an entry in the
+        target record. Update does NOT test if the new value is the same
+        as the original value.
+        """
+        cursor = self.connection.cursor()
+        # dynamically build the update sql based on the changes dictionary
+        set_names = "SET "
+        values = []
+        comma = False
+        for key, value in changes.items():
+            if comma:
+                set_names = set_names + ", "
+            else:
+                comma = True
+            set_names = set_names + "{0} = %s".format(key)
+            values.append(value)
+
+        values.append(companyid)
+        sql = "Update Companies " + set_names
+
+        # append targetid component
+        sql = sql + " WHERE CompanyID=%s"
+
+        change_str = ""
+        for key, value in changes.items():
+            change_str += "%s:%s " % (key, value)
+        try:
+            cursor.execute(sql, tuple(values))
+            self.connection.commit()
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+
+            audit_logger.info('CompaniesTable CompanyId %s,update fields %s',
+                              companyid, change_str)
+        except Exception as ex:
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+            audit_logger.error('CompaniesTable CompanyId %s failed SQL update. '
+                               'SQL=%s Changes %s exception %s',
+                               companyid, sql, change_str, ex)
+            self.connection.rollback()
+            raise ex
+        finally:
+            self._load()
+            cursor.close()

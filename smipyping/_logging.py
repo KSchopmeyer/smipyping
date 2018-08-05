@@ -43,11 +43,13 @@ SWEEP_LOGGER_NAME = 'smicli.sweep'
 SMIPYPING_LOGGER_NAME = 'smipyping'
 
 AUDIT_LOGGER_NAME = 'smipyping.audit'
+ERROR_LOGGER_NAME = 'smipyping.error'
 
 
 __all__ = ['SmiPypingLoggers',
            'API_LOGGER_NAME', 'EXPLORE_LOGGER_NAME', 'CIMPING_LOGGER_NAME',
-           'DEFAULT_LOG_LEVEL', 'SWEEP_LOGGER_NAME', 'AUDIT_LOGGER_NAME']
+           'DEFAULT_LOG_LEVEL', 'SWEEP_LOGGER_NAME', 'AUDIT_LOGGER_NAME',
+           'ERROR_LOGGER_NAME']
 
 
 # possible log output destinations

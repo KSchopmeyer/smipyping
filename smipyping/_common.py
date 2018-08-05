@@ -21,10 +21,51 @@
 from __future__ import absolute_import, unicode_literals
 
 import re
+import datetime
 import six
 from smicli._click_common import fold_cell
 
-__all__ = ['get_list_index', 'build_table_struct', 'filter_stringlist']
+__all__ = ['get_list_index', 'build_table_struct', 'filter_stringlist',
+           'compute_startend_dates']
+
+
+def compute_startend_dates(start_date, end_date=None, number_of_days=None,
+                           oldest_date=None):
+    """
+    Compute the start and end dates from the arguments and return a tuple
+    of start date and end date. This uses the three date inputs to create
+    a start and end date that is returned
+
+    Parameters:
+      start_date(:class:`py:datetime.datetime` or `None`):
+        Datetime for start of activity or if None, oldes timestamp in
+        the pings table
+
+      end_date(:class:`py:datetime.datetime` or `None`):
+        Datetune for end of activity or None.  If None and `number_of_days`
+        not set, the current date is used as the end_date
+
+      number_of_days(:term:`integer` or None):
+        If this integer set, end_date MUST BE `None`. Represents the
+        number of days for this activity since the `start_date`.
+
+      oldest_date(:class:`py:datetime.datetime` or `None`):
+        Date to use for start_date if start_date is None
+    """
+    if start_date is None:
+        start_date = oldest_date
+
+    if number_of_days and end_date:
+        raise ValueError('Simultaneous enddate %s and number of days %s '
+                         'parameters not allowed' %
+                         (end_date, number_of_days))
+
+    if number_of_days:
+        end_date = start_date + datetime.timedelta(days=number_of_days)
+
+    if end_date is None:
+        end_date = datetime.datetime.now()
+    return (start_date, end_date)
 
 
 def filter_stringlist(regex, string_list, ignore_case=True):

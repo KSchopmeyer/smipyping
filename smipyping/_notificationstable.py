@@ -30,6 +30,7 @@ import os
 import csv
 from mysql.connector import MySQLConnection, Error
 from ._dbtablebase import DBTableBase
+from ._common import compute_startend_dates
 __all__ = ['NotificationsTable']
 
 
@@ -43,10 +44,7 @@ class NotificationsTable(DBTableBase):
     table_name = 'Notifications'
 
     def __init__(self, db_dict, db_type, verbose):
-        self.db_dict = db_dict
-        self.db_type = db_type
-        self.verbose = verbose
-        self.data_dict = {}
+        super(NotificationsTable, self).__init__(db_dict, db_type, verbose)
 
     @classmethod
     def factory(cls, db_dict, db_type, verbose):
@@ -193,6 +191,62 @@ class MySQLNotificationsTable(NotificationsTable):
                              'Exception: %r'
                              % (db_dict, ex))
 
+    def select_by_daterange(self, start_date, end_date=None,
+                            number_of_days=None, target_id=None):
+        """
+        Select records between two timestamps and return the set of
+        records selected
+
+        Parameters:
+
+          start_date(:class:`py:datetime.datetime` or `None`):
+            The starttime for the select statement. If `None' the oldest
+            timestamp in the database is used.
+
+          end_date(:class:`py:datetime.datetime` or `None`):
+            The end datetime for the scan.  If `None`, the current date time
+            is used
+
+          days(:term:`py:integer`)
+            Number of days from startdate to gather. If end_date is set also
+            this is invalid.
+
+          target_id(:term:`integer`):
+            Optional Integer defining a target id in the target table. The
+            result if filtered by this target id against the TargetID field
+            in the Pings record if the value is not `None`.
+
+        Returns:
+            List of tuples representing rows in the Pings table. Each entry in
+            the return is a field in the Pings table
+
+        Exceptions:
+            ValueError if input parameters incorrect.
+        """
+        start_date, end_date = compute_startend_dates(
+            start_date,
+            end_date=end_date,
+            number_of_days=number_of_days)
+
+        cursor = self.connection.cursor()
+        try:
+            if target_id is None:
+                cursor.execute('SELECT * '
+                               'FROM Notifications '
+                               'WHERE NotifyTime BETWEEN %s AND %s',
+                               (start_date, end_date))
+            else:
+                cursor.execute('SELECT * '
+                               'FROM Notifications WHERE TargetID = %s AND '
+                               'NotifyTime BETWEEN %s AND %s',
+                               (target_id, start_date, end_date))
+
+            rows = cursor.fetchall()
+            return rows
+
+        finally:
+            cursor.close()
+
     def delete_by_daterange(self, start_date, end_date, target_id=None):
         """
         Deletes records from the database based on start_date, end_date and
@@ -237,7 +291,6 @@ class MySQLNotificationsTable(NotificationsTable):
 
         finally:
             cursor.close()
-
 
     def record_count(self):
         """

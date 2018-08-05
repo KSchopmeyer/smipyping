@@ -80,7 +80,7 @@ def companies_delete(context, id, **options):
 @click.argument('ID', type=int, metavar='UserID', required=True, nargs=1)
 @click.option('-c', '--companyname', type=str,
               required=False,
-              help='User first name.')
+              help='New company name.')
 @click.option('-v', '--verify', is_flag=True, default=False,
               help='Verify the modification before modifying the user.')
 @click.pass_obj
@@ -96,7 +96,7 @@ def companies_modify(context, id, **options):
     ex. smicli cimping ids 5 8 9
 
     """
-    context.execute_cmd(lambda: cmd_companies_new(context, options))
+    context.execute_cmd(lambda: cmd_companies_modify(context, options))
 
 ######################################################################
 #
@@ -177,11 +177,14 @@ def cmd_company_modify(context, id, options):
         raise click.ClickException('The companyID %s is not a valid companyID '
                                    'in companies table' % company_id)
 
+    changes = {}
+    changes['FirstName'] = options.get('company_name', None)
+
     if verify_operation(context, 'modify company name', company_name,
                         companies_tbl[company_id]):
-        companies_tbl.modify(company_id, company_name)
+        companies_tbl.update_fields(company_id, changes)
     else:
-        click.echo('Return without executing modification')
+        click.echo('Aborted modification')
 
 
 def verify_operation(context, action, modification, record):
