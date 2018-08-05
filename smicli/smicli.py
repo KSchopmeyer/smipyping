@@ -220,7 +220,7 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
             # NEED DEFAULT for dbinfo
             db_info = {}
             click.ClickException('WARNING: No Database info provided for '
-                                 ''database type %s'% db_type)
+                                 'database type %s' % db_type)
         config_file_dir = os.path.dirname(os.getcwd())
 
         # Enable the hidden loggers.
