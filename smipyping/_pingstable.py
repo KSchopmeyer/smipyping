@@ -26,6 +26,7 @@ import os
 import six
 from mysql.connector import MySQLConnection, Error
 from ._dbtablebase import DBTableBase
+from ._common import compute_startend_dates
 
 __all__ = ['PingsTable']
 
@@ -128,6 +129,7 @@ class CsvPingsTable(PingsTable):
         self.data_dict = result
 
     def get_last_ping_id(self):
+        """Get the newest ping by timestamp"""
         with open(file, "rb") as f:
             f.readline()               # Read the first line.
             f.seek(-2, 2)              # Jump to the second last byte.
@@ -230,10 +232,6 @@ class MySQLPingsTable(SQLPingsTable):
         last_ping_id = cursor.lastrowid
         return last_ping_id
 
-    def select_for_timestamp(self, timestamp):
-        # TODO
-        pass
-
     def record_count(self):
         """
         Get count of records in pings table
@@ -248,41 +246,6 @@ class MySQLPingsTable(SQLPingsTable):
         """Close the connection"""
         if self.connection:
             self.connection.close()
-
-    def compute_dates(self, start_date, end_date=None, number_of_days=None):
-        """
-        Compute the start and end dates from the input and return a tuple
-        of start date and end date.
-
-        Parameters:
-          start_date(:class:`py:datetime.datetime` or `None`):
-            Datetime for start of activity or if None, oldes timestamp in
-            the pings table
-
-          end_date(:class:`py:datetime.datetime` or `None`):
-            Datetune for end of activity or None.  If None and `number_of_days`
-            not set, the current date is used as the end_date
-
-          number_of_days(:term:`integer` or None):
-            If this integer set, end_date MUST BE `None`. Represents the
-            number of days for this activity since the `start_date`.
-        """
-        if start_date is None:
-            row = self.get_oldest_ping()
-            oldest_timestamp = row[2]
-            start_date = oldest_timestamp
-
-        if number_of_days and end_date:
-            raise ValueError('Simultaneous enddate %s and number of days %s '
-                             'parameters not allowed' %
-                             (end_date, number_of_days))
-
-        if number_of_days:
-            end_date = start_date + datetime.timedelta(days=number_of_days)
-
-        if end_date is None:
-            end_date = datetime.datetime.now()
-        return (start_date, end_date)
 
     def select_by_daterange(self, start_date, end_date=None,
                             number_of_days=None, target_id=None):
@@ -316,10 +279,11 @@ class MySQLPingsTable(SQLPingsTable):
         Exceptions:
             ValueError if input parameters incorrect.
         """
-        start_date, end_date = self.compute_dates(
+        start_date, end_date = compute_startend_dates(
             start_date,
             end_date=end_date,
-            number_of_days=number_of_days)
+            number_of_days=number_of_days,
+            oldest_date=self.get_oldest_ping()[2])
 
         cursor = self.connection.cursor()
         try:
@@ -458,11 +422,11 @@ class MySQLPingsTable(SQLPingsTable):
         """
         cursor = self.connection.cursor()
 
-        start_date, end_date = self.compute_dates(
+        start_date, end_date = compute_startend_dates(
             start_date,
             end_date=end_date,
-            number_of_days=number_of_days)
-        print('COUNT_BY %r %r' % (start_date, end_date))
+            number_of_days=number_of_days,
+            oldest_date=self.get_oldest_ping()[2])
 
         try:
             if target_id is None:
@@ -478,9 +442,6 @@ class MySQLPingsTable(SQLPingsTable):
         finally:
             cursor.close()
 
-    def get_ordered_by_date(self):
-        pass
-
     def get_oldest_ping(self, target_id=None):
         """Get the first record in the database. If target_id set, get
            oldest for this target_id.
@@ -490,6 +451,10 @@ class MySQLPingsTable(SQLPingsTable):
                 Optional target_id for record.  If `None` oldest for
                 Pings table returned.  If valid target, the oldest ping
                 record for this targe returned.
+
+            Returns:
+                Returns the first record in the DB or the first record in the
+                DB for the defined targetID. This returns the complete row
         """
         cursor = self.connection.cursor()
 

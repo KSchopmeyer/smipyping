@@ -359,68 +359,6 @@ class MySQLUsersTable(UsersTable):
             self._load()
             self.connection.close()
 
-    def modify(self, user_id, firstname, lastname, email, company_id,
-               active=True, notify=True):
-        """
-        Write a new record to the database containing the target_id,
-        scan status and a timestamp
-
-        Parameters:
-          firstname(:term:`string`):
-            User first name. Optional If not provided, this value will not
-            be changed.
-
-          lastname(:term:`string`):
-            User last name. Optional If not provided, this value will not
-            be changed.
-
-          email(:term:`string`):
-            User email address. Optional If not provided, this value will not
-            be changed.
-
-          company_id(:term:`integer`)
-            User last name. Optional If not provided, this value will not
-            be changed.
-
-          active(:class:`py:bool`):
-
-          notify(:class:`py:bool`):
-
-        TODO: Deprecate This method
-
-        Exceptions:
-
-        """
-        cursor = self.connection.cursor()
-
-        # TODO.  Need to account for 3 values, i.e. NONE also
-        if active is not None:
-            active = 'Active' if active else 'Inactive'
-
-        if notify is not None:
-            notify = 'Enabled' if notify else 'Disabled'
-
-        # Create list of fields
-
-        # create list of variables
-
-        sql = ("UPDATE USERS "
-               "set Firstname=%s, Lastname=%s, Email=%s, CompanyID=%s, "
-               "Active=%s, Notify=%s) "
-               "WHERE UserID = %s",
-               (firstname, lastname, email, company_id, active,
-                notify, user_id))
-        try:
-            cursor.execute(sql)
-            self.connection.commit()
-        except Exception as ex:
-            print('userstable.modify failed: exception %s' % ex)
-            self.connection.rollback()
-            raise ex
-        finally:
-            self._load()
-            self.connection.close()
-
     def update_fields(self, userid, changes):
         """
         Update the database record defined by target_id with the dictionary
@@ -455,13 +393,13 @@ class MySQLUsersTable(UsersTable):
             self.connection.commit()
             audit_logger = get_logger(AUDIT_LOGGER_NAME)
 
-            audit_logger.info('UserTable userId %s,update fields %s' %
-                              (userid, change_str))
+            audit_logger.info('UserTable userId %s,update fields %s',
+                              userid, change_str)
         except Exception as ex:
             audit_logger = get_logger(AUDIT_LOGGER_NAME)
             audit_logger.error('UserTable userid %s failed SQL update. SQL=%s '
-                               'Changes %s exception %s'
-                               % (userid, sql, change_str))
+                               'Changes %s exception %s',
+                               userid, sql, change_str, ex)
             self.connection.rollback()
             raise ex
         finally:

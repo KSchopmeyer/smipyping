@@ -18,6 +18,7 @@ Tests for functions in smipyping/_common.py
 from __future__ import print_function, absolute_import
 import os
 import sys
+from datetime import datetime
 from mock import patch
 # from testfixtures import OutputCapture
 try:
@@ -30,9 +31,51 @@ from smicli._click_common import pick_from_list, pick_multiple_from_list, \
     print_table, validate_prompt
 from smicli._click_context import ClickContext
 
-from smipyping._common import get_list_index, filter_stringlist, StrList
+from smipyping._common import get_list_index, filter_stringlist, StrList, \
+    compute_startend_dates
 
 VERBOSE = True
+
+
+class Test_ComputeStartendDates(object):
+    """
+    Test the compute_startend_dates function
+    """
+    # parameters are:
+    # start the start date as text in format %d/%m/%Y
+    # end date as text in same format
+    # num - number_of days or None
+    # old - Oldest date in same text format or None
+    # exp - Tuple of expected start and end dates in same text format
+    # exc - None or expected exception
+    @pytest.mark.parametrize(
+        "start, end, num, old, exp, exc", [
+            ["01/01/18", "09/09/18", None, None, ("01/01/18", "09/09/18"),
+             None],
+            ["01/01/18", None, 9, None, ("01/01/18", "10/01/18"), None],
+        ]
+    )
+    # TODO add more tests here.
+    def test_compute_startend_dates(self, start, end, num, old, exp, exc):
+        """Test the function"""
+        fmt = "%d/%m/%y"
+        if start:
+            start = datetime.strptime(start, fmt)
+        if end:
+            end = datetime.strptime(end, fmt)
+        if exp:
+            exp_rslt = (datetime.strptime(exp[0], fmt),
+                        datetime.strptime(exp[1], fmt))
+
+        if not exc:
+            assert compute_startend_dates(start, end_date=end,
+                                          number_of_days=num,
+                                          oldest_date=old) == exp_rslt
+        else:
+            with pytest.raises(ValueError):
+                assert compute_startend_dates(start, end_date=end,
+                                              number_of_days=num,
+                                              oldest_date=old) == exp_rslt
 
 
 class TestGetListIndex(object):

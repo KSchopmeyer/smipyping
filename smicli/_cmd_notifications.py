@@ -125,6 +125,7 @@ def notifications_delete(context, **options):
     """
     context.execute_cmd(lambda: cmd_notifications_delete(context, options))
 
+
 @notifications_group.command('stats', options_metavar=CMD_OPTS_TXT)
 @click.pass_obj
 def notifications_stats(context, **options):
@@ -179,8 +180,8 @@ def cmd_notifications_list(context, options):
     user_notifications = []
     if user_id:
         for key, notification in six.iteritems(notifications_tbl):
-                if notification['UserID'] == user_id:
-                    user_notifications.append(key)
+            if notification['UserID'] == user_id:
+                user_notifications.append(key)
 
     target_notifications = []
     if target_ids:
@@ -207,8 +208,8 @@ def cmd_notifications_list(context, options):
                    notification['Message']]
         else:
             row = [notification['TargetID'],
-                   '%s unknown' % notification['TargetID'],
-                   "unknown",
+                   '%s Unknown' % notification['TargetID'],
+                   "Unknown",
                    user,
                    notification['NotifyTime'],
                    notification['Message']]
@@ -285,15 +286,16 @@ def cmd_notifications_delete(context, options):
         raise click.ClickException("Exception on db update; %s: %s" %
                                    (ex.__class__.__name__, ex))
 
+
 def cmd_notifications_stats(context, options):
     """
     Get overall information on the pings table.
     """
     tbl_inst = NotificationsTable.factory(context.db_info, context.db_type,
-                                  context.verbose)
+                                          context.verbose)
     count = tbl_inst.record_count()
-    # oldest = tbl_inst.get_oldest_ping()
-    # newest = tbl_inst.get_newest_ping()
+    # oldest = tbl_inst.get_oldest_notification()
+    # newest = tbl_inst.get_newest_notification()
     context.spinner.stop()
     # click.echo('Total=%s records\noldest: %s\nnewest: %s' %
     #           (count, oldest, newest))

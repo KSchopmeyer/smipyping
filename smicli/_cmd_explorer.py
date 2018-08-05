@@ -22,6 +22,7 @@ import click
 from smipyping._explore import Explorer
 
 from smipyping._common import StrList
+from smipyping._logging import AUDIT_LOGGER_NAME, get_logger
 from .smicli import cli, CMD_OPTS_TXT
 from ._click_common import fold_cell, print_table
 
@@ -227,16 +228,20 @@ def validate_servers(servers, targets_tbl):
                 changes = {"SMIVersion": server_smi_profiles.str_by_sep("/")}
                 try:
                     targets_tbl.update_fields(target_id, changes)
+                    change_str = ""
+                    for key, value in changes.items():
+                        change_str += "%s:%s " % (key, value)
+                    audit_logger = get_logger(AUDIT_LOGGER_NAME)
+                    audit_logger.info('Targets Table TargetID %s, updated '
+                                      'fields %s' % (target_id, change_str))
+                    click.echo('Updated targetid=%s updated fields %s' %
+                               (target_id, change_str))
+
                 except Exception as ex:
                     raise click.ClickException('Targets DB update failed '
-                                               'targetid=%s changes=%r' %
-                                               (target_id, changes))
-
-                # TODO this should become audit log and expand to list
-                #      all changes. Right now it assumes SMIVersion 0nly
-                click.echo('Updated targetid=%s field=%s "%s" to "%s"' %
-                           (target_id, 'SMIVersion', target_smi_profiles,
-                            server_smi_profiles))
+                                               'targetid=%s changes=%r. '
+                                               'Exception=%s' %
+                                               (target_id, changes, ex))
 
 
 ##############################################################
@@ -324,6 +329,9 @@ def smi_versions(server):
         snia_server_profiles = server.get_selected_profiles(
             registered_org='SNIA', registered_name='SMI-S')
     except TypeError as te:
+        audit_logger = get_logger(AUDIT_LOGGER_NAME)
+        audit_logger.error(' Invalid profile definition caused exception '
+                           'for %s. exception %s' % (server.conn.url, te))
         click.echo('ERROR: Invalid profile definition caused exception for %s. '
                    'exception %s' % (server.conn.url, te))
         return []
@@ -352,9 +360,9 @@ def print_smi_profile_info(servers, user_data, table_format):
             try:
                 versions = smi_versions(server_tuple.server)
             except Exception as ex:
-                # TODO make this an error log entry.
-                print('Exception %s in smi_version %s' % (ex,
-                                                          server_tuple))
+                audit_logger = get_logger(AUDIT_LOGGER_NAME)
+                audit_logger.error('Exception %s in smi_version %s. Ignored' %
+                                   (ex, server_tuple))
                 versions = []
 
             line = [entry['TargetID'],

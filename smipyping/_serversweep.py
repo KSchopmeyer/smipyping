@@ -52,7 +52,8 @@ LOG = get_logger(__name__)
 
 SCAN_TYPES = ['tcp', 'syn', 'all']
 
-# TODO Future: use pywbem.servers to automatically handle this
+# TODO Future: use pywbem.servers to automatically handle finding a first
+#              namespace
 INTEROP_NAMESPACES = [
     'interop',
     'root/interop',
@@ -471,7 +472,7 @@ class ServerSweep(object):
                             if entry is None:
                                 unknown += 1
                                 rows.append([ip_address, "Not in targets table",
-                                                         "", ""])
+                                             "", ""])
                             else:
                                 known += 1
                                 rows.append(
@@ -496,7 +497,7 @@ class ServerSweep(object):
         that will be accepted or CIMOperations that will work and reports
         the issues.  This helps determine if it is a real WBEM Server
         """
-        # test if we can contact address with known creds
+        # Test if we can contact address with known creds
         ip_address = '%s:%s' % (host_data[0], host_data[1])
         status = "Unknown"
         for cred in cred_target_ids:
@@ -592,6 +593,7 @@ class ServerSweep(object):
 
     def test_host(self, hosturl, namespace, principal=None, credential=None,
                   timeout=10):
+        # pylint: disable=no-self-use
         """
         Builds a WBEMConnection and trys to contact the server defined by
         ip address, port, principal, credential

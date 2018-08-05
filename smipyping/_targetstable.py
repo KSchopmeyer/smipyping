@@ -110,7 +110,6 @@ class TargetsTable(DBTableBase):
           output_format (:term:`string`)
             String defining one of the legal report output formats.  If not
             provided, the default is a simple report format.
-
         """
 
         super(TargetsTable, self).__init__(db_dict, db_type, verbose)
@@ -118,8 +117,9 @@ class TargetsTable(DBTableBase):
         self.output_format = output_format
 
     def __str__(self):
-        """String info on targetdata. TODO. Put more info her"""
-        return ('type=%s db=%s, len=%s' % (self.db_type, self.db_xxx(),
+        # TODO this and __repr__ do not really match.
+        """String info on targetdata. TODO. Put more info here"""
+        return ('type=%s db=%s, len=%s' % (self.db_type, self.get_dbdict(),
                                            len(self.data_dict)))
 
     def __repr__(self):
@@ -131,6 +131,10 @@ class TargetsTable(DBTableBase):
         """Test a list of field names"""
         for field in fields:
             self.table_format_dict[field]
+
+    def get_dbdict(self):
+        """Get string for the db_dict"""
+        return '%s' % self.db_dict
 
     @classmethod
     def factory(cls, db_dict, db_type, verbose, output_format='simple'):
@@ -306,7 +310,7 @@ class TargetsTable(DBTableBase):
                 line.append('%s' % field_value)
         return line
 
-    def disabled_target(self, target_record):
+    def disabled_target(self, target_record):  # pylint: disable=no-self-use
         """
         If target_record disabled, return true, else return false.
         """
@@ -397,9 +401,6 @@ class SQLTargetsTable(TargetsTable):
             print('Invalid database configuration exception %s' % ve)
         return self.db_dict
 
-    def db_xxx(self):
-        return '%s' % self.db_dict
-
 
 class MySQLTargetsTable(SQLTargetsTable):
     """
@@ -421,6 +422,7 @@ class MySQLTargetsTable(SQLTargetsTable):
         self.connectdb(db_dict, verbose)
 
     def connectdb(self, db_dict, verbose):
+        """Connect the db"""
         try:
             connection = MySQLConnection(host=db_dict['host'],
                                          database=db_dict['database'],
@@ -594,9 +596,6 @@ class CsvTargetsTable(TargetsTable):
                                                           self.filename,
                                                           ve))
         return db_config
-
-    def db_xxx(self):
-        return '%s' % self.db_dict
 
     def write_updated_record(self, record_id):
         """Backup the existing file and write the new one.

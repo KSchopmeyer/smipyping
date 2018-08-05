@@ -19,11 +19,102 @@ targets to find WBEM servers.
 from __future__ import print_function, absolute_import
 
 import click
+import six
 
 from smipyping import CompaniesTable, TargetsTable, UsersTable
 from smipyping._common import build_table_struct
 from .smicli import cli, CMD_OPTS_TXT
-from ._click_common import print_table, validate_prompt
+from ._click_common import print_table, validate_prompt, pick_from_list
+
+# TODO: This could be common code if we separated the build of the
+# select text from the basic pick code.
+
+
+def pick_companyid(context, companies_tbl):
+    """
+    Interactive selection of company id from list presented on the console.
+
+      Parameters ()
+         The companies table.
+
+      Returns:
+        company_id selected or None if user enter ctrl-C
+    """
+    company_keys = companies_tbl.keys()
+
+    display_options = []
+    for t in company_keys:
+        company_item = companies_tbl[t]
+        display_options.append(u'   id=%s, %s' %
+                               (t, company_item['CompanyName']))
+
+    try:
+        index = pick_from_list(context, display_options, "Pick CompanyID:")
+    except ValueError:
+        pass
+    if index is None:
+        click.echo('Abort command')
+        return None
+    return company_keys[index]
+
+
+def get_companyid(context, companies_tbl, companyid, options=None):
+    """
+        Get the company based on the value of companyid or the value of the
+        interactive option.  If userid is an
+        integer, get targetid directly and generate exception if this fails.
+        If it is ? use the interactive pick_target_id.
+        If options exist test for 'interactive' option and if set, call
+        pick_target_id
+        This function executes the pick function if the targetid is "?" or
+        if options is not None and the interactive flag is set
+
+        This support function always tests the companyid against the
+        targets table.
+
+        Returns:
+            Returns integer companyid of a valid targetstbl TargetID
+
+        raises:
+          KeyError if user_id not in table
+    """
+    context.spinner.stop()
+    if options and 'interactive' in options and options['interactive']:
+        context.spinner.stop()
+        companyid = pick_companyid(context, companies_tbl)
+    elif isinstance(companyid, six.integer_types):
+        try:
+            companyid = companies_tbl[companyid]
+            context.spinner.start()
+            return companyid
+        except KeyError as ke:
+            raise click.ClickException("CompanyID %s  not valid: exception %s" %
+                                       (companyid, ke))
+    elif isinstance(companyid, six.string_types):
+        if companyid == "?":
+            context.spinner.stop()
+            companyid = pick_companyid(context, companies_tbl)
+        else:
+            try:
+                companyid = int(companyid)
+            except ValueError:
+                raise click.ClickException('CompanyID must be integer or "?" '
+                                           'not %s' % companyid)
+            try:
+                companies_tbl[companyid]
+                context.spinner.start()
+                return companyid
+            except KeyError as ke:
+                raise click.ClickException("CompanyID %s  not found in Users "
+                                           "table: exception %s" %
+                                           (companyid, ke))
+    else:
+        raise click.ClickException('CompanyID %s. Requires CompanyID, ? or '
+                                   '--interactive option' % companyid)
+    if companyid is None:
+        click.echo("Operation aborted by user.")
+    context.spinner.start()
+    return companyid
 
 
 @cli.group('companies', options_metavar=CMD_OPTS_TXT)
@@ -47,44 +138,55 @@ def companies_list(context):  # pylint: disable=redefined-builtin
 
 @companies_group.command('new', options_metavar=CMD_OPTS_TXT)
 @click.option('-c', '--companyname', type=str,
-              required=True,
+              required=False,
               help='Company name for company to add to table.')
 @click.pass_obj
 def companies_new(context, **options):  # pylint: disable=redefined-builtin
     """
-    Create a new user in the user table.
+    Create a new companyin the user table.
 
-    Creates a new user with the defined parameters.
-
+    Creates a new company with the defined parameters.
     """
     context.execute_cmd(lambda: cmd_companies_new(context, options))
 
 
 @companies_group.command('delete', options_metavar=CMD_OPTS_TXT)
-@click.argument('ID', type=int, metavar='UserID', required=True, nargs=1)
+@click.argument('CompanyID', type=str, metavar='CompanyID', required=False,
+                nargs=1)
+@click.option('-i', '--interactive', is_flag=True, default=False,
+              help='If set, presents list of users from which one can be '
+                   'chosen.')
 @click.option('-n', '--no-verify', is_flag=True, default=False,
               help='Verify the deletion before deleting the user.')
 @click.pass_obj
-def companies_delete(context, id, **options):
+def companies_delete(context, companyid, **options):
     # pylint: disable=redefined-builtin
     """
-    Delete a program from the database.
+    Delete a company from the database.
 
-    Delete the program defined by the subcommand argument from the
+    Delete the company defined by the subcommand argument from the
     database.
+
+    smicli companies delete ?      # does select list to select company
+                                     to delete from companies table
     """
-    context.execute_cmd(lambda: cmd_companies_delete(context, id, options))
+    context.execute_cmd(lambda: cmd_companies_delete(context, companyid,
+                                                     options))
 
 
 @companies_group.command('modify', options_metavar=CMD_OPTS_TXT)
-@click.argument('ID', type=int, metavar='UserID', required=True, nargs=1)
+@click.argument('CompanyID', type=str, metavar='CompanyID', required=False,
+                nargs=1)
 @click.option('-c', '--companyname', type=str,
-              required=False,
-              help='User first name.')
-@click.option('-v', '--verify', is_flag=True, default=False,
-              help='Verify the modification before modifying the user.')
+              required=True,
+              help='New company name(required).')
+@click.option('-i', '--interactive', is_flag=True, default=False,
+              help='If set, presents list of users from which one can be '
+                   'chosen.')
+@click.option('-n', '--no-verify', is_flag=True, default=False,
+              help='Disable verification prompt before the modify is executed.')
 @click.pass_obj
-def companies_modify(context, id, **options):
+def companies_modify(context, companyid, **options):
     # pylint: disable=redefined-builtin
     """
     Create fake cimping results in pings database.
@@ -93,10 +195,11 @@ def companies_modify(context, id, **options):
     in the database defined by each id in the list of ids creates a table
     showing result.
 
-    ex. smicli cimping ids 5 8 9
+    ex. smicli companies modify 13 -c "NewCompany Name"
 
     """
-    context.execute_cmd(lambda: cmd_companies_new(context, options))
+    context.execute_cmd(lambda: cmd_companies_modify(context, companyid,
+                                                     options))
 
 ######################################################################
 #
@@ -120,16 +223,15 @@ def cmd_companies_list(context):
                 table_format=context.output_format)
 
 
-def cmd_companies_delete(context, id, options):
+def cmd_companies_delete(context, companyid, options):
     """Delete a user from the database."""
 
     companies_tbl = CompaniesTable.factory(context.db_info, context.db_type,
                                            context.verbose)
-    company_id = id
 
-    if company_id not in companies_tbl:
-        raise click.ClickException('The CompanyID %s is not in the companies '
-                                   'table' % company_id)
+    companyid = get_companyid(context, companies_tbl, companyid, options)
+    if companyid is None:
+        return
 
     # Validate not a companyID in targets table
     targets_tbl = TargetsTable.factory(context.db_info, context.db_type,
@@ -137,64 +239,65 @@ def cmd_companies_delete(context, id, options):
 
     # TODO this should all move to smipyping processing, not in cli
     for target in targets_tbl:
-        if targets_tbl[target]['CompanyID'] == company_id:
+        if targets_tbl[target]['CompanyID'] == companyid:
             raise click.ClickException(
                 'The CompanyID %s is used in the targets table %s' %
-                (company_id, targets_tbl[target]))
+                (companyid, targets_tbl[target]))
 
     # validate not in users table
     users_tbl = UsersTable.factory(context.db_info, context.db_type,
                                    context.verbose)
     for user in users_tbl:
-        if users_tbl[user]['CompanyID'] == company_id:
+        if users_tbl[user]['CompanyID'] == companyid:
             raise click.ClickException(
                 'The CompanyID %s is used in the users table %s' %
-                (company_id, users_tbl[target]))
+                (companyid, users_tbl[user]))
 
     if 'no_verify' in options:
-        companies_tbl.delete(company_id)
+        companies_tbl.delete(companyid)
     else:
-        company = companies_tbl[company_id]
+        company = companies_tbl[companyid]
         context.spinner.stop()
         click.echo(company)
-        if validate_prompt('Delete company id %s' % company_id):
-            companies_tbl.delete(company_id)
+        if validate_prompt('Delete company id %s' % companyid):
+            companies_tbl.delete(companyid)
         else:
             click.echo('Operation aborted by user')
             return
 
 
-def cmd_company_modify(context, id, options):
+def cmd_companies_modify(context, companyid, options):
     """Modify the company name from the database."""
 
     companies_tbl = CompaniesTable.factory(context.db_info, context.db_type,
                                            context.verbose)
-    company_id = id
 
-    company_name = options['companyname']
+    companyid = get_companyid(context, companies_tbl, companyid, options)
+    if companyid is None:
+        return
 
-    if company_id not in companies_tbl:
-        raise click.ClickException('The companyID %s is not a valid companyID '
-                                   'in companies table' % company_id)
+    print('COMPANYID %s' % companyid)
 
-    if verify_operation(context, 'modify company name', company_name,
-                        companies_tbl[company_id]):
-        companies_tbl.modify(company_id, company_name)
+    changes = {}
+    changes['CompanyName'] = options.get('companyname', None)
+
+    company_record = companies_tbl[companyid]
+
+    if options['no_verify']:
+        companies_tbl.update_fields(companyid, changes)
     else:
-        click.echo('Return without executing modification')
-
-
-def verify_operation(context, action, modification, record):
-    """Display the record and issue propmpt
-    """
-    click.echo('Verify_operation %s to %s\nRECORD: %s' % (action, modification,
-                                                          record))
-    context.spinner.stop()
-    if validate_prompt():
-        return True
-
-    click.echo('Aborting Operation')
-    return False
+        context.spinner.stop()
+        click.echo('Proposed changes for id: %s, %s:' %
+                   (companyid, company_record['CompanyName']))
+        for key, value in changes.items():
+            click.echo('  %s: "%s" to "%s"' % (key,
+                                               company_record[key],
+                                               value))
+        if validate_prompt('Modify company id %s' % companyid):
+            companies_tbl.update_fields(companyid, changes)
+        else:
+            click.echo('Operation aborted by user.')
+            return
 
 
 def cmd_companies_new(context, options):

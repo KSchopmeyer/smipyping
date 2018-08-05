@@ -47,8 +47,8 @@ def pick_userid(context, users_tbl):
         user_item = users_tbl[t]
         if not user_item['CompanyID'] in companies_tbl:
             # TODO log error
-            print('ERROR: Company ID %s does not exist' %
-                  user_item['CompanyID'])
+            click.echo('ERROR: Company ID %s does not exist' %
+                       user_item['CompanyID'])
             # TODO removed because we did not use company name in display
             # company_name = "%s_missing" % user_item['CompanyID']
         # else:
@@ -111,7 +111,8 @@ def get_userid(context, users_tbl, userid, options=None):
                 raise click.ClickException('UserID must be integer or "?" '
                                            'not %s' % userid)
             try:
-                users_tbl[userid]
+                # test if userid in table
+                users_tbl[userid]  # pylint: disable=pointless-statement
                 context.spinner.start()
                 return userid
             except KeyError as ke:
