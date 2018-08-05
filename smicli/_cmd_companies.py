@@ -175,7 +175,7 @@ def companies_delete(context, companyid, **options):
 
 
 @companies_group.command('modify', options_metavar=CMD_OPTS_TXT)
-@click.argument('CompanyID', type=str, metavar='CompanyID', required=True,
+@click.argument('CompanyID', type=str, metavar='CompanyID', required=False,
                 nargs=1)
 @click.option('-c', '--companyname', type=str,
               required=True,

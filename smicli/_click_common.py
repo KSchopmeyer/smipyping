@@ -192,7 +192,7 @@ def pick_target_id(context):
     display_options = []
 
     for t in targets_list:
-        display_options.append(u'    %s %s %s' %
+        display_options.append(u'    id=%s %s %s' %
                                (t, context.targets_tbl[t]['IPAddress'],
                                 context.targets_tbl[t]['CompanyName']))
     try:
