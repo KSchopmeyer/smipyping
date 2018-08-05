@@ -384,7 +384,7 @@ flake8.log: Makefile $(flake8_rc_file) $(check_py_files)
 	mv -f $@.tmp $@
 	@echo 'Done: Created Flake8 log file: $@'
 
-$(test_log_file): Makefile $(cli_package_name)/*.py $(package_name)tests/*.py coveragerc
+$(test_log_file): Makefile $(cli_package_name)/*.py $(package_name) tests/*.py coveragerc
 	rm -fv $@
 	bash -c 'set -o pipefail; PYTHONWARNINGS=default py.test --cov $(package_name) --cov $(cli_package_name) --cov-config .coveragerc --cov-report=html $(pytest_opts) -s 2>&1 |tee $@.tmp'
 	mv -f $@.tmp $@

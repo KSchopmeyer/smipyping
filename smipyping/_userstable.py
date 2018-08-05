@@ -359,7 +359,6 @@ class MySQLUsersTable(UsersTable):
             self._load()
             self.connection.close()
 
-
     def update_fields(self, userid, changes):
         """
         Update the database record defined by target_id with the dictionary
