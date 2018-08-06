@@ -44,22 +44,22 @@ def targets_group():
 
 @targets_group.command('list', options_metavar=CMD_OPTS_TXT)
 @click.option('-f', '--fields', multiple=True, type=str, default=None,
+              metavar='FIELDNAME',
               help='Define specific fields for output. TargetID always '
                    'included. Multiple fields can be specified by repeating '
-                   'the option.\nEx. -f TargetID -f CompanyName.\nEnter "-f ?" '
-                   'to interactively select fields for display.'
-                   '(Default: predefined list of fields')
+                   'the option. (Default: predefined list of fields.'
+                   '\nEnter: "-f ?" to interactively select fields for display.'
+                   '\nEx. "-f TargetID -f CompanyName"' )
 # @click.option('-c', '--company', type=str, default=None,
 #              help='regex filter to filter selected companies.')
 @click.option('-d', '--disabled', default=False, is_flag=True, required=False,
               help='Show disabled targets. Otherwise only targets that are '
                    'set enabled in the database are shown.'
                    '(Default:Do Not show disabled targets')
-@click.option('-o', '--order', type=str, default=None,
+@click.option('-o', '--order', type=str, default=None, metavar='FIELDNAME',
               help='Sort by the defined field name. Names are viewed with the '
                    'targets fields subcommand or "-o ?" to interactively '
                    'select field for sort')
-# TODO sort by a particular field
 @click.pass_obj
 def targets_list(context, **options):
     """
@@ -165,7 +165,7 @@ def target_modify(context, targetid, enable, **options):
 # TODO fields not included in modify.
 # CompanyName
 # SMIVersion
-# ProtocolError
+# Protocol
 # CompanyID
 # CimomVersion
 # Namespace
