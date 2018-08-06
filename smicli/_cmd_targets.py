@@ -19,9 +19,11 @@ data file.
 from __future__ import print_function, absolute_import
 
 import click
+from collections import defaultdict
 
 from .smicli import cli, CMD_OPTS_TXT
-from ._click_common import print_table, validate_prompt, get_target_id
+from ._click_common import print_table, validate_prompt, get_target_id, \
+    pick_multiple_from_list, pick_from_list
 from ._common_options import add_options, no_verify_option
 
 
@@ -42,19 +44,21 @@ def targets_group():
 
 @targets_group.command('list', options_metavar=CMD_OPTS_TXT)
 @click.option('-f', '--fields', multiple=True, type=str, default=None,
-              help='Define specific fields for output. It always includes '
-                   'TargetID. Mulitple fields can be specified by repeating '
-                   'the option.\nEx. -f TargetID -f CompanyName '
-                   'Default: a Standard list of fields')
+              help='Define specific fields for output. TargetID always '
+                   'included. Multiple fields can be specified by repeating '
+                   'the option.\nEx. -f TargetID -f CompanyName.\nEnter "-f ?" '
+                   'to interactively select fields for display.'
+                   '(Default: predefined list of fields')
 # @click.option('-c', '--company', type=str, default=None,
 #              help='regex filter to filter selected companies.')
 @click.option('-d', '--disabled', default=False, is_flag=True, required=False,
               help='Show disabled targets. Otherwise only targets that are '
                    'set enabled in the database are shown.'
-                   ' ' + '(Default: %s.' % False)
+                   '(Default:Do Not show disabled targets')
 @click.option('-o', '--order', type=str, default=None,
               help='Sort by the defined field name. Names are viewed with the '
-                   'targets fields subcommand')
+                   'targets fields subcommand or "-o ?" to interactively '
+                   'select field for sort')
 # TODO sort by a particular field
 @click.pass_obj
 def targets_list(context, **options):
@@ -216,15 +220,19 @@ def display_cols(target_table, fields, show_disabled=True, order=None,
         if order not in target_table.get_field_list():
             raise click.ClickException("--order option defines invalid field %s"
                                        % order)
-        else:
-            # create dictionary with order value as key and targetid as value
-            order_dict = {target_table[targetid][order]: targetid
-                          for targetid in target_ids}
-            # TODO this may be inefficient means to sort by keys and get values
-            # into list
-            target_ids = []
-            for key in sorted(order_dict.keys()):
-                target_ids.append(order_dict[key])
+
+        # create dictionary with order value as key and list of targetids as
+        # value. List because the order fields are not unique
+        order_dict = defaultdict(list)
+        for targetid in target_ids:
+            order_dict[target_table[targetid][order]].append(targetid)
+        # order_dict = {target_table[targetid][order]: targetid
+        #               for targetid in target_ids}
+        # TODO this may be inefficient means to sort by keys and get values
+        # into list
+        target_ids = []
+        for key in sorted(order_dict.keys()):
+            target_ids.extend(order_dict[key])
 
     rows = []
     for targetid in target_ids:
@@ -356,11 +364,10 @@ def cmd_targets_info(context):
 def cmd_targets_fields(context):
     """Display the information fields for the providers dictionary."""
     fields = context.targets_tbl.get_field_list()
+    rows = [[field] for field in fields]
+    headers = 'Target Fields'
+
     context.spinner.stop()
-    rows = []
-    for field in fields:
-        rows.append([field])
-    headers = 'Table Fields'
     print_table(rows, headers, title='Target table fields',
                 table_format=context.output_format)
 
@@ -395,21 +402,40 @@ def cmd_targets_list(context, options):
     field names and sorting by field name
     """
     fields = list(options['fields'])
-
-    context.spinner.stop()
+    field_selects = context.targets_tbl.fields
+    # TODO This is temp since we really want companyname butthat
+    # is not part of normal fields but from join.
+    if 'CompanyID' in field_selects:
+        field_selects.remove('CompanyID')
+        field_selects.append('CompanyName')
     if fields:
+        if fields[0] == "?":
+            indexes = pick_multiple_from_list(context, field_selects,
+                                              "Select fields to report")
+            if not indexes:
+                click.echo("Abort cmd, no fields selected")
+                return
+            fields = [context.targets_tbl.fields[index] for index in indexes]
+
         if 'TargetID' not in fields:
             fields.insert(0, 'TargetID')  # always show TargetID
+
+    if 'order' in options and options['order'] == "?":
+        index = pick_from_list(context, field_selects, "Select field for order")
+        order = context.targets_tbl.fields[index]
+    else:
+        order = options['order']
 
     try:
         context.targets_tbl.test_fieldnames(fields)
     except KeyError as ke:
         raise click.ClickException("%s: Invalid field name: %s" %
                                    (ke.__class__.__name__, ke))
+    context.spinner.stop()
 
     try:
         display_all(context.targets_tbl, list(fields),
-                    show_disabled=options['disabled'], order=options['order'],
+                    show_disabled=options['disabled'], order=order,
                     company=None, output_format=context.output_format)
 
     except Exception as ex:

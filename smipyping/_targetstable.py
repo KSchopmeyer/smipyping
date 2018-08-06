@@ -63,7 +63,7 @@ class TargetsTable(DBTableBase):
     key_field = 'TargetID'
     fields = [key_field, 'IPAddress', 'CompanyID', 'Namespace',
               'SMIVersion', 'Product', 'Principal', 'Credential',
-              'CimomVersion', 'InteropNamespace', 'Notify', 'NotifyUsers',
+              'CimomVersion', 'InteropNamespace', 'NotifyUsers',
               'ScanEnabled', 'Protocol', 'Port']
     table_name = 'Targets'
 
@@ -498,6 +498,9 @@ class MySQLTargetsTable(SQLTargetsTable):
         except Exception as ex:
             raise ValueError('Error: putting Company Name in table %r error %s'
                              % (self.db_dict, ex))
+
+        for target in self.data_dict:
+            print('TARGET %s' % self.data_dict[target])
 
     def update_fields(self, target_id, changes):
         """
