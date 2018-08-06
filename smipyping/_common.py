@@ -22,11 +22,34 @@ from __future__ import absolute_import, unicode_literals
 
 import re
 import datetime
+from textwrap import wrap
 import six
-from smicli._click_common import fold_cell
 
 __all__ = ['get_list_index', 'build_table_struct', 'filter_stringlist',
-           'compute_startend_dates']
+           'compute_startend_dates', 'fold_cell']
+
+
+def fold_cell(cell_string, max_cell_width):
+    """ Fold a string within a maximum width to fit within a  the
+        max_cell_width defined as an input parameter.
+
+        Parameters:
+
+          cell_string:
+            The string of data to go into the cell
+          max_cell_width:
+            Maximum width of cell.  Data is folded into multiple lines to
+            fit into this width.
+
+        Return:
+            String representing the folded string
+    """
+    new_cell = cell_string
+    if isinstance(cell_string, six.string_types):
+        if max_cell_width < len(cell_string):
+            new_cell = '\n'.join(wrap(cell_string, max_cell_width))
+
+    return new_cell
 
 
 def compute_startend_dates(start_date, end_date=None, number_of_days=None,

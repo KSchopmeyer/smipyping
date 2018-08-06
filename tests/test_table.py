@@ -30,7 +30,7 @@ except ImportError:
     from io import StringIO
 
 from smicli._tableoutput import TableFormatter
-from smicli._click_common import fold_cell
+from smipyping._common import fold_cell
 
 VERBOSE = True
 

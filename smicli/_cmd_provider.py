@@ -26,7 +26,7 @@ from pywbem import WBEMServer, WBEMConnection, Error, ValueMapping
 
 from smipyping._ping import ping_host
 from smipyping.config import PING_TIMEOUT
-from smipyping._common import filter_stringlist
+from smipyping import filter_stringlist
 
 from .smicli import cli, CMD_OPTS_TXT
 from ._common_options import add_options, namespace_option

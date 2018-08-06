@@ -55,7 +55,7 @@ USE_RST = True
 SCRIPT_NAME = 'smicli'
 
 # SCRIPT_CMD = SCRIPT_NAME  # TODO #103: Reactivate once smicli works on Windows
-SCRIPT_CMD = 'python -c "import sys; from smipyping.smicli import cli; ' \
+SCRIPT_CMD = 'python -c "import sys; from smicli import cli; ' \
     'sys.argv[0]=\'smicli\'; sys.exit(cli())"'
 
 ERRORS = 0

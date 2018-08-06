@@ -21,10 +21,10 @@ from __future__ import print_function, absolute_import
 import click
 from smipyping._explore import Explorer
 
-from smipyping._common import StrList
+from smipyping._common import StrList, fold_cell
 from smipyping._logging import AUDIT_LOGGER_NAME, get_logger
 from .smicli import cli, CMD_OPTS_TXT
-from ._click_common import fold_cell, print_table
+from ._click_common import print_table
 
 
 @cli.group('explorer', options_metavar=CMD_OPTS_TXT)
@@ -233,7 +233,7 @@ def validate_servers(servers, targets_tbl):
                         change_str += "%s:%s " % (key, value)
                     audit_logger = get_logger(AUDIT_LOGGER_NAME)
                     audit_logger.info('Targets Table TargetID %s, updated '
-                                      'fields %s' % (target_id, change_str))
+                                      'fields %s', target_id, change_str)
                     click.echo('Updated targetid=%s updated fields %s' %
                                (target_id, change_str))
 
@@ -331,7 +331,7 @@ def smi_versions(server):
     except TypeError as te:
         audit_logger = get_logger(AUDIT_LOGGER_NAME)
         audit_logger.error(' Invalid profile definition caused exception '
-                           'for %s. exception %s' % (server.conn.url, te))
+                           'for %s. exception %s', server.conn.url, te)
         click.echo('ERROR: Invalid profile definition caused exception for %s. '
                    'exception %s' % (server.conn.url, te))
         return []
@@ -361,8 +361,8 @@ def print_smi_profile_info(servers, user_data, table_format):
                 versions = smi_versions(server_tuple.server)
             except Exception as ex:
                 audit_logger = get_logger(AUDIT_LOGGER_NAME)
-                audit_logger.error('Exception %s in smi_version %s. Ignored' %
-                                   (ex, server_tuple))
+                audit_logger.error('Exception %s in smi_version %s. Ignored',
+                                   ex, server_tuple)
                 versions = []
 
             line = [entry['TargetID'],

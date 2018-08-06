@@ -499,9 +499,6 @@ class MySQLTargetsTable(SQLTargetsTable):
             raise ValueError('Error: putting Company Name in table %r error %s'
                              % (self.db_dict, ex))
 
-        for target in self.data_dict:
-            print('TARGET %s' % self.data_dict[target])
-
     def update_fields(self, target_id, changes):
         """
         Update the database record defined by target_id with the dictionary
