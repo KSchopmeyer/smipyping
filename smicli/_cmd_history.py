@@ -24,12 +24,11 @@ from click_datetime import Datetime
 import six
 
 from smipyping import SimplePingList, PingsTable, ProgramsTable, UsersTable
-from smipyping._common import get_list_index
+from smipyping._common import get_list_index, fold_cell
 from smipyping._logging import AUDIT_LOGGER_NAME, get_logger
 
 from .smicli import cli, CMD_OPTS_TXT
-from ._click_common import fold_cell, print_table, validate_prompt, \
-    get_target_id
+from ._click_common import print_table, validate_prompt, get_target_id
 
 # default sort order for weekly table is the company row
 DEFAULT_WEEKLY_TBL_SORT = 'Company'

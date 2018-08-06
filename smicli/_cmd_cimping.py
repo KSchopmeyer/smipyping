@@ -23,13 +23,13 @@ import datetime
 import click
 
 from smipyping import PingsTable
-from smipyping import SimplePing, SimplePingList
+from smipyping import SimplePing, SimplePingList, fold_cell
 from smipyping.config import DEFAULT_NAMESPACE, DEFAULT_OPERATION_TIMEOUT, \
     DEFAULT_USERNAME, DEFAULT_PASSWORD
 
 from .smicli import cli, CMD_OPTS_TXT
 from ._common_options import add_options
-from ._click_common import fold_cell, print_table, get_target_id
+from ._click_common import print_table, get_target_id
 
 #
 #   Common options for the Ping group

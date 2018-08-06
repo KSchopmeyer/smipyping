@@ -17,8 +17,6 @@ Table printer.  This is being replaced by the python tabulate package as
 that package develops more capabilities.  Currently the only functions in
 this module used are the csv format and the htmo format
 """
-from textwrap import wrap
-
 import copy
 import six
 import prompt_toolkit
@@ -30,7 +28,7 @@ from ._tableoutput import HtmlTable
 
 __all__ = ['DEFAULT_CONFIG_FILE', 'SMICLI_PROMPT', 'SMICLI_HISTORY_FILE',
            'DEFAULT_SMICLI_CONFIG_FILES', 'pick_from_list',
-           'pick_multiple_from_list', 'print_table', 'fold_cell',
+           'pick_multiple_from_list', 'print_table',
            'get_target_id']
 
 USE_TABULATE = False
@@ -305,28 +303,6 @@ def set_input_variable(ctx, var_, config_file_name, default_value):
     else:
         rtn_value = default_value
     return rtn_value
-
-
-def fold_cell(cell_string, max_cell_width):
-    """ Fold a string within a maximum width to fit within a table entry
-
-        Parameters:
-
-          cell_string:
-            The string of data to go into the cell
-          max_cell_width:
-            Maximum width of cell.  Data is folded into multiple lines to
-            fit into this width.
-
-        Return:
-            String representing the folded string
-    """
-    new_cell = cell_string
-    if isinstance(cell_string, six.string_types):
-        if max_cell_width < len(cell_string):
-            new_cell = '\n'.join(wrap(cell_string, max_cell_width))
-
-    return new_cell
 
 
 def print_table(rows, headers=None, title=None, table_format='simple'):
