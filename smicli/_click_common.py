@@ -373,7 +373,7 @@ def print_table(rows, headers=None, title=None, table_format='simple'):
         #                    tablefmt=table_format))
     else:
         if title:
-            print('\n\n%s\n' % title)
+            click.echo('\n\n%s\n' % title)
         click.echo(tabulate(rows, headers=headers, tablefmt=table_format))
 
 
