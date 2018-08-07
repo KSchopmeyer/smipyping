@@ -33,6 +33,4 @@ cover
 *.sw?
 *.eggs
 *egg-info
-
-
-
+email.ini
