@@ -30,6 +30,7 @@ The general pywbem web site is: http://pywbem.github.io/pywbem/index.html.
    smiclicmdlineinterface.rst
    smiclisubcommands.rst
    smiclicmdshelp.rst
+   tools.rst
    development.rst
    appendix.rst
    changes.rst

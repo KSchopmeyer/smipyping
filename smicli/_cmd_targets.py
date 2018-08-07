@@ -47,7 +47,7 @@ def targets_group():
               metavar='FIELDNAME',
               help='Define specific fields for output. TargetID always '
                    'included. Multiple fields can be specified by repeating '
-                   'the option. (Default: predefined list of fields.'
+                   'the option. (Default: predefined list of fields).'
                    '\nEnter: "-f ?" to interactively select fields for display.'
                    '\nEx. "-f TargetID -f CompanyName"')
 # @click.option('-c', '--company', type=str, default=None,
@@ -55,7 +55,7 @@ def targets_group():
 @click.option('-d', '--disabled', default=False, is_flag=True, required=False,
               help='Show disabled targets. Otherwise only targets that are '
                    'set enabled in the database are shown.'
-                   '(Default:Do Not show disabled targets')
+                   '(Default:Do not show disabled targets).')
 @click.option('-o', '--order', type=str, default=None, metavar='FIELDNAME',
               help='Sort by the defined field name. Names are viewed with the '
                    'targets fields subcommand or "-o ?" to interactively '
@@ -93,7 +93,7 @@ def targets_fields(context):
 @click.pass_obj
 def targets_get(context, targetid, **options):
     """
-    Display details of single Targets database entry.
+    Display details of single database target.
 
     Use the `interactive` option or "?" for Target ID to select the target from
     a list presented.
@@ -149,9 +149,11 @@ def target_disable(context, targetid, enable, **options):
 @click.pass_obj
 def target_modify(context, targetid, enable, **options):
     """
-    Modify fields of an record in the Targets table.
+    Modify fields target database record.
 
-    This changes the database permanently
+    This subcommand changes the database permanently. It normally allows the
+    user to verify all changes before they are committed to the database. All
+    changes to the database are recorded in the audit log.
 
     Use the `interactive` option or "?" for Target ID to select the target from
     a list presented.
@@ -159,6 +161,8 @@ def target_modify(context, targetid, enable, **options):
     Not all fields are defined for modification. Today the fields of
     CompanyName, SMIVersion, CimomVersion, ScanEnabled, NotifyUsers
     Notify, and enable cannot be modified with this subcommand.
+
+    TODO: Expand for other fields in the targets table.
     """
     context.execute_cmd(lambda: cmd_target_modify(context, targetid, options))
 

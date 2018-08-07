@@ -52,7 +52,7 @@ The following defines the help output for the `smicli  --help` subcommand
       -h, --help                      Show this message and exit.
 
     Commands:
-      cimping        Command group to do simpleping.
+      cimping        Command group to do cimping.
       companies      Command group for Companies table.
       explorer       Command group to explore providers.
       help           Show help message for interactive mode.
@@ -80,10 +80,17 @@ The following defines the help output for the `smicli cimping --help` subcommand
 
     Usage: smicli cimping [COMMAND-OPTIONS] COMMAND [ARGS]...
 
-      Command group to do simpleping.
+      Command group to do cimping.
 
-      This command group executes a simple ping on the target defined by the
-      subcommand.  This allows targets to be defined in a number of ways
+      A cimping executes a system level ping (optional) and then tries to create
+      a connection to the target WBEM serve and execute a simple WBEM operation.
+
+      This generally tests both the existence of the WBEM server with the ping
+      and the a ability to make a WBEM connection and get valid results from the
+      WBEM server. The operation executed is EnumerateClasses on one of the
+      known namespaces
+
+      This allows target WBEM servers to be defined in a number of ways
       including:
 
         - Complete target identification (url, etc.) (host)
@@ -131,17 +138,17 @@ The following defines the help output for the `smicli cimping all --help` subcom
       ex. smicli cimping all
 
     Options:
-      -t, --timeout INTEGER  Timeout in sec for the operation. (Default: 10.)
+      -t, --timeout INTEGER  Timeout in sec for the operation. (Default: 10).
       --no-ping              Disable network ping of the wbem server before
-                             executing the cim request. (Default: True.)
+                             executing the cim request. (Default: True).
       -s, --saveresult       Save the result of each cimping test of a wbem server
                              to the database Pings table for future analysis.
-                             (Default: False.
+                             (Default: False).
       -d, --disabled         If set include disabled targets in the cimping scan.
-                             (Default: False.
+                             (Default: False).
       -d, --debug            Set the debug parameter for the pywbem call. Displays
                              detailed information on the call and response.
-                             (Default: False.)
+                             (Default: False).
       -h, --help             Show this message and exit.
 
 
@@ -194,28 +201,28 @@ The following defines the help output for the `smicli cimping host --help` subco
                  - HTTPS - 5989
 
     Options:
-      -n, --namespace TEXT     Namespace for the operation. (Default: root/cimv2.
+      -n, --namespace TEXT     Namespace for the operation. (Default: root/cimv2).
       -u, --user TEXT          Optional user name for the operation. (Default:
-                               smilab.
+                               smilab).
       -p, --password TEXT      Optional password for the operation. (Default;
-                               F00sb4ll.
-      -t, --timeout INTEGER    Namespace for the operation. (Default: 10.
+                               F00sb4ll).
+      -t, --timeout INTEGER    Namespace for the operation. (Default: 10).
       --no-ping BOOLEAN        Disable network ping ofthe wbem server before
-                               executing the cim request. (Default: True.
+                               executing the cim request. (Default: True).
       -d--debug BOOLEAN        Set the debug parameter for the pywbem call.
                                Displays detailed information on the call and
-                               response. (Default: False.
+                               response. (Default: False).
       -c--verify_cert BOOLEAN  Request that the client verify the server cert.
-                               (Default: False.
+                               (Default: False).
       --certfile TEXT          Client certificate file for authenticating with the
                                WBEM server. If option specified the client
                                attempts to execute mutual authentication. Default:
-                               Simple authentication.
+                               Simple authentication).
       --keyfile TEXT           Client private key file for authenticating with the
                                WBEM server. Not required if private key is part of
                                the certfile option. Not allowed if no certfile
                                option. Default: No client key file. Client private
-                               key should then be part  of the certfile
+                               key should then be part  of the certfile).
       -h, --help               Show this message and exit.
 
 
@@ -248,13 +255,13 @@ The following defines the help output for the `smicli cimping id --help` subcomm
       ex. smicli cimping 5
 
     Options:
-      -t, --timeout INTEGER  Timeout in sec for the operation. (Default: 10.)
+      -t, --timeout INTEGER  Timeout in sec for the operation. (Default: 10).
       -i, --interactive      If set, presents list of targets to chose.
       --no-ping              Disable network ping of the wbem server before
-                             executing the cim request. (Default: True.)
+                             executing the cim request. (Default: True).
       -d, --debug            Set the debug parameter for the pywbem call. Displays
                              detailed information on the call and response.
-                             (Default: False.)
+                             (Default: False).
       -h, --help             Show this message and exit.
 
 
@@ -281,12 +288,12 @@ The following defines the help output for the `smicli cimping ids --help` subcom
       ex. smicli cimping ids 5 8 9
 
     Options:
-      -t, --timeout INTEGER  Timeout in sec for the operation. (Default: 10.)
+      -t, --timeout INTEGER  Timeout in sec for the operation. (Default: 10).
       --no-ping              Disable network ping of the wbem server before
-                             executing the cim request. (Default: True.)
+                             executing the cim request. (Default: True).
       -d, --debug            Set the debug parameter for the pywbem call. Displays
                              detailed information on the call and response.
-                             (Default: False.)
+                             (Default: False).
       -h, --help             Show this message and exit.
 
 
@@ -314,7 +321,7 @@ The following defines the help output for the `smicli companies --help` subcomma
     Commands:
       delete  Delete a company from the database.
       list    List Companies in the database.
-      modify  Create fake cimping results in pings...
+      modify  Modify company data in database.
       new     Create a new companyin the user table.
 
 
@@ -380,11 +387,9 @@ The following defines the help output for the `smicli companies modify --help` s
 
     Usage: smicli companies modify [COMMAND-OPTIONS] CompanyID
 
-      Create fake cimping results in pings database.
+      Modify company data in database.
 
-      Execute simple cim ping against the list of ids provided for target
-      servers in the database defined by each id in the list of ids creates a
-      table showing result.
+      Modifies the company name in the company table of the database.
 
       ex. smicli companies modify 13 -c "NewCompany Name"
 
@@ -445,12 +450,18 @@ The following defines the help output for the `smicli explorer --help` subcomman
 
       This information is generated by accessing the provider itself.
 
+      These subcommands automatically validates selected data from the server
+      against the database and creates an audit log entry for any changes. The
+      fields currently tested are:
+
+        * SMIVersion
+
     Options:
       -h, --help  Show this message and exit.
 
     Commands:
-      all  Command group to explore servers Execute the...
-      ids  Execute the general explorer on the providers...
+      all  Explore all targets in database.
+      ids  Explore a list of target IDs.
 
 
 .. _`smicli explorer all --help`:
@@ -467,7 +478,7 @@ The following defines the help output for the `smicli explorer all --help` subco
 
     Usage: smicli explorer all [COMMAND-OPTIONS]
 
-      Command group to explore servers
+      Explore all targets in database.
 
       Execute the general explore operation on  some or all the providers in the
       database and generate a report on the results.
@@ -500,7 +511,7 @@ The following defines the help output for the `smicli explorer all --help` subco
       to speed up the process for servers that are completely not available. The
       default is to ping as the first step.
 
-      ex: smicli explore ids 15 18
+      ex: smicli explore all
 
     Options:
       --ping / --no-ping         Ping the the provider as initial step in test.
@@ -525,8 +536,14 @@ The following defines the help output for the `smicli explorer ids --help` subco
 
     Usage: smicli explorer ids [COMMAND-OPTIONS] TargetIDs
 
-      Execute the general explorer on the providers defined by id.  Multiple ids
-      may be supplied (ex. id 5 6 7)
+      Explore a list of target IDs.
+
+      Execute the explorer on the providers defined by id.  Multiple ids may be
+      supplied (ex. id 5 6 7)
+
+      ex: smicli explorer 6 7 8
+
+      TODO expand this to allow interactive ID input
 
     Options:
       --ping / --no-ping         Ping the the provider as initial step in test.
@@ -597,37 +614,11 @@ The following defines the help output for the `smicli history --help` subcommand
       -h, --help  Show this message and exit.
 
     Commands:
-      create    TODO: Delete this or move somewhere in a test...
       delete    Delete records from history file.
-      list      List history of pings from database The...
+      list      List history of pings in database.
       stats     Get stats on pings in database.
       timeline  Show history of status changes for IDs.
       weekly    Generate weekly report from ping history.
-
-
-.. _`smicli history create --help`:
-
-smicli history create --help
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-
-The following defines the help output for the `smicli history create --help` subcommand
-
-
-::
-
-    Usage: smicli history create [COMMAND-OPTIONS]
-
-      TODO: Delete this or move somewhere in a test catagory.
-
-    Options:
-      -i, --ids INTEGER    Optional list of ids. If not supplied, all id's are
-                           used
-      -d, --datetime DATE  Timestamp for the ping history. format for input
-                           ismin:hour:day/month/year. The minute and hour are
-                           optional. Default current datetime
-      -h, --help           Show this message and exit.
 
 
 .. _`smicli history delete --help`:
@@ -686,7 +677,7 @@ The following defines the help output for the `smicli history list --help` subco
 
     Usage: smicli history list [COMMAND-OPTIONS]
 
-      List history of pings from database
+      List history of pings in database.
 
       The listing may be filtered a date range with the --startdate, --enddate,
       and --numberofdays options.  It may also be filtered to only show a single
@@ -1114,13 +1105,14 @@ The following defines the help output for the `smicli provider --help` subcomman
       Command group for provider operations.
 
       This group of commands provides commands to query the providers defined by
-      entries in the targets database.  This includes commands like ping, get
+      entries in the targets database.  This includes subcommands like ping, get
       basic info, get namespace info, get profile information. for individual
       providers.
 
       It differs from the explore group in that it provides tools to process
       individual providers in the database rather than try to explore the entire
-      set of providers.
+      set of providers.  It also allows many more operations against the
+      individual provider.
 
     Options:
       -h, --help  Show this message and exit.
@@ -1128,10 +1120,10 @@ The following defines the help output for the `smicli provider --help` subcomman
     Commands:
       classes     Find all classes that match CLASSNAME.
       info        Display general info for the provider.
-      interop     Display the brand information for the...
-      namespaces  Display the brand information for the...
+      interop     Display interop namespace for the provider.
+      namespaces  Display public namespaces for the provider.
       ping        Ping the provider defined by targetid.
-      profiles    Display registered profile information for...
+      profiles    Display registered profiles for provider.
 
 
 .. _`smicli provider classes --help`:
@@ -1150,20 +1142,21 @@ The following defines the help output for the `smicli provider classes --help` s
 
       Find all classes that match CLASSNAME.
 
-      Find all  class names in the namespace(s) of the defined WBEMServer that
-      match the CLASSNAME regular expression argument. The CLASSNAME argument
-      may be either a complete classname or a regular expression that can be
-      matched to one or more classnames. To limit the filter to a single
-      classname, terminate the classname with $.
+      Find all class names in the namespace(s) of the defined
+      proovider(WBEMServer) that match the CLASSNAME regular expression
+      argument. The CLASSNAME argument may be either a complete classname or a
+      regular expression that can be matched to one or more classnames. To limit
+      the filter to a single classname, terminate the classname with $.
 
       The regular expression is anchored to the beginning of CLASSNAME and is
       case insensitive. Thus pywbem_ returns all classes that begin with
       PyWBEM_, pywbem_, etc.
 
-      The namespace option limits the search to the defined namespace.
+      TODO: Add option to limit to single namespace
 
     Options:
-      -i, --interactive               If set, presents list of targets to chose.
+      -i, --interactive               If set, presents list of targets to chose
+                                      from.
       -c, --classname CLASSNAME regex
                                       Regex that filters the classnames to return
                                       only those that match the regex. This is a
@@ -1218,7 +1211,7 @@ The following defines the help output for the `smicli provider interop --help` s
 
     Usage: smicli provider interop [COMMAND-OPTIONS] TargetID
 
-      Display the brand information for the providers defined by the options.
+      Display interop namespace for the provider.
 
       The TargetID defines a single provider (See targets table). It may be
       picked from a list by entering ? or the --interactive option.
@@ -1244,12 +1237,13 @@ The following defines the help output for the `smicli provider namespaces --help
 
     Usage: smicli provider namespaces [COMMAND-OPTIONS] TargetID
 
-      Display the brand information for the providers defined by the options.
+      Display public namespaces for the provider.
 
-      The options include providerid which defines one or more provider id's to
-      be displayed.
+      The targetID for the provider can be entered directly or by using the
+      interactive feature (entering "?" for the targetid or the --interactive
+      option) to pick the provider from a list.
 
-      The company options allows searching by company name in the provider base.
+      ex. smicli provider namespaces ?
 
     Options:
       -i, --interactive  If set, presents list of targets to chose.
@@ -1279,7 +1273,7 @@ The following defines the help output for the `smicli provider ping --help` subc
 
     Options:
       -i, --interactive  If set, presents list of targets to chose.
-      --timeout INTEGER  Timeout for the ping in seconds. (Default 2.
+      --timeout INTEGER  Timeout for the ping in seconds. (Default 2).
       -h, --help         Show this message and exit.
 
 
@@ -1297,7 +1291,7 @@ The following defines the help output for the `smicli provider profiles --help` 
 
     Usage: smicli provider profiles [COMMAND-OPTIONS] TargetID
 
-      Display registered profile information for provider
+      Display registered profiles for provider.
 
       The TargetID defines a single provider (See targets table). It may be
       picked from a list by entering ? or the --interactive option.
@@ -1456,10 +1450,10 @@ The following defines the help output for the `smicli targets --help` subcommand
     Commands:
       disable  Disable a provider from scanning.
       fields   Display field names in targets database.
-      get      Display details of single Targets database...
+      get      Display details of single database target.
       info     Show target database config information
       list     Display the entries in the targets database.
-      modify   Modify fields of an record in the Targets...
+      modify   Modify fields target database record.
 
 
 .. _`smicli targets disable --help`:
@@ -1521,7 +1515,7 @@ The following defines the help output for the `smicli targets get --help` subcom
 
     Usage: smicli targets get [COMMAND-OPTIONS] TargetID
 
-      Display details of single Targets database entry.
+      Display details of single database target.
 
       Use the `interactive` option or "?" for Target ID to select the target
       from a list presented.
@@ -1568,20 +1562,20 @@ The following defines the help output for the `smicli targets list --help` subco
       Display the entries in the targets database.
 
     Options:
-      -f, --fields TEXT  Define specific fields for output. TargetID always
-                         included. Multiple fields can be specified by repeating
-                         the option.
-                         Ex. -f TargetID -f CompanyName.
-                         Enter "-f ?"
-                         to interactively select fields for display.(Default:
-                         predefined list of fields
-      -d, --disabled     Show disabled targets. Otherwise only targets that are
-                         set enabled in the database are shown.(Default:Do Not
-                         show disabled targets
-      -o, --order TEXT   Sort by the defined field name. Names are viewed with the
-                         targets fields subcommand or "-o ?" to interactively
-                         select field for sort
-      -h, --help         Show this message and exit.
+      -f, --fields FIELDNAME  Define specific fields for output. TargetID always
+                              included. Multiple fields can be specified by
+                              repeating the option. (Default: predefined list of
+                              fields).
+                              Enter: "-f ?" to interactively select
+                              fields for display.
+                              Ex. "-f TargetID -f CompanyName"
+      -d, --disabled          Show disabled targets. Otherwise only targets that
+                              are set enabled in the database are
+                              shown.(Default:Do not show disabled targets).
+      -o, --order FIELDNAME   Sort by the defined field name. Names are viewed
+                              with the targets fields subcommand or "-o ?" to
+                              interactively select field for sort
+      -h, --help              Show this message and exit.
 
 
 .. _`smicli targets modify --help`:
@@ -1598,9 +1592,11 @@ The following defines the help output for the `smicli targets modify --help` sub
 
     Usage: smicli targets modify [COMMAND-OPTIONS] TargetID
 
-      Modify fields of an record in the Targets table.
+      Modify fields target database record.
 
-      This changes the database permanently
+      This subcommand changes the database permanently. It normally allows the
+      user to verify all changes before they are committed to the database. All
+      changes to the database are recorded in the audit log.
 
       Use the `interactive` option or "?" for Target ID to select the target
       from a list presented.
@@ -1608,6 +1604,8 @@ The following defines the help output for the `smicli targets modify --help` sub
       Not all fields are defined for modification. Today the fields of
       CompanyName, SMIVersion, CimomVersion, ScanEnabled, NotifyUsers Notify,
       and enable cannot be modified with this subcommand.
+
+      TODO: Expand for other fields in the targets table.
 
     Options:
       -e, --enable                 Enable the Target if it is disabled.
