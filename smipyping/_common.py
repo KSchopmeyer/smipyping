@@ -84,10 +84,17 @@ def compute_startend_dates(start_date, end_date=None, number_of_days=None,
                          (end_date, number_of_days))
 
     if number_of_days:
+        if number_of_days < 0:
+            raise ValueError("NumberOfDays must be positive integer not %s"
+                             % number_of_days)
         end_date = start_date + datetime.timedelta(days=number_of_days)
 
     if end_date is None:
         end_date = datetime.datetime.now()
+
+    if end_date < start_date:
+        raise ValueError('EndDate %s before StartDate %s' % (start_date,
+                                                             end_date))
     return (start_date, end_date)
 
 

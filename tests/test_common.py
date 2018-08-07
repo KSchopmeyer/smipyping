@@ -50,9 +50,19 @@ class Test_ComputeStartendDates(object):
     # exc - None or expected exception
     @pytest.mark.parametrize(
         "start, end, num, old, exp, exc", [
+            # test for valid response to start and end date
             ["01/01/18", "09/09/18", None, None, ("01/01/18", "09/09/18"),
              None],
+            # test for valid response to date and number_of_days
             ["01/01/18", None, 9, None, ("01/01/18", "10/01/18"), None],
+            # test for valid response with oldest set
+            [None, None, 9, "01/01/18", ("01/01/18", "10/01/18"), None],
+            # Test for Value error if both start and end date
+            ["01/01/18", "01/01/18", 9, None, (), ValueError],
+            # end date before start date
+            ["01/01/18", "01/01/17", None, None, None, ValueError],
+            # test for error if number of days negative
+            ["01/01/18", None, -9, None, ("01/01/18", "10/01/18"), ValueError],
         ]
     )
     # TODO add more tests here.
@@ -61,6 +71,8 @@ class Test_ComputeStartendDates(object):
         fmt = "%d/%m/%y"
         if start:
             start = datetime.strptime(start, fmt)
+        if old:
+            old = datetime.strptime(old, fmt)
         if end:
             end = datetime.strptime(end, fmt)
         if exp:
