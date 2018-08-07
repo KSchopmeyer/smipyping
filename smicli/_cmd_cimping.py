@@ -202,8 +202,8 @@ def cimping_id(context, id, **options):
 @click.option('-s', '--saveresult', default=False, is_flag=True,
               required=False,
               help='Save the result of each cimping test of a wbem server'
-              ' to the database Pings table for future analysis. This creates'
-              'an audit log record'
+              ' to the database Pings table for future analysis. Saving the '
+              'results creates an audit log record.'
               ' ' + '(Default: %s).' % False)
 @click.option('-d', '--disabled', default=False, is_flag=True,
               required=False,

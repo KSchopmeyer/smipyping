@@ -142,8 +142,9 @@ The following defines the help output for the `smicli cimping all --help` subcom
       --no-ping              Disable network ping of the wbem server before
                              executing the cim request. (Default: True).
       -s, --saveresult       Save the result of each cimping test of a wbem server
-                             to the database Pings table for future analysis. This
-                             createsan audit log record (Default: False).
+                             to the database Pings table for future analysis.
+                             Saving the  records creates an audit log record.
+                             (Default: False).
       -d, --disabled         If set include disabled targets in the cimping scan.
                              (Default: False).
       -d, --debug            Set the debug parameter for the pywbem call. Displays
