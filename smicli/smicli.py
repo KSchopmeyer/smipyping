@@ -209,7 +209,7 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
         #        # log_file = 'smicli.log'
         # else:
         #    # log_file = None
-        log_file = 'smicli_log.log'
+        log_file = 'smicli.log'
 
         if ctx.default_map:
             db_info = ctx.default_map[db_type]

@@ -189,11 +189,9 @@ def companies_delete(context, companyid, **options):
 def companies_modify(context, companyid, **options):
     # pylint: disable=redefined-builtin
     """
-    Create fake cimping results in pings database.
+    Modify company data in database.
 
-    Execute simple cim ping against the list of ids provided for target servers
-    in the database defined by each id in the list of ids creates a table
-    showing result.
+    Modifies the company name in the company table of the database.
 
     ex. smicli companies modify 13 -c "NewCompany Name"
 

@@ -38,28 +38,35 @@ timeout_option = [            # pylint: disable=invalid-name
     click.option('-t', '--timeout', type=int,
                  default=DEFAULT_OPERATION_TIMEOUT,
                  help='Timeout in sec for the operation.'
-                      ' ' + '(Default: %s.)' % DEFAULT_OPERATION_TIMEOUT)]
+                      ' ' + '(Default: %s).' % DEFAULT_OPERATION_TIMEOUT)]
 
 no_ping_option = [            # pylint: disable=invalid-name
     click.option('--no-ping', default=False, is_flag=True, required=False,
                  help='Disable network ping of the wbem server before '
                       'executing the cim request.'
-                      ' ' + '(Default: %s.)' % True)]
+                      ' ' + '(Default: %s).' % True)]
 
 debug_option = [            # pylint: disable=invalid-name
     click.option('-d', '--debug', default=False, is_flag=True, required=False,
                  help='Set the debug parameter for the pywbem call. Displays '
                       'detailed information on the call and response.'
-                      ' ' + '(Default: %s.)' % False)]
+                      ' ' + '(Default: %s).' % False)]
 
 
 @cli.group('cimping', options_metavar=CMD_OPTS_TXT)
 def cimping_group():
     """
-    Command group to do simpleping.
+    Command group to do cimping.
 
-    This command group executes a simple ping on the target defined by
-    the subcommand.  This allows targets to be defined in a number of
+    A cimping executes a system level ping (optional) and then tries to create
+    a connection to the target WBEM serve and execute a simple WBEM operation.
+
+    This generally tests both the existence of the WBEM server with the ping
+    and the a ability to make a WBEM connection and get valid results from
+    the WBEM server. The operation executed is EnumerateClasses on one
+    of the known namespaces
+
+    This allows target WBEM servers to be defined in a number of
     ways including:
 
       - Complete target identification (url, etc.) (host)
@@ -80,38 +87,38 @@ def cimping_group():
 @click.argument('host', type=str, metavar='HOST NAME', required=True)
 @click.option('-n', '--namespace', type=str, default=DEFAULT_NAMESPACE,
               help='Namespace for the operation.'
-                   ' ' + '(Default: %s.' % DEFAULT_NAMESPACE)
+                   ' ' + '(Default: %s).' % DEFAULT_NAMESPACE)
 @click.option('-u', '--user', type=str, default=DEFAULT_USERNAME,
               help='Optional user name for the operation.'
-                   ' ' + '(Default: %s.' % DEFAULT_USERNAME)
+                   ' ' + '(Default: %s).' % DEFAULT_USERNAME)
 @click.option('-p', '--password', type=str, default=DEFAULT_PASSWORD,
               help='Optional password for the operation.'
-                   ' ' + '(Default; %s.' % DEFAULT_PASSWORD)
+                   ' ' + '(Default; %s).' % DEFAULT_PASSWORD)
 @click.option('-t', '--timeout', type=int, default=DEFAULT_OPERATION_TIMEOUT,
               help='Namespace for the operation.'
-                   ' ' + '(Default: %s.' % DEFAULT_OPERATION_TIMEOUT)
+                   ' ' + '(Default: %s).' % DEFAULT_OPERATION_TIMEOUT)
 @click.option('--no-ping', default=False, type=bool, required=False,
               help='Disable network ping ofthe wbem server before executing '
                    'the cim request.'
-                   ' ' + '(Default: %s.' % True)
+                   ' ' + '(Default: %s).' % True)
 @click.option('-d' '--debug', default=False, type=bool, required=False,
               help='Set the debug parameter for the pywbem call. Displays '
                    'detailed information on the call and response.'
-                   ' ' + '(Default: %s.' % False)
+                   ' ' + '(Default: %s).' % False)
 @click.option('-c' '--verify_cert', type=bool, required=False, default=False,
               help='Request that the client verify the server cert.'
-                   ' ' + '(Default: %s.' % False)
+                   ' ' + '(Default: %s).' % False)
 @click.option('--certfile', default=None, type=str, required=False,
               help='Client certificate file for authenticating with the '
                    'WBEM server. If option specified the client attempts '
                    'to execute mutual authentication. '
-                   'Default: Simple authentication.')
+                   'Default: Simple authentication).')
 @click.option('--keyfile', default=None, type=str, required=False,
               help='Client private key file for authenticating with the '
                    'WBEM server. Not required if private key is part of the '
                    'certfile option. Not allowed if no certfile option. '
                    'Default: No client key file. Client private key should '
-                   'then be part  of the certfile')
+                   'then be part  of the certfile).')
 @click.pass_obj
 def cimping_host(context, host, **options):
     """
@@ -195,11 +202,11 @@ def cimping_id(context, id, **options):
               required=False,
               help='Save the result of each cimping test of a wbem server'
               ' to the database Pings table for future analysis.'
-              ' ' + '(Default: %s.' % False)
+              ' ' + '(Default: %s).' % False)
 @click.option('-d', '--disabled', default=False, is_flag=True,
               required=False,
               help='If set include disabled targets in the cimping scan.'
-              ' ' + '(Default: %s.' % False)
+              ' ' + '(Default: %s).' % False)
 @add_options(debug_option)
 @click.pass_obj
 def cimping_all(context, **options):  # pylint: disable=redefined-builtin

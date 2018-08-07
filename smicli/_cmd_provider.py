@@ -39,13 +39,14 @@ def provider_group():
     Command group for provider operations.
 
     This group of commands provides commands to query the providers defined
-    by entries in the targets database.  This includes commands like ping,
+    by entries in the targets database.  This includes subcommands like ping,
     get basic info, get namespace info, get profile information. for
     individual providers.
 
     It differs from the explore group in that it provides tools to process
     individual providers in the database rather than try to explore the
-    entire set of providers.
+    entire set of providers.  It also allows many more operations against the
+    individual provider.
     """
     pass
 
@@ -56,7 +57,7 @@ def provider_group():
               help='If set, presents list of targets to chose.')
 @click.option('--timeout', type=int, required=False, default=PING_TIMEOUT,
               help='Timeout for the ping in seconds.'
-                   ' ' + '(Default %s.' % PING_TIMEOUT)
+                   ' ' + '(Default %s).' % PING_TIMEOUT)
 @click.pass_obj
 def provider_ping(context, targetid, **options):
     """
@@ -96,7 +97,7 @@ def provider_info(context, targetid, **options):
 @click.pass_obj
 def provider_interop(context, targetid, **options):
     """
-    Display the brand information for the providers defined by the options.
+    Display interop namespace for the provider.
 
     The TargetID defines a single provider (See targets table). It may
     be picked from a list by entering ? or the --interactive option.
@@ -115,13 +116,13 @@ def provider_interop(context, targetid, **options):
 @click.pass_obj
 def provider_namespaces(context, targetid, **options):
     """
-    Display the brand information for the providers defined by the options.
+    Display public namespaces for the provider.
 
-    The options include providerid which defines one or more provider id's
-    to be displayed.
+    The targetID for the provider can be entered directly or by using the
+    interactive feature (entering "?" for the targetid or the --interactive
+    option) to pick the provider from a list.
 
-    The company options allows searching by company name in the provider
-    base.
+    ex. smicli provider namespaces ?
     """
     context.execute_cmd(lambda: cmd_provider_namespaces(context, targetid,
                                                         options))
@@ -140,7 +141,7 @@ def provider_namespaces(context, targetid, **options):
 @click.pass_obj
 def provider_profiles(context, targetid, **options):
     """
-    Display registered profile information for provider
+    Display registered profiles for provider.
 
     The TargetID defines a single provider (See targets table). It may
     be picked from a list by entering ? or the --interactive option.
@@ -157,7 +158,7 @@ def provider_profiles(context, targetid, **options):
 @provider_group.command('classes', options_metavar=CMD_OPTS_TXT)
 @click.argument('TargetID', type=str, metavar='TargetID', required=False)
 @click.option('-i', '--interactive', is_flag=True, default=False,
-              help='If set, presents list of targets to chose.')
+              help='If set, presents list of targets to chose from.')
 @click.option('-c', '--classname', type=str, metavar='CLASSNAME regex',
               required=False,
               help='Regex that filters the classnames to return only those '
@@ -173,17 +174,17 @@ def provider_classes(context, targetid, **options):
     """
     Find all classes that match CLASSNAME.
 
-    Find all  class names in the namespace(s) of the defined WBEMServer that
-    match the CLASSNAME regular expression argument. The CLASSNAME argument may
-    be either a complete classname or a regular expression that can be matched
-    to one or more classnames. To limit the filter to a single classname,
-    terminate the classname with $.
+    Find all class names in the namespace(s) of the defined
+    proovider(WBEMServer) that match the CLASSNAME regular expression argument.
+    The CLASSNAME argument may be either a complete classname or a regular
+    expression that can be matched to one or more classnames. To limit the
+    filter to a single classname, terminate the classname with $.
 
     The regular expression is anchored to the beginning of CLASSNAME and
     is case insensitive. Thus pywbem_ returns all classes that begin with
     PyWBEM_, pywbem_, etc.
 
-    The namespace option limits the search to the defined namespace.
+    TODO: Add option to limit to single namespace
     """
     context.execute_cmd(lambda: cmd_provider_classes(context, targetid,
                                                      options))
