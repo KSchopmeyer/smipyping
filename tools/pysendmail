@@ -1,4 +1,21 @@
 #!/usr/bin/env python
+"""
+Email forwarder that sends directly to an authorized email system  SMTP server.
+This tool was defined and tested around gmail and works with gmail. It has not
+been tested with other services.
+
+The primary purpose is to send email files with parameters from the command
+line. It does include the capability to get the toaddresses, fromaddress,
+subject, and text from prompt input if they are not provided on the commmand
+line but that is just a test tool.
+
+It includes help if the command pysendmail --help is entered for command line
+parameters.
+
+This code requires a configuration file to separate private information on
+the configuration of the the sender including the user name, user pw, and
+smtp server definition.  It provides a default smtp server for gmail with tls
+"""
 from __future__ import print_function
 
 import os
@@ -6,42 +23,54 @@ import sys
 import email.message
 import smtplib
 import argparse as _argparse
+import ConfigParser
 
 
-def prompt(prompt):
-    return raw_input(prompt).strip()
+def my_prompt(prompt_str):
+    try:
+        input = raw_input
+    except NameError:
+        pass
+    return input(prompt_str).strip()
 
 
-DEFAULTFROMADDR = 'wildsmiuser@gmail.com'
-
-USR = 'wildsmiuser@gmail.com'
-PW = 'Pa$$w0rdPa$$w0rd'
+DEFAULTFROMADDR = None
+USR = None
+PW = None
 SMTP_SERVER = 'smtp.gmail.com:587'
 
 
 def build_message(msg, fromaddr=None, toaddrs=None, subject=None, cc=None,
-                  payload=None):
+                  payload=None):  # pylint: disable=too-many-arguments
+    # pylint: disable=invalid-name
     """
     Build the components of the message that were not provided on input. This
-    function does a console request for any input argument with value None
-    and adds the result to
-    """
-    msg['From'] = fromaddr if fromaddr else prompt("From: ")
-    msg['To'] = " ".join(toaddrs) if toaddrs else prompt("To: ")
+    function does a console request for the fromaddrr, toaddrs, subjectaddr
+    input argument with value None and adds the result to the message. It does
+    not request a console input for the cc option.
 
-    if not cc:
-        cc = prompt("CC: ")
+    If there is no payload defined it requests that a message text be entered
+    from the console
+    """
+    msg['From'] = fromaddr if fromaddr else my_prompt("From: ")
+    msg['To'] = " ".join(toaddrs) if toaddrs else my_prompt("To: ")
+
+    #  There is no prompt for cc. It must be input from cmd line
     if cc:
         msg['CC'] = cc
-    msg['Subject'] = subject if subject else prompt("Subject: ")
+    msg['Subject'] = subject if subject else my_prompt("Subject: ")
     if payload:
         msg.set_payload(payload)
     else:
+        try:
+            input = raw_input
+        except NameError:
+            pass
         print("Enter message, end with ^D (Unix) or ^Z (Windows):")
         payload = ""
         while 1:
             try:
-                line = raw_input()
+                line = input()
             except EOFError:
                 break
             if not line:
@@ -49,43 +78,44 @@ def build_message(msg, fromaddr=None, toaddrs=None, subject=None, cc=None,
             payload += '\n%s' % line
         msg.set_payload(payload)
 
-    return (msg)
+    return msg
 
 
-def send_msg(message, verbose):
+def send_msg(message, verbosity):
     """
     Try to send the message using the python smtplib. This always sends through
     tls.
     """
     try:
         server = smtplib.SMTP(SMTP_SERVER)
-        if verbose:
+        if verbosity:
             server.set_debuglevel(1)
         server.ehlo()
         server.starttls()
         server.login(USR, PW)
-        if verbose:
-            print('sendmail from %s, to %s, msg %s' % (msg['From'], msg['To'],
+        if verbosity > 2:
+            print('sendmail from %s, to %s, msg %s' % (message['From'],
+                                                       message['To'],
                                                        message.as_string()))
-        server.sendmail(msg['From'], msg['To'], message.as_string())
-        print('Msg sent from %s to %s' % (msg['From'], msg['To']))
-        server.close
+        server.sendmail(message.get('From'), message['To'], message.as_string())
+        print('Msg sent from %s to %s' % (message['From'], message['To']))
         server.quit()
+
     except Exception as ex:
         print('SEND msg from %s to %s\n failed with exception %s' %
-              (msg['From'], msg['To'], ex))
+              (message['From'], message['To'], ex))
         sys.exit(1)
 
 
 if __name__ == '__main__':
-
     prog = os.path.basename(sys.argv[0])
     usage = '%(prog)s [options] server'
     desc = """
 
 Send mail message based on the input parameters.  This mail sender bypasses
 any system level email and uses specifically gmail and a gmail account defined
-in the software.
+in the software.  It requires a configfile that defines the email user
+information, SMTP server and a default from user.
 """
     epilog = """
 Examples:
@@ -128,12 +158,31 @@ Examples:
 
     general_arggroup = argparser.add_argument_group(
         'General options')
+
     general_arggroup.add_argument(
-        '-v', '--verbose', dest='verbose',
-        action='store_true', default=False,
-        help='Print more messages while processing')
+        '-C', '--configfile', metavar='ConfigFile', dest='configfile',
+        default='email.ini',
+        help='Configuration file defining email configuration.')
+
+    general_arggroup.add_argument(
+        '-v', '--verbosity', dest='verbosity',
+        action='count', default=0,
+        help='Print more messages while processing. Verbosity level is set'
+             'by using -v (show comm with server), -vv (also msg) or -vvv')
 
     args = argparser.parse_args()
+    if args.verbosity > 3:
+        print('ARGS %r' % args)
+
+    if not os.path.isfile(args.configfile):
+        argparser.error('No configuration file %s found' % args.configfile)
+
+    config = ConfigParser.ConfigParser()
+    config.read(args.configfile)
+    USR = config.get('email', 'user')
+    PW = config.get('email', 'password')
+    DEFAULTFROMADDR = config.get('email', 'DefaultFromAddress')
+    SMTP_SERVER = config.get('email', 'SmtpServer')
 
     if args.message and args.message_file:
         argparser.error('Message and message-file options together not allowed')
@@ -147,20 +196,17 @@ Examples:
     else:
         msg_text = args.message
 
-    if args.verbose:
-        print('ARGS %r' % args)
-
-    msg = email.message.Message()
+    mail_msg = email.message.Message()
     if args.message_file:
         if args.message_file.endswith('html'):
-            msg.add_header('Content-Type', 'text/html')
+            mail_msg.add_header('Content-Type', 'text/html')
 
-    msg = build_message(msg, fromaddr=args.fromaddr,
-                        toaddrs=args.toaddrs,
-                        subject=args.subject,
-                        payload=msg_text)
+    built_msg = build_message(mail_msg, fromaddr=args.fromaddr,
+                              toaddrs=args.toaddrs,
+                              subject=args.subject,
+                              payload=msg_text)
 
-    if args.verbose:
-        print('Assembled Message:\n%s' % msg.as_string())
+    if args.verbosity > 2:
+        print('Assembled Message:\n%s' % built_msg.as_string())
 
-    send_msg(msg, args.verbose)
+    send_msg(built_msg, args.verbosity)
