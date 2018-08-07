@@ -26,6 +26,7 @@ from smipyping import PingsTable
 from smipyping import SimplePing, SimplePingList, fold_cell
 from smipyping.config import DEFAULT_NAMESPACE, DEFAULT_OPERATION_TIMEOUT, \
     DEFAULT_USERNAME, DEFAULT_PASSWORD
+from smipyping._logging import AUDIT_LOGGER_NAME, get_logger
 
 from .smicli import cli, CMD_OPTS_TXT
 from ._common_options import add_options
@@ -201,7 +202,8 @@ def cimping_id(context, id, **options):
 @click.option('-s', '--saveresult', default=False, is_flag=True,
               required=False,
               help='Save the result of each cimping test of a wbem server'
-              ' to the database Pings table for future analysis.'
+              ' to the database Pings table for future analysis. This creates'
+              'an audit log record'
               ' ' + '(Default: %s).' % False)
 @click.option('-d', '--disabled', default=False, is_flag=True,
               required=False,
@@ -294,6 +296,9 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
         for result in results:
             print('ping data %s %s %s' % (result[0], result[1], timestamp))
             tbl_inst.append(result[0], result[1], timestamp)
+        audit_logger = get_logger(AUDIT_LOGGER_NAME)
+        audit_logger.info('cimping update pings table timestamp %s add %s '
+                          'records', timestamp, len(results))
 
     # print results of the scan.
     headers = ['Id', 'Addr', 'Result', 'Exception', 'Time', 'Company',
@@ -316,7 +321,7 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
                      fold_cell(target['Product'], 12)])
 
     # fixed sort based on target id
-    # TODO expand sort so that it can sort on any field.
+    # TODO: future expand sort so that it can sort on any field.
     rows.sort(key=lambda x: x[0])
 
     context.spinner.stop()
