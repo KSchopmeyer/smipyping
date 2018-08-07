@@ -62,23 +62,23 @@ def history_group():
     pass
 
 
-@history_group.command('create', options_metavar=CMD_OPTS_TXT)
-@click.option('-i', '--ids', default=None, type=int,
-              required=False,
-              help="Optional list of ids. If not supplied, all id's are used")
-@click.option('-d', '--datetime', type=Datetime(format='%-M:%-H:%d/%m/%y'),
-              default=datetime.datetime.now(),
-              required=False,
-              help='Timestamp for the ping history. format for input is'
-                   'min:hour:day/month/year. The minute and hour are optional. '
-                   'Default current datetime')
-@click.pass_obj
-def history_create(context, **options):  # pylint: disable=redefined-builtin
-    """
-    TODO: Delete this or move somewhere in a test catagory.
-
-    """
-    context.execute_cmd(lambda: cmd_history_create(context, options))
+# @history_group.command('create', options_metavar=CMD_OPTS_TXT)
+# @click.option('-i', '--ids', default=None, type=int,
+#              required=False,
+#              help="Optional list of ids. If not supplied, all id's are used")
+# @click.option('-d', '--datetime', type=Datetime(format='%-M:%-H:%d/%m/%y'),
+#              default=datetime.datetime.now(),
+#              required=False,
+#              help='Timestamp for the ping history. format for input is'
+#                   'min:hour:day/month/year. The minute and hour are optional.'
+#                   ' Default current datetime')
+# @click.pass_obj
+# def history_create(context, **options):  # pylint: disable=redefined-builtin
+#    """
+#    TODO: Delete this or move somewhere in a test catagory.#
+#
+#    """
+#    context.execute_cmd(lambda: cmd_history_create(context, options))
 
 
 @history_group.command('list', options_metavar=CMD_OPTS_TXT)
@@ -118,7 +118,7 @@ def history_create(context, **options):  # pylint: disable=redefined-builtin
 @click.pass_obj
 def history_list(context, **options):  # pylint: disable=redefined-builtin
     """
-    List history of pings from database
+    List history of pings in database.
 
     The listing may be filtered a date range with the --startdate, --enddate,
     and --numberofdays options.  It may also be filtered to only show a single

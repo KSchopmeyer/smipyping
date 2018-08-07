@@ -49,7 +49,7 @@ def targets_group():
                    'included. Multiple fields can be specified by repeating '
                    'the option. (Default: predefined list of fields.'
                    '\nEnter: "-f ?" to interactively select fields for display.'
-                   '\nEx. "-f TargetID -f CompanyName"' )
+                   '\nEx. "-f TargetID -f CompanyName"')
 # @click.option('-c', '--company', type=str, default=None,
 #              help='regex filter to filter selected companies.')
 @click.option('-d', '--disabled', default=False, is_flag=True, required=False,

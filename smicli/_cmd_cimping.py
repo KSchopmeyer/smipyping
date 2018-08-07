@@ -56,10 +56,17 @@ debug_option = [            # pylint: disable=invalid-name
 @cli.group('cimping', options_metavar=CMD_OPTS_TXT)
 def cimping_group():
     """
-    Command group to do simpleping.
+    Command group to do cimping.
 
-    This command group executes a simple ping on the target defined by
-    the subcommand.  This allows targets to be defined in a number of
+    A cimping executes a system level ping (optional) and then tries to create
+    a connection to the target WBEM serve and execute a simple WBEM operation.
+
+    This generally tests both the existence of the WBEM server with the ping
+    and the a ability to make a WBEM connection and get valid results from
+    the WBEM server. The operation executed is EnumerateClasses on one
+    of the known namespaces
+
+    This allows target WBEM servers to be defined in a number of
     ways including:
 
       - Complete target identification (url, etc.) (host)
