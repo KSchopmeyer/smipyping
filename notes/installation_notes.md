@@ -6,10 +6,15 @@ smi environment for gathering regular server status data into the history
 file and for generating a regular report to users on the status of
 the smi servers.
 
+This differs from a typical user installation in that it also sets up the
+cron jobs for regularly gathering data on the status of servers defined in
+the database and automatically generating a report of results (the weekly
+report).
+
 Requirements today:
 -------------------
 
- Linux system, Both redhat and ubuntu have been tested.
+Linux system, Both redhat and ubuntu have been tested.
 
 ## Installation steps ##
 
@@ -18,32 +23,54 @@ Requirements today:
    * python 2.7
    * a python virtual environment (This guide is written around virtualenv and
      virtualenvwrapper). You do not have to have the virtual environment but
-     it makes working with python much simpler.
-   * pip. Be sure pip is up-to-date with pip install -u pip
-   * make
-   * mysql
+     it makes working with python much simpler. We have generally worked with
+     `virtualenv` and   virtualenvwrapper` but there are a number of different
+     virtual environment tools available today.
+   * pip. Be sure pip is up-to-date with pip install -u pip. Note that pip
+     is part of the standard python install on some environments but not on
+     others
+   * make, specifically GNU make.  This should be part of the core install on
+     all Linux systems.
+   * MySQL (version 5.7.x) - This is an extra install and the installation
+   depends on the particular environment used. Most of the debian based
+   environments include mysql (version 5.7.x) as part of the supported packages
+   that can be installed simply by selecting the package manager and searching
+   for the MySQL package.  However, the Redhat bases systems place this into a
+   set of separately installable packages
 
-   TODO detailed install instructions for the above
 
-2. Create a directory for the installation and download smipyping from github
+2. Create a directory for the installation and clone smipyping from github
 
    $ mkdir smipypingtest
 
    $ git clone https://github.com/KSchopmeyer/smipyping.git
 
    We are downloading from github now but will eventually move to installing
-   from PyPi
+   from PyPi. The clone downloads all of the components in the git repo, not
+   just the pip installables so that it includes extra development tools and
+   the test directories
 
-3.  Create a virtual environment for the installation. With virtualenv and
-    virtualenvwrapper the step are:
+3.  Create a virtual environment for the installation. With `virtualenv` and
+    `virtualenvwrapper` the step are:
 
-    $ cd smipypingtest/smipyping
+    a. Go to the directory containing the root of smipyping
 
-    $ mkvirtualenv -a . smipypingtest
+       $ cd smipypingtest/smipyping
 
-    $ workon smipypingtest
+    b. Create the virtual environment (the following line uses
+         `virtualenvwrapper`). The -a . options sets the current directory as
+       the workspace for this virtual environment so that simply executing
+       `workon smipypingtest` activated the virtual environment and also changes
+       to the directory containing that version of the project.
 
-4.  Install smipyping
+       $ mkvirtualenv -a . smipypingtest
+
+    c. Activate the new virtual environment
+
+        $ workon smipypingtest
+
+4.  Install and build smipyping. This step is required because we cloned the
+    code into place,  when we change to pip, it will no longer be necessary
 
     a. Be sure you are in the directory defined in step 3.  The easiest way
        is with the cmd:
@@ -72,7 +99,7 @@ Requirements today:
 6. Set up  configuration file (default smicli.ini) to define the database set
    up in 4 above. with mysql this requires knowing the database location,
    database name (our default is SMIStatus, mysql user, and mysql password).
-   For example, the following lines define a local mysql database  for smicli:
+   For example, the following lines define a local MySQL database for smicli:
 
 		[mysql]
 		#   Name of the database in the mysql database host.  This db must be
@@ -82,16 +109,16 @@ Requirements today:
 		#
 		# Logon credentials for the mysql database.
 		#
-		user = root
+		user = <user name for mysql>
 		password = ********
 
-	The following define a remote database:
+	The following defines a remote MySQL database:
 
-	[mysql]
-	host = 10.1.134.124
-	database = SMIStatus
-	user = root
-	password = *********
+        [mysql]
+        host = 10.1.134.124
+        database = SMIStatus
+        user = root
+        password = *********
 
 7. Test to be sure smicli runs. The following are samples that will test both
    the access to the database and to the target servers:
@@ -133,8 +160,37 @@ Requirements today:
        The script generates the report, sends the mail and saves the
        script with date tag for the future.
 
-## Example Scripts and crontab ##
+## Scripts and crontab ##
 
+Crontab is used to execute two tasks with smicli on a regular basis.
+
+1. Add status data to the database, this adds the status of each documented
+   target to the database in the `pings` table.
+
+   The command that executes this is:
+
+     $ smicli cimping all -s
+
+   This command executes a simping on all the servers in the targets table and
+   enabled and (because the -s option is included) appends the results to the
+   pings table.
+
+   Typically this is executed every 30 minutes
+
+2. Automatically generate the regular status report (ex. the weekly report)
+
+   This subcommand generates a report on the overall recent and historical
+   status of each server. Generally this is executed once a week at a defined
+   time and distributed to a the plugfest members.
+
+   The smicli command to generate this report is:
+
+       $smicli -o html history weekly
+
+    Which generates the report as an html output.
+
+    Today, sending the email is a separate piece of code (pysendmail that is
+    in the tools directory.)
 ### General information on example scripts ###
 
 Crontab does not help much in establishing an environment to execute a script
@@ -155,7 +211,7 @@ script which first activates the virtual environment and then executes the
 smicli command itself.
 
 HOWEVER, to activate the virtual environment through crontab with virtualenv
-and virtuaenvwrapper you must make one change in the environment, set the file
+and virtuaenvwrapper you must make one change	 in the environment, set the file
 activate in the environment to executable.
 
     $ cd /.virtualenvs/$WORKON_NAME/bin/activate
@@ -176,8 +232,6 @@ NOTE: The -s option is critical as that activates insertation of the results
 into the history table.
 
 	#!/bin/bash
-	CRONOUT=$HOME/smiclipingcrounout.txt
-
 	# setup virtual environment. This varies by virtual env tool used.
 	# To set up when tool set is virtualenv and  virtualenvwrapper you need to
 	# set the activate script to executable. Then you call that script to
@@ -187,7 +241,6 @@ into the history table.
 	source ~/.virtualenvs/$WORKON_NAME/bin/activate
 	cd $VIRTUALENV
 	# smipypingprod/smipyping
-	which smicli >$CRONOUT
 	smicli -h >>$CRONOUT
 	RESULT=$?
 	if [ $RESULT -eq 0 ]; then
@@ -195,37 +248,33 @@ into the history table.
 	else
 	  exit smicli -h Bad: $RESULT >>$CRONOUT
 	fi
-	smicli cimping all -s >>$CRONOUT
+	smicli cimping all -s
 
 ### Script to generate weekly report ###
 
 	#!/bin/bash
-	CRONOUT=$HOME/smicliweeklycrounout.txt
 
 	# setup virtual environment. This varies by virtual env tool used.
 	# To set up when tool set is virtualenv and  virtualenvwrapper you need to
 	# set the activate script to executable. Then you call that script to
 	# activate the particular environment
-	echo "start smicliweekly script" >$CRONOUT
 	REPORT_NAME=$HOME/weekly.html
 	REPORT_ARCHIVE=$HOME/weekly
 	WORKON_NAME=smicliprod
 	VIRTUALENV=~/smipypingprod/smipyping
 	source ~/.virtualenvs/$WORKON_NAME/bin/activate
 	cd $VIRTUALENV
-	# echo "Generate weekly report" >> $CRONOUT
 
 	smicli -o html history weekly >$REPORT_NAME
 	NOW=$(date +"%m_%d_%Y")
-	# echo "move weekly report for " $NOW
+    pysendmail -f <from email address> -t <to-email-address -s "WEEKLY STATUS REPORT $NOW" -f $REPORT_NAME
 	cp $REPORT_NAME $REPORT_ARCHIVE/week_$NOW.html
-	# echo "weekly report in dir"
-	# ls -ltr $HOME/weekly
-	# TODO Delete old reports
+	# TODO Future Delete old reports
 
 ### Sample crontab to execute these scripts
 
 	SHELL=/bin/bash
+    * Add data to pings table every 30 minutes.
 	0,30 * * * * sudo -u kschopmeyer -i bash -c '. $HOME/.bash_profile; . $HOME/.bashrc; $HOME/bin/smicliping.sh; > $HOME/smicliping.log'
 	#Test. generate daily at noon
 	23 55 * * FRI sudo -u kschopmeyer -i bash -c '. $HOME/.bash_profile; . $HOME/.bashrc; $HOME/bin/smicliweekly.sh; > $HOME/smicliweekly.log'
