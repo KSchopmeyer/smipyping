@@ -25,14 +25,7 @@ import smtplib
 import argparse as _argparse
 import ConfigParser
 
-
-def my_prompt(prompt_str):
-    try:
-        input = raw_input
-    except NameError:
-        pass
-    return input(prompt_str).strip()
-
+from smipyping import __version__
 
 DEFAULTFROMADDR = None
 USR = None
@@ -40,48 +33,7 @@ PW = None
 SMTP_SERVER = 'smtp.gmail.com:587'
 
 
-def build_message(msg, fromaddr=None, toaddrs=None, subject=None, cc=None,
-                  payload=None):  # pylint: disable=too-many-arguments
-    # pylint: disable=invalid-name
-    """
-    Build the components of the message that were not provided on input. This
-    function does a console request for the fromaddrr, toaddrs, subjectaddr
-    input argument with value None and adds the result to the message. It does
-    not request a console input for the cc option.
-
-    If there is no payload defined it requests that a message text be entered
-    from the console
-    """
-    msg['From'] = fromaddr if fromaddr else my_prompt("From: ")
-    msg['To'] = " ".join(toaddrs) if toaddrs else my_prompt("To: ")
-
-    #  There is no prompt for cc. It must be input from cmd line
-    if cc:
-        msg['CC'] = cc
-    msg['Subject'] = subject if subject else my_prompt("Subject: ")
-    if payload:
-        msg.set_payload(payload)
-    else:
-        try:
-            input = raw_input
-        except NameError:
-            pass
-        print("Enter message, end with ^D (Unix) or ^Z (Windows):")
-        payload = ""
-        while 1:
-            try:
-                line = input()
-            except EOFError:
-                break
-            if not line:
-                break
-            payload += '\n%s' % line
-        msg.set_payload(payload)
-
-    return msg
-
-
-def send_msg(message, verbosity):
+def send_msg(message, to_addrs, from_addr, verbosity):
     """
     Try to send the message using the python smtplib. This always sends through
     tls.
@@ -93,12 +45,21 @@ def send_msg(message, verbosity):
         server.ehlo()
         server.starttls()
         server.login(USR, PW)
-        if verbosity > 2:
-            print('sendmail from %s, to %s, msg %s' % (message['From'],
-                                                       message['To'],
-                                                       message.as_string()))
-        server.sendmail(message.get('From'), message['To'], message.as_string())
-        print('Msg sent from %s to %s' % (message['From'], message['To']))
+    except smtplib.SMTPException as se:
+        print('SMTP connection Exception error $s mail not sent' % se)
+        sys.exit(1)
+
+    if verbosity > 2:
+        print('sendmail \n  from %s, \n  to %s, \nmsg %s' %
+              (message['From'], message['To'], message.as_string()))
+    try:
+        rslt = server.sendmail(from_addr,
+                               to_addrs,
+                               message.as_string())
+
+        print('Msg sent from %s to %s' % (from_addr, to_addrs))
+        if rslt:
+            print('Refused recipients: %s' % rslt)
         server.quit()
 
     except Exception as ex:
@@ -134,15 +95,16 @@ Examples:
         '-t', '--to', metavar='to', nargs='*', dest='toaddrs',
         help='Email address to send to. Accepts multiple email addresses. '
              'If no --to paramter is defined, the to address is requested in a '
-             'prompt.')
+             'prompt. At least one to address is required')
 
     email_arggroup.add_argument(
         '-f', '--from', metavar='from', dest='fromaddr',
-        help='A single from email address.')
+        help='A single from email address. Default is from address in '
+             'config file')
 
     email_arggroup.add_argument(
-        '-c', '--cc', metavar='CC', dest='fromaddr',
-        help='None or more email addresses separated by spaces.')
+        '-c', '--CC', metavar='CC', dest='fromaddr',
+        help='None or more email addresses separated by spaces. Optional')
 
     email_arggroup.add_argument(
         '-s', '--subject', metavar='subject', dest='subject',
@@ -169,6 +131,9 @@ Examples:
         action='count', default=0,
         help='Print more messages while processing. Verbosity level is set'
              'by using -v (show comm with server), -vv (also msg) or -vvv')
+    general_arggroup.add_argument(
+        '-V', '--version', action='version', version='%(prog)s ' + __version__,
+        help='Display pywbem version and exit.')
 
     args = argparser.parse_args()
     if args.verbosity > 3:
@@ -187,26 +152,52 @@ Examples:
     if args.message and args.message_file:
         argparser.error('Message and message-file options together not allowed')
 
+    if not args.toaddrs:
+        argparse.error('To address parameter required')
+
+    if not args.fromaddr:
+        if DEFAULTFROMADDR:
+            fromaddr = DEFAULTFROMADDR
+        else:
+            argparse.error("To address parameter or DefaultFromAddress in "
+                           "configuration file required. No From adddress for"
+                           "this message")
+    else:
+        fromaddr = args.fromaddr
+
     if args.message_file:
         if not os.path.isfile(args.message_file):
             argparser.error("Message_file %s does not exist" %
                             args.message_file)
         with open(args.message_file, 'r') as msgfile:
-            msg_text = msgfile.read()
+            payload = msgfile.read()
+    elif args.message:
+        payload = args.message
     else:
-        msg_text = args.message
+        payload = None
 
     mail_msg = email.message.Message()
     if args.message_file:
         if args.message_file.endswith('html'):
             mail_msg.add_header('Content-Type', 'text/html')
 
-    built_msg = build_message(mail_msg, fromaddr=args.fromaddr,
-                              toaddrs=args.toaddrs,
-                              subject=args.subject,
-                              payload=msg_text)
+    mail_msg['From'] = '"%s"' % fromaddr
 
-    if args.verbosity > 2:
-        print('Assembled Message:\n%s' % built_msg.as_string())
+    mail_msg['To'] = ', '.join(args.toaddrs)
 
-    send_msg(built_msg, args.verbosity)
+    #if args.CC:
+    #    mail_msg['CC'] = args.CC
+    if args.subject:
+        mail_msg['Subject'] = args.subject
+    if payload:
+        mail_msg.set_payload(payload)
+
+    # built_msg = build_message(mail_msg, fromaddr=args.fromaddr,
+                              # toaddrs=args.toaddrs,
+                              # subject=args.subject,
+                              # payload=msg_text)
+
+    if args.verbosity > 1:
+        print('Assembled Message:\n%s' % mail_msg.as_string())
+
+    send_msg(mail_msg, args.toaddrs, fromaddr, args.verbosity)
