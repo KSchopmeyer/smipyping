@@ -132,8 +132,12 @@ The following defines the help output for the `smicli cimping all --help` subcom
       Executes the ping on all enabledtargets in the targets table of the
       database.
 
-      Creates a table of results and optionally logs status of each in the Pings
-      table (saveresult option)
+      Creates a table of results and optionally logs status of each target in
+      the Pings table (--saveresult option).
+
+      This subcommand also compares the results with previous results in the
+      pings table and marks any targets that have changed with an asterik ("*")
+      as a flag.
 
       ex. smicli cimping all
 
@@ -738,9 +742,7 @@ The following defines the help output for the `smicli history stats --help` subc
       Get stats on pings in database.
 
       This subcommand only shows the count of records and the oldest and newest
-      record in the pings database
-
-      TODO we need to grow this output to more statistical information
+      record in the pings database, and the number of pings by program.
 
     Options:
       -h, --help  Show this message and exit.

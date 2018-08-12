@@ -223,6 +223,7 @@ class MySQLPingsTable(SQLPingsTable):
     # big and primary functions are to append and select particular
     # entries
 
+    # TODO - I do not believe we use this method
     def get_last_ping_id(self):
         """
         Get the id of the last inserted record
@@ -231,6 +232,30 @@ class MySQLPingsTable(SQLPingsTable):
         cursor = self.connection.cursor()
         last_ping_id = cursor.lastrowid
         return last_ping_id
+
+    def get_last_timestamped(self):
+        """
+            Get the set of records with the last timestamp for all
+            targets
+        """
+        last_ping = self.get_newest_ping()
+        print('LAST_PING %r' % (last_ping, ))
+        last_timestamp = last_ping[2]
+
+        cursor = self.connection.cursor()
+        try:
+            # MySQL fails on Timestamp = %s but works with the BETWEEK
+            # syntax/
+            cursor.execute('SELECT * '
+                           'FROM Pings WHERE Timestamp  BETWEEN %s AND %s',
+                           (last_timestamp, last_timestamp))
+
+            rows = cursor.fetchall()
+            return rows
+        except Exception as ex:
+            print('get_last_timestamped failed %s' % ex)
+        finally:
+            self.close_connection()
 
     def record_count(self):
         """
@@ -430,15 +455,22 @@ class MySQLPingsTable(SQLPingsTable):
 
         try:
             if target_id is None:
-                cursor.execute('COUNT(*)  '
+                cursor.execute('SELECT COUNT(*)  '
                                'FROM Pings '
                                'WHERE Timestamp BETWEEN %s AND %s',
                                (start_date, end_date))
             else:
-                cursor.execute('COUNT(*) '
-                               'FROM Pings WHERE TargetID = %s AND '
+                cursor.execute('SELECT COUNT(*) '
+                               'FROM Pings '
+                               'WHERE TargetID = %s AND '
                                'Timestamp BETWEEN %s AND %s',
                                (target_id, start_date, end_date))
+
+            result = cursor.fetchone()
+            return result[0]
+
+        except Exception as ex:
+            print('COUNT_BY_DATERANGE exception %s' % ex)
         finally:
             cursor.close()
 

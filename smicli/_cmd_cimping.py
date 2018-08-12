@@ -23,7 +23,8 @@ import datetime
 import click
 
 from smipyping import PingsTable
-from smipyping import SimplePing, SimplePingList, fold_cell
+from smipyping import SimplePing, SimplePingList, fold_cell, get_url_str, \
+    datetime_display_str
 from smipyping.config import DEFAULT_NAMESPACE, DEFAULT_OPERATION_TIMEOUT, \
     DEFAULT_USERNAME, DEFAULT_PASSWORD
 from smipyping._logging import AUDIT_LOGGER_NAME, get_logger
@@ -218,8 +219,12 @@ def cimping_all(context, **options):  # pylint: disable=redefined-builtin
     Executes the ping on all enabledtargets in the targets table of the
     database.
 
-    Creates a table of results and optionally logs status of each in the
-    Pings table (saveresult option)
+    Creates a table of results and optionally logs status of each target in the
+    Pings table (--saveresult option).
+
+    This subcommand also compares the results with previous results in the
+    pings table and marks any targets that have changed with an asterik ("*")
+    as a flag.
 
     ex. smicli cimping all
     """
@@ -285,19 +290,27 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
                                       include_disabled=include_disabled)
     results = simple_ping_list.ping_servers()
 
+    # get last pings information from history
+    pings_tbl = PingsTable.factory(context.db_info, context.db_type,
+                                   context.verbose)
+
+    ping_rows = pings_tbl.get_last_timestamped()
+    last_status = {ping[1]: ping[3] for ping in ping_rows}
+    last_status_time = ping_rows[0][2]
+
     # if saveresult set, update pings table with results.
     save_result = options['saveresult']
+    # all records  have same timestamp
+    timestamp = datetime.datetime.now()
     if save_result:
         tbl_inst = PingsTable.factory(context.db_info, context.db_type,
                                       context.verbose)
         # if option set, append status to pings table
         # TODO figure out why click prepends the s__ for this
-        timestamp = datetime.datetime.now()
         for result in results:
-            print('ping data %s %s %s' % (result[0], result[1], timestamp))
             tbl_inst.append(result[0], result[1], timestamp)
         audit_logger = get_logger(AUDIT_LOGGER_NAME)
-        audit_logger.info('cimping update pings table timestamp %s add %s '
+        audit_logger.info('cimping updated pings table timestamp %s add %s '
                           'records', timestamp, len(results))
 
     # print results of the scan.
@@ -309,12 +322,28 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
         target = context.targets_tbl[target_id]
         test_result = result[1]
 
-        addr = '%s://%s' % (target['Protocol'], target['IPAddress'])
+        addr = get_url_str(target['Protocol'], target['IPAddress'],
+                           target['Port'])
         exception = '%s' % test_result.exception
 
+        test_status = "%s %s" % (test_result.type, exception) \
+            if test_result.exception else test_result.type
+
+        changed = "" if test_status == last_status[target_id] else "*"
+
+        if changed:
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+            audit_logger.info('cimping Status change target %s from %s to %s',
+                              target_id, last_status[target_id], test_status)
+
+            if context.verbose:
+                print('Changed %r LAST_STATUS %r' % (last_status[target_id],
+                                                     test_status))
+
+        itemresult = '%s%s' % (test_result.type, changed)
         rows.append([target_id,
                      addr,
-                     ('%s:%s' % (test_result.type, test_result.code)),
+                     itemresult,
                      fold_cell(exception, 12),
                      test_result.execution_time,
                      fold_cell(target['CompanyName'], 12),
@@ -327,8 +356,11 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
     context.spinner.stop()
 
     disabled_state = ': Includes Disabled' if include_disabled else ''
-    save_result_state = ': SaveResult' if save_result else ''
-    title = 'CIMPing Results%s%s:' % (disabled_state, save_result_state)
+    save_result_state = ': SavedResult' if save_result else ''
+    title = 'CIMPing all Results: %s%s %s (* status change since %s)' % \
+            (disabled_state, save_result_state,
+             datetime_display_str(timestamp),
+             datetime_display_str(last_status_time))
     print_table(rows, headers, title=title,
                 table_format=context.output_format)
 

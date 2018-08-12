@@ -308,9 +308,9 @@ class TestVersionsClass(object):
 
         if exp_exc_type:
             with pytest.raises(exp_exc_type):
-                v = StrList(ver_in, chars=re)
+                v = StrList(ver_in, match=re)
         else:
-            v = StrList(ver_in, re)
+            v = StrList(ver_in, match=re)
             assert sorted(v.items) == sorted(exp_repr)
             assert str(v) == exp_str
 

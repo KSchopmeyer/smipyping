@@ -107,6 +107,7 @@ class Explorer(object):
 
     @logged_api_call
     def explore_non_threaded(self, target_list):
+        """Explore a the list of targets without using threading"""
 
         servers = []
         # #### TODO move this all back to IDs and stop mapping host to id.
@@ -264,20 +265,20 @@ class Explorer(object):
                                         cmd_time)
             traceback.format_exc()
 
-        except Error as er:
-            cmd_time = time.time() - start_time
-            self.logger.error('PyWBEM Error exception:%s %s time %.2f s',
-                              er, log_info, cmd_time)
-            err = 'PyWBMEr'
-            svr_tuple = ServerInfoTuple(url, server, target_id, err,
-                                        cmd_time)
-            traceback.format_exc()
-
         except AuthError as ae:
             cmd_time = time.time() - start_time
             self.logger.error('PyWBEM AuthEr exception:%s %s time %.2f s',
                               ae, log_info, cmd_time)
             err = 'AuthErr'
+            svr_tuple = ServerInfoTuple(url, server, target_id, err,
+                                        cmd_time)
+            traceback.format_exc()
+
+        except Error as er:
+            cmd_time = time.time() - start_time
+            self.logger.error('PyWBEM Error exception:%s %s time %.2f s',
+                              er, log_info, cmd_time)
+            err = 'PyWBMEr'
             svr_tuple = ServerInfoTuple(url, server, target_id, err,
                                         cmd_time)
             traceback.format_exc()
@@ -310,6 +311,10 @@ class Explorer(object):
         return result
 
     def explore_server_profiles(self, server, args, short_explore=True):
+        """
+        Explore the registered profiles and generate an output table of
+        the profiles for the defined server.
+        """
 
         def print_profile_info(org_vm, inst):
             """
@@ -334,9 +339,9 @@ class Explorer(object):
                 registered_org='DMTF',
                 registered_name='Indications')
         except TypeError as te:
-            SMIPYPING_LOG.error('get_selected_profile failed for url %s '
-                                ' with TypeError %s traceback %s' %
-                                (server.conn.url), te, exc_info=True)
+            SMIPYPING_LOG.error('Get_selected_profile failed for url %s, '
+                                'Exception %s, traceback=',
+                                server.conn.url, te, exc_info=True)
             raise TypeError('Profile acquisition failed looking for profiless'
                             'org=DMTF, Name=Indications in url %s' %
                             server.conn.url)
@@ -364,7 +369,7 @@ class Explorer(object):
                     inst.path,
                     "CIM_IndicationService", "CIM_System",
                     ["CIM_HostedService"])
-            except Exception as exc:
+            except Exception as exc:  # pylint: disable=broad-except
                 self.logger.error("Error: Central Instances%s", str(exc))
                 ci_paths = []
             for ip in ci_paths:
@@ -380,7 +385,7 @@ class Explorer(object):
 
             try:
                 ci_paths = server.get_central_instances(inst.path)
-            except Exception as exc:
+            except Exception as exc:  # pylint: disable=broad-except
                 print("Exception: %s" % str(exc))
                 ci_paths = []
             for ip in ci_paths:

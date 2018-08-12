@@ -18,8 +18,8 @@ data file.
 """
 from __future__ import print_function, absolute_import
 
-import click
 from collections import defaultdict
+import click
 
 from .smicli import cli, CMD_OPTS_TXT
 from ._click_common import print_table, validate_prompt, get_target_id, \

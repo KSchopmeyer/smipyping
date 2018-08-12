@@ -18,8 +18,8 @@ targets to find WBEM servers.
 """
 from __future__ import print_function, absolute_import
 
-import click
 from datetime import timedelta
+import click
 from click_datetime import Datetime
 from dateutil.relativedelta import relativedelta
 import six
@@ -87,11 +87,12 @@ def programs_list(context):  # pylint: disable=redefined-builtin
 
 
 @programs_group.command('delete', options_metavar=CMD_OPTS_TXT)
-@click.argument('ID', type=int, metavar='ProgramID', required=True, nargs=1)
+@click.argument('ProgramID', type=int, metavar='ProgramID', required=True,
+                nargs=1)
 @click.option('-n', '--no-verify', is_flag=True,
               help='Do not verify the deletion before deleting the program.')
 @click.pass_obj
-def programs_delete(context, id, **options):
+def programs_delete(context, programid, **options):
     # pylint: disable=redefined-builtin
     """
     Delete a program from the database.
@@ -99,7 +100,8 @@ def programs_delete(context, id, **options):
     Delete the program defined by the subcommand argument from the
     database.
     """
-    context.execute_cmd(lambda: cmd_programs_delete(context, id, options))
+    context.execute_cmd(lambda: cmd_programs_delete(context, programid,
+                                                    options))
 
 
 @programs_group.command('current', options_metavar=CMD_OPTS_TXT)
@@ -182,7 +184,7 @@ def cmd_programs_new(context, options):
     if validate_prompt('Validate adding this program?'):
         try:
             programs_tbl.insert(program_name, start_date, end_date)
-        except Exception as ex:
+        except Exception as ex:  # pylint: disable=broad-except
             click.ClickException('Insert of program=%s, start=%s, '
                                  'end=%s into database failed. Exception %s' %
                                  (program_name, start_date, end_date, ex))
@@ -191,26 +193,25 @@ def cmd_programs_new(context, options):
         return
 
 
-def cmd_programs_delete(context, id, options):
+def cmd_programs_delete(context, programid, options):
     """Delete a user from the programs database."""
 
     programs_tbl = ProgramsTable.factory(context.db_info, context.db_type,
                                          context.verbose)
-    program_id = id
 
-    if program_id in programs_tbl:
+    if programid in programs_tbl:
         if 'no_verify' in options:
-            programs_tbl.delete(program_id)
+            programs_tbl.delete(programid)
         else:
-            program = programs_tbl[program_id]
+            program = programs_tbl[programid]
             context.spinner.stop()
             click.echo(program)
-            if validate_prompt('Delete program id %s' % program_id):
-                programs_tbl.delete(program_id)
+            if validate_prompt('Delete program id %s' % programid):
+                programs_tbl.delete(programid)
             else:
                 click.echo('Operation aborted by user')
                 return
 
     else:
         raise click.ClickException('The ProgramID %s is not in the table' %
-                                   program_id)
+                                   programid)

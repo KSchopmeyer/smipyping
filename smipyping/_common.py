@@ -26,7 +26,31 @@ from textwrap import wrap
 import six
 
 __all__ = ['get_list_index', 'build_table_struct', 'filter_stringlist',
-           'compute_startend_dates', 'fold_cell']
+           'compute_startend_dates', 'fold_cell', 'get_url_str',
+           'datetime_display_str']
+
+
+def datetime_display_str(date_time):
+    """Common function to create string for datetime for display. This creates
+       a single point where date time is formatted for display
+    """
+    return date_time.strftime("%Y-%m-%d %H:%M:%S")
+
+
+def get_url_str(scheme, name, port):
+    """
+    Create displayable output for url based on scheme, name, an ports based
+    on knowledge that this is WBEM.  If the ports are the standard ports
+    the port component is ignored
+    """
+    if isinstance(port, six.string_types):
+        port = int(port)
+    if (scheme == 'https' and port == 5989) or \
+       (scheme == 'http' and port == 5988):
+        url = '%s://%s' % (scheme, name)
+    else:
+        url = '%s://%s:%s' % (scheme, name, port)
+    return url
 
 
 def fold_cell(cell_string, max_cell_width):
