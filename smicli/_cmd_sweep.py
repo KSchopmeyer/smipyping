@@ -19,8 +19,8 @@ servers.
 """
 from __future__ import print_function, absolute_import
 
-import click
 import time
+import click
 
 from smipyping import ServerSweep,\
     DEFAULT_SWEEP_PORT, SCAN_TYPES

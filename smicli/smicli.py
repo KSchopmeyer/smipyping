@@ -24,22 +24,20 @@ import os
 import sys
 import logging
 from logging import StreamHandler, NullHandler
-
+from logging.handlers import SysLogHandler
+import platform
 import click_repl
 import click
 
 from prompt_toolkit.history import FileHistory
 
 import smipyping
-from logging.handlers import SysLogHandler
-import platform
-
-from ._click_context import ClickContext
-
-from ._click_common import SMICLI_PROMPT, SMICLI_HISTORY_FILE
-from ._click_configfile import CONTEXT_SETTINGS
 
 from smipyping._logging import AUDIT_LOGGER_NAME, ERROR_LOGGER_NAME
+
+from ._click_context import ClickContext
+from ._click_common import SMICLI_PROMPT, SMICLI_HISTORY_FILE
+from ._click_configfile import CONTEXT_SETTINGS
 from ._click_common import DEFAULT_OUTPUT_FORMAT, set_input_variable
 from ._tableoutput import TABLE_FORMATS
 
@@ -304,6 +302,8 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
             try:
                 handler = SysLogHandler(address=address, facility=facility)
             except Exception as exc:
+                click.echo("Exception in creating SysLogHandler, ignored. %s"
+                           % exc)
                 continue
             break
         else:
@@ -344,21 +344,21 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
         try:
             log_component, log_level = log_spec.split('=', 1)
         except ValueError:
-            raise click.click_exception("Missing '=' in COMP=LEVEL "
-                                        "specification in "
-                                        "--log option: {ls}".
-                                        format(ls=log_spec))
+            raise click.ClickException("Missing '=' in COMP=LEVEL "
+                                       "specification in "
+                                       "--log option: {ls}".
+                                       format(ls=log_spec))
 
         level = getattr(logging, log_level.upper(), None)
         if level is None:
-            raise click.click_exception("Invalid log level in COMP=LEVEL "
-                                        "specification in --log option: "
-                                        "{ls}".format(ls=log_spec))
+            raise click.ClickException("Invalid log level in COMP=LEVEL "
+                                       "specification in --log option: "
+                                       "{ls}".format(ls=log_spec))
 
         if log_component not in LOG_COMPONENTS:
-            raise click.click_exception("Invalid log component in COMP=LEVEL "
-                                        "specification in --log option: {ls}".
-                                        format(ls=log_spec))
+            raise click.ClickException("Invalid log component in COMP=LEVEL "
+                                       "specification in --log option: {ls}".
+                                       format(ls=log_spec))
 
         if handler:
             setup_logger(log_component, handler, level)

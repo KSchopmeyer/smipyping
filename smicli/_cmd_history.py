@@ -22,8 +22,8 @@ import datetime
 import click
 from click_datetime import Datetime
 import six
-
-from smipyping import SimplePingList, PingsTable, ProgramsTable, UsersTable
+from smipyping import SimplePingList, PingsTable, ProgramsTable, UsersTable, \
+    datetime_display_str, compute_startend_dates
 from smipyping._common import get_list_index, fold_cell
 from smipyping._logging import AUDIT_LOGGER_NAME, get_logger
 
@@ -145,10 +145,8 @@ def history_stats(context, **options):  # pylint: disable=redefined-builtin
     Get stats on pings in database.
 
     This subcommand only shows the count of records and the oldest and
-    newest record in the pings database
-
-    TODO we need to grow this output to more statistical information
-
+    newest record in the pings database, and the number of pings by
+    program.
     """
     context.execute_cmd(lambda: cmd_history_stats(context, options))
 
@@ -333,10 +331,10 @@ def cmd_history_weekly(context, options):
             emails = "\n".join(email_list) if email_list else 'unassigned'
         else:
             company = "No target"
-            ip = ''
-            product = ''
-            smi_version = ''
-            emails = ''
+            ip = u''
+            product = u''
+            smi_version = u''
+            emails = u''
 
         if target_id in percentok_today:
             today_percent = "%s" % percentok_today[target_id][0]
@@ -361,7 +359,7 @@ def cmd_history_weekly(context, options):
                 title=('Server Status: Report-date=%s '
                        'program=%s start: %s end: '
                        '%s' %
-                       (report_date,
+                       (datetime_display_str(report_date),
                         cp['ProgramName'],
                         cp['StartDate'],
                         cp['EndDate'])),
@@ -439,13 +437,32 @@ def cmd_history_stats(context, options):
     """
     tbl_inst = PingsTable.factory(context.db_info, context.db_type,
                                   context.verbose)
+    rows = []
+
     count = tbl_inst.record_count()
     oldest = tbl_inst.get_oldest_ping()
     newest = tbl_inst.get_newest_ping()
     context.spinner.stop()
-    click.echo('Total=%s records\noldest: %s\nnewest: %s' %
-               (count, oldest, newest))
-    # TODO add by pgm, etc. options
+    title = "General Information on History (Pings table))"
+    headers = ['Attribute', 'Value']
+    rows.append(['Total Records', count])
+    rows.append(['Oldest', oldest[2]])
+    rows.append(['latest', newest[2]])
+
+    programs_tbl = ProgramsTable.factory(context.db_info, context.db_type,
+                                         context.verbose)
+
+    for key in programs_tbl:
+        program = programs_tbl[key]
+        start = program['StartDate']
+        end = program['EndDate']
+
+        pings = tbl_inst.count_by_daterange(start, end)
+        rows.append([program['ProgramName'], pings])
+
+    print_table(rows, headers,
+                title=title,
+                table_format=context.output_format)
 
 
 def cmd_history_create(context, options):
@@ -507,8 +524,8 @@ def get_target_info(context, target_id, ping_record):
         ip = target.get('IPAddress', 'empty')
     else:
         audit_logger = get_logger(AUDIT_LOGGER_NAME)
-        audit_logger.info('Pings Table invalid TargetID %s ping_record %r' %
-                          (target_id, ping_record))
+        audit_logger.info('Pings Table invalid TargetID %s ping_record %r',
+                          target_id, ping_record)
         company = "No target"
         ip = ''
         product = ''
@@ -674,7 +691,7 @@ def cmd_history_timeline(context, ids, options):
                 tbl_rows.append(tbl_row)
 
     context.spinner.stop()
-    start_date, end_date = pings_tbl.compute_dates(
+    start_date, end_date = compute_startend_dates(
         options['startdate'], options['enddate'],
         options['numberofdays'])
 

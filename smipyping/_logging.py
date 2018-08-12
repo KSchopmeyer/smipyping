@@ -28,6 +28,7 @@ import inspect
 try:
     from decorator import decorate  # decorate >= 4.0
 except ImportError:
+    # pylint: disable=import-error
     from decorator import decorator  # decorate < 4.0
 
 # from ._constants import API_LOGGER_NAME
@@ -270,5 +271,5 @@ def logged_api_call(func):
 
     if 'decorate' in globals():
         return decorate(func, log_api_call)
-    else:
-        return decorator(log_api_call, func)
+
+    return decorator(log_api_call, func)
