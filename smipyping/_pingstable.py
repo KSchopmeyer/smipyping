@@ -24,8 +24,9 @@ import datetime
 import csv
 import os
 import six
-from mysql.connector import MySQLConnection, Error
+from mysql.connector import Error
 from ._dbtablebase import DBTableBase
+from ._mysqldbmixin import MySQLDBMixin
 from ._common import compute_startend_dates
 
 __all__ = ['PingsTable']
@@ -128,7 +129,7 @@ class CsvPingsTable(PingsTable):
 
         self.data_dict = result
 
-    def get_last_ping_id(self):
+    def get_last_ping_id(self):  # pylint: disable=no-self-use
         """Get the newest ping by timestamp"""
         with open(file, "rb") as f:
             f.readline()               # Read the first line.
@@ -189,7 +190,7 @@ class SQLPingsTable(PingsTable):
         return rows
 
 
-class MySQLPingsTable(SQLPingsTable):
+class MySQLPingsTable(SQLPingsTable, MySQLDBMixin):
     """
     Specialization for mysql databases. Specializes connection, etc for
     these databases.
@@ -198,26 +199,7 @@ class MySQLPingsTable(SQLPingsTable):
         """Read the input file into a dictionary."""
         super(MySQLPingsTable, self).__init__(db_dict, dbtype, verbose)
 
-        try:
-            connection = MySQLConnection(host=db_dict['host'],
-                                         database=db_dict['database'],
-                                         user=db_dict['user'],
-                                         password=db_dict['password'])
-
-            if connection.is_connected():
-                self.connection = connection
-                if verbose:
-                    print('sql db connection established. host %s, db %s' %
-                          (db_dict['host'], db_dict['database']))
-            else:
-                print('SQL database connection failed. host %s, db %s' %
-                      (db_dict['host'], db_dict['database']))
-                raise ValueError('Connection to database failed')
-            self.connection = connection
-        except Error as ex:
-            raise ValueError('Could not connect to sql database %r. '
-                             ' Exception: %r'
-                             % (db_dict, ex))
+        self.connectdb(db_dict, verbose)
 
     # This does not preload the pings table because it is probably too
     # big and primary functions are to append and select particular
@@ -254,6 +236,7 @@ class MySQLPingsTable(SQLPingsTable):
             return rows
         except Exception as ex:
             print('get_last_timestamped failed %s' % ex)
+            raise ex
         finally:
             self.close_connection()
 
@@ -471,6 +454,7 @@ class MySQLPingsTable(SQLPingsTable):
 
         except Exception as ex:
             print('COUNT_BY_DATERANGE exception %s' % ex)
+            raise ex
         finally:
             cursor.close()
 

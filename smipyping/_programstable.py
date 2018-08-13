@@ -28,8 +28,8 @@ from __future__ import print_function, absolute_import
 import os
 import csv
 import datetime
-from mysql.connector import MySQLConnection
 from ._dbtablebase import DBTableBase
+from ._mysqldbmixin import MySQLDBMixin
 
 __all__ = ['ProgramsTable']
 
@@ -61,6 +61,7 @@ class ProgramsTable(DBTableBase):
         if db_type == 'csv':
             inst = CsvProgramsTable(db_dict, db_type, verbose)
         elif db_type == 'mysql':
+            # pylint: disable=redefined-variable-type
             inst = MySQLProgramsTable(db_dict, db_type, verbose)
         else:
             ValueError('Invalid programs table factory db_type %s' % db_type)
@@ -194,56 +195,15 @@ class SQLProgramsTable(ProgramsTable):
         return self.db_dict
 
 
-class MySQLProgramsTable(ProgramsTable):
+class MySQLProgramsTable(ProgramsTable, MySQLDBMixin):
     """ Class representing the connection with a mysql database"""
     def __init__(self, db_dict, dbtype, verbose):
         """Read the input file into a dictionary."""
         super(MySQLProgramsTable, self).__init__(db_dict, dbtype, verbose)
 
-        try:
-            connection = MySQLConnection(host=db_dict['host'],
-                                         database=db_dict['database'],
-                                         user=db_dict['user'],
-                                         password=db_dict['password'])
+        self.connectdb(db_dict, verbose)
 
-            if connection.is_connected():
-                self.connection = connection
-                if verbose:
-                    print('sql db connection established. host %s, db %s' %
-                          (db_dict['host'], db_dict['database']))
-            else:
-                print('SQL database connection failed. host %s, db %s' %
-                      (db_dict['host'], db_dict['database']))
-                raise ValueError('Connection to database failed')
-            self.connection = connection
-        except Exception as ex:
-            raise ValueError('Could not connect to sql database %r. '
-                             ' Exception: %r'
-                             % (db_dict, ex))
-
-        self._load()
-
-    def _load(self):
-        """
-        Load the internal dictionary from the database.
-        """
-        try:
-            # python-mysql-connector-dictcursor  # noqa: E501
-            cursor = self.connection.cursor(dictionary=True)
-
-            # fetchall returns tuple so need index to fields, not names
-            fields = ', '.join(self.fields)
-            sql = 'SELECT %s FROM %s' % (fields, self.table_name)
-            cursor.execute(sql)
-            rows = cursor.fetchall()
-            for row in rows:
-                key = row[self.key_field]
-                self.data_dict[key] = row
-
-        except Exception as ex:
-            raise ValueError('Error: setup sql based targets table %r. '
-                             'Exception: %r'
-                             % (self.db_dict, ex))
+        self._load_table()
 
     def insert(self, program_name, start_date, end_date):
         """
@@ -268,7 +228,7 @@ class MySQLProgramsTable(ProgramsTable):
             self.connection.rollback()
             raise ex
         finally:
-            self._load()
+            self._load_table()
             self.connection.close()
 
     def delete(self, program_id):
@@ -288,5 +248,5 @@ class MySQLProgramsTable(ProgramsTable):
             self.connection.rollback()
             raise ex
         finally:
-            self._load()
+            self._load_table()
             self.connection.close()

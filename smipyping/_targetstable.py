@@ -406,12 +406,11 @@ class MySQLTargetsTable(SQLTargetsTable):
     # TODO filename is config file name, not actual file name.
     def __init__(self, db_dict, dbtype, verbose, output_format):
         """Read the input file into a dictionary."""
-        if verbose:
-            print('MySQL Database type %s  verbose=%s' % (db_dict, verbose))
         super(MySQLTargetsTable, self).__init__(db_dict, dbtype, verbose,
                                                 output_format)
 
         self.connectdb(db_dict, verbose)
+        self._load()
 
     def connectdb(self, db_dict, verbose):
         """Connect the db"""
@@ -443,9 +442,7 @@ class MySQLTargetsTable(SQLTargetsTable):
         """
         try:
             cursor = self.connection.cursor(dictionary=True)
-            # python-mysql-connector-dictcursor  # noqa: E501
 
-            # fetchall returns tuple so need index to fields, not names
             fields = ', '.join(self.fields)
             sql = 'SELECT %s FROM %s' % (fields, self.table_name)
             cursor.execute(sql)
@@ -463,7 +460,6 @@ class MySQLTargetsTable(SQLTargetsTable):
         # TODO we should not be doing this in this manner but with a
         # join.
         try:
-            # python-mysql-connector-dictcursor  # noqa: E501
             cursor = self.connection.cursor(dictionary=True)
 
             # get the companies table
