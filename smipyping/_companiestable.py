@@ -18,18 +18,15 @@ Define the Companies table and provide for import from multiple bases.
 
   `CompanyID` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `CompanyName` varchar(30) NOT NULL,
-
-
-
 """
 
 from __future__ import print_function, absolute_import
 
 import os
 import csv
-from mysql.connector import MySQLConnection
 from ._dbtablebase import DBTableBase
 from ._logging import get_logger, AUDIT_LOGGER_NAME
+from ._mysqldbmixin import MySQLDBMixin
 
 __all__ = ['CompaniesTable']
 
@@ -69,6 +66,7 @@ class CompaniesTable(DBTableBase):
         if db_type == 'csv':
             inst = CsvCompaniesTable(db_dict, db_type, verbose)
         elif db_type == 'mysql':
+            # pylint: disable=redefined-variable-type
             inst = MySQLCompaniesTable(db_dict, db_type, verbose)
         else:
             ValueError('Invalid companiestable factory db_type %s' % db_type)
@@ -155,59 +153,16 @@ class SQLCompaniesTable(CompaniesTable):
         return self.db_dict
 
 
-class MySQLCompaniesTable(CompaniesTable):
+class MySQLCompaniesTable(CompaniesTable, MySQLDBMixin):
     """ Class representing the connection with a mysql database"""
     def __init__(self, db_dict, dbtype, verbose):
         """Read the input file into a dictionary."""
 
         super(MySQLCompaniesTable, self).__init__(db_dict, dbtype, verbose)
 
-        try:
-            connection = MySQLConnection(host=db_dict['host'],
-                                         database=db_dict['database'],
-                                         user=db_dict['user'],
-                                         password=db_dict['password'])
+        self.connectdb(db_dict, verbose)
 
-            if connection.is_connected():
-                self.connection = connection
-                if self.verbose:
-                    print('sql db connection established. host %s, db %s' %
-                          (db_dict['host'], db_dict['database']))
-            else:
-                if self.verbose:
-                    print('SQL database connection failed. host %s, db %s' %
-                          (db_dict['host'], db_dict['database']))
-                raise ValueError('Connection to host %s database %s failed.' %
-                                 (db_dict['host'], db_dict['database']))
-            self.connection = connection
-        except Exception as ex:
-            raise ValueError('Could not connect to sql database %r. '
-                             ' Exception: %r'
-                             % (db_dict, ex))
-
-        self._load()
-
-    def _load(self):
-        """
-        Load the internal dictionary from the database.
-        """
-        try:
-            # python-mysql-connector-dictcursor  # noqa: E501
-            cursor = self.connection.cursor(dictionary=True)
-
-            # fetchall returns tuple so need index to fields, not names
-            fields = ', '.join(self.fields)
-            sql = 'SELECT %s FROM %s' % (fields, self.table_name)
-            cursor.execute(sql)
-            rows = cursor.fetchall()
-            for row in rows:
-                key = row[self.key_field]
-                self.data_dict[key] = row
-
-        except Exception as ex:
-            raise ValueError('Error: setup sql based targets table %r. '
-                             'Exception: %r'
-                             % (self.db_dict, ex))
+        self._load_table()
 
     def append(self, company_name):
         """
@@ -242,7 +197,7 @@ class MySQLCompaniesTable(CompaniesTable):
             self.connection.rollback()
             raise ex
         finally:
-            self._load()
+            self._load_table()
             self.connection.close()
 
     def delete(self, company_id):
@@ -270,7 +225,7 @@ class MySQLCompaniesTable(CompaniesTable):
             self.connection.rollback()
             raise ex
         finally:
-            self._load()
+            self._load_table()
             self.connection.close()
 
     def update_fields(self, companyid, changes):
@@ -317,5 +272,5 @@ class MySQLCompaniesTable(CompaniesTable):
             self.connection.rollback()
             raise ex
         finally:
-            self._load()
+            self._load_table()
             cursor.close()

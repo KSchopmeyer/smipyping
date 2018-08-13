@@ -296,6 +296,7 @@ The following defines the help output for the `smicli cimping ids --help` subcom
       -t, --timeout INTEGER  Timeout in sec for the operation. (Default: 10).
       --no-ping              Disable network ping of the wbem server before
                              executing the cim request. (Default: True).
+      -i, --interactive      If set, presents list of targets to chose.
       -d, --debug            Set the debug parameter for the pywbem call. Displays
                              detailed information on the call and response.
                              (Default: False).
@@ -523,6 +524,8 @@ The following defines the help output for the `smicli explorer all --help` subco
                                  Default: ping
       --thread / --no-thread     Run test multithreaded.  Much faster. Default:
                                  thread
+      -i, --include-disabled     Include hosts marked disabled in the targets
+                                 table.
       -r, --report [full|brief]  Generate full or brief (fewer columns) report
       -h, --help                 Show this message and exit.
 
@@ -546,15 +549,15 @@ The following defines the help output for the `smicli explorer ids --help` subco
       Execute the explorer on the providers defined by id.  Multiple ids may be
       supplied (ex. id 5 6 7)
 
-      ex: smicli explorer 6 7 8
-
-      TODO expand this to allow interactive ID input
+      ex: smicli explorer ids 6 7 8
 
     Options:
       --ping / --no-ping         Ping the the provider as initial step in test.
                                  Default: ping
       --thread / --no-thread     Run test multithreaded.  Much faster. Default:
                                  thread
+      -i, --interactive          If set, presents list of targets to chose.
+                                 Entering "?"for id is equivalent
       -r, --report [full|brief]  Generate full or brief (fewer columns) report
       -h, --help                 Show this message and exit.
 
@@ -1034,10 +1037,15 @@ The following defines the help output for the `smicli programs delete --help` su
       Delete a program from the database.
 
       Delete the program defined by the subcommand argument from the database.
+      The program to delete can be input directly, or selected from a list of
+      programs by entering the character "?" as program ID or including the
+      --interactive option.
 
     Options:
-      -n, --no-verify  Do not verify the deletion before deleting the program.
-      -h, --help       Show this message and exit.
+      -n, --no-verify    Do not verify the deletion before deleting the program.
+      -i, --interactive  If set, presents list of programs from which one can be
+                         chosen.
+      -h, --help         Show this message and exit.
 
 
 .. _`smicli programs list --help`:

@@ -29,7 +29,7 @@ from ._tableoutput import HtmlTable
 __all__ = ['DEFAULT_CONFIG_FILE', 'SMICLI_PROMPT', 'SMICLI_HISTORY_FILE',
            'DEFAULT_SMICLI_CONFIG_FILES', 'pick_from_list',
            'pick_multiple_from_list', 'print_table',
-           'get_target_id']
+           'get_target_id', 'get_multiple_target_ids']
 
 USE_TABULATE = False
 #: Default configuration file for smipyping cli
@@ -140,8 +140,8 @@ def pick_multiple_from_list(context, options, title):
 
     Exception: Returns ValueError if Ctrl-c input from console.
 
-    TODO: This could be replaced by the python pick library that would use
-    curses for the selection process.
+    TODO: FUTURE This could be replaced by the python pick library that would
+    use curses for the selection process.
     """
     context.spinner.stop()
     print(title)
@@ -154,7 +154,8 @@ def pick_multiple_from_list(context, options, title):
         selection_txt = None
         try:
             response = local_prompt(
-                u'Select multiple entries by index or Enter to abort >')
+                u'Select multiple entries by index (index< index> or Enter to '
+                u'abort >')
             if not response:
                 return None
             selections = response.split()
@@ -162,7 +163,6 @@ def pick_multiple_from_list(context, options, title):
                 if selection_txt.isdigit():
                     selection = int(selection_txt)
                     if selection >= 0 and selection <= index:
-                        print('selection %s' % selection)
                         selection_list.append(selection)
                     else:
                         raise ValueError('Invalid input %s' % selection_txt)
@@ -190,9 +190,10 @@ def pick_target_id(context):
     display_options = []
 
     for t in targets_list:
-        display_options.append(u'    id=%s %s %s' %
-                               (t, context.targets_tbl[t]['IPAddress'],
-                                context.targets_tbl[t]['CompanyName']))
+        display_options.append(u'    id=%s %s company=%s, product=%s' %
+                               (t, context.targets_tbl.get_url_str(t),
+                                context.targets_tbl[t]['CompanyName'],
+                                context.targets_tbl[t]['Product']))
     try:
         index = pick_from_list(context, display_options, "Pick TargetID:")
     except ValueError:
@@ -250,13 +251,7 @@ def get_target_id(context, targetid, options=None, allow_none=False):
         context.spinner.stop()
         targetid = pick_target_id(context)
     elif isinstance(targetid, six.integer_types):
-        try:
-            context.targets_tbl.get_target(targetid)
-            context.spinner.start()
-            return targetid
-        except KeyError as ke:
-            raise click.ClickException("Target ID %s  not valid: exception %s" %
-                                       (targetid, ke))
+        pass
     elif isinstance(targetid, six.string_types):
         if targetid == "?":
             context.spinner.stop()
@@ -267,21 +262,135 @@ def get_target_id(context, targetid, options=None, allow_none=False):
             except ValueError:
                 raise click.ClickException('TargetID must be integer or "?" '
                                            'not %s' % targetid)
-            try:
-                context.targets_tbl.get_target(targetid)
-                context.spinner.start()
-                return targetid
-            except KeyError as ke:
-                raise click.ClickException("TargetID %s  not found in Targets "
-                                           "table: exception %s" %
-                                           (targetid, ke))
     else:
         raise click.ClickException("TargetID %s could not process" % targetid)
 
     if targetid is None:
         click.echo("Operation aborted by user.")
+
+    try:
+        context.targets_tbl.get_target(targetid)
+    except KeyError as ke:
+        raise click.ClickException('Target ID %s  not in targets '
+                                   'table. Exception %s: %s.' %
+                                   (targetid, ke.__class__.__name__,
+                                    ke))
     context.spinner.start()
     return targetid
+
+
+def pick_multiple_target_ids(context):
+    """
+    Interactive selection of target ids from list presented on the console.
+
+      Parameters ()
+         The click_context which contains target data information.
+
+      Returns:
+        target_id selected or None if user enter ctrl-C
+    """
+    targets_list = context.targets_tbl.keys()
+    display_options = []
+
+    for t in targets_list:
+        display_options.append(u'    id=%s %s company=%s, product=%s' %
+                               (t, context.targets_tbl.get_url_str(t),
+                                context.targets_tbl[t]['CompanyName'],
+                                context.targets_tbl[t]['Product']))
+    try:
+        indexes = pick_multiple_from_list(context, display_options,
+                                          "Pick TargetIDs:")
+    except ValueError:
+        pass
+    if indexes is None:
+        click.echo('Abort command')
+        return None
+    return [targets_list[index] for index in indexes]
+
+
+def get_multiple_target_ids(context, targetids, options=None, allow_none=False):
+    """
+        Get the target based on the value of targetid or the value of the
+        interactive option.  If targetid is an
+        integer, get targetid directly and generate exception if this fails.
+        If it is ? use the interactive pick_target_id.
+        If options exist test for 'interactive' option and if set, call
+        pick_target_id
+        This function executes the pick function if the targetid is "?" or
+        if options is not None and the interactive flag is set
+
+        This is a support function for any subcommand requiring the target id
+
+        This support function always tests the target_id to against the
+        targets table.
+
+        Parameters:
+
+          context(): Current click context
+
+          targetid(list of :term:`string` or list of:term:`integer` or None):
+            The targets database target id as a string or integer or the
+            string "?" or the value None
+
+          options: The click options.  Used to determine if --interactive mode
+            is defined
+
+          allow_none(:class:`py:bool`):
+            If True, None is allowed as a value and returned. Otherwise
+            None is considered invalid. This is used to separate the cases
+            where the target id is an option that may have a None value vs.
+            those cases where it is a required parameter.
+
+        Returns:
+            Returns integer target_id of a valid targetstbl TargetID
+
+        raises:
+          KeyError if target_id not in table and allow_none is False
+    """
+    if allow_none and targetids is None or targetids == []:
+        return targetids
+    context.spinner.stop()
+
+    if options and 'interactive' in options and options['interactive']:
+        context.spinner.stop()
+        int_target_ids = pick_multiple_target_ids(context)
+    elif isinstance(targetids, (list, tuple)):
+        int_target_ids = []
+        if len(targetids) == 1 and \
+                targetids[0] == "?":
+            context.spinner.stop()
+            int_target_ids = pick_multiple_target_ids(context)
+        else:
+            for targetid in targetids:
+                print('TARGETID %s' % targetid)
+                if isinstance(targetid, six.integer_types):
+                    pass
+                elif isinstance(targetid, six.string_types):
+                    try:
+                        targetid = int(targetid)
+                    except ValueError:
+                        raise click.ClickException('TargetID must be integer. '
+                                                   '"%s" cannot be mapped to '
+                                                   'integer' % targetid)
+                else:
+                    raise click.ClickException('List of target Ids invalid')
+                try:
+                    context.targets_tbl.get_target(targetid)
+                    int_target_ids.append(targetid)
+                except KeyError as ke:
+                    raise click.ClickException('Target ID %s not in database. '
+                                               'Exception: %s: %s' %
+                                               (targetid,
+                                                ke.__class__.__name__, ke))
+                int_target_ids.append(targetid)
+
+            context.spinner.start()
+            return int_target_ids
+
+    if int_target_ids == []:
+        click.echo("Operation aborted by user.")
+    context.spinner.start()
+    return int_target_ids
 
 
 def set_input_variable(ctx, var_, config_file_name, default_value):

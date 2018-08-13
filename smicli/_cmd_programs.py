@@ -26,7 +26,96 @@ import six
 
 from smipyping import ProgramsTable
 from .smicli import cli, CMD_OPTS_TXT
-from ._click_common import print_table, validate_prompt
+from ._click_common import print_table, validate_prompt, pick_from_list
+
+
+def pick_programid(context, programs_tbl):
+    """
+    Interactive selection of target id from list presented on the console.
+
+      Parameters ()
+         The click_context which contains target data information.
+
+      Returns:
+        target_id selected or None if user enter ctrl-C
+    """
+    db_keys = programs_tbl.keys()
+    display_options = []
+    for t in db_keys:
+        item = programs_tbl[t]
+
+        display_options.append(u'   id=%s, %s %s, %s' %
+                               (t, item['ProgramName'],
+                                item['StartDate'],
+                                item['StartDate']))
+    try:
+        index = pick_from_list(context, display_options, "Pick Program:")
+    except ValueError:
+        pass
+    if index is None:
+        click.echo('Abort command')
+        return None
+    return db_keys[index]
+
+
+def get_programid(context, db_tbl, programid, options=None):
+    """
+        Get the user based on the value of programid or the value of the
+        interactive option.  If programid is an
+        integer, get it directly and generate exception if this fails.
+        If it is ? use the interactive pick_target_id.
+        If options exist test for 'interactive' option and if set, call
+        pick_target_id
+        This function executes the pick function if the targetid is "?" or
+        if options is not None and the interactive flag is set
+
+        This support function always tests the programid to against the
+        targets table.
+
+        Returns:
+            Returns integer user_id of a valid targetstbl TargetID
+
+        raises:
+          KeyError if user_id not in table
+    """
+    context.spinner.stop()
+    if options and 'interactive' in options and options['interactive']:
+        context.spinner.stop()
+        programid = pick_programid(context, db_tbl)
+    elif isinstance(programid, six.integer_types):
+        try:
+            programid = db_tbl[programid]
+            context.spinner.start()
+            return programid
+        except KeyError as ke:
+            raise click.ClickException("ProgramID %s  not valid: exception %s" %
+                                       (programid, ke))
+    elif isinstance(programid, six.string_types):
+        if programid == "?":
+            context.spinner.stop()
+            programid = pick_programid(context, db_tbl)
+        else:
+            try:
+                programid = int(programid)
+            except ValueError:
+                raise click.ClickException('ProgramID must be integer or "?" '
+                                           'not %s' % programid)
+            try:
+                # test if programid in table
+                db_tbl[programid]  # pylint: disable=pointless-statement
+                context.spinner.start()
+                return programid
+            except KeyError as ke:
+                raise click.ClickException("ProgramID %s  not found in Users "
+                                           "table: exception %s" %
+                                           (programid, ke))
+    else:
+        raise click.ClickException('ProgramID %s. Requires ProgramID, ? or '
+                                   '--interactive option' % programid)
+    if programid is None:
+        click.echo("Operation aborted by user.")
+    context.spinner.start()
+    return programid
 
 
 @cli.group('programs', options_metavar=CMD_OPTS_TXT)
@@ -91,6 +180,9 @@ def programs_list(context):  # pylint: disable=redefined-builtin
                 nargs=1)
 @click.option('-n', '--no-verify', is_flag=True,
               help='Do not verify the deletion before deleting the program.')
+@click.option('-i', '--interactive', is_flag=True, default=False,
+              help='If set, presents list of programs from which one can be '
+                   'chosen.')
 @click.pass_obj
 def programs_delete(context, programid, **options):
     # pylint: disable=redefined-builtin
@@ -98,7 +190,9 @@ def programs_delete(context, programid, **options):
     Delete a program from the database.
 
     Delete the program defined by the subcommand argument from the
-    database.
+    database.  The program to delete can be input directly, or selected
+    from a list of programs by entering the character "?" as program ID
+    or including the --interactive option.
     """
     context.execute_cmd(lambda: cmd_programs_delete(context, programid,
                                                     options))
@@ -198,6 +292,10 @@ def cmd_programs_delete(context, programid, options):
 
     programs_tbl = ProgramsTable.factory(context.db_info, context.db_type,
                                          context.verbose)
+
+    programid = get_programid(context, programs_tbl, programid, options)
+    if programid is None:
+        return
 
     if programid in programs_tbl:
         if 'no_verify' in options:

@@ -31,7 +31,7 @@ from smipyping._logging import AUDIT_LOGGER_NAME, get_logger
 
 from .smicli import cli, CMD_OPTS_TXT
 from ._common_options import add_options
-from ._click_common import print_table, get_target_id
+from ._click_common import print_table, get_target_id, get_multiple_target_ids
 
 #
 #   Common options for the Ping group
@@ -150,9 +150,11 @@ def cimping_host(context, host, **options):
 # TODO: This differs from pattern. targetid is an argument, not options
 
 @cimping_group.command('ids', options_metavar=CMD_OPTS_TXT)
-@click.argument('ids', type=int, metavar='TargetIDs', required=True, nargs=-1)
+@click.argument('ids', type=str, metavar='TargetIDs', required=False, nargs=-1)
 @add_options(timeout_option)
 @add_options(no_ping_option)
+@click.option('-i', '--interactive', is_flag=True, default=False,
+              help='If set, presents list of targets to chose.')
 @add_options(debug_option)
 @click.pass_obj
 def cimping_ids(context, ids, **options):  # pylint: disable=redefined-builtin
@@ -302,11 +304,11 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
     save_result = options['saveresult']
     # all records  have same timestamp
     timestamp = datetime.datetime.now()
+    # if save_result set, add to pings table and make table change log entry
     if save_result:
         tbl_inst = PingsTable.factory(context.db_info, context.db_type,
                                       context.verbose)
         # if option set, append status to pings table
-        # TODO figure out why click prepends the s__ for this
         for result in results:
             tbl_inst.append(result[0], result[1], timestamp)
         audit_logger = get_logger(AUDIT_LOGGER_NAME)
@@ -370,14 +372,19 @@ def cmd_cimping_ids(context, ids, options):  # pylint: disable=redefined-builtin
     Execute a simple ping of a target wbem server based on the target_ids
     from the database provided with the input parameters.
     """
+    # TODO redefine this to be a subset of the all function so that it does
+    # them all and then prints the table.
+    ids = get_multiple_target_ids(context, ids, options)
+    if ids is None:
+        return
+
     for id_ in ids:
         try:
             context.targets_tbl.get_target(id_)  # noqa: F841
-        except KeyError:
-            raise click.ClickException('Invalid Target: target_id=%s not in '
-                                       'database %s.' %
-                                       (id_, context.targets_tbl))
-
+        except Exception as ex:
+            raise click.ClickException('Invalid TargetID=%s. Not in database. '
+                                       '%s: %s' % (id,
+                                                   ex.__class__.__name__, ex))
     for id_ in ids:
         simpleping = SimplePing(target_id=id_, timeout=options['timeout'],
                                 targets_tbl=context.targets_tbl,
