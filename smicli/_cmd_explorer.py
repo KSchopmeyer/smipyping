@@ -24,7 +24,7 @@ from smipyping._explore import Explorer
 from smipyping._common import StrList, fold_cell
 from smipyping._logging import AUDIT_LOGGER_NAME, get_logger
 from .smicli import cli, CMD_OPTS_TXT
-from ._click_common import print_table
+from ._click_common import print_table, get_multiple_target_ids
 
 
 @cli.group('explorer', options_metavar=CMD_OPTS_TXT)
@@ -57,6 +57,8 @@ def explorer_group():
 @click.option('--thread/--no-thread', default=True,
               help='Run test multithreaded.  Much faster. '
                    'Default: thread')
+@click.option('-i', '--include-disabled', is_flag=True, default=False,
+              help='Include hosts marked disabled in the targets table.')
 @click.option('-r', '--report', type=click.Choice(['full', 'brief']),
               default='full',
               help='Generate full or brief (fewer columns) report')
@@ -103,13 +105,16 @@ def explore_all(context, **options):
 
 
 @explorer_group.command('ids', options_metavar=CMD_OPTS_TXT)
-@click.argument('IDs', type=int, metavar='TargetIDs', required=True, nargs=-1)
+@click.argument('IDs', type=str, metavar='TargetIDs', required=False, nargs=-1)
 @click.option('--ping/--no-ping', default=True,
               help='Ping the the provider as initial step in test. '
                    'Default: ping')
 @click.option('--thread/--no-thread', default=True,
               help='Run test multithreaded.  Much faster. '
                    'Default: thread')
+@click.option('-i', '--interactive', is_flag=True, default=False,
+              help='If set, presents list of targets to chose. Entering "?"'
+                   'for id is equivalent')
 @click.option('-r', '--report', type=click.Choice(['full', 'brief']),
               default='full',
               help='Generate full or brief (fewer columns) report')
@@ -121,9 +126,8 @@ def explore_ids(context, ids, **options):
     Execute the explorer on the providers defined by id.  Multiple
     ids may be supplied (ex. id 5 6 7)
 
-    ex: smicli explorer 6 7 8
+    ex: smicli explorer ids 6 7 8
 
-    TODO expand this to allow interactive ID input
     """
     context.execute_cmd(lambda: cmd_explore_ids(context, ids, **options))
 
@@ -138,8 +142,6 @@ def cmd_explore_all(context, **options):
     """Explore all of the providers defined in the current database and
     report results.
     """
-
-    # TODO configure logging
     # TODO fix the log_level processing.
     explorer = Explorer('smicli', context.targets_tbl,
                         logfile=context.log_file,
@@ -149,18 +151,10 @@ def cmd_explore_all(context, **options):
                         threaded=options['thread'],
                         output_format=context.output_format)
 
-    # TODO: ks I believe that the following is irrelevent. It maps between
-    # hosts and targets and so does not gain much
-    hosts = context.targets_tbl.get_hostid_list()
-    targets = []
-    for host in hosts:
-        if context.verbose:
-            print('targets extend host %s, rtns %s' %
-                  (host, context.targets_tbl.get_target_for_host(host)))
-
-        targets.extend(context.targets_tbl.get_target_for_host(host))
-
-    targets = set(targets)
+    if options['include_disabled']:
+        targets = context.targets_tbl.keys()
+    else:
+        targets = context.targets_tbl.get_enabled_targetids()
 
     servers = explorer.explore_servers(targets)
 
@@ -177,7 +171,10 @@ def cmd_explore_ids(context, ids, **options):
     """
     Explore the wbem server defined by the Id provided
     """
-    # TODO: ks redo this code to use the record once it is acquired.
+    ids = get_multiple_target_ids(context, ids, options)
+    if ids is None:
+        return
+
     for id_ in ids:
         try:
             targ_rec = context.targets_tbl.get_target(id_)  # noqa: F841
@@ -214,7 +211,6 @@ def validate_servers(servers, targets_tbl):
       * interop namespace
     """
     # TODO this should be in explorer, not in the cmd_processor.
-    # print('SERVERS %r' % (servers))
     for server_tuple in servers:
         server = server_tuple.server
         status = server_tuple.status
@@ -328,12 +324,22 @@ def report_server_info(servers, targets_tbl, output_format,
 def smi_versions(server):
     """
     Get the smi version used by this server from the SNIA profile
-    information on the server.
+    information on the server. Uses pywbem server.get_selected_profiles to get
+    the hole list of profiles
     If it cannot be found in the registered profiles an exception is
     generated (TypeError)
-    Returns empty if cannot be found.
-    TODO what do we do about the exception te that can happen from
-    get_selected_profiles
+
+    Parameters:
+      server (class pywbem.WBEMServer):)
+
+    Returns:
+      List of the property RegisteredVersion for all profiles that are
+      registered org 'SNIA' and registered name 'SMI-S.
+
+    Raises:
+
+      TypeError: If the profile definition in the instance is invalid. This
+      also generated an audit_logger ERROR log.
     """
     try:
         snia_server_profiles = server.get_selected_profiles(
@@ -366,19 +372,21 @@ def print_smi_profile_info(servers, user_data, table_format):
     for server_tuple in servers:
         if server_tuple.status == 'OK':
             target_id = server_tuple.target_id
-            entry = user_data.get_target(target_id)
+            target = user_data.get_target(target_id)
             try:
                 versions = smi_versions(server_tuple.server)
-            except Exception as ex:
+            # Uses very broad exception because smi_versions can generate
+            # some strange errors because of bad definitions in the server.
+            except Exception as ex:  # pylint: disable=broad-except
                 audit_logger = get_logger(AUDIT_LOGGER_NAME)
                 audit_logger.error('Exception %s in smi_version %s. Ignored',
                                    ex, server_tuple)
                 versions = []
 
-            line = [entry['TargetID'],
+            line = [target['TargetID'],
                     server_tuple.url,
-                    entry['CompanyName'],
-                    entry['Product']]
+                    target['CompanyName'],
+                    target['Product']]
             if versions is not None:
                 cell_str = ", ". join(sorted(versions))
                 line.append(fold_cell(cell_str, 14))

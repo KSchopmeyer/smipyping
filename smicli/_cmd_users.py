@@ -72,7 +72,7 @@ def get_userid(context, users_tbl, userid, options=None):
     """
         Get the user based on the value of userid or the value of the
         interactive option.  If userid is an
-        integer, get targetid directly and generate exception if this fails.
+        integer, it directly and generate exception if this fails.
         If it is ? use the interactive pick_target_id.
         If options exist test for 'interactive' option and if set, call
         pick_target_id

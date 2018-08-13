@@ -45,6 +45,7 @@ import six
 from mysql.connector import MySQLConnection
 from ._configfile import read_config
 from ._dbtablebase import DBTableBase
+from ._common import get_url_str
 
 __all__ = ['TargetsTable']
 
@@ -128,9 +129,11 @@ class TargetsTable(DBTableBase):
                 (self.db_type, len(self.data_dict)))
 
     def test_fieldnames(self, fields):
-        """Test a list of field names"""
+        """Test a list of field names. This test generates an exception,
+           KeyError if a field in fields is not in the table
+        """
         for field in fields:
-            self.table_format_dict[field]
+            self.table_format_dict[field]  # pylint: disable=pointless-statement
 
     def get_dbdict(self):
         """Get string for the db_dict"""
@@ -224,23 +227,6 @@ class TargetsTable(DBTableBase):
 
         return self.data_dict[target_id]
 
-    def get_target_for_host(self, target_addr):
-        """
-        For a host address, get the targets dictionary record if it exists.
-
-        Parameters:
-            target_addr: hostname/IPAddress of target
-
-        Returns: None if not found or possibly multiple target_ids
-
-        If not found. Does not work completely because of multiple IPs
-        """
-        targets = []
-        for target_id, value in self.data_dict.iteritems():
-            if value['IPAddress'] == target_addr:
-                targets.append(target_id)
-        return targets
-
     def filter_targets(self, ip_filter=None, company_name_filter=None):
         """
         Filter for match of ip_filter and companyname filter if they exist
@@ -259,6 +245,12 @@ class TargetsTable(DBTableBase):
 
         return rtn
 
+    def get_url_str(self, targetid):
+        """Get the string representing the uri for targetid"""
+        target = self[targetid]
+        return get_url_str(target['Protocol'], target['IPAddress'],
+                           target['Port'])
+
     def get_hostid_list(self, ip_filter=None, company_name_filter=None):
         """
         Get all WBEM Server ipaddresses in the targets base.
@@ -266,6 +258,7 @@ class TargetsTable(DBTableBase):
         Returns list of IP addresses:port entries.
            TODO: Does not include port right now.
         """
+
         output_list = []
         # TODO clean up for python 3
 
@@ -283,7 +276,6 @@ class TargetsTable(DBTableBase):
             hdr.append(value[0])
         return hdr
 
-    # TODO This is a formatter and should probably not be in this file
     def format_record(self, record_id, fields, fold=False):
         """Return the fields defined in field_list for the record_id in
         display format.
