@@ -248,6 +248,7 @@ class TargetsTable(DBTableBase):
     def get_url_str(self, targetid):
         """Get the string representing the uri for targetid"""
         target = self[targetid]
+
         return get_url_str(target['Protocol'], target['IPAddress'],
                            target['Port'])
 

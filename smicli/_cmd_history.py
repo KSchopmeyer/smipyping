@@ -138,17 +138,17 @@ def history_list(context, **options):  # pylint: disable=redefined-builtin
     context.execute_cmd(lambda: cmd_history_list(context, options))
 
 
-@history_group.command('stats', options_metavar=CMD_OPTS_TXT)
+@history_group.command('overview', options_metavar=CMD_OPTS_TXT)
 @click.pass_obj
-def history_stats(context, **options):  # pylint: disable=redefined-builtin
+def history_overview(context, **options):  # pylint: disable=redefined-builtin
     """
-    Get stats on pings in database.
+    Get overview of pings in database.
 
     This subcommand only shows the count of records and the oldest and
     newest record in the pings database, and the number of pings by
     program.
     """
-    context.execute_cmd(lambda: cmd_history_stats(context, options))
+    context.execute_cmd(lambda: cmd_history_overview(context, options))
 
 
 @history_group.command('delete', options_metavar=CMD_OPTS_TXT)
@@ -330,7 +330,7 @@ def cmd_history_weekly(context, options):
 
             emails = "\n".join(email_list) if email_list else 'unassigned'
         else:
-            company = "No target"
+            company = u"No target"
             ip = u''
             product = u''
             smi_version = u''
@@ -431,7 +431,7 @@ def cmd_history_delete(context, options):
                                    (ex.__class__.__name__, ex))
 
 
-def cmd_history_stats(context, options):
+def cmd_history_overview(context, options):
     """
     Get overall information on the pings table.
     """
@@ -444,10 +444,10 @@ def cmd_history_stats(context, options):
     newest = tbl_inst.get_newest_ping()
     context.spinner.stop()
     title = "General Information on History (Pings table))"
-    headers = ['Attribute', 'Value']
+    headers = ['Attribute', 'Date or Count']
     rows.append(['Total Records', count])
-    rows.append(['Oldest', oldest[2]])
-    rows.append(['latest', newest[2]])
+    rows.append(['Oldest Record', oldest[2]])
+    rows.append(['Latest Record', newest[2]])
 
     programs_tbl = ProgramsTable.factory(context.db_info, context.db_type,
                                          context.verbose)
@@ -458,7 +458,7 @@ def cmd_history_stats(context, options):
         end = program['EndDate']
 
         pings = tbl_inst.count_by_daterange(start, end)
-        rows.append([program['ProgramName'], pings])
+        rows.append(["Records %s" % program['ProgramName'], pings])
 
     print_table(rows, headers,
                 title=title,
@@ -521,15 +521,18 @@ def get_target_info(context, target_id, ping_record):
         target = context.targets_tbl[target_id]
         company = target.get('CompanyName', 'empty')
         product = target.get('Product', 'empty')
-        ip = target.get('IPAddress', 'empty')
+        try:
+            url = context.targets_tbl.get_url_str(target_id)
+        except KeyError:
+            url = 'empty'
     else:
         audit_logger = get_logger(AUDIT_LOGGER_NAME)
         audit_logger.info('Pings Table invalid TargetID %s ping_record %r',
                           target_id, ping_record)
         company = "No target"
-        ip = ''
         product = ''
-    return (company, ip, product)
+        url = ''
+    return (company, url, product)
 
 
 def cmd_history_list(context, options):
@@ -567,7 +570,7 @@ def cmd_history_list(context, options):
 
     # if result == status show counts of ping records by status by target
     elif options['result'] == 'status':
-        headers = ['id', 'ip', 'company', 'status', 'count']
+        headers = ['id', 'url', 'company', 'status', 'count']
 
         results = pings_tbl.get_status_by_id(
             options['startdate'],
@@ -575,18 +578,18 @@ def cmd_history_list(context, options):
             number_of_days=options['numberofdays'],
             target_id=target_id)
         # find all status and convert to report format
-        for target_id, value in six.iteritems(results):
-            company, ip, product = get_target_info(context, target_id, ping)
+        for target_id, result in six.iteritems(results):
+            company, url, product = get_target_info(context, target_id, result)
 
-            for key in value:
+            for key in result:
                 # restrict status output to 20 char.
                 status = (key[:20] + '..') if len(key) > 20 else key
-                row = [target_id, ip, company, status, value[key]]
+                row = [target_id, url, company, status, result[key]]
                 output_tbl_rows.append(row)
 
     # Shows summary records indicating % ok for the period defined
     elif options['result'] == '%ok':
-        headers = ['id', 'ip', 'company', 'product', '%OK', 'total']
+        headers = ['TargetId', 'Url', 'Company', 'Product', '%OK', 'Total']
 
         percentok_dict = pings_tbl.get_percentok_by_id(
             options['startdate'],
@@ -602,7 +605,7 @@ def cmd_history_list(context, options):
 
     # show count of records for date range
     elif options['result'] == 'count':
-        headers = ['TargetID', 'Records', 'Company', 'IP']
+        headers = ['TargetID', 'Records', 'Company', 'Url']
 
         pings = pings_tbl.select_by_daterange(
             options['startdate'],
