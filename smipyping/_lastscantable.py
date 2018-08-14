@@ -27,8 +27,8 @@ from __future__ import print_function, absolute_import
 
 import os
 import csv
-from mysql.connector import MySQLConnection
 from ._dbtablebase import DBTableBase
+from ._mysqldbmixin import MySQLDBMixin
 
 #
 #  ScanID=1, LastScan=2016-10-28 09:00:01
@@ -40,7 +40,9 @@ class LastScanTable(DBTableBase):
     Abstract class for LastScanTable
     This table contains a single entry, the last time a scan was executed.
     """
-
+    key_field = 'ScanID'
+    fields = [key_field, 'LastScan']
+    table_name = 'LastScan'
     def __init__(self, db_dict, db_type, verbose):
         super(LastScanTable, self).__init__(db_dict, db_type, verbose)
 
@@ -142,46 +144,16 @@ class SQLLastScanTable(LastScanTable):
         return self.db_dict
 
 
-class MySQLLastScanTable(LastScanTable):
+class MySQLLastScanTable(LastScanTable, MySQLDBMixin):
 
     def __init__(self, db_dict, dbtype, verbose):
         """Read the input file into a dictionary."""
 
         super(MySQLLastScanTable, self).__init__(db_dict, dbtype, verbose)
 
-        try:
-            connection = MySQLConnection(host=db_dict['host'],
-                                         database=db_dict['database'],
-                                         user=db_dict['user'],
-                                         password=db_dict['password'])
+        self.connectdb(db_dict, verbose)
 
-            if connection.is_connected():
-                self.connection = connection
-                if verbose:
-                    print('sql db connection established. host %s, db %s' %
-                          (db_dict['host'], db_dict['database']))
-            else:
-                print('SQL database connection failed. host %s, db %s' %
-                      (db_dict['host'], db_dict['database']))
-                raise ValueError('Connection to database failed')
-            self.connection = connection
-        except Exception as ex:
-            raise ValueError('Could not connect to sql database %r. '
-                             ' Exception: %r'
-                             % (db_dict, ex))
-        try:
-            # python-mysql-connector-dictcursor  # noqa: E501
-            cursor = connection.cursor(dictionary=True)
-
-            cursor.execute("SELECT LastScan FROM LastScan WHERE ScanID = 1")
-            rows = cursor.fetchall()
-            assert(len(rows) == 1)
-            for row in rows:
-                self.last_scan = row['LastScan']
-                self.data_dict = row
-        except Exception as ex:
-            raise ValueError('Could not create LastScan table %r Exception: %r'
-                             % (rows, ex))
+        self._load_table()
 
     def update(self, timestamp):
         "UPDATE LastScan SET LastScan = '$DateTime' WHERE ScanID = 1"

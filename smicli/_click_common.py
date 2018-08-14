@@ -362,7 +362,6 @@ def get_multiple_target_ids(context, targetids, options=None, allow_none=False):
             int_target_ids = pick_multiple_target_ids(context)
         else:
             for targetid in targetids:
-                print('TARGETID %s' % targetid)
                 if isinstance(targetid, six.integer_types):
                     pass
                 elif isinstance(targetid, six.string_types):
@@ -444,6 +443,9 @@ def print_table(rows, headers=None, title=None, table_format='simple'):
     """
     if table_format == 'table':
         table_format = 'psql'
+
+    if headers and isinstance(headers, six.string_types):
+        headers = [headers]
 
     # all formats except html go to tabulate directly
     if table_format == 'html':

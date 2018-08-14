@@ -18,6 +18,7 @@ from __future__ import print_function, absolute_import
 
 from mysql.connector import MySQLConnection
 
+
 class MySQLDBMixin(object):
     """
         Provides some common methods to mixin in with the MySQL...Tables

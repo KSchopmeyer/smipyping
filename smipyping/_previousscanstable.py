@@ -25,8 +25,8 @@ from __future__ import print_function, absolute_import
 
 import os
 import csv
-from mysql.connector import MySQLConnection
 from ._dbtablebase import DBTableBase
+from ._mysqldbmixin import MySQLDBMixin
 
 __all__ = ['PreviousScansTable']
 
@@ -155,45 +155,12 @@ class SQLPreviousScansTable(PreviousScansTable):
         return self.db_dict
 
 
-class MySQLPreviousScansTable(PreviousScansTable):
+class MySQLPreviousScansTable(PreviousScansTable, MySQLDBMixin):
     """ Class representing the connection with a mysql database"""
     def __init__(self, db_dict, dbtype, verbose):
         """Read the input file into a dictionary."""
         super(MySQLPreviousScansTable, self).__init__(db_dict, dbtype, verbose)
 
-        try:
-            connection = MySQLConnection(host=db_dict['host'],
-                                         database=db_dict['database'],
-                                         user=db_dict['user'],
-                                         password=db_dict['password'])
+        self.connectdb(db_dict, verbose)
 
-            if connection.is_connected():
-                print('sql db connection established. host %s, db %s' %
-                      (db_dict['host'], db_dict['database']))
-                self.connection = connection
-            else:
-                print('SQL database connection failed. host %s, db %s' %
-                      (db_dict['host'], db_dict['database']))
-                raise ValueError('Connection to database failed')
-            self.connection = connection
-        except Exception as ex:
-            raise ValueError('Could not connect to sql database %r. '
-                             ' Exception: %r'
-                             % (db_dict, ex))
-        try:
-            # python-mysql-connector-dictcursor  # noqa: E501
-            cursor = connection.cursor(dictionary=True)
-
-            # fetchall returns tuple so need index to fields, not names
-            fields = ', '.join(self.fields)
-            select_statement = 'SELECT %s FROM %s' % (fields, self.table_name)
-            cursor.execute(select_statement)
-            rows = cursor.fetchall()
-            for row in rows:
-                key = row[self.key_field]
-                self.data_dict[key] = row
-
-        except Exception as ex:
-            raise ValueError('Error: setup sql based targets table %r. '
-                             'Exception: %r'
-                             % (db_dict, ex))
+        self._load_table()

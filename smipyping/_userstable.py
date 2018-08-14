@@ -29,11 +29,13 @@ from __future__ import print_function, absolute_import
 import os
 import csv
 import six
-from mysql.connector import MySQLConnection
 from ._dbtablebase import DBTableBase
-__all__ = ['UsersTable']
+from ._mysqldbmixin import MySQLDBMixin
+
 
 from ._logging import AUDIT_LOGGER_NAME, get_logger
+
+__all__ = ['UsersTable']
 
 
 class UsersTable(DBTableBase):
@@ -216,61 +218,15 @@ class SQLUsersTable(UsersTable):
         return self.db_dict
 
 
-class MySQLUsersTable(UsersTable):
+class MySQLUsersTable(UsersTable, MySQLDBMixin):
     """ Class representing the connection with a mysql database"""
     def __init__(self, db_dict, dbtype, verbose):
         """Read the input file into a dictionary."""
-
-        if verbose:
-            print('MySQL Database type %s  verbose=%s' % (db_dict, verbose))
         super(MySQLUsersTable, self).__init__(db_dict, dbtype, verbose)
 
-        try:
-            connection = MySQLConnection(host=db_dict['host'],
-                                         database=db_dict['database'],
-                                         user=db_dict['user'],
-                                         password=db_dict['password'])
+        self.connectdb(db_dict, verbose)
 
-            if connection.is_connected():
-                self.connection = connection
-                if verbose:
-                    print('sql db connection established. host %s, db %s' %
-                          (db_dict['host'], db_dict['database']))
-            else:
-                if self.verbose:
-                    print('SQL database connection failed. host %s, db %s' %
-                          (db_dict['host'], db_dict['database']))
-                raise ValueError('Connection to host %s database %s failed.' %
-                                 (db_dict['host'], db_dict['database']))
-            self.connection = connection
-        except Exception as ex:
-            raise ValueError('Could not connect to sql database %r. '
-                             ' Exception: %r'
-                             % (db_dict, ex))
-
-        self._load()
-
-    def _load(self):
-        """
-        Load the internal dictionary from the database.
-        """
-        try:
-            # python-mysql-connector-dictcursor  # noqa: E501
-            cursor = self.connection.cursor(dictionary=True)
-
-            # fetchall returns tuple so need index to fields, not names
-            fields = ', '.join(self.fields)
-            sql = 'SELECT %s FROM %s' % (fields, self.table_name)
-            cursor.execute(sql)
-            rows = cursor.fetchall()
-            for row in rows:
-                key = row[self.key_field]
-                self.data_dict[key] = row
-
-        except Exception as ex:
-            raise ValueError('Error: setup sql based targets table %r. '
-                             'Exception: %r'
-                             % (self.db_dict, ex))
+        self._load_table()
 
     def insert(self, firstname, lastname, email, company_id, active=True,
                notify=True):
@@ -314,7 +270,7 @@ class MySQLUsersTable(UsersTable):
             self.connection.rollback()
             raise ex
         finally:
-            self._load()
+            self._load_table()
             self.connection.close()
 
     def delete(self, user_id):
@@ -334,7 +290,7 @@ class MySQLUsersTable(UsersTable):
             self.connection.rollback()
             raise ex
         finally:
-            self._load()
+            self._load_table()
             self.connection.close()
 
     def activate(self, user_id, activate_flag):
@@ -356,7 +312,7 @@ class MySQLUsersTable(UsersTable):
             self.connection.rollback()
             raise ex
         finally:
-            self._load()
+            self._load_table()
             self.connection.close()
 
     def update_fields(self, userid, changes):
@@ -403,5 +359,5 @@ class MySQLUsersTable(UsersTable):
             self.connection.rollback()
             raise ex
         finally:
-            self._load()
+            self._load_table()
             cursor.close()

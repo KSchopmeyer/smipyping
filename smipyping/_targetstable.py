@@ -74,14 +74,14 @@ class TargetsTable(DBTableBase):
     # # TODO this should be class level.
     table_format_dict = OrderedDict([
         ('TargetID', ('ID', 2, int)),
-        ('CompanyName', ('Company', 12, str)),
+        ('CompanyName', ('CompanyName', 12, str)),
         ('Namespace', ('Namespace', 12, str)),
         ('SMIVersion', ('SMIVersion', 12, str)),
         ('Product', ('Product', 15, str)),
         ('Principal', ('Principal', 12, str)),
         ('Credential', ('Credential', 12, str)),
-        ('CimomVersion', ('Version', 15, str)),
-        ('IPAddress', ('IP', 12, str)),
+        ('CimomVersion', ('CimomVersion', 15, str)),
+        ('IPAddress', ('IPAddress', 12, str)),
         ('InteropNamespace', ('Interop', 8, str)),
         ('Protocol', ('Prot', 5, str)),
         ('Port', ('Port', 4, int)),

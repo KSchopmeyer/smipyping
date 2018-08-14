@@ -131,23 +131,25 @@ def companies_group():
 @click.pass_obj
 def companies_list(context):  # pylint: disable=redefined-builtin
     """
-    List Companies in the database.
+    List companies in the database.
+
+    List the parameters of companies in the company table of the database.
     """
     context.execute_cmd(lambda: cmd_companies_list(context))
 
 
-@companies_group.command('new', options_metavar=CMD_OPTS_TXT)
+@companies_group.command('add', options_metavar=CMD_OPTS_TXT)
 @click.option('-c', '--companyname', type=str,
               required=False,
               help='Company name for company to add to table.')
 @click.pass_obj
-def companies_new(context, **options):  # pylint: disable=redefined-builtin
+def companies_add(context, **options):  # pylint: disable=redefined-builtin
     """
-    Create a new companyin the user table.
+    Add a new company to the the company table.
 
-    Creates a new company with the defined parameters.
+    Creates a new company with the defined company name.
     """
-    context.execute_cmd(lambda: cmd_companies_new(context, options))
+    context.execute_cmd(lambda: cmd_companies_add(context, options))
 
 
 @companies_group.command('delete', options_metavar=CMD_OPTS_TXT)
@@ -298,9 +300,9 @@ def cmd_companies_modify(context, companyid, options):
             return
 
 
-def cmd_companies_new(context, options):
+def cmd_companies_add(context, options):
     """
-    Add a new company to the table.
+    Add a new company to the Companies table.
     """
     companies_tbl = CompaniesTable.factory(context.db_info, context.db_type,
                                            context.verbose)

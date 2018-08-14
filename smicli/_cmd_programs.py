@@ -133,10 +133,8 @@ def programs_group():
     """
     pass
 
-# TODO make new program automatic extension of last
 
-
-@programs_group.command('new', options_metavar=CMD_OPTS_TXT)
+@programs_group.command('add', options_metavar=CMD_OPTS_TXT)
 @click.option('-s', '--startdate', type=Datetime(format='%d/%m/%y'),
               default=None,
               required=False,
@@ -158,12 +156,12 @@ def programs_group():
               required=True,
               help='Descriptive name for program')
 @click.pass_obj
-def programs_new(context, **options):  # pylint: disable=redefined-builtin
+def programs_add(context, **options):  # pylint: disable=redefined-builtin
     """
     Add new program to the database.
 
     """
-    context.execute_cmd(lambda: cmd_programs_new(context, options))
+    context.execute_cmd(lambda: cmd_programs_add(context, options))
 
 
 @programs_group.command('list', options_metavar=CMD_OPTS_TXT)
@@ -248,7 +246,7 @@ def cmd_programs_list(context):
                 table_format=context.output_format)
 
 
-def cmd_programs_new(context, options):
+def cmd_programs_add(context, options):
     """
     Create a new program in the Programs table. The start date and end date
     are both optional. If not supplied, the startdate is set as the next
