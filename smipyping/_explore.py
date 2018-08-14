@@ -115,7 +115,7 @@ class Explorer(object):
             target = self.targets_tbl[target_id]
 
             # get variables for the connection and logs
-            url = '%s://%s' % (target['Protocol'], target['IPAddress'])
+            url = target.get_url_str
             credential = target['Credential']
             principal = target['Principal']
             product = target['Product']
@@ -283,7 +283,7 @@ class Explorer(object):
                                         cmd_time)
             traceback.format_exc()
 
-        except Exception as ex:
+        except Exception as ex:  # pylint: disable=broad-except
             cmd_time = time.time() - start_time
             self.logger.error('General Error: exception:%s %s time %.2f s',
                               ex, log_info, cmd_time)
@@ -296,7 +296,7 @@ class Explorer(object):
         RESULTS.append(svr_tuple)
         return svr_tuple
 
-    def ping_server(self, url, verbose):
+    def ping_server(self, url, verbose):  # pylint: disable=no-self-use
         """
         Get the netloc from the url and ping the server.
 

@@ -624,7 +624,7 @@ The following defines the help output for the `smicli history --help` subcommand
     Commands:
       delete    Delete records from history file.
       list      List history of pings in database.
-      stats     Get stats on pings in database.
+      overview  Get overview of pings in database.
       timeline  Show history of status changes for IDs.
       weekly    Generate weekly report from ping history.
 
@@ -728,21 +728,21 @@ The following defines the help output for the `smicli history list --help` subco
       -h, --help                      Show this message and exit.
 
 
-.. _`smicli history stats --help`:
+.. _`smicli history overview --help`:
 
-smicli history stats --help
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+smicli history overview --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 
-The following defines the help output for the `smicli history stats --help` subcommand
+The following defines the help output for the `smicli history overview --help` subcommand
 
 
 ::
 
-    Usage: smicli history stats [COMMAND-OPTIONS]
+    Usage: smicli history overview [COMMAND-OPTIONS]
 
-      Get stats on pings in database.
+      Get overview of pings in database.
 
       This subcommand only shows the count of records and the oldest and newest
       record in the pings database, and the number of pings by program.

@@ -372,7 +372,7 @@ def cmd_targets_fields(context):
     headers = 'Target Fields'
 
     context.spinner.stop()
-    print_table(rows, headers, title='Target table fields',
+    print_table(rows, headers, title='Target table fields from database:',
                 table_format=context.output_format)
 
 

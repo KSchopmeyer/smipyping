@@ -47,7 +47,7 @@ class MySQLTests(LastScanTests):
         db_config = self.get_config(dbtype)
 
         lst = LastScanTable.factory(db_config, dbtype, True)
-        print('dict %s' % lst.last_scan)
+        print('dict %s' % lst.db_info())
 
 
 class CsvTests(LastScanTests):

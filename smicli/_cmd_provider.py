@@ -286,7 +286,7 @@ def cmd_provider_namespaces(context, targetid, options):
         for ns in namespaces:
             rows.append([ns])
 
-        print_table(rows, 'Namespace Name',
+        print_table(rows, ['Namespace Name'],
                     title='Server Namespaces:',
                     table_format=context.output_format)
 

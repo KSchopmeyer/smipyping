@@ -59,9 +59,11 @@ def explorer_group():
                    'Default: thread')
 @click.option('-i', '--include-disabled', is_flag=True, default=False,
               help='Include hosts marked disabled in the targets table.')
-@click.option('-r', '--report', type=click.Choice(['full', 'brief']),
+@click.option('-d', '--detail', type=click.Choice(['full', 'brief']),
               default='full',
-              help='Generate full or brief (fewer columns) report')
+              help='Generate full or brief (fewer columns) report. Full '
+                   'report includes namespaces, SMI_profiles, etc. '
+                   '(Default: full')
 @click.pass_obj
 def explore_all(context, **options):
     """
@@ -115,7 +117,7 @@ def explore_all(context, **options):
 @click.option('-i', '--interactive', is_flag=True, default=False,
               help='If set, presents list of targets to chose. Entering "?"'
                    'for id is equivalent')
-@click.option('-r', '--report', type=click.Choice(['full', 'brief']),
+@click.option('-d', '--detail', type=click.Choice(['full', 'brief']),
               default='full',
               help='Generate full or brief (fewer columns) report')
 @click.pass_obj
@@ -164,7 +166,7 @@ def cmd_explore_all(context, **options):
     # TODO make this part of normal print services
     context.spinner.stop()
     report_server_info(servers, context.targets_tbl, context.output_format,
-                       report=options['report'])
+                       report=options['detail'])
 
 
 def cmd_explore_ids(context, ids, **options):
@@ -198,7 +200,7 @@ def cmd_explore_ids(context, ids, **options):
     context.spinner.stop()
     report_server_info(servers, context.targets_tbl,
                        context.output_format,
-                       report=options['report'])
+                       report=options['detail'])
 
 
 def validate_servers(servers, targets_tbl):

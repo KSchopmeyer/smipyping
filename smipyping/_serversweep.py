@@ -515,7 +515,6 @@ class ServerSweep(object):
                 if ce.status_code == CIM_ERR_INVALID_NAMESPACE:
                     for ns in INTEROP_NAMESPACES:
                         try:
-                            print('TRY %s NS %s' % (host_url, ns))
                             self.test_host(host_url, ns, principal=cred[0],
                                            credential=cred[1])
                             status = "Found %s %s %s" % (cred[0],

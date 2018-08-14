@@ -134,6 +134,8 @@ def history_list(context, **options):  # pylint: disable=redefined-builtin
 
       * `%ok` - listing the percentage of records that have 'OK' status and
         the total number of ping records
+
+      * `count` - count of records within the defined date/time range
     """
     context.execute_cmd(lambda: cmd_history_list(context, options))
 
@@ -192,7 +194,7 @@ def history_delete(context, **options):  # pylint: disable=redefined-builtin
               default=datetime.datetime.today(),
               required=False,
               help='Optional date to be used as basis for report in form '
-                   ' dd/mm/yy. Default is the today. This option '
+                   ' dd/mm/yy. Default is today. This option '
                    'allows reports to be generated for previous periods.')
 @click.option('-o', '--order', required=False, type=str,
               default=DEFAULT_WEEKLY_TBL_SORT,
@@ -205,8 +207,14 @@ def history_weekly(context, **options):  # pylint: disable=redefined-builtin
     Generate weekly report from ping history.
 
     This subcommand generates a report on the status of each target id
-    in the targets table filtered by the start date and end date or number of
-    days input parameters
+    in the targets table filtered by the --date parameter. It generates
+    a summary of the status for the current day, for the previous week and
+    for the total program.
+
+    The --date is optional. Normally the report is generated for the week
+    ending at the time the report is generated but the --date pararameter
+    allows the report to be generated for previous dates.
+
 
     This report includes percentage OK for each
     target for today, this week, and the program and overall information on
