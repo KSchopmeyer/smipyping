@@ -325,10 +325,33 @@ The following defines the help output for the `smicli companies --help` subcomma
       -h, --help  Show this message and exit.
 
     Commands:
+      add     Add a new company to the the company table.
       delete  Delete a company from the database.
-      list    List Companies in the database.
+      list    List companies in the database.
       modify  Modify company data in database.
-      new     Create a new companyin the user table.
+
+
+.. _`smicli companies add --help`:
+
+smicli companies add --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli companies add --help` subcommand
+
+
+::
+
+    Usage: smicli companies add [COMMAND-OPTIONS]
+
+      Add a new company to the the company table.
+
+      Creates a new company with the defined company name.
+
+    Options:
+      -c, --companyname TEXT  Company name for company to add to table.
+      -h, --help              Show this message and exit.
 
 
 .. _`smicli companies delete --help`:
@@ -373,7 +396,9 @@ The following defines the help output for the `smicli companies list --help` sub
 
     Usage: smicli companies list [COMMAND-OPTIONS]
 
-      List Companies in the database.
+      List companies in the database.
+
+      List the parameters of companies in the company table of the database.
 
     Options:
       -h, --help  Show this message and exit.
@@ -405,29 +430,6 @@ The following defines the help output for the `smicli companies modify --help` s
                               chosen.
       -n, --no-verify         Disable verification prompt before the modify is
                               executed.
-      -h, --help              Show this message and exit.
-
-
-.. _`smicli companies new --help`:
-
-smicli companies new --help
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-
-The following defines the help output for the `smicli companies new --help` subcommand
-
-
-::
-
-    Usage: smicli companies new [COMMAND-OPTIONS]
-
-      Create a new companyin the user table.
-
-      Creates a new company with the defined parameters.
-
-    Options:
-      -c, --companyname TEXT  Company name for company to add to table.
       -h, --help              Show this message and exit.
 
 
@@ -520,14 +522,16 @@ The following defines the help output for the `smicli explorer all --help` subco
       ex: smicli explore all
 
     Options:
-      --ping / --no-ping         Ping the the provider as initial step in test.
-                                 Default: ping
-      --thread / --no-thread     Run test multithreaded.  Much faster. Default:
-                                 thread
-      -i, --include-disabled     Include hosts marked disabled in the targets
-                                 table.
-      -r, --report [full|brief]  Generate full or brief (fewer columns) report
-      -h, --help                 Show this message and exit.
+      --ping / --no-ping             Ping the the provider as initial step in
+                                     test. Default: ping
+      --thread / --no-thread         Run test multithreaded.  Much faster.
+                                     Default: thread
+      -i, --include-disabled         Include hosts marked disabled in the targets
+                                     table.
+      -d, --detail [full|brief|all]  Generate full or brief (fewer columns)
+                                     report. Full report includes namespaces,
+                                     SMI_profiles, etc. (Default: full
+      -h, --help                     Show this message and exit.
 
 
 .. _`smicli explorer ids --help`:
@@ -552,14 +556,14 @@ The following defines the help output for the `smicli explorer ids --help` subco
       ex: smicli explorer ids 6 7 8
 
     Options:
-      --ping / --no-ping         Ping the the provider as initial step in test.
-                                 Default: ping
-      --thread / --no-thread     Run test multithreaded.  Much faster. Default:
-                                 thread
-      -i, --interactive          If set, presents list of targets to chose.
-                                 Entering "?"for id is equivalent
-      -r, --report [full|brief]  Generate full or brief (fewer columns) report
-      -h, --help                 Show this message and exit.
+      --ping / --no-ping             Ping the the provider as initial step in
+                                     test. Default: ping
+      --thread / --no-thread         Run test multithreaded.  Much faster.
+                                     Default: thread
+      -i, --interactive              If set, presents list of targets to chose.
+                                     Entering "?"for id is equivalent
+      -d, --detail [full|brief|all]  Generate full or brief (fewer columns) report
+      -h, --help                     Show this message and exit.
 
 
 .. _`smicli help --help`:
@@ -702,6 +706,8 @@ The following defines the help output for the `smicli history list --help` subco
         * `%ok` - listing the percentage of records that have 'OK' status and
         the total number of ping records
 
+        * `count` - count of records within the defined date/time range
+
     Options:
       -s, --startdate DATE            Start date for ping records included. Format
                                       is dd/mm/yy where dd and mm are zero padded
@@ -812,8 +818,13 @@ The following defines the help output for the `smicli history weekly --help` sub
       Generate weekly report from ping history.
 
       This subcommand generates a report on the status of each target id in the
-      targets table filtered by the start date and end date or number of days
-      input parameters
+      targets table filtered by the --date parameter. It generates a summary of
+      the status for the current day, for the previous week and for the total
+      program.
+
+      The --date is optional. Normally the report is generated for the week
+      ending at the time the report is generated but the --date pararameter
+      allows the report to be generated for previous dates.
 
       This report includes percentage OK for each target for today, this week,
       and the program and overall information on the target (company, product,
@@ -821,8 +832,8 @@ The following defines the help output for the `smicli history weekly --help` sub
 
     Options:
       -d, --date DATE   Optional date to be used as basis for report in form
-                        dd/mm/yy. Default is the today. This option allows reports
-                        to be generated for previous periods.
+                        dd/mm/yy. Default is today. This option allows reports to
+                        be generated for previous periods.
       -o, --order TEXT  Sort order of the columns for the report output.  This can
                         be any of the column headers (case independent). Default:
                         Company
@@ -992,10 +1003,41 @@ The following defines the help output for the `smicli programs --help` subcomman
       -h, --help  Show this message and exit.
 
     Commands:
+      add      Add new program to the database.
       current  Get info on current program.
       delete   Delete a program from the database.
       list     List programs in the database.
-      new      Add new program to the database.
+
+
+.. _`smicli programs add --help`:
+
+smicli programs add --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli programs add --help` subcommand
+
+
+::
+
+    Usage: smicli programs add [COMMAND-OPTIONS]
+
+      Add new program to the database.
+
+    Options:
+      -s, --startdate DATE    Start date for program. Format is dd/mm/yy where dd
+                              and mm are zero padded (ex. 01) and year is without
+                              century (ex. 17). This option is optional and if not
+                              supplied the day after the end of the latest program
+                              will be selected.
+      -e, --enddate DATE      End date for program. Format is dd/mm/yy where dd
+                              and mm are zero padded (ex. 01) and year is without
+                              century (ex. 17). This field is optional and if not
+                              defined on the command line 12 montsh - 1 day after
+                              the start date will be used as the end date.
+      -p, --programname TEXT  Descriptive name for program  [required]
+      -h, --help              Show this message and exit.
 
 
 .. _`smicli programs current --help`:
@@ -1066,37 +1108,6 @@ The following defines the help output for the `smicli programs list --help` subc
 
     Options:
       -h, --help  Show this message and exit.
-
-
-.. _`smicli programs new --help`:
-
-smicli programs new --help
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-
-The following defines the help output for the `smicli programs new --help` subcommand
-
-
-::
-
-    Usage: smicli programs new [COMMAND-OPTIONS]
-
-      Add new program to the database.
-
-    Options:
-      -s, --startdate DATE    Start date for program. Format is dd/mm/yy where dd
-                              and mm are zero padded (ex. 01) and year is without
-                              century (ex. 17). This option is optional and if not
-                              supplied the day after the end of the latest program
-                              will be selected.
-      -e, --enddate DATE      End date for program. Format is dd/mm/yy where dd
-                              and mm are zero padded (ex. 01) and year is without
-                              century (ex. 17). This field is optional and if not
-                              defined on the command line 12 montsh - 1 day after
-                              the start date will be used as the end date.
-      -p, --programname TEXT  Descriptive name for program  [required]
-      -h, --help              Show this message and exit.
 
 
 .. _`smicli provider --help`:
