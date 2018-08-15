@@ -406,6 +406,11 @@ def cmd_targets_list(context, options):
     field names and sorting by field name
     """
     fields = list(options['fields'])
+    # TODO. For now this is hidden capability.  Need to make public
+    # Entering all as first field name causes all fields to be used.
+    if  fields and fields[0] == 'all':
+        fields = context.targets_tbl.fields
+
     field_selects = context.targets_tbl.fields
     # TODO This is temp since we really want companyname butthat
     # is not part of normal fields but from join.
@@ -431,7 +436,9 @@ def cmd_targets_list(context, options):
         order = options['order']
 
     try:
+        print('TRY TEST')
         context.targets_tbl.test_fieldnames(fields)
+        print('OK')
     except KeyError as ke:
         raise click.ClickException("%s: Invalid field name: %s" %
                                    (ke.__class__.__name__, ke))

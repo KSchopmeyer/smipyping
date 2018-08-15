@@ -64,7 +64,7 @@ class TargetsTable(DBTableBase):
     key_field = 'TargetID'
     fields = [key_field, 'IPAddress', 'CompanyID', 'Namespace',
               'SMIVersion', 'Product', 'Principal', 'Credential',
-              'CimomVersion', 'InteropNamespace', 'NotifyUsers',
+              'CimomVersion', 'InteropNamespace', 'Notify', 'NotifyUsers',
               'ScanEnabled', 'Protocol', 'Port']
     table_name = 'Targets'
 
@@ -83,6 +83,8 @@ class TargetsTable(DBTableBase):
         ('CimomVersion', ('CimomVersion', 15, str)),
         ('IPAddress', ('IPAddress', 12, str)),
         ('InteropNamespace', ('Interop', 8, str)),
+        ('Notify', ('Notify', 12, str)),
+        ('NotifyUsers', ('NotifyUsers', 12, str)),
         ('Protocol', ('Prot', 5, str)),
         ('Port', ('Port', 4, int)),
         ('ScanEnabled', ('Enabled', 6, str)),
@@ -513,6 +515,8 @@ class MySQLTargetsTable(SQLTargetsTable):
 
         # append targetid component
         sql = sql + " WHERE TargetID=%s"
+
+        print('UPDATE_FIELDS sql=%s, values=%s' % (sql, values))
 
         try:
             cursor.execute(sql, tuple(values))

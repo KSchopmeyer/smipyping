@@ -59,8 +59,8 @@ def explorer_group():
                    'Default: thread')
 @click.option('-i', '--include-disabled', is_flag=True, default=False,
               help='Include hosts marked disabled in the targets table.')
-@click.option('-d', '--detail', type=click.Choice(['full', 'brief']),
-              default='full',
+@click.option('-d', '--detail', type=click.Choice(['full', 'brief', 'all']),
+              default='brief',
               help='Generate full or brief (fewer columns) report. Full '
                    'report includes namespaces, SMI_profiles, etc. '
                    '(Default: full')
@@ -117,7 +117,7 @@ def explore_all(context, **options):
 @click.option('-i', '--interactive', is_flag=True, default=False,
               help='If set, presents list of targets to chose. Entering "?"'
                    'for id is equivalent')
-@click.option('-d', '--detail', type=click.Choice(['full', 'brief']),
+@click.option('-d', '--detail', type=click.Choice(['full', 'brief', 'all']),
               default='full',
               help='Generate full or brief (fewer columns) report')
 @click.pass_obj
@@ -219,20 +219,17 @@ def validate_servers(servers, targets_tbl):
         target_id = server_tuple.target_id
         target = targets_tbl.get_target(target_id)
         if server is not None and status == 'OK':
-            svr_profile_list = smi_versions(server_tuple.server)
+            try:
+                svr_profile_list = smi_versions(server_tuple)
+            except TypeError:
+                # ignore this server.
+                continue
             sorted(svr_profile_list)
-            # print('SVR_PROFILE_LIST')
             target_smi_profiles = target['SMIVersion']
-            # TODO print('TARGET_SMI_PROFILES %r' % target_smi_profiles)
             regex = r'^[0-9.]*$'
             server_smi_profiles = StrList(svr_profile_list, match=regex)
             target_smi_profiles = StrList(target_smi_profiles, match=regex)
-            # print('SERVER %s\nTARGET %s' %
-            #      (server_smi_profiles,target_smi_profiles))
             if not server_smi_profiles.equal(target_smi_profiles):
-                # print('SMI_PROFILES COMPARE2 svr=%s\ntarget=%s' %
-                #       (server_smi_profiles, target_smi_profiles))
-
                 changes = {"SMIVersion": server_smi_profiles.str_by_sep("/")}
                 try:
                     targets_tbl.update_fields(target_id, changes)
@@ -269,6 +266,8 @@ def report_server_info(servers, targets_tbl, output_format,
     if report == 'full':
         headers = ['Id', 'Url', 'Company', 'Product', 'Vers',
                    'SMI Profiles', 'Interop_ns', 'Status', 'time']
+    elif report == 'all':
+        headers = targets_tbl.fields
     else:
         headers = ['Id', 'Url', 'Company', 'Product',
                    'Status', 'time']
@@ -285,7 +284,10 @@ def report_server_info(servers, targets_tbl, output_format,
         if server is not None and status == 'OK':
             version = server.version
             interop_ns = server.interop_ns
-            smi_profile_list = smi_versions(server_tuple.server)
+            try:
+                smi_profile_list = smi_versions(server_tuple)
+            except TypeError:
+                smi_profile_list = []
             if smi_profile_list is not None:
                 sorted(smi_profile_list)
                 cell_str = ", ". join(sorted(smi_profile_list))
@@ -323,36 +325,50 @@ def report_server_info(servers, targets_tbl, output_format,
                 table_format=output_format)
 
 
-def smi_versions(server):
+def smi_versions(server_tuple):
     """
     Get the smi version used by this server from the SNIA profile
     information on the server. Uses pywbem server.get_selected_profiles to get
-    the hole list of profiles
-    If it cannot be found in the registered profiles an exception is
-    generated (TypeError)
+    the complete list of profiles.
+
+    This code accounts for the issue that some profile instances may be
+    incorrectly defined and may generate an error in the process.
+
+    If the SMI-S profile cannot be found in the registered profiles an
+    exception is generated (TypeError)
 
     Parameters:
-      server (class pywbem.WBEMServer):)
+      server_tuple (named tuple ServerInfoTuple):
+        Named tuple that defines the target id and server object. The
+        server object is used to get the profiles from the server
 
     Returns:
       List of the property RegisteredVersion for all profiles that are
       registered org 'SNIA' and registered name 'SMI-S.
 
-    Raises:
+      If there is an exception, it returns an empty string.
 
-      TypeError: If the profile definition in the instance is invalid. This
-      also generated an audit_logger ERROR log.
+    Raises:
+      TypeError: if get_selected_profiles returns TypeError exception
+
+
     """
+    server = server_tuple.server
     try:
         snia_server_profiles = server.get_selected_profiles(
             registered_org='SNIA', registered_name='SMI-S')
     except TypeError as te:
         audit_logger = get_logger(AUDIT_LOGGER_NAME)
-        audit_logger.error(' Invalid profile definition caused exception '
-                           'for %s. exception %s', server.conn.url, te)
-        click.echo('ERROR: Invalid profile definition caused exception for %s. '
-                   'exception %s' % (server.conn.url, te))
-        return []
+        audit_logger.error('Invalid profile definition caused exception '
+                           'for targetid=%s, url=%s. exception %s: %s',
+                           server_tuple.target_id,
+                           server.conn.url, te.__class__.__name__, te)
+        click.echo('ERROR: Invalid profile definition caused exception for '
+                   'targetid=%s url=%s. '
+                   'exception: %s: %s' % (server_tuple.target_id,
+                                          server.conn.url,
+                                          te.__class__.__name__, te))
+        raise te
 
     versions = [inst['RegisteredVersion'] for inst in snia_server_profiles]
 
