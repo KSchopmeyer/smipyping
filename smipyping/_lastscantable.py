@@ -20,7 +20,6 @@ complete scan of the servers in a single request.
 
 There is only a single function, the last scan update that updates the
 time to the time provided by an input parameter.
-
 """
 
 from __future__ import print_function, absolute_import
@@ -70,6 +69,7 @@ class LastScanTable(DBTableBase):
         if db_type == 'csv':
             inst = CsvLastScanTable(db_dict, db_type, verbose)
         elif db_type == 'mysql':
+            # pylint: disable=redefined-variable-type
             inst = MySQLLastScanTable(db_dict, db_type, verbose)
         else:
             ValueError('Invalid lastscantable factory db_type %s' % db_type)
@@ -122,6 +122,7 @@ class CsvLastScanTable(LastScanTable):
 
 
 class SQLLastScanTable(LastScanTable):
+    """SQL table for Last scan"""
 
     def __init__(self, db_dict, dbtype, verbose):
         """Pass through to SQL"""
@@ -144,7 +145,8 @@ class SQLLastScanTable(LastScanTable):
         return self.db_dict
 
 
-class MySQLLastScanTable(LastScanTable, MySQLDBMixin):
+class MySQLLastScanTable(SQLLastScanTable, MySQLDBMixin):
+    """My SQL initialization and methods for last scan table"""
 
     def __init__(self, db_dict, dbtype, verbose):
         """Read the input file into a dictionary."""

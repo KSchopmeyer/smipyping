@@ -21,10 +21,15 @@ from __future__ import print_function, absolute_import
 import click
 import six
 
+from mysql.connector import Error as MySQLError
+
 from smipyping import UsersTable, CompaniesTable
+from smipyping._logging import AUDIT_LOGGER_NAME, get_logger
+
 from .smicli import cli, CMD_OPTS_TXT
 from ._click_common import validate_prompt, print_table, pick_from_list
 from ._common_options import add_options, no_verify_option
+from ._cmd_companies import get_companyid
 
 
 def pick_userid(context, users_tbl):
@@ -47,8 +52,12 @@ def pick_userid(context, users_tbl):
         user_item = users_tbl[t]
         if not user_item['CompanyID'] in companies_tbl:
             # TODO log error
-            click.echo('ERROR: Company ID %s does not exist' %
+            click.echo('DB ERROR: Company ID %s does not exist' %
                        user_item['CompanyID'])
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+            audit_logger.error('DB Error: UserTable. Company ID %s in userID %s'
+                               'does not exist.',
+                               user_item['CompanyID'], t)
             # TODO removed because we did not use company name in display
             # company_name = "%s_missing" % user_item['CompanyID']
         # else:
@@ -150,10 +159,11 @@ def users_group():
 @click.option('-e', '--email', type=str,
               required=True,
               help='User email address.')
-@click.option('-c', '--companyID', type=int,
+@click.option('-c', '--companyID', type=str,
               default=None,
               required=True,
-              help='CompanyID for the company attached to this user')
+              help='CompanyID for the company attached to this user. Enter ? '
+                   'to use selection list to get company id')
 @click.option('--inactive', default=False, is_flag=True,
               help='Set the active/inactive state in the database for this '
               'user. An inactive user is ignored. Default is active')
@@ -339,40 +349,44 @@ def cmd_users_add(context, options):
     first_name = options['firstname']
     last_name = options['lastname']
     email = options['email']
-    company_id = options['companyid']
-
-    companies_tbl = CompaniesTable.factory(context.db_info, context.db_type,
-                                           context.verbose)
+    companyid = options['companyid']
 
     users_tbl = UsersTable.factory(context.db_info, context.db_type,
                                    context.verbose)
+    companies_tbl = CompaniesTable.factory(context.db_info, context.db_type,
+                                           context.verbose)
 
     active = not options['inactive']
     notify = not options['disable']
 
-    context.spinner.stop()
-    # TODO sept 2017 expand to include active and notify
-    if company_id in companies_tbl:
-        company = companies_tbl[company_id]['CompanyName']
-        # TODO add verify before adding
-        click.echo('Adding %s %s in company=%s(%s), email=%s' %
-                   (first_name, last_name, company, company_id, email))
+    if companyid == "?":
+        companyid = get_companyid(context, companies_tbl, companyid, None)
+        if companyid is None:
+            return
 
-        if options['no_verify']:
-            users_tbl.insert(first_name, last_name, email, company_id,
-                             active=active,
-                             notify=notify)
-        else:
+    # TODO sept 2017 expand to include active and notify
+    if companyid in companies_tbl:
+        company = companies_tbl[companyid]['CompanyName']
+
+        if not options['no_verify']:
+            context.spinner.stop()
+            click.echo('Adding %s %s in company=%s(%s), email=%s' %
+                       (first_name, last_name, company, companyid, email))
             if validate_prompt('Validate add this user?'):
-                users_tbl.insert(first_name, last_name, email, company_id,
-                                 active=active,
-                                 notify=notify)
+                pass
             else:
                 click.echo('Aborted Operation')
                 return
+        try:
+            users_tbl.insert(first_name, last_name, email, companyid,
+                             active=active,
+                             notify=notify)
+        except MySQLError as ex:
+            click.echo("INSERT Error %s: %s" % (ex.__class__.__name__,
+                                                ex))
     else:
         raise click.ClickException('The companyID %s is not a valid companyID '
-                                   'in companies table' % company_id)
+                                   'in companies table' % companyid)
 
 
 def cmd_users_delete(context, userid, options):
@@ -385,18 +399,22 @@ def cmd_users_delete(context, userid, options):
         return
 
     if userid in users_tbl:
-        if options['no_verify']:
-            users_tbl.delete(userid)
-        else:
-            user = users_tbl[userid]
+        user = users_tbl[userid]
+
+        if not options['no_verify']:
             context.spinner.stop()
             click.echo('id=%s %s %s; %s' % (userid, user['FirstName'],
                                             user['Lastname'], user['Email']))
-            if validate_prompt('Delete user id %s' % userid):
-                users_tbl.delete(userid)
-            else:
-                click.echo('Abort Operation')
+            if not validate_prompt('Validate delete this user?'):
+                click.echo('Aborted Operation')
                 return
+
+        context.spinner.stop()
+        try:
+            users_tbl.delete(userid)
+        except MySQLError as ex:
+            click.echo("Change failed, Database Error Exception: %s: %s"
+                       % (ex.__class__.__name__, ex))
 
     else:
         raise click.ClickException('The UserID %s is not in the table' %
@@ -429,9 +447,7 @@ def cmd_users_modify(context, userid, options):
 
     user_record = users_tbl[userid]
 
-    if options['no_verify']:
-        context.targets_tbl.update(userid, changes)
-    else:
+    if not options['no_verify']:
         context.spinner.stop()
         click.echo('Proposed changes for id: %s, %s %s, email: %s:' %
                    (userid, user_record['FirstName'],
@@ -441,11 +457,17 @@ def cmd_users_modify(context, userid, options):
             click.echo('  %s: "%s" to "%s"' % (key,
                                                user_record[key],
                                                value))
-        if validate_prompt('Modify user id %s' % userid):
-            users_tbl.update_fields(userid, changes)
-        else:
+        if not validate_prompt('Modify user id %s' % userid):
             click.echo('Operation aborted by user.')
             return
+
+    context.spinner.stop()
+    try:
+        users_tbl.update_fields(userid, changes)
+    except MySQLError as ex:
+        click.echo("Change failed, Database Error Exception: %s: %s"
+                   % (ex.__class__.__name__, ex))
+        return
 
 
 def cmd_users_activate(context, userid, options):
@@ -471,7 +493,12 @@ def cmd_users_activate(context, userid, options):
             click.echo('User %s already inactive' % userid)
             return
         else:
-            users_tbl.activate(userid, active_flag)
+            try:
+                users_tbl.activate(userid, active_flag)
+            except MySQLError as ex:
+                click.echo("Activate failed, Database Error Exception: %s: %s"
+                           % (ex.__class__.__name__, ex))
+                return
             active_flag = users_tbl.is_active(userid)
             click.echo('User %s set %s' % (userid,
                                            users_tbl.is_active_str(userid)))

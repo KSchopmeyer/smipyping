@@ -28,8 +28,11 @@ from __future__ import print_function, absolute_import
 import os
 import csv
 import datetime
+from mysql.connector import Error as mysqlerror
 from ._dbtablebase import DBTableBase
 from ._mysqldbmixin import MySQLDBMixin
+
+from ._logging import AUDIT_LOGGER_NAME, get_logger
 
 __all__ = ['ProgramsTable']
 
@@ -223,28 +226,39 @@ class MySQLProgramsTable(ProgramsTable, MySQLDBMixin):
         try:
             cursor.execute(sql, data)
             self.connection.commit()
-        except Exception as ex:
-            print('Programs table.append failed: exception %r' % ex)
+            new_pgmid = cursor.lastrowid
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+            audit_logger.info('ProgramsTable userId %s added. ProgramName=%s, '
+                              'StartDate=%s EndDate=%s', new_pgmid,
+                              program_name, start_date, end_date)
+        except mysqlerror as ex:
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+            audit_logger.error('ProgramTable INSERT failed SQL update. SQL=%s. '
+                               'data=%s. Exception %s: %s', sql, data,
+                               ex.__class__.__name__, ex)
             self.connection.rollback()
             raise ex
         finally:
             self._load_table()
             self.connection.close()
 
-    def delete(self, program_id):
+    def delete(self, programid):
         """
-        Delete the record defined by user_id
+        Delete the record defined by programid
         """
         cursor = self.connection.cursor()
 
         sql = "DELETE FROM Program WHERE ProgramID=%s"
         try:
-            # TODO what is return on execute??
-            # pylint: disable=unused-variable
-            mydata = cursor.execute(sql, (program_id,))  # noqa F841
+            cursor.execute(sql, (programid,))  # noqa F841
             self.connection.commit()
-        except Exception as ex:
-            print('Programstable.delete failed: exception %r' % ex)
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+            audit_logger.info('ProgramTable ProgramId %s Deleted', programid)
+        except mysqlerror as ex:
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+            audit_logger.error('UserTable userid %s failed SQL DELETE. SQL=%s '
+                               'exception %s: %s',
+                               programid, sql, ex.__class__.__name__, ex)
             self.connection.rollback()
             raise ex
         finally:
