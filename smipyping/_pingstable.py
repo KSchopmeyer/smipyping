@@ -24,7 +24,9 @@ import datetime
 import csv
 import os
 import six
-from mysql.connector import Error
+
+from mysql.connector import Error as mysqlerror
+from ._logging import AUDIT_LOGGER_NAME, get_logger
 from ._dbtablebase import DBTableBase
 from ._mysqldbmixin import MySQLDBMixin
 from ._common import compute_startend_dates
@@ -71,6 +73,7 @@ class PingsTable(DBTableBase):
             inst = CsvPingsTable(db_dict, db_type, verbose)
 
         elif db_type == ('mysql'):
+            # pylint: disable=redefined-variable-type
             inst = MySQLPingsTable(db_dict, db_type, verbose)
         else:
             ValueError('Invalid pingstable factory db_type %s' % db_type)
@@ -210,7 +213,8 @@ class MySQLPingsTable(SQLPingsTable, MySQLDBMixin):
         """
         Get the id of the last inserted record
         """
-        # TODO this probably gets last inserted, not last in table
+        # TODO this probably gets last inserted, not last in table. They should
+        # be the same.
         cursor = self.connection.cursor()
         last_ping_id = cursor.lastrowid
         return last_ping_id
@@ -221,12 +225,11 @@ class MySQLPingsTable(SQLPingsTable, MySQLDBMixin):
             targets
         """
         last_ping = self.get_newest_ping()
-        print('LAST_PING %r' % (last_ping, ))
         last_timestamp = last_ping[2]
 
         cursor = self.connection.cursor()
         try:
-            # MySQL fails on Timestamp = %s but works with the BETWEEK
+            # MySQL fails on Timestamp = %s but works with the BETWEEN
             # syntax/
             cursor.execute('SELECT * '
                            'FROM Pings WHERE Timestamp  BETWEEN %s AND %s',
@@ -296,17 +299,24 @@ class MySQLPingsTable(SQLPingsTable, MySQLDBMixin):
         cursor = self.connection.cursor()
         try:
             if target_id is None:
-                cursor.execute('SELECT * '
-                               'FROM Pings WHERE Timestamp BETWEEN %s AND %s',
-                               (start_date, end_date))
+                sql = 'SELECT * ' \
+                      'FROM Pings WHERE Timestamp BETWEEN %s AND %s'
+                data = (start_date, end_date)
             else:
-                cursor.execute('SELECT * '
-                               'FROM Pings WHERE TargetID = %s AND '
-                               'Timestamp BETWEEN %s AND %s',
-                               (target_id, start_date, end_date))
+                sql = 'SELECT * ' \
+                      'FROM Pings WHERE TargetID = %s AND ' \
+                      'Timestamp BETWEEN %s AND %s'
+                data = (target_id, start_date, end_date)
 
+            cursor.execute(sql, data)
             rows = cursor.fetchall()
             return rows
+        except mysqlerror as err:
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+            audit_logger.error('PingsTable SELECT failed. SQL=%s. '
+                               'data=%s. Exception %s: %s', sql, data,
+                               err.__class__.__name__, err)
+            raise
 
         finally:
             cursor.close()
@@ -398,23 +408,34 @@ class MySQLPingsTable(SQLPingsTable, MySQLDBMixin):
         cursor = self.connection.cursor()
 
         try:
-            try:
-                if target_id is None:
-                    cursor.execute('DELETE  '
-                                   'FROM Pings '
-                                   'WHERE Timestamp BETWEEN %s AND %s',
-                                   (start_date, end_date))
-                else:
-                    cursor.execute('DELETE '
-                                   'FROM Pings WHERE TargetID = %s AND '
-                                   'Timestamp BETWEEN %s AND %s',
-                                   (target_id, start_date, end_date))
-            except Error as err:
-                print(err)
-                self.connection.rollback()
-                raise
+            if target_id is None:
+                sql = 'DELETE  ' \
+                      'FROM Pings ' \
+                      'WHERE Timestamp BETWEEN %s AND %s'
+                data = (start_date, end_date)
 
+            else:
+                sql = 'DELETE ' \
+                      'FROM Pings WHERE TargetID = %s AND ' \
+                      'Timestamp BETWEEN %s AND %s'
+                data = (target_id, start_date, end_date)
+
+            cursor.execute(sql, data)
             self.connection.commit()
+
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+            target_id_str = "" if not target_id else " for TargetID %s " % \
+                            target_id
+            audit_logger.info('PingsTable Delete %s by daterange from=%s '
+                              'to=%s', target_id_str, start_date, end_date)
+
+        except mysqlerror as err:
+            self.connection.rollback()
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+            audit_logger.error('PingsTable Delete failed SQL update. SQL=%s. '
+                               'data=%s. Exception %s: %s', sql, data,
+                               err.__class__.__name__, err)
+            raise
 
         finally:
             cursor.close()
@@ -559,9 +580,14 @@ class MySQLPingsTable(SQLPingsTable, MySQLDBMixin):
         try:
             cursor.execute(sql, data)
             self.connection.commit()
-        except Exception as ex:
-            print('pingstable.append exception %r' % ex)
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+            audit_logger.info('PingsTable INSERT sql %s values %s ', sql, data)
+        except mysqlerror as ex:
             self.connection.rollback()
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+            audit_logger.error('PingsTable INSERT failed SQL update. SQL=%s. '
+                               'data=%s. Exception %s: %s', sql, data,
+                               ex.__class__.__name__, ex)
             raise ex
         finally:
             cursor.close()

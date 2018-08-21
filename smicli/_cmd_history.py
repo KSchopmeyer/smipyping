@@ -310,8 +310,16 @@ def cmd_history_weekly(context, options):
         cp['StartDate'],
         end_date=cp['EndDate'])
 
-    headers = ['target\nid', 'IP', 'Company', 'Product', '%\nToday', '%\nWeek',
-               '%\nPgm', 'Contacts']
+    # get last pings information from history
+
+    # TODO the last can uses current time so the postdated report is really
+    # in error. Should be the report_date
+    ping_rows = pings_tbl.get_last_timestamped()
+    last_status = {ping[1]: ping[3] for ping in ping_rows}
+    last_status_time = ping_rows[0][2]
+
+    headers = ['target\nid', 'IP', 'Company', 'Product', "LastScan",
+               '%\nToday', '%\nWeek', '%\nPgm', 'Contacts']
 
     report_order = options['order']
 
@@ -354,8 +362,13 @@ def cmd_history_weekly(context, options):
         else:
             week_percent = 0
 
-        row = [target_id, ip, company, product, today_percent, week_percent,
-               value[0], emails]
+        if target_id in last_status:
+            last_scan_status = last_status[target_id]
+        else:
+            last_scan_status = "Unknown"
+
+        row = [target_id, ip, company, product, fold_cell(last_scan_status, 9),
+               today_percent, week_percent, value[0], emails]
         tbl_rows.append(row)
 
         # sort by the company column
@@ -366,11 +379,12 @@ def cmd_history_weekly(context, options):
     print_table(tbl_rows, headers,
                 title=('Server Status: Report-date=%s '
                        'program=%s start: %s end: '
-                       '%s' %
+                       '%s, LastScan: %s' %
                        (datetime_display_str(report_date),
                         cp['ProgramName'],
                         cp['StartDate'],
-                        cp['EndDate'])),
+                        cp['EndDate'],
+                        last_status_time)),
                 table_format=context.output_format)
 
 

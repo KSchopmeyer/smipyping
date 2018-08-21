@@ -232,11 +232,11 @@ class MySQLProgramsTable(ProgramsTable, MySQLDBMixin):
                               'StartDate=%s EndDate=%s', new_pgmid,
                               program_name, start_date, end_date)
         except mysqlerror as ex:
+            self.connection.rollback()
             audit_logger = get_logger(AUDIT_LOGGER_NAME)
             audit_logger.error('ProgramTable INSERT failed SQL update. SQL=%s. '
                                'data=%s. Exception %s: %s', sql, data,
                                ex.__class__.__name__, ex)
-            self.connection.rollback()
             raise ex
         finally:
             self._load_table()

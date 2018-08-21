@@ -20,6 +20,10 @@ complete scan of the servers in a single request.
 
 There is only a single function, the last scan update that updates the
 time to the time provided by an input parameter.
+
+This table is probably obsolete. We can get the same information by looking
+at the last record in the pings table.
+TODO: Future. remove this table
 """
 
 from __future__ import print_function, absolute_import
@@ -42,6 +46,7 @@ class LastScanTable(DBTableBase):
     key_field = 'ScanID'
     fields = [key_field, 'LastScan']
     table_name = 'LastScan'
+
     def __init__(self, db_dict, db_type, verbose):
         super(LastScanTable, self).__init__(db_dict, db_type, verbose)
 
