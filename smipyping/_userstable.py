@@ -337,7 +337,7 @@ class MySQLUsersTable(UsersTable, MySQLDBMixin):
             raise ex
         finally:
             self._load_table()
-            self.connection.close()
+            # self.connection.close()
 
     def update_fields(self, userid, changes):
         """
