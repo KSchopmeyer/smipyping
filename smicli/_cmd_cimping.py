@@ -311,6 +311,8 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
         # if option set, append status to pings table
         for result in results:
             tbl_inst.append(result[0], result[1], timestamp)
+        # TODO this may be duplicate logging since the audit log for this
+        # is in the append method
         audit_logger = get_logger(AUDIT_LOGGER_NAME)
         audit_logger.info('cimping updated pings table timestamp %s add %s '
                           'records', timestamp, len(results))

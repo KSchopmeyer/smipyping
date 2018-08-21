@@ -147,7 +147,7 @@ def target_disable(context, targetid, enable, **options):
               help='Modify the namespace field.')
 @add_options(no_verify_option)
 @click.pass_obj
-def target_modify(context, targetid, enable, **options):
+def target_modify(context, targetid, **options):
     """
     Modify fields target database record.
 
@@ -408,7 +408,7 @@ def cmd_targets_list(context, options):
     fields = list(options['fields'])
     # TODO. For now this is hidden capability.  Need to make public
     # Entering all as first field name causes all fields to be used.
-    if  fields and fields[0] == 'all':
+    if fields and fields[0] == 'all':
         fields = context.targets_tbl.fields
 
     field_selects = context.targets_tbl.fields

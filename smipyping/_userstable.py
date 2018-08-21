@@ -29,9 +29,10 @@ from __future__ import print_function, absolute_import
 import os
 import csv
 import six
+from mysql.connector import Error as mysqlerror
+
 from ._dbtablebase import DBTableBase
 from ._mysqldbmixin import MySQLDBMixin
-
 
 from ._logging import AUDIT_LOGGER_NAME, get_logger
 
@@ -75,6 +76,7 @@ class UsersTable(DBTableBase):
         if db_type == 'csv':
             inst = CsvUsersTable(db_dict, db_type, verbose)
         elif db_type == 'mysql':
+            # pylint: disable=redefined-variable-type
             inst = MySQLUsersTable(db_dict, db_type, verbose)
         else:
             ValueError('Invalid users table factory db_type %s' % db_type)
@@ -265,8 +267,17 @@ class MySQLUsersTable(UsersTable, MySQLDBMixin):
         try:
             cursor.execute(sql, data)
             self.connection.commit()
-        except Exception as ex:
-            print('userstable.append failed: exception %r' % ex)
+            new_userid = cursor.lastrowid
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+            audit_logger.info('UserTable userId %s added. Firstname=%s, '
+                              'Lastname=%s Email=%s, CompanyID=%s, Active=%s, '
+                              'Notify=%s', new_userid, firstname, lastname,
+                              email, company_id, active, notify)
+        except mysqlerror as ex:
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+            audit_logger.error('UserTable INSERT failed SQL update. SQL=%s. '
+                               'data=%s. Exception %s: %s', sql, data,
+                               ex.__class__.__name__, ex)
             self.connection.rollback()
             raise ex
         finally:
@@ -285,8 +296,13 @@ class MySQLUsersTable(UsersTable, MySQLDBMixin):
             # pylint: disable=unused-variable
             mydata = cursor.execute(sql, (user_id,))  # noqa F841
             self.connection.commit()
-        except Exception as ex:
-            print('userstable.delete failed: exception %r' % ex)
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+            audit_logger.info('UserTable userId %s Deleted', user_id)
+        except mysqlerror as ex:
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+            audit_logger.error('UserTable userid %s failed SQL DELETE. SQL=%s '
+                               'exception %s: %s',
+                               user_id, sql, ex.__class__.__name__, ex)
             self.connection.rollback()
             raise ex
         finally:
@@ -304,16 +320,24 @@ class MySQLUsersTable(UsersTable, MySQLDBMixin):
         sql = 'UPDATE Users SET Active = %s WHERE UserID = %s'
 
         try:
-            mydata = cursor.execute(sql, (active_kw, user_id))  # noqa F841
+            cursor.execute(sql, (active_kw, user_id))  # noqa F841
             self.connection.commit()
-        except Exception as ex:
-            print('userstable.activate id  %s failed: exception %r' % (user_id,
-                                                                       ex))
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+
+            audit_logger.info('UserTable userId %s,set active to %s',
+                              user_id, active_kw)
+        except mysqlerror as ex:
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+            audit_logger.error('UserTable userid %s failed SQL change '
+                               'activate. SQL=%s '
+                               'Change to %s exception %s: %s',
+                               user_id, sql, active_kw, ex.__class__.__name__,
+                               ex)
             self.connection.rollback()
             raise ex
         finally:
             self._load_table()
-            self.connection.close()
+            # self.connection.close()
 
     def update_fields(self, userid, changes):
         """
@@ -351,7 +375,7 @@ class MySQLUsersTable(UsersTable, MySQLDBMixin):
 
             audit_logger.info('UserTable userId %s,update fields %s',
                               userid, change_str)
-        except Exception as ex:
+        except mysqlerror as ex:
             audit_logger = get_logger(AUDIT_LOGGER_NAME)
             audit_logger.error('UserTable userid %s failed SQL update. SQL=%s '
                                'Changes %s exception %s',

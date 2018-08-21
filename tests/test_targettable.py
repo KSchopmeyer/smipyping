@@ -117,17 +117,12 @@ class TargetsTableTest(CsvTableTests):
     def test_get_unique_creds(self):
         print(self.target_table.get_unique_creds())
 
-    @unittest.skip("fails with csv")
-    def test_display_disabled(self):
-        # targets_tbl = self.get_targets_tbl()
-        self.target_table.display_disabled('simple')
-
-    @unittest.skip("Deoe not work for CSV")
+    @unittest.skip("Does not work for CSV")
     def test_enabled_target(self):
-        # targets_tbl = self.get_targets_tbl()
-        self.target_table.display_disabled('simple')
-        self.assertFalse(
-            self.target_table.disabled_target(self.target_table[4]))
+        target_tbl = self.target_table
+        disabled = target_tbl.get_disabled_targetids()
+        enabled = target_tbl.get_enabled_targetids()
+        self.assertTrue(len(disabled) + len(enabled) == len(target_tbl.keys()))
 
 
 if __name__ == '__main__':

@@ -23,6 +23,7 @@ import click
 from click_datetime import Datetime
 from dateutil.relativedelta import relativedelta
 import six
+from mysql.connector import Error as mysqlerror
 
 from smipyping import ProgramsTable
 from .smicli import cli, CMD_OPTS_TXT
@@ -295,19 +296,19 @@ def cmd_programs_delete(context, programid, options):
     if programid is None:
         return
 
-    if programid in programs_tbl:
-        if 'no_verify' in options:
-            programs_tbl.delete(programid)
-        else:
-            program = programs_tbl[programid]
-            context.spinner.stop()
-            click.echo(program)
-            if validate_prompt('Delete program id %s' % programid):
-                programs_tbl.delete(programid)
-            else:
-                click.echo('Operation aborted by user')
-                return
-
-    else:
+    if programid not in programs_tbl:
         raise click.ClickException('The ProgramID %s is not in the table' %
                                    programid)
+
+    if not options['no_verify']:
+        context.spinner.stop()
+        click.echo(programs_tbl[programid])
+        if not validate_prompt('Delete program id %s' % programid):
+            click.echo('Operation aborted by user')
+            return
+
+    try:
+        programs_tbl.delete(programid)
+    except mysqlerror as ex:
+        click.echo("Change failed, Database Error Exception: %s: %s"
+                   % (ex.__class__.__name__, ex))
