@@ -1669,7 +1669,7 @@ The following defines the help output for the `smicli users --help` subcommand
       -h, --help  Show this message and exit.
 
     Commands:
-      activate  Activate or deactivate a user.
+      activate  Activate or deactivate multiple users.
       add       Add a new user in the user table.
       delete    Delete a user from the database.
       list      List users in the database.
@@ -1690,15 +1690,19 @@ The following defines the help output for the `smicli users activate --help` sub
 
     Usage: smicli users activate [COMMAND-OPTIONS] UserID
 
-      Activate or deactivate a user.
+      Activate or deactivate multiple users.
 
-      This sets the user defined by the id argument to either active or
-      Inactive.  When a user is inactive they are no longer shown in tables that
+      This sets the users defined by the userids argument to either active or
+      inactive.  When a user is inactive they are no longer shown in tables that
       involve user information such as the weekly report.
 
-      The user to be activated or deactivated may be specified by a) specific
-      user id, b) the interactive mode option, or c) using '?' as the user id
+      The users to be activated or deactivated may be specified by a) specific
+      user ids, b) the interactive mode option, or c) using '?' as the user id
       argument which also initiates the interactive mode options.
+
+      Each user selected activated separately and users already in the target
+      state are bypassed. If the --no-verify option is not set each user to be
+      changed causes a verification request before the change.
 
       Example:     smicli users ? --activate
 
@@ -1708,6 +1712,8 @@ The following defines the help output for the `smicli users activate --help` sub
                              inactive.
       -i, --interactive      If set, presents list of users from which one can be
                              chosen.
+      -n, --no-verify        Disable verification prompt before the operation is
+                             executed.
       -h, --help             Show this message and exit.
 
 
@@ -1734,19 +1740,18 @@ The following defines the help output for the `smicli users add --help` subcomma
       is executed unless the `--no-verify' parameter is set.
 
     Options:
-      -f, --firstname TEXT     User first name.  [required]
-      -l, --lastname TEXT      User last name  [required]
-      -e, --email TEXT         User email address.  [required]
-      -c, --companyID INTEGER  CompanyID for the company attached to this user
-                               [required]
-      --inactive               Set the active/inactive state in the database for
-                               this user. An inactive user is ignored. Default is
-                               active
-      --disable                Disable notifications in the database for this
-                               user. Default is enabled
-      -N, --no_verify          Disable verification prompt before the change is
-                               executed.
-      -h, --help               Show this message and exit.
+      -f, --firstname TEXT  User first name.  [required]
+      -l, --lastname TEXT   User last name  [required]
+      -e, --email TEXT      User email address.  [required]
+      -c, --companyID TEXT  CompanyID for the company attached to this user. Enter
+                            ? to use selection list to get company id  [required]
+      --inactive            Set the active/inactive state in the database for this
+                            user. An inactive user is ignored. Default is active
+      --disable             Disable notifications in the database for this user.
+                            Default is enabled
+      -N, --no_verify       Disable verification prompt before the change is
+                            executed.
+      -h, --help            Show this message and exit.
 
 
 .. _`smicli users delete --help`:
