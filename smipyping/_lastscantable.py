@@ -144,7 +144,7 @@ class SQLLastScanTable(LastScanTable):
         try:
             print('database characteristics')
             for key in self.db_dict:
-                print('%s: %s' % key, self.db_dict[key])
+                print('%s: %s' % (key, self.db_dict[key]))
         except ValueError as ve:
             print('Invalid database configuration exception %s' % ve)
         return self.db_dict
