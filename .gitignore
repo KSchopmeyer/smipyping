@@ -34,3 +34,4 @@ cover
 *.eggs
 *egg-info
 email.ini
+smicli.ini
