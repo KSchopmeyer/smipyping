@@ -165,8 +165,8 @@ def get_multiple_user_ids(context, userids, users_tbl, options=None,
             context.spinner.start()
             return int_user_ids
 
-    if int_target_ids == []:
-        click.echo("Operation aborted by user.")
+    if int_users_ids == []:
+        click.echo("No users selected.")
     context.spinner.start()
     return int_user_ids
 
