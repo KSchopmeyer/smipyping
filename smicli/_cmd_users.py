@@ -53,7 +53,7 @@ def build_userid_display(userid, user_item, companies_tbl):
     """
     company_name = get_company_name(companies_tbl, user_item['CompanyID'],
                                     userid)
-    return u'   id=%s, %s %s, %s %s' % (userid, company_name,
+    return u'   id=%-3s %-20s %-16s %-16s %s' % (userid, company_name,
                                         user_item['FirstName'],
                                         user_item['Lastname'],
                                         user_item['Email'],
