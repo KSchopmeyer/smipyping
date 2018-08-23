@@ -38,10 +38,10 @@ def get_company_name(companies_tbl, companyid, userid):
     if companyid not in companies_tbl:
         click.echo('DB ERROR: Company ID %s does not exist' % companyid)
         audit_logger = get_logger(AUDIT_LOGGER_NAME)
-        audit_logger.error('DB Error: UserTable. Company ID %s in userID %s'
+        audit_logger.error('DB Error: UserTable. Company ID %s in userID %s '
                            'does not exist.',
                            companyid, userid)
-        company_name = "companyID %s missing" % companyid
+        company_name = '"No companyID %s"' % companyid
     else:
         company_name = companies_tbl[companyid]['CompanyName']
     return company_name
@@ -53,13 +53,14 @@ def build_userid_display(userid, user_item, companies_tbl):
     """
     company_name = get_company_name(companies_tbl, user_item['CompanyID'],
                                     userid)
-    return u'   id=%s, %s %s, %s %s' % (userid, user_item['FirstName'],
+    return u'   id=%s, %s %s, %s %s' % (userid, company_name,
+                                        user_item['FirstName'],
                                         user_item['Lastname'],
                                         user_item['Email'],
-                                        company_name)
+                                        )
 
 
-def pick_multiple_user_ids(context, users_tbl):
+def pick_multiple_user_ids(context, users_tbl, active=None):
     """
     Interactive selection of user ids from list presented on the console.
 
@@ -72,23 +73,26 @@ def pick_multiple_user_ids(context, users_tbl):
     companies_tbl = CompaniesTable.factory(context.db_info, context.db_type,
                                            context.verbose)
 
-    users_keys = users_tbl.keys()
+    if active is None:
+        userids = users_tbl.keys()
+    else:
+        userids = users_tbl.get_active_userids(active)
 
-    display_options = [build_userid_display(key, users_tbl[key], companies_tbl)
-                       for key in users_keys]
+    display_txt = [build_userid_display(userid, users_tbl[userid],
+                   companies_tbl) for userid in userids]
     try:
-        indexes = pick_multiple_from_list(context, display_options,
+        indexes = pick_multiple_from_list(context, display_txt,
                                           "Pick TargetIDs:")
     except ValueError:
         pass
     if indexes is None:
         click.echo('Abort command')
         return None
-    return [users_keys[index] for index in indexes]
+    return [userids[index] for index in indexes]
 
 
 def get_multiple_user_ids(context, userids, users_tbl, options=None,
-                          allow_none=False):
+                          allow_none=False, active=None):
     """
         Get the users based on the value of userid or the value of the
         interactive option.  If userid is an
@@ -108,18 +112,29 @@ def get_multiple_user_ids(context, userids, users_tbl, options=None,
 
           context(): Current click context
 
-          userid(list of :term:`string` or list of:term:`integer` or None):
-            The targets database target id as a string or integer or the
-            string "?" or the value None
+          userids(list of :term:`string` or list of:term:`integer` or None):
+            The userids as a string or integer or the
+            string "?" or the value None. If string or int userids are provided
+            they are used as the basis for testing against table and returned
+            as list of valid integer userids.
 
           options: The click options.  Used to determine if --interactive mode
             is defined
 
-          allow_none(:class:`py:bool`):
+          allow_none (:class:`py:bool`):
             If True, None is allowed as a value and returned. Otherwise
             None is considered invalid. This is used to separate the cases
-            where the target id is an option that may have a None value vs.
+            where the user id is an option that may have a None value vs.
             those cases where it is a required parameter.
+
+          active (:class:`py:bool`):
+            Boolean used to filter the returned list.
+
+            * If `True`, only userids for active users are returned
+
+            * If `False`, only userids for inactive users are returned.
+
+            * if `None`, all user ids are returned
 
         Returns:
             Returns integer target_id of a valid targetstbl TargetID
@@ -130,15 +145,14 @@ def get_multiple_user_ids(context, userids, users_tbl, options=None,
     if allow_none and userids is None or userids == []:
         return userids
     context.spinner.stop()
-
+    int_user_ids = []
     if options and 'interactive' in options and options['interactive']:
         context.spinner.stop()
         int_user_ids = pick_multiple_user_ids(context, users_tbl)
     elif isinstance(userids, (list, tuple)):
-        int_user_ids = []
         if len(userids) == 1 and userids[0] == "?":
             context.spinner.stop()
-            int_user_ids = pick_multiple_user_ids(context, users_tbl)
+            int_user_ids = pick_multiple_user_ids(context, users_tbl, active)
         else:
             for userid in userids:
                 if isinstance(userid, six.integer_types):
@@ -154,7 +168,6 @@ def get_multiple_user_ids(context, userids, users_tbl, options=None,
                     raise click.ClickException('List of User Ids invalid')
                 try:
                     users_tbl[userid]
-                    int_user_ids.append(userid)
                 except KeyError as ke:
                     raise click.ClickException('User ID %s not in database. '
                                                'Exception: %s: %s' %
@@ -165,7 +178,7 @@ def get_multiple_user_ids(context, userids, users_tbl, options=None,
             context.spinner.start()
             return int_user_ids
 
-    if int_users_ids == []:
+    if int_user_ids == []:
         click.echo("No users selected.")
     context.spinner.start()
     return int_user_ids

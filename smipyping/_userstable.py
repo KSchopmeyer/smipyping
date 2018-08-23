@@ -47,6 +47,11 @@ class UsersTable(DBTableBase):
     key_field = 'UserID'
     fields = [key_field, 'FirstName', 'Lastname', 'Email', 'CompanyID',
               'Active', 'Notify']
+
+    # In the following, The first entry corresponds to True and the second
+    # to False
+    active_field = ['Active', 'Inactive']  # db field is enum with two choices
+    notify_field = ['Enabled', 'Disabled']  # db field is enum with two choices
     table_name = 'Users'
 
     def __init__(self, db_dict, db_type, verbose):
@@ -110,7 +115,6 @@ class UsersTable(DBTableBase):
             KeyError if the field is NOT in the user table.
 
         """
-        # return {}
         return {key: value for key, value in six.iteritems(self)
                 if value[field] == target_value}
 
@@ -140,6 +144,25 @@ class UsersTable(DBTableBase):
             True if active. False if Inactive
         """
         return True if self[user_id]['Active'] == 'Active' else False
+
+    def is_inactive(self, user_id):
+        """
+        Test if user_id is marked inactive
+
+        Return:
+            True if active. False if Inactive
+        """
+        return True if self[user_id]['Active'] == 'Inactive' else False
+
+    def get_active_usersids(self, active=True):
+        """Get list of userids filtered by whether they are active or not """
+
+        if active:
+            return [userid for userid in six.iterkeys(self.data_dict)
+                    if self.is_active(userid)]
+
+        return [userid for userid in six.iterkeys(self.data_dict)
+                if self.is_inactive(userid)]
 
     def is_active_str(self, user_id):
         """ Get string value of active enum."""

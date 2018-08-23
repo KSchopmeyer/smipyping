@@ -25,6 +25,7 @@ import sys
 import logging
 from logging import StreamHandler, NullHandler
 from logging.handlers import SysLogHandler
+from logging.handlers import RotatingFileHandler
 import platform
 import click_repl
 import click
@@ -221,14 +222,14 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
         # Enable the hidden loggers.
         logger = logging.getLogger(AUDIT_LOGGER_NAME)
         logger.setLevel(logging.INFO)
-        handler = logging.FileHandler(log_file)
+        handler = RotatingFileHandler(log_file)
         formatter = logging.Formatter('%(asctime)s-%(name)s-%(message)s')
         handler.setFormatter(formatter)
         logger.addHandler(handler)
 
         logger = logging.getLogger(ERROR_LOGGER_NAME)
         logger.setLevel(logging.INFO)
-        handler = logging.FileHandler(log_file)
+        handler = logging.FileHandler(log_file, maxBytes=80000, backupCount=4)
         formatter = logging.Formatter('%(asctime)s-%(name)s-%(message)s')
         handler.setFormatter(formatter)
         logger.addHandler(handler)
