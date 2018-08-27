@@ -1672,6 +1672,7 @@ The following defines the help output for the `smicli users --help` subcommand
       activate  Activate or deactivate multiple users.
       add       Add a new user in the user table.
       delete    Delete a user from the database.
+      fields    Display field names in targets database.
       list      List users in the database.
       modify    Modify fields of a user in the user database.
 
@@ -1784,6 +1785,26 @@ The following defines the help output for the `smicli users delete --help` subco
       -h, --help         Show this message and exit.
 
 
+.. _`smicli users fields --help`:
+
+smicli users fields --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli users fields --help` subcommand
+
+
+::
+
+    Usage: smicli users fields [COMMAND-OPTIONS]
+
+      Display field names in targets database.
+
+    Options:
+      -h, --help  Show this message and exit.
+
+
 .. _`smicli users list --help`:
 
 smicli users list --help
@@ -1801,7 +1822,20 @@ The following defines the help output for the `smicli users list --help` subcomm
       List users in the database.
 
     Options:
-      -h, --help  Show this message and exit.
+      -f, --fields FIELDNAME  Define specific fields for output. UserID always
+                              included. Multiple fields can be specified by
+                              repeating the option. (Default: predefined list of
+                              fields).
+                              Enter: "-f ?" to interactively select
+                              fields for display.
+                              Ex. "-f UserID -f CompanyName"
+      -d, --disabled          Show disabled tusers. Otherwise only users that are
+                              set enabled in the database are shown.(Default:Do
+                              not show disabled users).
+      -o, --order FIELDNAME   Sort by the defined field name. Names are viewed
+                              with the targets fields subcommand or "-o ?" to
+                              interactively select field for sort
+      -h, --help              Show this message and exit.
 
 
 .. _`smicli users modify --help`:

@@ -29,7 +29,14 @@ from ._tableoutput import HtmlTable
 __all__ = ['DEFAULT_CONFIG_FILE', 'SMICLI_PROMPT', 'SMICLI_HISTORY_FILE',
            'DEFAULT_SMICLI_CONFIG_FILES', 'pick_from_list',
            'pick_multiple_from_list', 'print_table',
-           'get_target_id', 'get_multiple_target_ids']
+           'get_target_id', 'get_multiple_target_ids',
+           'test_db_updates_allowed']
+
+#: Flag to determine if smicli can update the database.  This either allows
+#: or disallows any of the add, modify, delete subcommands that execute on
+#: the database as well as the cimping -s option and the explorer option
+#: that update the smi version.
+DB_UPDATES_ALLOWED = True
 
 USE_TABULATE = False
 #: Default configuration file for smipyping cli
@@ -74,6 +81,17 @@ def validate_prompt(text=""):
     """
     rslt = local_prompt(unicode('%s valid (y/n): ' % text))
     return True if rslt == 'y' else False
+
+
+def test_db_updates_allowed():
+    """
+    Test if db updates allowed and return True if allowed. If not allowed
+    generate click exception.
+    """
+    if DB_UPDATES_ALLOWED:
+        return True
+    click.clickException('Subcommands that update the database are not '
+                         'allowed.')
 
 
 def pick_from_list(context, options, title):

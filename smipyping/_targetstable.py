@@ -42,10 +42,11 @@ import re
 from collections import OrderedDict
 from textwrap import wrap
 import six
-from mysql.connector import MySQLConnection
 from ._configfile import read_config
 from ._dbtablebase import DBTableBase
+from ._mysqldbmixin import MySQLDBMixin
 from ._common import get_url_str
+from ._logging import AUDIT_LOGGER_NAME, get_logger
 
 __all__ = ['TargetsTable']
 
@@ -66,6 +67,10 @@ class TargetsTable(DBTableBase):
               'SMIVersion', 'Product', 'Principal', 'Credential',
               'CimomVersion', 'InteropNamespace', 'Notify', 'NotifyUsers',
               'ScanEnabled', 'Protocol', 'Port']
+
+    join_fields = ['CompanyName']
+    all_fields = fields + join_fields
+
     table_name = 'Targets'
 
     # # Defines each record for the data base and outputs.
@@ -158,6 +163,7 @@ class TargetsTable(DBTableBase):
                                    output_format=output_format)
 
         elif db_type == ('mysql'):
+            # pylint: disable=redefined-variable-type
             inst = MySQLTargetsTable(db_dict, db_type, verbose,
                                      output_format=output_format)
         else:
@@ -287,12 +293,12 @@ class TargetsTable(DBTableBase):
         """
         # TODO can we make this a std cvt function.
 
-        record = self.get_target(record_id)
+        target = self.get_target(record_id)
 
         line = []
 
         for field_name in fields:
-            field_value = record[field_name]
+            field_value = target[field_name]
             fmt_value = self.get_format_dict(field_name)
             max_width = fmt_value[1]
             field_type = fmt_value[2]
@@ -397,7 +403,7 @@ class SQLTargetsTable(TargetsTable):
         return self.db_dict
 
 
-class MySQLTargetsTable(SQLTargetsTable):
+class MySQLTargetsTable(SQLTargetsTable, MySQLDBMixin):
     """
     This subclass of TargetsTable process targets infromation from an sql
     database.
@@ -413,78 +419,48 @@ class MySQLTargetsTable(SQLTargetsTable):
                                                 output_format)
 
         self.connectdb(db_dict, verbose)
-        self._load()
+        self._load_table()
+        self._load_joins()
 
-    def connectdb(self, db_dict, verbose):
-        """Connect the db"""
-        try:
-            connection = MySQLConnection(host=db_dict['host'],
-                                         database=db_dict['database'],
-                                         user=db_dict['user'],
-                                         password=db_dict['password'])
-
-            if connection.is_connected():
-                self.connection = connection
-                if verbose:
-                    print('sql db connection established. host %s, db %s' %
-                          (db_dict['host'], db_dict['database']))
-            else:
-                print('SQL database connection failed. host %s, db %s' %
-                      (db_dict['host'], db_dict['database']))
-                raise ValueError('Connection to database failed')
-        except Exception as ex:
-            raise ValueError('Could not connect to sql database %r. '
-                             ' Exception: %r'
-                             % (db_dict, ex))
-
-        self._load()
-
-    def _load(self):
+    def _load_joins(self):
         """
-        Load the internal dictionary from the database.
+        Load the tables that would normally be joins.  In this case it is the
+        companies table and move the companyName into the targets table
+        TODO we should not be doing this in this manner but with a
+        join.
         """
+        # Get companies table and insert into targets table:
+
+        # companies_tbl = CompaniesTable.factory(self.db_info,
+        #                                       self.db_type,
+        #                                       self.verbose)
         try:
+            # TODO this should simply use the CompanyTable class (above)
             cursor = self.connection.cursor(dictionary=True)
-
-            fields = ', '.join(self.fields)
-            sql = 'SELECT %s FROM %s' % (fields, self.table_name)
-            cursor.execute(sql)
-            rows = cursor.fetchall()
-            for row in rows:
-                key = row[self.key_field]
-                self.data_dict[key] = row
-
-        except Exception as ex:
-            raise ValueError('Error: setup sql based targets table %r. '
-                             'Exception: %r'
-                             % (self.db_dict, ex))
-
-        # get companies table and insert into targets table:
-        # TODO we should not be doing this in this manner but with a
-        # join.
-        try:
-            cursor = self.connection.cursor(dictionary=True)
-
             # get the companies table
             cursor.execute('SELECT CompanyID, CompanyName FROM Companies')
             rows = cursor.fetchall()
-            companies = {}
+
+            companies_tbl = {}
             for row in rows:
                 # required because the dictionary=True in cursor statement
                 # only works in v2 mysql-connector
                 assert isinstance(row, dict), "Issue with mysql-connection ver"
-
                 key = row['CompanyID']
-                companies[key] = row['CompanyName']
-
+                companies_tbl[key] = row['CompanyName']
         except Exception as ex:
-            raise ValueError('Could not create companies table %r Exception: %r'
-                             % (rows, ex))
+            raise ValueError('Could not create companies table. Exception: %s'
+                             % ex)
+
         try:
             # set the companyname into the targets table
             for target_key in self.data_dict:
                 target = self.data_dict[target_key]
-                target['CompanyName'] = companies[target['CompanyID']]
+                if target['CompanyID'] in companies_tbl:
+                    target['CompanyName'] = companies_tbl[target['CompanyID']]
+                else:
+                    target['CompanyName'] = "TableError CompanyID %s" % \
+                        target['CompanyID']
 
         except Exception as ex:
             raise ValueError('Error: putting Company Name in table %r error %s'
@@ -516,17 +492,22 @@ class MySQLTargetsTable(SQLTargetsTable):
         # append targetid component
         sql = sql + " WHERE TargetID=%s"
 
-        print('UPDATE_FIELDS sql=%s, values=%s' % (sql, values))
-
         try:
             cursor.execute(sql, tuple(values))
             self.connection.commit()
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+
+            audit_logger.info('TargetsTable userId %s,update fields %s',
+                              target_id, changes)
         except Exception as ex:
-            print('Targets table failed: exception %r' % ex)
             self.connection.rollback()
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+            audit_logger.error('TargetsTable targetid %s failed SQL update. '
+                               'SQL: %s Changes: %s Exception: %s',
+                               target_id, sql, changes, ex)
             raise ex
         finally:
-            self._load()
+            self._load_table()
             cursor.close()
 
 

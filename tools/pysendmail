@@ -46,7 +46,7 @@ def send_msg(message, to_addrs, from_addr, verbosity):
         server.starttls()
         server.login(USR, PW)
     except smtplib.SMTPException as se:
-        print('SMTP connection Exception error $s mail not sent' % se)
+        print('SMTP connection Exception error %s mail not sent' % se)
         sys.exit(1)
 
     if verbosity > 2:
