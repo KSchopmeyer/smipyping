@@ -31,7 +31,7 @@ smicli --help
 smicli companies list --help
 smicli companies list
 
-# Do not cover add, modify, delete
+# Does not cover add, modify, delete
 
 smicli programs --help
 smicli programs current -h
@@ -39,8 +39,7 @@ smicli programs current
 smicli programs list -h
 smicli programs list
 
-# do not cover add and delete
-
+# does not cover add and delete
 
 smicli history -h
 smicli history overview -h
