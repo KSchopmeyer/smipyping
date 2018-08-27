@@ -23,7 +23,7 @@ import click
 
 from .smicli import cli, CMD_OPTS_TXT
 from ._click_common import print_table, validate_prompt, get_target_id, \
-    pick_multiple_from_list, pick_from_list
+    pick_multiple_from_list, pick_from_list, test_db_updates_allowed
 from ._common_options import add_options, no_verify_option
 
 
@@ -108,15 +108,15 @@ def targets_get(context, targetid, **options):
 @click.option('-i', '--interactive', is_flag=True, default=False,
               help='If set, presents list of targets to chose.')
 @click.pass_obj
-def target_disable(context, targetid, enable, **options):
+def targets_disable(context, targetid, enable, **options):
     """
     Disable a provider from scanning. This changes the database.
 
     Use the `interactive` option  or "?" for target id to select the target
     from a list presented.
     """
-    context.execute_cmd(lambda: cmd_target_disable(context, targetid,
-                                                   enable, options))
+    context.execute_cmd(lambda: cmd_targets_disable(context, targetid,
+                                                    enable, options))
 
 
 @targets_group.command('modify', options_metavar=CMD_OPTS_TXT)
@@ -177,6 +177,8 @@ def target_modify(context, targetid, **options):
 # NotifyUsers
 # Notify
 # enable
+
+# TODO add subcommands for new target and for target delete.
 
 
 ##############################################################
@@ -274,6 +276,7 @@ def cmd_target_modify(context, targetid, options):
     Modify the fields of a target.  Any of the field defined by options can
     be modified.
     """
+    test_db_updates_allowed()
     # get targetid if options are for interactive request and validate that
     # it is valid. Returns None if interactive request is aborted
     targetid = get_target_id(context, targetid, options)
@@ -326,10 +329,11 @@ def cmd_target_modify(context, targetid, options):
             return
 
 
-def cmd_target_disable(context, targetid, enable, options):
+def cmd_targets_disable(context, targetid, enable, options):
     """
         Set the disable flag in a defined targetid
     """
+    test_db_updates_allowed()
     targetid = get_target_id(context, targetid, options)
     if targetid is None:
         return
@@ -409,14 +413,15 @@ def cmd_targets_list(context, options):
     # TODO. For now this is hidden capability.  Need to make public
     # Entering all as first field name causes all fields to be used.
     if fields and fields[0] == 'all':
-        fields = context.targets_tbl.fields
+        fields = context.targets_tbl.all_fields
 
     field_selects = context.targets_tbl.fields
-    # TODO This is temp since we really want companyname butthat
+    # TODO This is temp since we really want companyname but that
     # is not part of normal fields but from join.
     if 'CompanyID' in field_selects:
         field_selects.remove('CompanyID')
-        field_selects.append('CompanyName')
+        if 'CompanyName' not in field_selects:
+            field_selects.append('CompanyName')
     if fields:
         if fields[0] == "?":
             indexes = pick_multiple_from_list(context, field_selects,
@@ -436,9 +441,7 @@ def cmd_targets_list(context, options):
         order = options['order']
 
     try:
-        print('TRY TEST')
         context.targets_tbl.test_fieldnames(fields)
-        print('OK')
     except KeyError as ke:
         raise click.ClickException("%s: Invalid field name: %s" %
                                    (ke.__class__.__name__, ke))

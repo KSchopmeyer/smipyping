@@ -302,7 +302,7 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
         for address in addresses:
             try:
                 handler = SysLogHandler(address=address, facility=facility)
-            except Exception as exc:
+            except Exception as exc:  # pylint: disable=broad-except
                 click.echo("Exception in creating SysLogHandler, ignored. %s"
                            % exc)
                 continue

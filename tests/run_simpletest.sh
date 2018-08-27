@@ -3,6 +3,8 @@
 # Simply executes all subcommands with options that do not require input
 # assumes that the test servers are connected
 #
+
+# Test to see if we can talk to the test implementation
 ping 10.2.119.20 -c 1
 retval=$?
 if [ $retval -ne 0 ]; then
@@ -12,6 +14,7 @@ fi
 
 VALID_TARGET_ID=81
 VALID_TARGETID_2=83
+USER_TO_DEACTIVATE=82
 
 function run_smicli {
     smicli $1
@@ -21,6 +24,7 @@ function run_smicli {
         exit 1
     fi
 }
+
 
 smicli --help
 
@@ -37,25 +41,23 @@ smicli programs list
 
 # do not cover add and delete
 
-smicli users --help
-smicli users list --help
 
 smicli history -h
 smicli history overview -h
 smicli history overview
-smicli weekly list -s 01/01/17 -e 01/01/18 -r count
-smicli weekly list -s 01/01/17 -e 01/01/18 -r %ok
-smicli weekly list -s 01/01/17 -e 01/04/18 -r status
-smicli weekly list -s 01/01/17 -e 01/04/18 -r changes
-smicli weekly list -t $VALID_TARGET_ID -s 01/01/17 -e 01/02/18 -r full
-smicli weekly list -s 01/01/17 -n 300 -r count
-smicli weekly list -s 01/01/17 -n 300 -r %ok
-smicli weekly list -s 01/01/17 -n 300 -r status
-smicli weekly list -s 01/01/17 -n 300 -r changes
-smicli weekly list -n 300 -r count
-smicli weekly list -n 300 -r %ok
-smicli weekly list -n 300 -r status
-smicli weekly list -n 300 -r changes
+smicli history weekly list -s 01/01/17 -e 01/01/18 -r count
+smicli history weekly list -s 01/01/17 -e 01/01/18 -r %ok
+smicli history weekly list -s 01/01/17 -e 01/04/18 -r status
+smicli history weekly list -s 01/01/17 -e 01/04/18 -r changes
+smicli history weekly list -t $VALID_TARGET_ID -s 01/01/17 -e 01/02/18 -r full
+smicli history weekly list -s 01/01/17 -n 300 -r count
+smicli history weekly list -s 01/01/17 -n 300 -r %ok
+smicli history weekly list -s 01/01/17 -n 300 -r status
+smicli history weekly list -s 01/01/17 -n 300 -r changes
+smicli history weekly list -n 300 -r count
+smicli history weekly list -n 300 -r %ok
+smicli history weekly list -n 300 -r status
+smicli history weekly list -n 300 -r changes
 
 # TODO cover issues where -s missing.
 
@@ -70,6 +72,23 @@ smicli targets get $VALID_TARGET_ID
 smicli targets list --help
 smicli targets list -o Product
 smicli targets list -f CompanyName -f Product
+
+
+smicli users --help
+smicli users list --help
+
+smicli users list
+smicli users list -o CompanyName
+smicli users list -f CompanyName -f CompanyID -f FirstName
+smicli users list -d
+
+smicli users activate -h
+smicli users activate $USER_TO_DEACTIVATE --active
+smicli users activate $USER_TO_DEACTIVATE --inactive
+
+smicli programs -h
+smicli programs list -h
+smicli programs list
 
 smicli cimping --help
 smicli cimping all --help

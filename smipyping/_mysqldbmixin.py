@@ -63,6 +63,6 @@ class MySQLDBMixin(object):
                 self.data_dict[key] = row
 
         except Exception as ex:
-            raise ValueError('Error: setup sql based targets table %r. '
+            raise ValueError('Error: setup sql based %s table %r. '
                              'Exception: %r'
-                             % (self.db_dict, ex))
+                             % (self.table_name, self.db_dict, ex))

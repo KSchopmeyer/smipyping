@@ -48,6 +48,10 @@ class UsersTable(DBTableBase):
     fields = [key_field, 'FirstName', 'Lastname', 'Email', 'CompanyID',
               'Active', 'Notify']
 
+    join_fields = ['CompanyName']
+
+    all_fields = fields + join_fields
+
     # In the following, The first entry corresponds to True and the second
     # to False
     active_field = ['Active', 'Inactive']  # db field is enum with two choices
@@ -117,6 +121,30 @@ class UsersTable(DBTableBase):
         """
         return {key: value for key, value in six.iteritems(self)
                 if value[field] == target_value}
+
+    def tbl_hdr(self, record_list):  # pylint: disable=no-self-use
+        """Return a list of all the column headers from the record_list."""
+        hdr = []
+        for name in record_list:
+            # value = self.get_format_dict(name)
+            hdr.append(name)
+        return hdr
+
+    def format_record(self, userid, fields):
+        """Return the fields defined in field_list for the record_id in
+        display format.
+        String fields will be folded if their width is greater than the
+        specification in the format_dictionary and fold=True
+        """
+        # TODO can we make this a std cvt function.
+        user = self.data_dict[userid]
+
+        line = []
+
+        for field_name in fields:
+            field_value = user[field_name]
+            line.append('%s' % field_value)
+        return line
 
     # add option for active
     def get_emails_for_company(self, company_id):
@@ -252,6 +280,56 @@ class MySQLUsersTable(UsersTable, MySQLDBMixin):
         self.connectdb(db_dict, verbose)
 
         self._load_table()
+
+        self._load_joins()
+
+    def _load_joins(self):
+        """
+        Load the tables that would normally be joins.  In this case it is the
+        companies table and move the companyName into the users table
+        TODO we should not be doing this in this manner but with a
+        join.
+        """
+        # Get companies table and insert into users table:
+
+        # companies_tbl = CompaniesTable.factory(self.db_info,
+        #                                       self.db_type,
+        #                                       self.verbose)
+        try:
+            # TODO this should simply use the CompanyTable class (above)
+            cursor = self.connection.cursor(dictionary=True)
+            # get the companies table
+            cursor.execute('SELECT CompanyID, CompanyName FROM Companies')
+            rows = cursor.fetchall()
+
+            companies_tbl = {}
+            for row in rows:
+                # required because the dictionary=True in cursor statement
+                # only works in v2 mysql-connector
+                assert isinstance(row, dict), "Issue with mysql-connection ver"
+                key = row['CompanyID']
+                companies_tbl[key] = row['CompanyName']
+        except Exception as ex:
+            raise ValueError('Could not create companies table. Exception: %r'
+                             % (ex))
+
+        try:
+            # set the companyname into the users table
+            for userid, user in six.iteritems(self.data_dict):
+                if user['CompanyID'] in companies_tbl:
+                    user['CompanyName'] = companies_tbl[user['CompanyID']]
+                else:
+                    user['CompanyName'] = "Table Error CompanyID %s" % \
+                        user['CompanyID']
+                    audit_logger = get_logger(AUDIT_LOGGER_NAME)
+                    audit_logger.error('MYSQL DB Error: UserTable. Company ID '
+                                       '%s in userID %s does not exist in '
+                                       'CompaniesTable.', user['CompanyID'],
+                                       userid)
+
+        except Exception as ex:
+            raise ValueError('Error: putting Company Name in table %r error %s'
+                             % (self.db_dict, ex))
 
     def insert(self, firstname, lastname, email, company_id, active=True,
                notify=True):

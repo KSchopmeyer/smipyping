@@ -20,44 +20,28 @@ from __future__ import print_function, absolute_import
 
 import click
 import six
+from collections import defaultdict
 
 from mysql.connector import Error as MySQLError
 
 from smipyping import UsersTable, CompaniesTable
-from smipyping._logging import AUDIT_LOGGER_NAME, get_logger
 
 from .smicli import cli, CMD_OPTS_TXT
 from ._click_common import validate_prompt, print_table, pick_from_list, \
-    pick_multiple_from_list
+    pick_multiple_from_list, test_db_updates_allowed
 from ._common_options import add_options, no_verify_option
 from ._cmd_companies import get_companyid
 
 
-def get_company_name(companies_tbl, companyid, userid):
-    """Get the company name for a define companyid"""
-    if companyid not in companies_tbl:
-        click.echo('DB ERROR: Company ID %s does not exist' % companyid)
-        audit_logger = get_logger(AUDIT_LOGGER_NAME)
-        audit_logger.error('DB Error: UserTable. Company ID %s in userID %s '
-                           'does not exist.',
-                           companyid, userid)
-        company_name = '"No companyID %s"' % companyid
-    else:
-        company_name = companies_tbl[companyid]['CompanyName']
-    return company_name
-
-
-def build_userid_display(userid, user_item, companies_tbl):
+def build_userid_display(userid, user_item):
     """Build and return the string to display for selecting a user.
        Displays info from users table so user can pick the ids.
     """
-    company_name = get_company_name(companies_tbl, user_item['CompanyID'],
-                                    userid)
-    return u'   id=%-3s %-20s %-16s %-16s %s' % (userid, company_name,
-                                        user_item['FirstName'],
-                                        user_item['Lastname'],
-                                        user_item['Email'],
-                                        )
+    return u'   id=%-3s %-20s %-16s %-16s %s' % (userid,
+                                                 user_item['CompanyName'],
+                                                 user_item['FirstName'],
+                                                 user_item['Lastname'],
+                                                 user_item['Email'],)
 
 
 def pick_multiple_user_ids(context, users_tbl, active=None):
@@ -70,16 +54,13 @@ def pick_multiple_user_ids(context, users_tbl, active=None):
       Returns:
         userid selected or None if user enter ctrl-C
     """
-    companies_tbl = CompaniesTable.factory(context.db_info, context.db_type,
-                                           context.verbose)
-
     if active is None:
         userids = users_tbl.keys()
     else:
         userids = users_tbl.get_active_userids(active)
 
-    display_txt = [build_userid_display(userid, users_tbl[userid],
-                   companies_tbl) for userid in userids]
+    display_txt = [build_userid_display(userid, users_tbl[userid],)
+                   for userid in userids]
     try:
         indexes = pick_multiple_from_list(context, display_txt,
                                           "Pick TargetIDs:")
@@ -200,7 +181,7 @@ def pick_userid(context, users_tbl):
 
     users_keys = users_tbl.keys()
 
-    display_options = [build_userid_display(key, users_tbl[key], companies_tbl)
+    display_options = [build_userid_display(key, users_tbl[key])
                        for key in users_keys]
     try:
         index = pick_from_list(context, display_options, "Pick UserID:")
@@ -322,12 +303,27 @@ def users_add(context, **options):  # pylint: disable=redefined-builtin
 
 
 @users_group.command('list', options_metavar=CMD_OPTS_TXT)
+@click.option('-f', '--fields', multiple=True, type=str, default=None,
+              metavar='FIELDNAME',
+              help='Define specific fields for output. UserID always '
+                   'included. Multiple fields can be specified by repeating '
+                   'the option. (Default: predefined list of fields).'
+                   '\nEnter: "-f ?" to interactively select fields for display.'
+                   '\nEx. "-f UserID -f CompanyName"')
+@click.option('-d', '--disabled', default=False, is_flag=True, required=False,
+              help='Show disabled tusers. Otherwise only users that are '
+                   'set enabled in the database are shown.'
+                   '(Default:Do not show disabled users).')
+@click.option('-o', '--order', type=str, default=None, metavar='FIELDNAME',
+              help='Sort by the defined field name. Names are viewed with the '
+                   'targets fields subcommand or "-o ?" to interactively '
+                   'select field for sort')
 @click.pass_obj
-def users_list(context):  # pylint: disable=redefined-builtin
+def users_list(context, **options):  # pylint: disable=redefined-builtin
     """
     List users in the database.
     """
-    context.execute_cmd(lambda: cmd_users_list(context))
+    context.execute_cmd(lambda: cmd_users_list(context, options))
 
 
 @users_group.command('delete', options_metavar=CMD_OPTS_TXT)
@@ -429,11 +425,96 @@ def users_activate(context, userids, **options):
     context.execute_cmd(lambda: cmd_users_activate(context, userids, options))
 
 
+@users_group.command('fields', options_metavar=CMD_OPTS_TXT)
+@click.pass_obj
+def users_fields(context):
+    """
+    Display field names in targets database.
+    """
+    context.execute_cmd(lambda: cmd_users_fields(context))
+
+
 ######################################################################
 #
 #    Action functions
 #
 ######################################################################
+
+def display_cols(users_tbl, fields, show_disabled=True, order=None,
+                 output_format=None):
+    """
+    Display the columns of data defined by the fields parameter.
+
+    This gets the data from the targets data based on the col_list and prepares
+    and displays a table based on those targets_tbl colums.
+
+    Parameters:
+      fields: list of strings defining the targets_data columns to be
+        displayed.
+
+      target_table: The targets table from the database
+
+      order (:term: `string`): None or name of field upon which the table will
+        be sorted for output
+
+      show_disabled(:class:`py:bool`)
+        If True, show disabled entries. If not True, entries marked disabled
+        are ignored
+
+    """
+    if show_disabled:
+        user_ids = sorted(users_tbl.keys())
+    else:
+        user_ids = sorted(users_tbl.get_active_usersids())
+
+    # If order defined check to see if valid field
+    if order:
+        if order not in users_tbl.all_fields:
+            raise click.ClickException("--order option defines invalid field %s"
+                                       % order)
+
+        # create dictionary with order value as key and list of targetids as
+        # value. List because the order fields are not unique
+        order_dict = defaultdict(list)
+        for userid in user_ids:
+            order_dict[users_tbl[userid][order]].append(userid)
+        # order_dict = {target_table[targetid][order]: targetid
+        #               for targetid in target_ids}
+        # TODO this may be inefficient means to sort by keys and get values
+        # into list
+        user_ids = []
+        for key in sorted(order_dict.keys()):
+            user_ids.extend(order_dict[key])
+
+    rows = []
+    for userid in user_ids:
+        rows.append(users_tbl.format_record(userid, fields))
+
+    headers = users_tbl.tbl_hdr(fields)
+    title = 'Users Overview: '
+    if show_disabled:
+        title = '%s including disabled users' % title
+
+    print_table(rows, headers=headers, title=title,
+                table_format=output_format)
+
+
+STANDARD_FIELDS_DISPLAY_LIST = ['UserID', 'FirstName', 'Lastname', 'Email',
+                                'CompanyName', 'Active', 'Notify']
+
+
+def display_all(users_tbl, fields=None, company=None, order=None,
+                show_disabled=True, output_format=None):
+    """Display all entries in the base. If fields does not exist,
+       display a standard list of fields from the database.
+    """
+    if not fields:
+        # list of default fields for display
+        fields = STANDARD_FIELDS_DISPLAY_LIST
+    else:
+        fields = fields
+    display_cols(users_tbl, fields, show_disabled=show_disabled, order=order,
+                 output_format=output_format)
 
 
 def _test_active(options):
@@ -462,32 +543,81 @@ def _test_notify(options):
     return notify
 
 
-def cmd_users_list(context):
+def cmd_users_fields(context):
+    """Display the information fields for the providers dictionary."""
+    rows = [[field] for field in UsersTable.all_fields]
+    headers = 'User Fields'
+
+    context.spinner.stop()
+    print_table(rows, headers, title='User table fields from database and '
+                'joins:',
+                table_format=context.output_format)
+
+
+def cmd_users_list(context, options):
     """
-    List existing users
+    List users from the users table in a flexible format based on the
+    options
     """
+    fields = list(options['fields'])
     users_tbl = UsersTable.factory(context.db_info, context.db_type,
                                    context.verbose)
 
+    # TODO. For now this is hidden capability.  Need to make public
+    # Entering all as first field name causes all fields to be used.
+    if fields and fields[0] == 'all':
+        fields = users_tbl.all_fields[:]
     # TODO modify all this so we get name field as standard
-    headers = UsersTable.fields
+    headers = UsersTable.all_fields[:]
     tbl_rows = []
-    for user_id, data in six.iteritems(users_tbl):
-        row = [data[field] for field in headers]
+    for userid, user in six.iteritems(users_tbl):
+        row = [user[field] for field in headers]
         tbl_rows.append(row)
 
-    tbl_rows.sort(key=lambda x: x[0])
+    field_selects = users_tbl.all_fields[:]
+    # TODO This is temp since we really want companyname but that
+    # is not part of normal fields but from join.
+    if 'CompanyID' in field_selects:
+        field_selects.remove('CompanyID')
+        if 'CompanyName' not in field_selects:
+            field_selects.append('CompanyName')
+    if fields:
+        if fields[0] == "?":
+            indexes = pick_multiple_from_list(context, field_selects,
+                                              "Select fields to report")
+            if not indexes:
+                click.echo("Abort cmd, no fields selected")
+                return
+            fields = [users_tbl.fields[index] for index in indexes]
+        if 'UserID' not in fields:
+            fields.insert(0, 'UserID')  # always show UserID
+
+    if 'order' in options and options['order'] == "?":
+        index = pick_from_list(context, field_selects, "Select field for order")
+        order = users_tbl.fields[index]
+    else:
+        order = options['order']
+
+    for field in fields:
+        if field not in users_tbl.all_fields:
+            raise click.ClickException("Invalid field name: %s" % field)
 
     context.spinner.stop()
+    try:
+        display_all(users_tbl, list(fields),
+                    show_disabled=options['disabled'], order=order,
+                    company=None, output_format=context.output_format)
 
-    print_table(tbl_rows, headers, title=('Users Table'),
-                table_format=context.output_format)
+    except Exception as ex:
+        raise click.ClickException("%s: %s" % (ex.__class__.__name__, ex))
 
 
 def cmd_users_add(context, options):
     """
     Add a new user to the table.
     """
+    test_db_updates_allowed()
+
     first_name = options['firstname']
     last_name = options['lastname']
     email = options['email']
@@ -524,8 +654,8 @@ def cmd_users_add(context, options):
                              active=active,
                              notify=notify)
         except MySQLError as ex:
-            click.echo("INSERT Error %s: %s" % (ex.__class__.__name__,
-                                                ex))
+            click.ClickException("INSERT Error %s: %s" % (ex.__class__.__name__,
+                                                          ex))
     else:
         raise click.ClickException('The companyID %s is not a valid companyID '
                                    'in companies table' % companyid)
@@ -533,6 +663,8 @@ def cmd_users_add(context, options):
 
 def cmd_users_delete(context, userid, options):
     """Delete a user from the database."""
+    test_db_updates_allowed()
+
     users_tbl = UsersTable.factory(context.db_info, context.db_type,
                                    context.verbose)
 
@@ -565,6 +697,7 @@ def cmd_users_delete(context, userid, options):
 
 def cmd_users_modify(context, userid, options):
     """Modify selected fields of a user in the database."""
+    test_db_updates_allowed()
 
     users_tbl = UsersTable.factory(context.db_info, context.db_type,
                                    context.verbose)
@@ -620,9 +753,6 @@ def cmd_users_activate(context, userids, options):
     users_tbl = UsersTable.factory(context.db_info, context.db_type,
                                    context.verbose)
 
-    companies_tbl = CompaniesTable.factory(context.db_info, context.db_type,
-                                           context.verbose)
-
     userids = get_multiple_user_ids(context, userids, users_tbl, options)
     if userids is None:
         return
@@ -652,8 +782,7 @@ def cmd_users_activate(context, userids, options):
                     last_name = usr_item['Lastname']
                     email = usr_item['Email']
                     companyid = usr_item['CompanyID']
-                    company_name = get_company_name(companies_tbl, companyid,
-                                                    userid)
+                    company_name = usr_item['CompanyName']
                     click.echo('Setting  %s %s in company=%s(%s), email=%s' %
                                (first_name, last_name, company_name, companyid,
                                 email))
