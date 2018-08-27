@@ -102,10 +102,13 @@ smicli explorer --help
 smicli explorer all --help
 smicli explorer all --ping
 smicli explorer all --no-ping
-smicli explorer -i
+smicli explorer all -i
 smicli explorer all --detail full
 smicli explorer all --detail brief
-smicli explorer all --i
+smicli explorer all --detail all
+smicli explorer all
+smicli explorer all --include-disabled
+smicli explorer ids 122 103 88 --detail full
 
 smicli explorer ids --help
 smicli explorer ids $VALID_TARGET_ID $VALID_TARGET_ID2
