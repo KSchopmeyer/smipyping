@@ -254,7 +254,11 @@ class TargetsTable(DBTableBase):
         return rtn
 
     def get_url_str(self, targetid):
-        """Get the string representing the uri for targetid"""
+        """Get the string representing the uri for targetid. Gets the
+        Protocol, IPaddress and port and uses the common get_url_str to
+        create a string.  Port info is included only if it is not the
+        WBEM CIM-XML standard definitions.
+        """
         target = self[targetid]
 
         return get_url_str(target['Protocol'], target['IPAddress'],

@@ -310,15 +310,14 @@ def cmd_history_weekly(context, options):
         cp['StartDate'],
         end_date=cp['EndDate'])
 
-    # get last pings information from history
-
+    # Get last pings information from history
     # TODO the last scan uses current time so the postdated report is really
     # in error. Should be the report_date
     ping_rows = pings_tbl.get_last_timestamped()
     last_status = {ping[1]: ping[3] for ping in ping_rows}
     last_status_time = ping_rows[0][2]
 
-    headers = ['target\nid', 'IP', 'Company', 'Product', "LastScan\nStatus",
+    headers = ['target\nid', 'Uri', 'Company', 'Product', "LastScan\nStatus",
                '%\nToday', '%\nWeek', '%\nPgm', 'Contacts']
 
     report_order = options['order']
@@ -337,17 +336,16 @@ def cmd_history_weekly(context, options):
             company = fold_cell(company, 15)
             product = target.get('Product', 'empty')
             product = fold_cell(product, 15)
-            ip = target.get('IPAddress', 'empty')
+            url = context.targets_tbl.get_url_str(target_id)
             smi_version = target.get('SMIVersion', 'empty')
             smi_version = fold_cell(smi_version, 15)
             company_id = target.get('CompanyID', 'empty')
             # get users list
             email_list = users_tbl.get_emails_for_company(company_id)
-
             emails = "\n".join(email_list) if email_list else 'unassigned'
         else:
             company = u"No target"
-            ip = u''
+            url = u''
             product = u''
             smi_version = u''
             emails = u''
@@ -369,7 +367,8 @@ def cmd_history_weekly(context, options):
         else:
             last_scan_status = "Unknown"
 
-        row = [target_id, ip, company, product, fold_cell(last_scan_status, 16),
+        row = [target_id, url, company, product,
+               fold_cell(last_scan_status, 16),
                today_percent, week_percent, value[0], emails]
         tbl_rows.append(row)
 
@@ -594,7 +593,7 @@ def cmd_history_list(context, options):
 
     # if result == status show counts of ping records by status by target
     elif options['result'] == 'status':
-        headers = ['id', 'url', 'company', 'status', 'count']
+        headers = ['id', 'Url', 'company', 'status', 'count']
 
         results = pings_tbl.get_status_by_id(
             options['startdate'],
