@@ -19,8 +19,9 @@ data file.
 from __future__ import print_function, absolute_import
 
 from collections import defaultdict
+import datetime
 import click
-
+from smipyping import datetime_display_str
 from .smicli import cli, CMD_OPTS_TXT
 from ._click_common import print_table, validate_prompt, get_target_id, \
     pick_multiple_from_list, pick_from_list, test_db_updates_allowed
@@ -245,7 +246,8 @@ def display_cols(target_table, fields, show_disabled=True, order=None,
         rows.append(target_table.format_record(targetid, fields, fold))
 
     headers = target_table.tbl_hdr(fields)
-    title = 'Target Providers Overview: '
+    title = 'Target Providers Overview: %s:' % \
+            datetime_display_str(datetime.datetime.now())
     if show_disabled:
         title = '%s including disabled targets' % title
 
