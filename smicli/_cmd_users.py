@@ -175,10 +175,6 @@ def pick_userid(context, users_tbl):
       Returns:
         target_id selected or None if user enter ctrl-C
     """
-
-    companies_tbl = CompaniesTable.factory(context.db_info, context.db_type,
-                                           context.verbose)
-
     users_keys = users_tbl.keys()
 
     display_options = [build_userid_display(key, users_tbl[key])
