@@ -14,6 +14,17 @@ There are two ways to do this:
 2. pip install from the git repository. NOTE: This is not
    working right now.
 
+environment setup
+-----------------
+
+smipyping may be installed either into the root environment or into a
+python virtual environment.
+
+NOTE: If smipyping is installed into a python virtual environment, the user
+for that environment must be in the group `wheel` to successfully complete
+the development part of the install because the smipyping setup uses sudo
+to install system components.
+
 git Clone install
 -----------------
 
@@ -55,12 +66,12 @@ refresh the local clone from the repository
 
       >git fetch
       >git pull origin
-      
+
 You should see tell you if there is anything new in master with the fetch
 command.  The git pull will merge new code into the current base.
-    
+
 3. reinstall the package as before with make:
-      sudo >make install 
+      sudo >make install
 
 
 pip install

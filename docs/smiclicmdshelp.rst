@@ -401,7 +401,8 @@ The following defines the help output for the `smicli companies list --help` sub
       List the parameters of companies in the company table of the database.
 
     Options:
-      -h, --help  Show this message and exit.
+      -o, --order  Sort output by company name
+      -h, --help   Show this message and exit.
 
 
 .. _`smicli companies modify --help`:
