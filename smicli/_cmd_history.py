@@ -312,7 +312,7 @@ def cmd_history_weekly(context, options):
 
     # get last pings information from history
 
-    # TODO the last can uses current time so the postdated report is really
+    # TODO the last scan uses current time so the postdated report is really
     # in error. Should be the report_date
     ping_rows = pings_tbl.get_last_timestamped()
     last_status = {ping[1]: ping[3] for ping in ping_rows}
