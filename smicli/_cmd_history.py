@@ -312,13 +312,13 @@ def cmd_history_weekly(context, options):
 
     # get last pings information from history
 
-    # TODO the last can uses current time so the postdated report is really
+    # TODO the last scan uses current time so the postdated report is really
     # in error. Should be the report_date
     ping_rows = pings_tbl.get_last_timestamped()
     last_status = {ping[1]: ping[3] for ping in ping_rows}
     last_status_time = ping_rows[0][2]
 
-    headers = ['target\nid', 'IP', 'Company', 'Product', "LastScan",
+    headers = ['target\nid', 'IP', 'Company', 'Product', "LastScan\nStatus",
                '%\nToday', '%\nWeek', '%\nPgm', 'Contacts']
 
     report_order = options['order']
@@ -364,10 +364,12 @@ def cmd_history_weekly(context, options):
 
         if target_id in last_status:
             last_scan_status = last_status[target_id]
+            if last_scan_status.startswith('WBEMException'):
+                last_scan_status = last_scan_status.split(':', 1)[0]
         else:
             last_scan_status = "Unknown"
 
-        row = [target_id, ip, company, product, fold_cell(last_scan_status, 9),
+        row = [target_id, ip, company, product, fold_cell(last_scan_status, 16),
                today_percent, week_percent, value[0], emails]
         tbl_rows.append(row)
 
