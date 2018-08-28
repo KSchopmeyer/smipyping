@@ -18,9 +18,9 @@ targets to find WBEM servers.
 """
 from __future__ import print_function, absolute_import
 
+from collections import defaultdict
 import click
 import six
-from collections import defaultdict
 
 from mysql.connector import Error as MySQLError
 
@@ -31,6 +31,20 @@ from ._click_common import validate_prompt, print_table, pick_from_list, \
     pick_multiple_from_list, test_db_updates_allowed
 from ._common_options import add_options, no_verify_option
 from ._cmd_companies import get_companyid
+
+
+def select_companyid(context, companyid):
+    """
+    Get the company id either interactively or by confirming. If
+    select not requested, this validates the companyid. Used for the list
+    and activate to limit the selection lists.
+    """
+    companies_tbl = CompaniesTable.factory(context.db_info, context.db_type,
+                                           context.verbose)
+
+    companyid = get_companyid(context, companies_tbl, companyid)
+
+    return companyid
 
 
 def build_userid_display(userid, user_item):
@@ -44,7 +58,7 @@ def build_userid_display(userid, user_item):
                                                  user_item['Email'],)
 
 
-def pick_multiple_user_ids(context, users_tbl, active=None):
+def pick_multiple_user_ids(context, users_tbl, active=None, companyid=None):
     """
     Interactive selection of user ids from list presented on the console.
 
@@ -58,6 +72,11 @@ def pick_multiple_user_ids(context, users_tbl, active=None):
         userids = users_tbl.keys()
     else:
         userids = users_tbl.get_active_userids(active)
+
+    if companyid:
+        companyid = select_companyid(context, companyid)
+        userids = [userid for userid in userids
+                   if users_tbl[userid]['CompanyID'] == companyid]
 
     display_txt = [build_userid_display(userid, users_tbl[userid],)
                    for userid in userids]
@@ -73,7 +92,7 @@ def pick_multiple_user_ids(context, users_tbl, active=None):
 
 
 def get_multiple_user_ids(context, userids, users_tbl, options=None,
-                          allow_none=False, active=None):
+                          allow_none=False, active=None, companyid=None):
     """
         Get the users based on the value of userid or the value of the
         interactive option.  If userid is an
@@ -133,7 +152,8 @@ def get_multiple_user_ids(context, userids, users_tbl, options=None,
     elif isinstance(userids, (list, tuple)):
         if len(userids) == 1 and userids[0] == "?":
             context.spinner.stop()
-            int_user_ids = pick_multiple_user_ids(context, users_tbl, active)
+            int_user_ids = pick_multiple_user_ids(context, users_tbl, active,
+                                                  companyid)
         else:
             for userid in userids:
                 if isinstance(userid, six.integer_types):
@@ -307,13 +327,16 @@ def users_add(context, **options):  # pylint: disable=redefined-builtin
                    '\nEnter: "-f ?" to interactively select fields for display.'
                    '\nEx. "-f UserID -f CompanyName"')
 @click.option('-d', '--disabled', default=False, is_flag=True, required=False,
-              help='Show disabled tusers. Otherwise only users that are '
+              help='Include disabled users. Otherwise only users that are '
                    'set enabled in the database are shown.'
                    '(Default:Do not show disabled users).')
 @click.option('-o', '--order', type=str, default=None, metavar='FIELDNAME',
               help='Sort by the defined field name. Names are viewed with the '
                    'targets fields subcommand or "-o ?" to interactively '
                    'select field for sort')
+@click.option('-c', '--companyid', type=str, default=None, metavar='COMPANYID',
+              help='Filter the list to just users with the defined companyID. '
+                   'This field may be selected interactively by entering "?".')
 @click.pass_obj
 def users_list(context, **options):  # pylint: disable=redefined-builtin
     """
@@ -398,6 +421,9 @@ def users_modify(context, userid, **options):
 @click.option('-n', '--no-verify', is_flag=True, default=False,
               help='Disable verification prompt before the operation is '
                    'executed.')
+@click.option('-c', '--companyid', type=str, default=None, metavar='COMPANYID',
+              help='Limit the list of users from which to select by the '
+                   'companyid provided')
 @click.pass_obj
 def users_activate(context, userids, **options):
     """
@@ -436,8 +462,8 @@ def users_fields(context):
 #
 ######################################################################
 
-def display_cols(users_tbl, fields, show_disabled=True, order=None,
-                 output_format=None):
+def display_cols(users_tbl, fields, show_disabled=True, companyid=None,
+                 order=None, output_format=None):
     """
     Display the columns of data defined by the fields parameter.
 
@@ -484,12 +510,18 @@ def display_cols(users_tbl, fields, show_disabled=True, order=None,
 
     rows = []
     for userid in user_ids:
+        if companyid:
+            if users_tbl[userid]['CompanyID'] != companyid:
+                continue
         rows.append(users_tbl.format_record(userid, fields))
 
     headers = users_tbl.tbl_hdr(fields)
-    title = 'Users Overview: '
+    title = 'User Overview: '
     if show_disabled:
         title = '%s including disabled users' % title
+
+    if companyid:
+        title = '%s for company=%s' % (title, companyid)
 
     print_table(rows, headers=headers, title=title,
                 table_format=output_format)
@@ -499,10 +531,11 @@ STANDARD_FIELDS_DISPLAY_LIST = ['UserID', 'FirstName', 'Lastname', 'Email',
                                 'CompanyName', 'Active', 'Notify']
 
 
-def display_all(users_tbl, fields=None, company=None, order=None,
-                show_disabled=True, output_format=None):
-    """Display all entries in the base. If fields does not exist,
-       display a standard list of fields from the database.
+def display_table(users_tbl, fields=None, companyid=None, order=None,
+                  show_disabled=True, output_format=None):
+    """Display entries in the base either all or limited by companyid. If
+       fields does not exist, display a standard list of fields from the
+       database.
     """
     if not fields:
         # list of default fields for display
@@ -510,7 +543,7 @@ def display_all(users_tbl, fields=None, company=None, order=None,
     else:
         fields = fields
     display_cols(users_tbl, fields, show_disabled=show_disabled, order=order,
-                 output_format=output_format)
+                 companyid=companyid, output_format=output_format)
 
 
 def _test_active(options):
@@ -594,15 +627,21 @@ def cmd_users_list(context, options):
     else:
         order = options['order']
 
+    if 'companyid' in options:
+        companyid = select_companyid(context, options['companyid'])
+    else:
+        companyid = options['companyid']
+
     for field in fields:
         if field not in users_tbl.all_fields:
             raise click.ClickException("Invalid field name: %s" % field)
 
     context.spinner.stop()
     try:
-        display_all(users_tbl, list(fields),
-                    show_disabled=options['disabled'], order=order,
-                    company=None, output_format=context.output_format)
+        display_table(users_tbl, list(fields),
+                      show_disabled=options['disabled'], order=order,
+                      companyid=companyid,
+                      output_format=context.output_format)
 
     except Exception as ex:
         raise click.ClickException("%s: %s" % (ex.__class__.__name__, ex))
@@ -749,7 +788,8 @@ def cmd_users_activate(context, userids, options):
     users_tbl = UsersTable.factory(context.db_info, context.db_type,
                                    context.verbose)
 
-    userids = get_multiple_user_ids(context, userids, users_tbl, options)
+    userids = get_multiple_user_ids(context, userids, users_tbl, options,
+                                    companyid=options['companyid'])
     if userids is None:
         return
 
