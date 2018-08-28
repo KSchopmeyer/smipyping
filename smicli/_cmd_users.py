@@ -786,6 +786,7 @@ def cmd_users_activate(context, userids, options):
     """
         Set the user active flag if change required for the listed users
     """
+    test_db_updates_allowed()
 
     users_tbl = UsersTable.factory(context.db_info, context.db_type,
                                    context.verbose)

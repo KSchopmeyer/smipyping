@@ -18,13 +18,15 @@ targets to find WBEM servers.
 """
 from __future__ import print_function, absolute_import
 
+import datetime
 import click
 import six
 
 from smipyping import CompaniesTable, TargetsTable, UsersTable
-from smipyping._common import build_table_struct
+from smipyping._common import build_table_struct, datetime_display_str
 from .smicli import cli, CMD_OPTS_TXT
-from ._click_common import print_table, validate_prompt, pick_from_list
+from ._click_common import print_table, validate_prompt, pick_from_list, \
+    test_db_updates_allowed
 
 # TODO: This could be common code if we separated the build of the
 # select text from the basic pick code.
@@ -223,12 +225,15 @@ def cmd_companies_list(context, options):
     tbl_rows = build_table_struct(headers, companies_tbl, sort_col=sort_col)
 
     context.spinner.stop()
-    print_table(tbl_rows, headers, title=('Companies Table'),
+    title = 'Companies Table: %s' % \
+        datetime_display_str(datetime.datetime.now())
+    print_table(tbl_rows, headers, title=title,
                 table_format=context.output_format)
 
 
 def cmd_companies_delete(context, companyid, options):
     """Delete a user from the database."""
+    test_db_updates_allowed()
 
     companies_tbl = CompaniesTable.factory(context.db_info, context.db_type,
                                            context.verbose)
@@ -272,6 +277,7 @@ def cmd_companies_delete(context, companyid, options):
 
 def cmd_companies_modify(context, companyid, options):
     """Modify the company name from the database."""
+    test_db_updates_allowed()
 
     companies_tbl = CompaniesTable.factory(context.db_info, context.db_type,
                                            context.verbose)
@@ -279,8 +285,6 @@ def cmd_companies_modify(context, companyid, options):
     companyid = get_companyid(context, companies_tbl, companyid, options)
     if companyid is None:
         return
-
-    print('COMPANYID %s' % companyid)
 
     changes = {}
     changes['CompanyName'] = options.get('companyname', None)
@@ -308,6 +312,8 @@ def cmd_companies_add(context, options):
     """
     Add a new company to the Companies table.
     """
+    test_db_updates_allowed()
+
     companies_tbl = CompaniesTable.factory(context.db_info, context.db_type,
                                            context.verbose)
 
