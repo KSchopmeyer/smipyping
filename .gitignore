@@ -8,6 +8,7 @@
 *.pyc
 *.log
 *.tmp
+*.ini
 tmp.*
 *~
 .*~
@@ -33,5 +34,3 @@ cover
 *.sw?
 *.eggs
 *egg-info
-email.ini
-smicli.ini

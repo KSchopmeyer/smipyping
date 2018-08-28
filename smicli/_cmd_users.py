@@ -41,7 +41,8 @@ def select_companyid(context, companyid):
     """
     companies_tbl = CompaniesTable.factory(context.db_info, context.db_type,
                                            context.verbose)
-
+    if companyid is None:
+        return None
     companyid = get_companyid(context, companies_tbl, companyid)
 
     return companyid
