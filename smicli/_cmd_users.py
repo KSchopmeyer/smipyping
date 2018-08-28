@@ -19,12 +19,13 @@ targets to find WBEM servers.
 from __future__ import print_function, absolute_import
 
 from collections import defaultdict
+import datetime
 import click
 import six
 
 from mysql.connector import Error as MySQLError
 
-from smipyping import UsersTable, CompaniesTable
+from smipyping import UsersTable, CompaniesTable, datetime_display_str
 
 from .smicli import cli, CMD_OPTS_TXT
 from ._click_common import validate_prompt, print_table, pick_from_list, \
@@ -517,12 +518,12 @@ def display_cols(users_tbl, fields, show_disabled=True, companyid=None,
         rows.append(users_tbl.format_record(userid, fields))
 
     headers = users_tbl.tbl_hdr(fields)
-    title = 'User Overview: '
+    title = 'User Overview: %s:' % datetime_display_str(datetime.datetime.now())
     if show_disabled:
-        title = '%s including disabled users' % title
+        title = '%s includes disabled users' % title
 
     if companyid:
-        title = '%s for company=%s' % (title, companyid)
+        title = '; %s for company=%s' % (title, companyid)
 
     print_table(rows, headers=headers, title=title,
                 table_format=output_format)
