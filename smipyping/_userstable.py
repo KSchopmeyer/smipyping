@@ -278,9 +278,7 @@ class MySQLUsersTable(UsersTable, MySQLDBMixin):
         super(MySQLUsersTable, self).__init__(db_dict, dbtype, verbose)
 
         self.connectdb(db_dict, verbose)
-
         self._load_table()
-
         self._load_joins()
 
     def _load_joins(self):
@@ -383,6 +381,7 @@ class MySQLUsersTable(UsersTable, MySQLDBMixin):
             raise ex
         finally:
             self._load_table()
+            self._load_joins()
             self.connection.close()
 
     def delete(self, user_id):
@@ -408,6 +407,7 @@ class MySQLUsersTable(UsersTable, MySQLDBMixin):
             raise ex
         finally:
             self._load_table()
+            self._load_joins()
             self.connection.close()
 
     def activate(self, user_id, activate_flag):
@@ -438,6 +438,7 @@ class MySQLUsersTable(UsersTable, MySQLDBMixin):
             raise ex
         finally:
             self._load_table()
+            self._load_joins()
             # self.connection.close()
 
     def update_fields(self, userid, changes):
@@ -485,4 +486,5 @@ class MySQLUsersTable(UsersTable, MySQLDBMixin):
             raise ex
         finally:
             self._load_table()
+            self._load_joins()
             cursor.close()

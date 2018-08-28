@@ -508,6 +508,7 @@ class MySQLTargetsTable(SQLTargetsTable, MySQLDBMixin):
             raise ex
         finally:
             self._load_table()
+            self._load_joins()
             cursor.close()
 
 
