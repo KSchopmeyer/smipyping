@@ -28,7 +28,6 @@ function run_smicli {
     fi
 }
 
-
 smicli --help
 
 smicli companies list --help

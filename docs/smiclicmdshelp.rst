@@ -1708,14 +1708,16 @@ The following defines the help output for the `smicli users activate --help` sub
       Example:     smicli users ? --activate
 
     Options:
-      --active / --inactive  Set the active/inactive state in the database for
-                             this user. Default is to attempt set user to
-                             inactive.
-      -i, --interactive      If set, presents list of users from which one can be
-                             chosen.
-      -n, --no-verify        Disable verification prompt before the operation is
-                             executed.
-      -h, --help             Show this message and exit.
+      --active / --inactive      Set the active/inactive state in the database for
+                                 this user. Default is to attempt set user to
+                                 inactive.
+      -i, --interactive          If set, presents list of users from which one can
+                                 be chosen.
+      -n, --no-verify            Disable verification prompt before the operation
+                                 is executed.
+      -c, --companyid COMPANYID  Limit the list of users from which to select by
+                                 the companyid provided
+      -h, --help                 Show this message and exit.
 
 
 .. _`smicli users add --help`:
@@ -1822,20 +1824,24 @@ The following defines the help output for the `smicli users list --help` subcomm
       List users in the database.
 
     Options:
-      -f, --fields FIELDNAME  Define specific fields for output. UserID always
-                              included. Multiple fields can be specified by
-                              repeating the option. (Default: predefined list of
-                              fields).
-                              Enter: "-f ?" to interactively select
-                              fields for display.
-                              Ex. "-f UserID -f CompanyName"
-      -d, --disabled          Show disabled tusers. Otherwise only users that are
-                              set enabled in the database are shown.(Default:Do
-                              not show disabled users).
-      -o, --order FIELDNAME   Sort by the defined field name. Names are viewed
-                              with the targets fields subcommand or "-o ?" to
-                              interactively select field for sort
-      -h, --help              Show this message and exit.
+      -f, --fields FIELDNAME     Define specific fields for output. UserID always
+                                 included. Multiple fields can be specified by
+                                 repeating the option. (Default: predefined list
+                                 of fields).
+                                 Enter: "-f ?" to interactively select
+                                 fields for display.
+                                 Ex. "-f UserID -f
+                                 CompanyName"
+      -d, --disabled             Include disabled users. Otherwise only users that
+                                 are set enabled in the database are
+                                 shown.(Default:Do not show disabled users).
+      -o, --order FIELDNAME      Sort by the defined field name. Names are viewed
+                                 with the targets fields subcommand or "-o ?" to
+                                 interactively select field for sort
+      -c, --companyid COMPANYID  Filter the list to just users with the defined
+                                 companyID. This field may be selected
+                                 interactively by entering "?".
+      -h, --help                 Show this message and exit.
 
 
 .. _`smicli users modify --help`:
