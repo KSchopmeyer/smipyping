@@ -172,7 +172,7 @@ def get_list_index(str_list, selection):
     return col_index
 
 
-def build_table_struct(fields, db_table, max_width=None, sort=False):
+def build_table_struct(fields, db_table, max_width=None, sort_col=None):
     """
     Build a formatted table from the list of fields in the db_table.
     This builds a table with each table entry in the table
@@ -187,8 +187,9 @@ def build_table_struct(fields, db_table, max_width=None, sort=False):
       max_width(:term:`integer`):
         Optional maximum width of any field
 
-      sort(:class:`py:bool`):
-        If True, the resulting rows are sorted by ID
+      sort(:term:`integer`):
+        If None, sort nothing
+        If not None, it is an integer that defines the column for sorting
 
     Returns:
         list of lists where each inner list is a row. This is suitable for
@@ -201,8 +202,8 @@ def build_table_struct(fields, db_table, max_width=None, sort=False):
         row = [data[field] for field in fields]
         tbl_rows.append(row)
 
-    if sort:
-        tbl_rows.sort(key=lambda x: x[0])
+    if sort_col:
+        tbl_rows.sort(key=lambda x: x[sort_col])
 
     return tbl_rows
 

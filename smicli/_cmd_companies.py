@@ -101,7 +101,7 @@ def get_companyid(context, companies_tbl, companyid, options=None):
                 raise click.ClickException('CompanyID must be integer or "?" '
                                            'not %s' % companyid)
             try:
-                companies_tbl[companyid]
+                companies_tbl[companyid]  # pylint: disable=pointless-statement
                 context.spinner.start()
                 return companyid
             except KeyError as ke:
@@ -128,14 +128,16 @@ def companies_group():
 
 
 @companies_group.command('list', options_metavar=CMD_OPTS_TXT)
+@click.option('-o', '--order', is_flag=True,
+              help='Sort output by company name')
 @click.pass_obj
-def companies_list(context):  # pylint: disable=redefined-builtin
+def companies_list(context, **options):  # pylint: disable=redefined-builtin
     """
     List companies in the database.
 
     List the parameters of companies in the company table of the database.
     """
-    context.execute_cmd(lambda: cmd_companies_list(context))
+    context.execute_cmd(lambda: cmd_companies_list(context, options))
 
 
 @companies_group.command('add', options_metavar=CMD_OPTS_TXT)
@@ -208,7 +210,7 @@ def companies_modify(context, companyid, **options):
 ######################################################################
 
 
-def cmd_companies_list(context):
+def cmd_companies_list(context, options):
     """
     List existing Companies in table format
     """
@@ -216,7 +218,9 @@ def cmd_companies_list(context):
                                            context.verbose)
 
     headers = CompaniesTable.fields
-    tbl_rows = build_table_struct(headers, companies_tbl, sort=True)
+    # simple table with two columns
+    sort_col = 1 if options['order'] else 0
+    tbl_rows = build_table_struct(headers, companies_tbl, sort_col=sort_col)
 
     context.spinner.stop()
     print_table(tbl_rows, headers, title=('Companies Table'),
@@ -314,7 +318,7 @@ def cmd_companies_add(context, options):
     if validate_prompt('Validate adding this company?'):
         try:
             companies_tbl.append(company_name)
-        except Exception as ex:
+        except Exception as ex:  # pylint: disable=broad-except
             click.ClickException('Append of company=%s, '
                                  'into database failed. Exception %s' %
                                  (company_name, ex))

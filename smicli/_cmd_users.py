@@ -815,7 +815,6 @@ def cmd_users_activate(context, userids, options):
                 click.echo('User %s already inactive' % userid)
                 continue
             else:
-                print('USER_ITEM %s' % usr_item)
                 if not options['no_verify']:
                     first_name = usr_item['FirstName']
                     last_name = usr_item['Lastname']
