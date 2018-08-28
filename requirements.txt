@@ -7,28 +7,31 @@
 # Make sure that the package versions in minimum-constraints.txt are also
 # the minimum versions required in requirements.txt and dev-requirements.txt.
 
-# Direct and indirect dependencies (except pip, setuptools, wheel):
+# Direct dependencies (except pip, setuptools, wheel):
+
 pywbem>=0.12.0
+# git+https://github.com/pywbem/pywbem.git@master#egg=pywbem
+
+pbr>=1.10.0
+six>=1.10.0
+click>=6.6
+click-spinner>=0.1.6
+click-repl>=0.1.0
+click-configfile>=0.2.2
+click-datetime>=0.2
+asciitree>=0.3.3
+tabulate>=0.8.2
+wcwidth>=0.1.7
+
+# Issue # 117 prompt_toolkit is available but is incompatible.
+#   The repl cmd fails
+prompt-toolkit>=1.0.15,<2.0.0
+
 terminaltables>=3.1.0
 scapy>-2.3.3
-# This fixed ad 2.1.4 because of issues with both older and newer versions
+# This fixed at 2.1.4 because of issues with both older and newer versions
 mysql_connector==2.1.4
-
-configparser>=3.5.0 # TODO
-
-# click libraries for smicli
-
-click>=6.6 # BSD
-click-repl>=0.1.0 # MIT
-click-spinner>=0.1.6 # MIT
-click-configfile>=0.2.2 # TBD
-click-datetime>=0.2
-
-decorator>=4.0.10 # new BSD
-pbr>=1.10.0 # Apache-2.0
-prompt_toolkit>=1.0.9,<2.0.0 # BSD, from click-repl
-six>=1.10.0 # MIT
+configparser>=3.5.0
+decorator>=4.0.10
 sqlalchemy>=1.1.13
-tabulate>=0.7.7 # MIT
-wcwidth>=0.1.7 # MIT, from prompt_toolkit
 python-dateutil>=2.6.1
