@@ -14,7 +14,7 @@
 # limitations under the License.
 
 """
-Setup script. This setup script is based on haveing requirements.txt and
+Setup script. This setup script is based on having requirements.txt and
 dev_requirements.txt files
 """
 

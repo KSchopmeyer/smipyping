@@ -1,8 +1,15 @@
 #!/bin/bash
 #
 # Simply executes all subcommands with options that do not require input
-# assumes that the test servers are connected
+# assumes that the test servers are connected. This does not test for
+# valid response date or even zero exception code.
 #
+
+VALID_TARGET_ID=81
+VALID_TARGETID_2=83
+USER_TO_DEACTIVATE=82
+
+ALLOW_UDPATE_TESTS=false
 
 # Test to see if we can talk to the test implementation
 ping 10.2.119.20 -c 1
@@ -11,10 +18,6 @@ if [ $retval -ne 0 ]; then
     echo "Ping Return code was not zero but $retval"
     exit 1
 fi
-
-VALID_TARGET_ID=81
-VALID_TARGETID_2=83
-USER_TO_DEACTIVATE=82
 
 function run_smicli {
     smicli $1
@@ -82,12 +85,16 @@ smicli users list -f CompanyName -f CompanyID -f FirstName
 smicli users list -d
 
 smicli users activate -h
-smicli users activate $USER_TO_DEACTIVATE --active
-smicli users activate $USER_TO_DEACTIVATE --inactive
+if [ $ALLOW_UDPATE_TESTS=true]; then
+    smicli users activate $USER_TO_DEACTIVATE --active
+    smicli users activate $USER_TO_DEACTIVATE --inactive
+fi
 
 smicli programs -h
 smicli programs list -h
 smicli programs list
+
+# Does not test add or delete
 
 smicli cimping --help
 smicli cimping all --help
@@ -107,7 +114,7 @@ smicli explorer all --detail brief
 smicli explorer all --detail all
 smicli explorer all
 smicli explorer all --include-disabled
-smicli explorer ids 122 103 88 --detail full
+smicli explorer ids 122 $VALID_TARGET_ID2 $VALID_TARGET_ID --detail full
 
 smicli explorer ids --help
 smicli explorer ids $VALID_TARGET_ID $VALID_TARGET_ID2
@@ -118,14 +125,14 @@ smicli provider classes $VALID_TARGET_ID -s
 smicli provider classes $VALID_TARGET_ID
 smicli provider classes $VALID_TARGET_ID -c CIM_Disk
 
-smicli provider info 81
-smicli provider namespaces 81
-smicli provider interop 81
-smicli provider ping 81
-smicli provider profiles 81
-smicli provider profiles 81 -o SNIA
-smicli provider profiles 81 -o SNIA -n Array
-smicli provider profiles 81 -o SNIA -n Array -v 1.5.0
+smicli provider info $VALID_TARGET_ID
+smicli provider namespaces $VALID_TARGET_ID
+smicli provider interop $VALID_TARGET_ID
+smicli provider ping $VALID_TARGET_ID
+smicli provider profiles $VALID_TARGET_ID
+smicli provider profiles $VALID_TARGET_ID -o SNIA
+smicli provider profiles $VALID_TARGET_ID -o SNIA -n Array
+smicli provider profiles $VALID_TARGET_ID -o SNIA -n Array -v 1.5.0
 
 smicli sweep --help
 smicli sweep nets --help
