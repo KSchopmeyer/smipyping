@@ -336,7 +336,7 @@ def cmd_history_weekly(context, options):
             company = fold_cell(company, 15)
             product = target.get('Product', 'empty')
             product = fold_cell(product, 15)
-            url = context.targets_tbl.get_url_str(target_id)
+            url = context.targets_tbl.build_url(target_id)
             smi_version = target.get('SMIVersion', 'empty')
             smi_version = fold_cell(smi_version, 15)
             company_id = target.get('CompanyID', 'empty')
@@ -467,7 +467,7 @@ def cmd_history_overview(context, options):
     newest = tbl_inst.get_newest_ping()
     context.spinner.stop()
     title = "General Information on History (Pings table))"
-    headers = ['Attribute', 'Date or Count']
+    headers = ['Attribute', 'Date or pings count']
     rows.append(['Total Records', count])
     rows.append(['Oldest Record', oldest[2]])
     rows.append(['Latest Record', newest[2]])
@@ -475,8 +475,8 @@ def cmd_history_overview(context, options):
     programs_tbl = ProgramsTable.factory(context.db_info, context.db_type,
                                          context.verbose)
 
-    for key in programs_tbl:
-        program = programs_tbl[key]
+    for programid in programs_tbl:
+        program = programs_tbl[programid]
         start = program['StartDate']
         end = program['EndDate']
 
@@ -545,7 +545,7 @@ def get_target_info(context, target_id, ping_record):
         company = target.get('CompanyName', 'empty')
         product = target.get('Product', 'empty')
         try:
-            url = context.targets_tbl.get_url_str(target_id)
+            url = context.targets_tbl.build_url(target_id)
         except KeyError:
             url = 'empty'
     else:

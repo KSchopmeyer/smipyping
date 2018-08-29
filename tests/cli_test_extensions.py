@@ -6,8 +6,8 @@ through smicli execution
 
 from __future__ import absolute_import, print_function
 import re
-import pytest
 import os
+import pytest
 import six
 
 from .utils import execute_smicli, assert_rc, assert_patterns, assert_lines
@@ -15,13 +15,13 @@ from .utils import execute_smicli, assert_rc, assert_patterns, assert_lines
 TEST_DIR = os.path.dirname(__file__)
 
 
-class CLITestsBase(object):
+class CLITestsBase(object):  # pylint: disable=too-few-public-methods
     """
         Defines methods to execute tests on smicli
 
     """
     def subcmd_test(self, desc, subcmd, args, env, exp_response, condition):
-        # pylint: disable=line-too-long
+        # pylint: disable=line-too-long, no-self-use
         """
         Test method to execute test on smicli by calling the executable
         smicli for the command defined by subcmd with arguments defined

@@ -23,7 +23,7 @@ import datetime
 import click
 
 from smipyping import PingsTable
-from smipyping import SimplePing, SimplePingList, fold_cell, get_url_str, \
+from smipyping import SimplePing, SimplePingList, fold_cell, \
     datetime_display_str
 from smipyping.config import DEFAULT_NAMESPACE, DEFAULT_OPERATION_TIMEOUT, \
     DEFAULT_USERNAME, DEFAULT_PASSWORD
@@ -326,13 +326,15 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
         target = context.targets_tbl[target_id]
         test_result = result[1]
 
-        addr = get_url_str(target['Protocol'], target['IPAddress'],
-                           target['Port'])
-        exception = '%s' % test_result.exception
+        url = context.targets_tbl.build_url(target_id)
 
-        test_status = "%s %s" % (test_result.type, exception) \
-            if test_result.exception else test_result.type
-
+        print('test_result %r\n%r' % (test_result, test_result))
+        print('EXCEPTION %s %r' % (test_result.exception, test_result.exception))
+        if test_result.exception:
+            test_status = "%s %s" % (test_result.type, test_result.exception)
+        else:
+            test_status = test_result.type
+        print('TEST_STATUS %s' % test_status)
         changed = "" if test_status == last_status[target_id] else "*"
 
         if changed:
@@ -345,10 +347,21 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
                                                      test_status))
 
         itemresult = '%s%s' % (test_result.type, changed)
+
+        # format the exception column
+        exception = '%s' % test_result.exception
+
+        if test_result.exception:
+            if isinstance(test_result.exception, CIMError)
+            exception_row =
+        else:
+            exception_row = exception
+
+
         rows.append([target_id,
-                     addr,
+                     url,
                      itemresult,
-                     fold_cell(exception, 12),
+                     fold_cell(exception_row, 12),
                      test_result.execution_time,
                      fold_cell(target['CompanyName'], 12),
                      fold_cell(target['Product'], 12)])

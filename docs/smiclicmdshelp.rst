@@ -1663,8 +1663,8 @@ The following defines the help output for the `smicli users --help` subcommand
 
       Command group to handle users table.
 
-      Includes subcommands to list entries in the users table in the database
-      and to create, modify, delete specific entries.
+      Includes subcommands to list entries in the database users table and to
+      create, modify, delete specific entries.
 
     Options:
       -h, --help  Show this message and exit.
@@ -1674,7 +1674,7 @@ The following defines the help output for the `smicli users --help` subcommand
       add       Add a new user in the user table.
       delete    Delete a user from the database.
       fields    Display field names in targets database.
-      list      List users in the database.
+      list      List users in the database users table.
       modify    Modify fields of a user in the user database.
 
 
@@ -1706,7 +1706,13 @@ The following defines the help output for the `smicli users activate --help` sub
       state are bypassed. If the --no-verify option is not set each user to be
       changed causes a verification request before the change.
 
-      Example:     smicli users ? --activate
+      Examples:     smicli users activate ? --inactive  # list all users for
+      select and                                         # deactivate the
+      selected users     smicli user activate ? --active -c ? # first creates
+      selection list                                          # to select
+      company. Then                                          # creates select
+      list for that                                          # company and
+      activates the                                          # selected users.
 
     Options:
       --active / --inactive      Set the active/inactive state in the database for
@@ -1804,6 +1810,10 @@ The following defines the help output for the `smicli users fields --help` subco
 
       Display field names in targets database.
 
+      Example:
+
+          smicli users list fields
+
     Options:
       -h, --help  Show this message and exit.
 
@@ -1822,7 +1832,31 @@ The following defines the help output for the `smicli users list --help` subcomm
 
     Usage: smicli users list [COMMAND-OPTIONS]
 
-      List users in the database.
+      List users in the database users table.
+
+      Lists the information on users in the users table  in a table format, one
+      user per row. Options allow selecting specific fields of the table (the
+      fields in the table can be viewed with the fields subcommand) and ordering
+      the ouput with a field name.  Unless the --disabled option is set, only
+      active users are shown in the output.
+
+      The --companyid option allows selecting only users for a particular
+      company for the list.
+
+      The default field list is:
+
+          UserID, FirstName, Lastname, Email, CompanyName, Active, Notify
+
+      Examples:
+
+        smicli users list    # default list of all users
+
+        smicli users list -c ?  # Presents a list of companies for user to
+        # select a company and then lists users for                           #
+        that company
+
+        smicli users list -f Email -o Email   # list with UserId and Email
+        fields                                         # in output table.
 
     Options:
       -f, --fields FIELDNAME     Define specific fields for output. UserID always

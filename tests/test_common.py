@@ -290,6 +290,7 @@ RE = r'^[0-9.]*$'
 
 class TestVersionsClass(object):
     """
+    Test the StrList function
     """
     @pytest.mark.parametrize(
         "ver_in, re, exp_str, exp_repr, exp_exc_type", [

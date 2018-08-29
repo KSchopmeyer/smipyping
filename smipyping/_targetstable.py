@@ -42,6 +42,7 @@ import re
 from collections import OrderedDict
 from textwrap import wrap
 import six
+from mysql.connector import Error as mysqlerror
 from ._configfile import read_config
 from ._dbtablebase import DBTableBase
 from ._mysqldbmixin import MySQLDBMixin
@@ -253,8 +254,8 @@ class TargetsTable(DBTableBase):
 
         return rtn
 
-    def get_url_str(self, targetid):
-        """Get the string representing the uri for targetid. Gets the
+    def build_url(self, targetid):
+        """Get the string representing the url for targetid. Gets the
         Protocol, IPaddress and port and uses the common get_url_str to
         create a string.  Port info is included only if it is not the
         WBEM CIM-XML standard definitions.
@@ -514,6 +515,47 @@ class MySQLTargetsTable(SQLTargetsTable, MySQLDBMixin):
             self._load_table()
             self._load_joins()
             cursor.close()
+
+    def activate(self, targetid, activate_flag):
+        """
+        Activate or deactivate the table entry defined by the
+        targetid parameter to the value defined by the activate_flag
+
+        Parameters:
+
+          targetid (:term:`py:integer`):
+            The database key property for this table
+
+          activate_flag (:class:`py:bool`):
+            Next state that will be set into the database for this target.
+
+            Since the db field is an enum it actually sete Active or Inactive
+            strings into the field
+        """
+        cursor = self.connection.cursor()
+
+        enabled_kw = 'Enabled' if activate_flag else 'Disabled'
+        sql = 'UPDATE Targets SET ScanEnabled = %s WHERE TargetID = %s'
+
+        try:
+            cursor.execute(sql, (enabled_kw, targetid))  # noqa F841
+            self.connection.commit()
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+
+            audit_logger.info('TargetTable TargetId %s,set scanEnabled  to %s',
+                              targetid, enabled_kw)
+        except mysqlerror as ex:
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+            audit_logger.error('TargetTable userid %s failed SQL change '
+                               'ScanEnabled. SQL=%s '
+                               'Change to %s exception %s: %s',
+                               targetid, sql, enabled_kw, ex.__class__.__name__,
+                               ex)
+            self.connection.rollback()
+            raise ex
+        finally:
+            self._load_table()
+            self._load_joins()
 
 
 class CsvTargetsTable(TargetsTable):

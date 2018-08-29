@@ -209,7 +209,7 @@ def pick_target_id(context):
 
     for t in targets_list:
         display_options.append(u'    id=%s %s company=%s, product=%s' %
-                               (t, context.targets_tbl.get_url_str(t),
+                               (t, context.targets_tbl.build_url(t),
                                 context.targets_tbl[t]['CompanyName'],
                                 context.targets_tbl[t]['Product']))
     try:
@@ -312,7 +312,7 @@ def pick_multiple_target_ids(context):
 
     for t in targets_list:
         display_options.append(u'    id=%s %s company=%s, product=%s' %
-                               (t, context.targets_tbl.get_url_str(t),
+                               (t, context.targets_tbl.build_url(t),
                                 context.targets_tbl[t]['CompanyName'],
                                 context.targets_tbl[t]['Product']))
     try:

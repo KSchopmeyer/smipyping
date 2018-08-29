@@ -19,7 +19,6 @@ targets to find WBEM servers.
 from __future__ import print_function, absolute_import
 
 from collections import defaultdict
-import datetime
 import click
 import six
 
@@ -552,7 +551,7 @@ def display_cols(users_tbl, fields, show_disabled=True, companyid=None,
         rows.append(users_tbl.format_record(userid, fields))
 
     headers = users_tbl.tbl_hdr(fields)
-    title = 'User Overview: %s:' % datetime_display_str(datetime.datetime.now())
+    title = 'User Overview: %s:' % datetime_display_str()
     if show_disabled:
         title = '%s includes disabled users' % title
 

@@ -30,10 +30,17 @@ __all__ = ['get_list_index', 'build_table_struct', 'filter_stringlist',
            'datetime_display_str']
 
 
-def datetime_display_str(date_time):
+def datetime_display_str(date_time=None):
     """Common function to create string for datetime for display. This creates
-       a single point where date time is formatted for display
+       a single point where date time is formatted for display.
+
+       Parameters:
+
+         date_time (datetime)
     """
+    if date_time is None:
+        date_time = datetime.datetime.now()
+
     return date_time.strftime("%Y-%m-%d %H:%M:%S")
 
 

@@ -34,3 +34,4 @@ cover
 *.sw?
 *.eggs
 *egg-info
+/htmlcov/

@@ -115,7 +115,7 @@ class Explorer(object):
             target = self.targets_tbl[target_id]
 
             # get variables for the connection and logs
-            url = target.get_url_str
+            url = target.self.targets_tbl.build_url(target_id)
             credential = target['Credential']
             principal = target['Principal']
             product = target['Product']
