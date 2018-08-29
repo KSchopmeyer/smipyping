@@ -276,8 +276,8 @@ def users_group():
     """
     Command group to handle users table.
 
-    Includes subcommands to list entries in the users table in the
-    database and to create, modify, delete specific entries.
+    Includes subcommands to list entries in the database users table
+    and to create, modify, delete specific entries.
     """
     pass
 
@@ -342,7 +342,31 @@ def users_add(context, **options):  # pylint: disable=redefined-builtin
 @click.pass_obj
 def users_list(context, **options):  # pylint: disable=redefined-builtin
     """
-    List users in the database.
+    List users in the database users table.
+
+    Lists the information on users in the users table  in a table format, one
+    user per row. Options allow selecting specific fields of the table (the
+    fields in the table can be viewed with the fields subcommand) and ordering
+    the ouput with a field name.  Unless the --disabled option is set, only
+    active users are shown in the output.
+
+    The --companyid option allows selecting only users for a particular company
+    for the list.
+
+    The default field list is:
+
+        UserID, FirstName, Lastname, Email, CompanyName, Active, Notify
+
+    Examples:
+
+      smicli users list    # default list of all users
+
+      smicli users list -c ?  # Presents a list of companies for user to
+                              # select a company and then lists users for
+                              # that company
+
+      smicli users list -f Email -o Email   # list with UserId and Email fields
+                                            # in output table.
     """
     context.execute_cmd(lambda: cmd_users_list(context, options))
 
@@ -443,8 +467,14 @@ def users_activate(context, userids, **options):
     state are bypassed. If the --no-verify option is not set each user to be
     changed causes a verification request before the change.
 
-    Example:
-        smicli users ? --activate
+    Examples:
+        smicli users activate ? --inactive  # list all users for select and
+                                            # deactivate the selected users
+        smicli user activate ? --active -c ? # first creates selection list
+                                             # to select company. Then
+                                             # creates select list for that
+                                             # company and activates the
+                                             # selected users.
     """
     context.execute_cmd(lambda: cmd_users_activate(context, userids, options))
 
@@ -454,6 +484,10 @@ def users_activate(context, userids, **options):
 def users_fields(context):
     """
     Display field names in targets database.
+
+    Example:
+
+        smicli users list fields
     """
     context.execute_cmd(lambda: cmd_users_fields(context))
 
