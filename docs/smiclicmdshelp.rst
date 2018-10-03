@@ -1381,7 +1381,7 @@ The following defines the help output for the `smicli sweep --help` subcommand
       -h, --help  Show this message and exit.
 
     Commands:
-      nets  Execute sweep on the ip/port combinations...
+      nets  Execute sweep on the ip/port combinations defined by the --subnet...
 
 
 .. _`smicli sweep nets --help`:
