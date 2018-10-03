@@ -21,9 +21,10 @@ python-coveralls>=2.8.0; python_version == '2.7'
 
 # Unit test (no imports, invoked via py.test script)
 pytest>=3.3.0
-pytest-cov>=2.4.0
-# coverage>=4.0.3
-# mock>=2.0.0
+
+# TODO:the <2.6 limitation is a temporary bypass because of import conflicts.
+# Remove when the conflicts are corrected. ks 14 Sept. 2018
+pytest-cov>=2.4.0,<2.6
 
 # Sphinx (no imports, invoked via sphinx-build script):
 Sphinx>=1.5.1
