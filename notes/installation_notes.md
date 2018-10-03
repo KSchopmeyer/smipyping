@@ -22,11 +22,11 @@ Linux system, Both redhat and ubuntu have been tested.
 1. Be sure the following are installed:
    * python 2.7
    * a python virtual environment (This guide is written around virtualenv and
-     virtualenvwrapper). You do not have to have the virtual environment but
+     virtualenvwrapper). You do not have to have a virtual environment but
      it makes working with python much simpler. We have generally worked with
-     `virtualenv` and   virtualenvwrapper` but there are a number of different
+     `virtualenv` and   `virtualenvwrapper` but there are a number of different
      virtual environment tools available today.
-   * pip. Be sure pip is up-to-date with pip install -u pip. Note that pip
+   * pip. Be sure pip is up-to-date with pip install -U pip. Note that pip
      is part of the standard python install on some environments but not on
      others
    * make, specifically GNU make.  This should be part of the core install on
@@ -58,19 +58,25 @@ Linux system, Both redhat and ubuntu have been tested.
        $ cd smipypingtest/smipyping
 
     b. Create the virtual environment (the following line uses
-         `virtualenvwrapper`). The -a . options sets the current directory as
+       `virtualenvwrapper`). The -a . options sets the current directory as
        the workspace for this virtual environment so that simply executing
        `workon smipypingtest` activated the virtual environment and also changes
        to the directory containing that version of the project.
 
        $ mkvirtualenv -a . smipypingtest
 
+       This creates a virtual environment named smipypingtest and also sets the
+       directory for that virtual environment to the current directory. This
+       makes it easy with one statement (workon ...) to activate that virtual
+       envrionment and also go to the project directory for that environment.
+
     c. Activate the new virtual environment
 
         $ workon smipypingtest
 
 4.  Install and build smipyping. This step is required because we cloned the
-    code into place,  when we change to pip, it will no longer be necessary
+    code into place.  When we change to pip install, it will no longer be
+    necessary.
 
     a. Be sure you are in the directory defined in step 3.  The easiest way
        is with the cmd:
@@ -94,7 +100,13 @@ Linux system, Both redhat and ubuntu have been tested.
 
 5. Install the database of targets, etc.  For the moment, that is msql and
    it is easiest to take it from an existing database.
-   TODO Finish this.
+
+   Given that you have access to a current dump of either the complete
+   database for this project or the schema, the `mysql` command line utility
+   can be used to install that database data to the running verion of mysql.
+
+   $mysql -p -u [user] [database] < sqldump.sql
+
 
 6. Set up  configuration file (default smicli.ini) to define the database set
    up in 4 above. with mysql this requires knowing the database location,
@@ -127,7 +139,7 @@ Linux system, Both redhat and ubuntu have been tested.
        $ smicli targets list
        $ smicli cimping all
 
-8. Test to see if the the reports are generate correctly:
+8. Test to see if the the reports are generated correctly:
 
    a. Request cimping report. This accesses all the servers and determines
       general status
@@ -155,7 +167,7 @@ Linux system, Both redhat and ubuntu have been tested.
 
     b. Script to run the weekly report, save it, and send it to the group
 
-       The command to generate the report is cimping history weekly
+       The command to generate the report is `cimping history weekly`
 
        The script generates the report, sends the mail and saves the
        script with date tag for the future.
@@ -223,58 +235,72 @@ mechanism but this works for now.
 
 ### Script to generate cimping information and insert into history ###
 
-The following script sets up the virtual environment, changes to the
-directory for that environment, and executes the smicli command. It generates
-output to a file $CRONOUT as a diagnostic. That can be removed when the
-environment is stable
+The process of regularly adding history data to the db is controlled by a
+scheduler such as the cron scheduler in linux.
 
-NOTE: The -s option is critical as that activates insertation of the results
-into the history table.
+The following scripts  set up the virtual environment, change to the directory
+for that environment, and executes the smicli command.That can be removed when
+the environment is stable
 
-	#!/bin/bash
-	# setup virtual environment. This varies by virtual env tool used.
-	# To set up when tool set is virtualenv and  virtualenvwrapper you need to
-	# set the activate script to executable. Then you call that script to
-	# activate the particular environment
-	WORKON_NAME=smicliprod
-	VIRTUALENV=~/smipypingprod/smipyping
-	source ~/.virtualenvs/$WORKON_NAME/bin/activate
-	cd $VIRTUALENV
-	# smipypingprod/smipyping
-	smicli -h >>$CRONOUT
-	RESULT=$?
-	if [ $RESULT -eq 0 ]; then
-	  echo smicli -h success >>$CRONOUT
-	else
-	  exit smicli -h Bad: $RESULT >>$CRONOUT
-	fi
-	smicli cimping all -s
+NOTE: The -s option is critical as that activates insertion of the results of
+the cimping command into the history table.
+
+    #!/bin/bash
+    CRONOUT=$HOME/smiclipingcrounout.txt
+
+    # setup virtual environment. This varies by virtual env tool used.
+    # To set up when tool set is virtualenv and  virtualenvwrapper you need to
+    # set the activate script to executable. Then you call that script to
+    # activate the particular environment
+    WORKON_NAME=smicliprod
+    VIRTUALENV=~/smipypingprod/smipyping
+    source ~/.virtualenvs/$WORKON_NAME/bin/activate
+    cd $VIRTUALENV
+    # smipypingprod/smipyping
+    which smicli >$CRONOUT
+    # test that smicli is installed
+    smicli -h >>$CRONOUT
+    RESULT=$?
+    if [ $RESULT -eq 0 ]; then
+      echo smicli -h success >>$CRONOUT
+    else
+      exit smicli -h Bad: $RESULT >>$CRONOUT
+    fi
+
+    # execute the smicli command to ping the servers
+    smicli cimping all -s >>$CRONOUT
 
 ### Script to generate weekly report ###
 
-	#!/bin/bash
+    #!/bin/bash
+    CRONOUT=$HOME/smicliweeklycrounout.txt
 
-	# setup virtual environment. This varies by virtual env tool used.
-	# To set up when tool set is virtualenv and  virtualenvwrapper you need to
-	# set the activate script to executable. Then you call that script to
-	# activate the particular environment
-	REPORT_NAME=$HOME/weekly.html
-	REPORT_ARCHIVE=$HOME/weekly
-	WORKON_NAME=smicliprod
-	VIRTUALENV=~/smipypingprod/smipyping
-	source ~/.virtualenvs/$WORKON_NAME/bin/activate
-	cd $VIRTUALENV
+    # setup virtual environment. This varies by virtual env tool used.
+    # To set up when tool set is virtualenv and  virtualenvwrapper you need to
+    # set the activate script to executable. Then you call that script to
+    # activate the particular environment
+    echo "start smicliweekly script" >$CRONOUT
+    REPORT_NAME=$HOME/weekly.html
+    REPORT_ARCHIVE=$HOME/weekly
+    WORKON_NAME=smicliprod
+    VIRTUALENV=~/smipypingprod/smipyping
+    source ~/.virtualenvs/$WORKON_NAME/bin/activate
+    cd $VIRTUALENV
 
-	smicli -o html history weekly >$REPORT_NAME
-	NOW=$(date +"%m_%d_%Y")
-    pysendmail -f <from email address> -t <to-email-address -s "WEEKLY STATUS REPORT $NOW" -f $REPORT_NAME
-	cp $REPORT_NAME $REPORT_ARCHIVE/week_$NOW.html
-	# TODO Future Delete old reports
+    smicli -o html history weekly >$REPORT_NAME
+    NOW=$(date +"%m_%d_%Y")
+    SUBJECT="SMLAB Weekly Provider Report for $NOW by smipyping"
+    pysendmail -t smi_lab@snia.org -f k.schopmeyer@swbell.net -s "$SUBJECT" -F $REPORT_NAME -vvvv
+
+    pysendmail -t karl.schopmeyer@gmail.com -f k.schopmeyer@swbell.net -s "$SUBJECT" -F $REPORT_NAME -v
+
+    cp $REPORT_NAME $REPORT_ARCHIVE/week_$NOW.html
+    # NOTE: This does not delete old reports
 
 ### Sample crontab to execute these scripts
 
-	SHELL=/bin/bash
-    * Add data to pings table every 30 minutes.
-	0,30 * * * * sudo -u kschopmeyer -i bash -c '. $HOME/.bash_profile; . $HOME/.bashrc; $HOME/bin/smicliping.sh; > $HOME/smicliping.log'
-	#Test. generate daily at noon
-	23 55 * * FRI sudo -u kschopmeyer -i bash -c '. $HOME/.bash_profile; . $HOME/.bashrc; $HOME/bin/smicliweekly.sh; > $HOME/smicliweekly.log'
+    SHELL=/bin/bash
+    0,30 * * * * sudo -u kschopmeyer -i bash -c '. $HOME/.bash_profile; . $HOME/.bashrc; $HOME/bin/smicliping.sh; > $HOME/smicliping.log'
+
+    # Weekly Report Generate once a week, Sunday Night at 23:35 after last ping:w
+    35 23 * * SUN sudo -u kschopmeyer -i bash -c '. $HOME/.bash_profile; . $HOME/.bashrc; $HOME/bin/smicliweekly.sh; > $HOME/smiweekly.log'
