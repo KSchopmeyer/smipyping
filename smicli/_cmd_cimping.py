@@ -21,6 +21,7 @@ from __future__ import print_function, absolute_import
 import sys
 import datetime
 import click
+from pywbem import CIMError
 
 from smipyping import PingsTable
 from smipyping import SimplePing, SimplePingList, fold_cell, \
@@ -329,7 +330,8 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
         url = context.targets_tbl.build_url(target_id)
 
         print('test_result %r\n%r' % (test_result, test_result))
-        print('EXCEPTION %s %r' % (test_result.exception, test_result.exception))
+        print('EXCEPTION %s %r' % (test_result.exception,
+                                   test_result.exception))
         if test_result.exception:
             test_status = "%s %s" % (test_result.type, test_result.exception)
         else:
@@ -349,14 +351,15 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
         itemresult = '%s%s' % (test_result.type, changed)
 
         # format the exception column
-        exception = '%s' % test_result.exception
-
         if test_result.exception:
-            if isinstance(test_result.exception, CIMError)
-            exception_row =
-        else:
-            exception_row = exception
+            if isinstance(test_result.exception, CIMError):
+                exception_row = test_result.exception.status_code_name
+                if exception_row.startswith("CIM_ERR_"):
+                    exception_row = exception_row[8:]
 
+
+        else:
+            exception_row = '%s' % test_result.exception
 
         rows.append([target_id,
                      url,
