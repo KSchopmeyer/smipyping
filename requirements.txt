@@ -34,4 +34,4 @@ mysql_connector==2.1.4
 configparser>=3.5.0
 decorator>=4.0.10
 sqlalchemy>=1.1.13
-python-dateutil>=4.3.0
+python-dateutil>=2.7.3
