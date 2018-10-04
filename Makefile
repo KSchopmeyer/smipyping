@@ -207,8 +207,8 @@ install: install.done
 	@echo '$@ done.'
 
 pywbem_os_setup.sh:
-	wget -q http://pywbem.readthedocs.io/en/latest/_downloads/pywbem_os_setup.sh
-	chmod 755 pywbem_os_setup.sh
+	# wget -q http://pywbem.readthedocs.io/en/latest/_downloads/pywbem_os_setup.sh
+	# chmod 755 pywbem_os_setup.sh
 
 pywbem_os_setup.bat:
 	wget -q http://pywbem.readthedocs.io/en/latest/_downloads/pywbem_os_setup.bat
