@@ -216,7 +216,7 @@ script:
   - make build
   - make builddoc
   - make check
-  - make test
+#  - make test
 
 after_success:
   - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_PYTHON_VERSION" == "2.7" && "$PACKAGE_LEVEL" == "latest" && -z $_MANUAL_CI_RUN ]]; then
