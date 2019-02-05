@@ -39,6 +39,8 @@ Linux system, Both redhat and ubuntu have been tested.
    set of separately installable packages
 
 
+
+
 2. Create a directory for the installation and clone smipyping from github
 
    $ mkdir smipypingtest
@@ -171,6 +173,39 @@ Linux system, Both redhat and ubuntu have been tested.
 
        The script generates the report, sends the mail and saves the
        script with date tag for the future.
+
+## Installing MYSQL ##
+
+### Installing MYSQL for Redhat enterprise ###
+
+TODO
+
+Open MySQL for remote connections.
+
+It is often helpful to allow remote connections to mysql.  There are at least
+two steps to accomplish this:
+
+1. Modify the mysql config to bind it to an address. This normally requires
+the my.cnf file
+
+The following line must be added/uncommented/changed my.cnf:
+
+        bind-address = 0.0.0.0
+
+Setting this to 0.0.0.0 means that it will accept any IP address.
+
+2. Modify the server networking to open port 3306.   How this is done is
+system and version specific. Specifically with Redhat
+Enterprise 7 using the normally installed firewall, the commands are:
+
+    $ firewall-cmd --permanent --add-port=3306/tcp
+    $ firewall-cmd --add-port=3306/tcp
+
+both commands should respond with success
+
+Note: On some systems this may require modifying the iptables.  See available
+documentation for the commands to do this.
+
 
 ## Scripts and crontab ##
 
