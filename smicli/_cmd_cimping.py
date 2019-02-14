@@ -357,7 +357,6 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
                 if exception_row.startswith("CIM_ERR_"):
                     exception_row = exception_row[8:]
 
-
         else:
             exception_row = '%s' % test_result.exception
 

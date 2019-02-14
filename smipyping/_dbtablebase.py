@@ -14,7 +14,10 @@
 # limitations under the License.
 
 """
-Table base common elements that apply to all of the tables
+Table base common defines elements that apply to all of the database tables
+
+This includes the magic functions, and common elements for accessing,
+iterating, etc. the dictionaries that contain the elements.
 """
 
 
@@ -29,7 +32,23 @@ class DBTableBase(object):
     table_name = ""  # name of the table db table that defines the class
 
     def __init__(self, db_dict, db_type, verbose):
-        """Constructor for PingTable"""
+        """
+        Constructor for table
+
+
+        Parameters:
+          db_dict (:term: `dictionary')
+            Dictionary containing all of the parameters to open the database
+            defined by the db_dict attribute.
+
+          db_type (:term: `string`)
+            String defining one of the allowed database types for the
+            target database.
+
+          verbose (:class:`py:bool`)
+            Boolean. If true detailed info is displayed on the processing
+            of the TargetData class
+        """
         self.db_dict = db_dict
         self.verbose = verbose
         self.db_type = db_type
@@ -40,7 +59,7 @@ class DBTableBase(object):
         return ('% len %s' % (self.table_name, len(self.data_dict)))
 
     def __repr__(self):
-        """Rep of table data info"""
+        """Rep of table data info. displays table name, length, etc."""
         return ('%s db_type %s db len %s' %
                 (self.table_name, self.db_type, len(self.data_dict)))
 
@@ -70,8 +89,13 @@ class DBTableBase(object):
         return self.data_dict[record_id]
 
     def __delitem__(self, record_id):
+        """
+        Delete an item from the current table. NOTE: We should not be
+        using this.  Our approach is to delete the record in the database
+        and reload the table.
+        """
         del self.data_dict[record_id]
 
     def __len__(self):
-        """Return number of programs"""
+        """Return number of items in the database dictionary"""
         return len(self.data_dict)
