@@ -591,18 +591,13 @@ class MySQLTargetsTable(SQLTargetsTable, MySQLDBMixin):
         Exceptions:
 
         """
-        print('TOINSERT %s' % fields)
         cursor = self.connection.cursor()
 
         placeholders = ', '.join(['%s'] * len(fields))
         columns = ', '.join(fields.keys())
-        print('COL %s\nPACEHOLDERS %s' % (columns, placeholders))
         sql = "INSERT INTO %s ( %s ) VALUES ( %s )" % (self.table_name,
                                                        columns,
                                                        placeholders)
-
-        print('SQl %s\nDATA %s' % (sql, fields.values()))
-        #return
 
         try:
             cursor.execute(sql, fields.values())
