@@ -21,11 +21,13 @@ from __future__ import print_function, absolute_import
 from collections import defaultdict
 import datetime
 import click
-from smipyping import datetime_display_str
+import prompt_toolkit
+from smipyping import datetime_display_str, CompaniesTable
 from .smicli import cli, CMD_OPTS_TXT
 from ._click_common import print_table, validate_prompt, get_target_id, \
     pick_multiple_from_list, pick_from_list, test_db_updates_allowed
 from ._common_options import add_options, no_verify_option
+from ._cmd_companies import pick_companyid
 
 
 @cli.group('targets', options_metavar=CMD_OPTS_TXT)
@@ -103,11 +105,12 @@ def targets_get(context, targetid, **options):
 
 
 @targets_group.command('disable', options_metavar=CMD_OPTS_TXT)
-@click.argument('TargetID', type=str, metavar='TargetID', required=True)
+@click.argument('TargetID', type=str, metavar='TargetID', required=False)
 @click.option('-e', '--enable', is_flag=True, default=False,
               help='Enable the Target if it is disabled.')
 @click.option('-i', '--interactive', is_flag=True, default=False,
               help='If set, presents list of targets to chose.')
+@add_options(no_verify_option)
 @click.pass_obj
 def targets_disable(context, targetid, enable, **options):
     """
@@ -121,70 +124,240 @@ def targets_disable(context, targetid, enable, **options):
 
 
 @targets_group.command('modify', options_metavar=CMD_OPTS_TXT)
-@click.argument('TargetID', type=str, metavar='TargetID', required=True)
-@click.option('-e', '--enable', is_flag=True, default=False,
-              help='Enable the Target if it is disabled.')
-@click.option('-i', '--ipaddress', type=str,
+@click.argument('TargetID', type=str, metavar='TargetID', required=False)
+@click.option('-a', '--all', is_flag=True, default=False,
+              help='If set, presents each field with a prompt and requests '
+                   'input. Hit enter to bypass or enter new value for each '
+                   'field.')
+@click.option('--ipaddress', type=str,
               required=False,
               help='Modify the IP address if this option is included.')
-@click.option('-p', '--port', type=str,    # TODO integer only
+@click.option('--protocol', type=click.Choice(['http', 'https']),
               required=False,
-              help='Modify the port field. If 5988 or 5989, also sets the '
-                   'protocol field to https if 5989 or http if 5988')
-@click.option('-P', '--principal', type=str,
+              help='Modify the protocol string if this option is included.')
+@click.option('--port', type=str,    # TODO integer only
+              required=False,
+              help='Modify the port field. This should be consistent with the '
+                   'protocol field.  Normally port 5988 is http protocol and '
+                   '5989 is https')
+@click.option('--principal', type=str,
               required=False,
               help='Modify the Principal field.')
-@click.option('-c', '--credential', type=str,
+@click.option('--credential', type=str,
               required=False,
               help='Modify the Credential field.')
-@click.option('-R', '--product', type=str,
+@click.option('--smiversion', type=str,
+              required=False,
+              help='Modify the the smiversion field.')
+@click.option('--product', type=str,
               required=False,
               help='Modify the the Product field.')
-@click.option('-I', '--interopnamespace', type=str,
+@click.option('--interopnamespace', type=str,
               required=False,
-              help='Modify the InteropNamespace field.')
-@click.option('-n', '--namespace', type=str,
+              help='Modify the InteropNamespace field with a new interop '
+                   'namespace.')
+@click.option('--namespace', type=str,
               required=False,
-              help='Modify the namespace field.')
+              help='Modify the namespace field with a new namespace.')
+@click.option('--cimonversion', type=str,
+              required=False,
+              help='Modify the cimomversion field with a new namespace.')
+@click.option('--companyid', type=int,
+              required=False,
+              help='Modify the companyID field with the correct ID from the '
+                   'Company Table. Entering "?" into this field enables the '
+                   'interactive display of companies for selection of the '
+                   'company id')
+@click.option('--scanenabled', type=click.Choice(['Enabled', 'Disabled']),
+              required=False,
+              help='Modify the ScanEnabled field if this option is included.')
+@click.option('--notifyusers', type=click.Choice(['Enabled', 'Disabled']),
+              required=False,
+              help='Modify the ScanEnabled field if this option is included.')
+@click.option('-i', '--interactive', is_flag=True, default=False,
+              help='If set, presents list of targets. Select one. '
+                   'Alternatively setting the targetid to "?" presents the '
+                   'list of targets for selection.')
 @add_options(no_verify_option)
 @click.pass_obj
 def target_modify(context, targetid, **options):
     """
-    Modify fields target database record.
+    Modify fields in a target database record.
 
-    This subcommand changes the database permanently. It normally allows the
+    This subcommand changes the database permanently. It allows the
     user to verify all changes before they are committed to the database. All
-    changes to the database are recorded in the audit log.
+    changes to the database are recorded in the audit log including both the
+    original and new values. Values to be changed are defined by command
+    line options.
 
     Use the `interactive` option or "?" for Target ID to select the target from
     a list presented.
 
     Not all fields are defined for modification. Today the fields of
-    CompanyName, SMIVersion, CimomVersion, ScanEnabled, NotifyUsers
-    Notify, and enable cannot be modified with this subcommand.
+    SMIVersion, CimomVersion, NotifyUsers and Notify
+    cannot be modified with this subcommand.
 
-    TODO: Expand for other fields in the targets table.
+    Example:
+      smicli targets modify ? --ipaddress 10.2.3.4 --port 5988 --protocol https
+
     """
     context.execute_cmd(lambda: cmd_target_modify(context, targetid, options))
 
 # TODO fields not included in modify.
-# CompanyName
-# SMIVersion
-# Protocol
-# CompanyID
-# CimomVersion
-# Namespace
-# ScanEnabled
 # NotifyUsers
 # Notify
-# enable
 
-# TODO add subcommands for new target and for target delete.
+
+# TODO set up so user can do a template for new target from existing target
+@targets_group.command('new', options_metavar=CMD_OPTS_TXT)
+@click.option('--template', type=str,
+              required=True,
+              help='Target record to use as input data for new target.')
+@click.pass_obj
+def target_new(context, **options):
+    """
+    Add a new target data base record.
+
+    This allows the user to define all of the fields in a
+    target to add a new target to the table.
+
+    The syntax of the fields is generally validated but please be careful
+    since the validation is primitive.
+
+    The new target is permanently added to the target table
+    """
+    context.execute_cmd(lambda: cmd_target_new(context, options))
+
+
+@targets_group.command('delete', options_metavar=CMD_OPTS_TXT)
+@click.argument('TargetID', type=str, metavar='TargetID', required=False)
+@click.option('-n', '--no-verify', is_flag=True, default=False,
+              help='Disable verification prompt before the delete is '
+                   'executed.')
+@click.option('-i', '--interactive', is_flag=True, default=False,
+              help='If set, presents list of users from which one can be '
+                   'chosen.')
+@click.pass_obj
+def target_delete(context, targetid, **options):
+    """
+    Delete a target record from the targets table.
+
+    The selection of the target may be by specific targetid, by entering
+    "?" or use of the -i option which presents a select list of targets from
+    which one may be selected for deletion
+
+    The new target is permanently deleted from the target table in the
+    database.
+    """
+    context.execute_cmd(lambda: cmd_target_delete(context, targetid, options))
 
 
 ##############################################################
 #  targets processing commands
 ##############################################################
+
+
+def prompt_for_fields(context, targetid, hints=None):
+    """
+    Prompt the user for all fields in the table and return a dictionary of
+    all of the fields.
+    """
+    # TODO how do we separate out required and optional.
+    # TODO provide for a template input where we get the field from another
+    # record
+    companies_tbl = CompaniesTable.factory(context.db_info, context.db_type,
+                                           context.verbose)
+    target_record = context.targets_tbl[targetid]
+    changes = {}
+    context.spinner.stop()
+    click.echo('Enter new value for each field or hit enter to bypass a '
+               'field.  CTRL-C aborts the subcommand. Enter "?" to '
+               'enable select list for CompanyID')
+    for field in context.targets_tbl.fields:
+        if field == context.targets_tbl.key_field:
+            continue
+        try:
+            if field == 'CompanyID':
+                prompt_field = "%s or ? for select list" % \
+                    target_record[field]
+            else:
+                prompt_field = target_record[field]
+
+            hint = hints[field] if hints else ""
+            value = prompt_toolkit.prompt(u'%s"(%s): %s: ' %
+                                          (field, hint, prompt_field))
+            if field == "CompanyID" and value == "?":
+                value = pick_companyid(context, companies_tbl)
+        except KeyboardInterrupt:
+            raise click.Exception("Subcommand aborted.")
+        if value != "":
+            changes[field] = value
+    return changes
+
+
+def cmd_target_new(context, options):
+    """
+    Create a new target record in the database.  This subcommand asks for
+    the value of each field in the record based on the data provided by a
+    template record.
+    """
+    targetid = get_target_id(context, options['template'], options)
+    if targetid is None:
+        return
+
+    click.echo("Input fields. The value in the prompt is example data from "
+               "the template.")
+    fields = prompt_for_fields(context, targetid, context.targets_tbl.hints)
+
+    for field in context.targets_tbl.required_fields:
+        if field not in fields:
+            raise click.ClickException("%s field must be in new target." %
+                                       field)
+
+    context.spinner.stop()
+
+    for field, value in fields.items():
+        click.echo("  %s: %s" % (field, value))
+
+    if not validate_prompt('Validate insert this record?'):
+        click.echo('Aborted Operation')
+        return
+    try:
+        print('INSERT %s' % fields)
+        context.targets_tbl.insert(fields)
+    except Exception as er:
+        raise click.ClickException('Insert failed with Exception %s' % er)
+
+
+def cmd_target_delete(context, targetid, options):
+    """
+   Delete the target defined by target id if it exists.
+    """
+
+    targetid = get_target_id(context, targetid, options)
+    if targetid is None:
+        return
+
+    if targetid not in context.targets_tbl:
+        raise click.ClickException('The TargetID %s is not in the table' %
+                                   targetid)
+
+    if not options['no_verify']:
+        context.spinner.stop()
+        target_record = context.targets_tbl[targetid]
+        click.echo('TargetID: %s company: %s, product: %s:' %
+                   (targetid, target_record['CompanyName'],
+                    target_record['Product'],))
+        if not validate_prompt('Validate delete this targetid?'):
+            click.echo('Aborted Operation')
+            return
+
+    context.spinner.stop()
+    try:
+        context.targets_tbl.delete(targetid)
+    except Exception as er:
+        raise click.ClickException('Delete Failed with Exception %s' % er)
+
 
 def display_cols(target_table, fields, show_disabled=True, order=None,
                  output_format=None):
@@ -273,6 +446,27 @@ def display_all(target_table, fields=None, company=None, order=None,
                  output_format=output_format)
 
 
+def _verify_and_update(context, targetid, target_record, changes, no_verify):
+    """
+    Common code to verify the proposed changes and pass them to the
+    db update method if user verifies that they are correct.
+    """
+    if no_verify:
+        context.targets_tbl.update(targetid, changes)
+    else:
+        click.echo('TargetID: %s company: %s, product: %s:' %
+                   (targetid, target_record['CompanyName'],
+                    target_record['Product'],))
+        for key, value in changes.items():
+            click.echo('  %s: "%s" to "%s"' % (key, target_record[key],
+                                               value))
+        if validate_prompt('Modify target id %s' % targetid):
+            context.targets_tbl.update_fields(targetid, changes)
+        else:
+            click.echo('Operation aborted by user.')
+            return
+
+
 def cmd_target_modify(context, targetid, options):
     """
     Modify the fields of a target.  Any of the field defined by options can
@@ -285,50 +479,65 @@ def cmd_target_modify(context, targetid, options):
     if targetid is None:
         return
 
-    # create dictionary of changes requested
-    changes = {}
-    changes['IPAddress'] = options.get('ipaddress', None)
-    changes['Port'] = options.get('port', None)
-    changes['Principal'] = options.get('principal', None)
-    changes['Credentials'] = options.get('credentials', None)
-    changes['Product'] = options.get('product', None)
-    changes['InteropNamespace'] = options.get('interopnamespace', None)
-    changes['Namespace'] = options.get('namespace', None)
+    # If option all, prompts for all fields in the table and takes input
+    # for each entry optionally.  The update is created from the the entries
+    # where the  user returns data.
+    if options['all']:
+        changes = prompt_for_fields(context, targetid)
 
-    for key, value in changes.items():
-        if value is None:
-            del changes[key]
-    target_record = context.targets_tbl[targetid]
+    else:
+        companies_tbl = CompaniesTable.factory(context.db_info,
+                                               context.db_type,
+                                               context.verbose)
+        if 'companyid' in options and options['companyid'] == "?":
+            companyid = pick_companyid(context, companies_tbl)
+            options['CompanyID'] = companyid
+        else:
+            if companyid not in companies_tbl:
+                raise click.ClickException("CompanyID %s invalid" % companyid)
+
+        # Create dictionary of changes requested from input parameters
+        changes = {}
+        changes['IPAddress'] = options.get('ipaddress', None)
+        changes['Port'] = options.get('port', None)
+        changes['Principal'] = options.get('principal', None)
+        changes['Credentials'] = options.get('credentials', None)
+        changes['Product'] = options.get('product', None)
+        changes['InteropNamespace'] = options.get('interopnamespace', None)
+        changes['Namespace'] = options.get('namespace', None)
+        changes['Protocol'] = options.get('protocol', None)
+        changes['ScanEnabled'] = options.get('scanenabled', None)
+        changes['SmiVersion'] = options.get('smiversion', None)
+        changes['CompanyID'] = options.get('companyid', None)
+
+        # delete all values with the default value.
+        for key, value in changes.items():
+            if value is None:
+                del changes[key]
+        target_record = context.targets_tbl[targetid]
+
+    context.spinner.stop()
 
     if not changes:
-        click.echo('No changes requested')
+        click.echo('No changes requested.')
         return
 
     if 'Port' in changes:
         if changes['Port'] <= 0:
-            click.ClickException("Port must be positive integer not %s" %
-                                 changes['Port'])
-        if changes['Port'] == 5988:
-            changes['Protocol'] = 'http'
-        elif changes['Port'] == 5989:
-            changes['Protocol'] = 'https'
+            raise click.ClickException("Port must be positive integer not %s" %
+                                       changes['Port'])
 
-    if options['no_verify']:
-        context.targets_tbl.update(targetid, changes)
-    else:
-        context.spinner.stop()
-        click.echo('Proposed changes for id: %s company: %s, product: %s:' %
-                   (targetid, target_record['CompanyName'],
-                    target_record['Product']))
-        for key, value in changes.items():
-            click.echo('  %s: "%s" to "%s"' % (targetid,
-                                               target_record[key],
-                                               value))
-        if validate_prompt('Modify target id %s' % targetid):
-            context.targets_tbl.update_fields(targetid, changes)
-        else:
-            click.echo('Operation aborted by user.')
-            return
+    # Abort if any  proposed changes do not change the record.
+    for change, change_value in changes.items():
+        # Exception if change does not change data
+        if target_record[change] == change_value:
+            raise click.ClickException("Change %s already set to %s" %
+                                       (change, change_value))
+    try:
+        _verify_and_update(context, targetid, target_record, changes,
+                           options['no_verify'])
+    except Exception as ex:
+        raise click.ClickException("%s: %s" % (ex.__class__.__name__, ex))
 
 
 def cmd_targets_disable(context, targetid, enable, options):
@@ -341,18 +550,20 @@ def cmd_targets_disable(context, targetid, enable, options):
         return
 
     target_record = context.targets_tbl[targetid]
+
+    next_state = 'Enabled' if enable else 'Disabled'
+    context.spinner.stop()
+    click.echo('Current ScanEnabled Status=%s proposed change=%s'
+               % (target_record['ScanEnabled'], next_state))
+    if target_record['ScanEnabled'] == next_state:
+        click.echo('State already same as proposed change')
+        return
+
+    changes = {}
+    changes['ScanEnabled'] = next_state
     try:
-        # TODO add test to see if already in correct state
-        next_state = 'Enabled' if enable else 'Disabled'
-        click.echo('Current Status=%s proposed change=%s'
-                   % (target_record['ScanEnabled'], next_state))
-        if target_record['ScanEnabled'] == next_state:
-            click.echo('State already same as proposed change')
-            return
-        target_record['ScanEnabled'] = False if enable is True else True
-
-        context.targets_tbl.write_updated_record(targetid)
-
+        _verify_and_update(context, targetid, target_record, changes,
+                           options['no_verify'])
     except Exception as ex:
         raise click.ClickException("%s: %s" % (ex.__class__.__name__, ex))
 

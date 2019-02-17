@@ -33,8 +33,7 @@ class DBTableBase(object):
 
     def __init__(self, db_dict, db_type, verbose):
         """
-        Constructor for table
-
+        Constructor for table.
 
         Parameters:
           db_dict (:term: `dictionary')
@@ -52,6 +51,7 @@ class DBTableBase(object):
         self.db_dict = db_dict
         self.verbose = verbose
         self.db_type = db_type
+
         self.data_dict = {}
 
     def __str__(self):

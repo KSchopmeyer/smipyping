@@ -213,10 +213,10 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
         if ctx.default_map:
             db_info = ctx.default_map[db_type]
         else:
-            # NEED DEFAULT for dbinfo
+            # NEED DEFAULT for dbinfo. For now raise exception
             db_info = {}
-            click.ClickException('WARNING: No Database info provided for '
-                                 'database type %s' % db_type)
+            raise click.ClickException('WARNING: No Database info provided for '
+                                       'database type %s' % db_type)
         config_file_dir = os.path.dirname(os.getcwd())
 
         # Enable the hidden loggers.

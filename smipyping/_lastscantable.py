@@ -30,6 +30,9 @@ from __future__ import print_function, absolute_import
 
 import os
 import csv
+from mysql.connector import Error as mysqlerror
+from ._logging import AUDIT_LOGGER_NAME, get_logger
+
 from ._dbtablebase import DBTableBase
 from ._mysqldbmixin import MySQLDBMixin
 
@@ -163,5 +166,24 @@ class MySQLLastScanTable(SQLLastScanTable, MySQLDBMixin):
         self._load_table()
 
     def update(self, timestamp):
-        "UPDATE LastScan SET LastScan = '$DateTime' WHERE ScanID = 1"
-        pass
+        """
+        Insert the provided time stamp into the only record in the table.
+        """
+        sql = "UPDATE LastScan SET LastScan = %s WHERE ScanID = 1 " \
+            "VALUES (%s)"
+
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute(sql, tuple(timestamp,))
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+            audit_logger.info('LastScantable Updated. timestamp=%s, ',
+                              timestamp)
+        except mysqlerror as ex:
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+            audit_logger.error('LastScanTable failed SQL update. SQL=%s, '
+                               'Eexception %s', sql, ex)
+            self.connection.rollback()
+            raise ex
+        finally:
+            self._load_table()
+            cursor.close()

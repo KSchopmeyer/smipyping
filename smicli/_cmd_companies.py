@@ -246,7 +246,7 @@ def cmd_companies_delete(context, companyid, options):
     targets_tbl = TargetsTable.factory(context.db_info, context.db_type,
                                        context.verbose)
 
-    # TODO this should all move to smipyping processing, not in cli
+    # TODO: future this should all move to smipyping processing, not in cli
     for target in targets_tbl:
         if targets_tbl[target]['CompanyID'] == companyid:
             raise click.ClickException(
@@ -262,17 +262,14 @@ def cmd_companies_delete(context, companyid, options):
                 'The CompanyID %s is used in the users table %s' %
                 (companyid, users_tbl[user]))
 
-    if 'no_verify' in options:
-        companies_tbl.delete(companyid)
-    else:
-        company = companies_tbl[companyid]
+    if not options['no_verify']:
         context.spinner.stop()
-        click.echo(company)
-        if validate_prompt('Delete company id %s' % companyid):
-            companies_tbl.delete(companyid)
-        else:
-            click.echo('Operation aborted by user')
+        click.echo(companies_tbl[companyid])
+        if not validate_prompt('Validate delete this company?'):
+            click.echo('Aborted Operation')
             return
+
+    companies_tbl.delete(companyid)
 
 
 def cmd_companies_modify(context, companyid, options):
@@ -291,21 +288,20 @@ def cmd_companies_modify(context, companyid, options):
 
     company_record = companies_tbl[companyid]
 
-    if options['no_verify']:
-        companies_tbl.update_fields(companyid, changes)
-    else:
+    if not options['no_verify']:
         context.spinner.stop()
+        click.echo(companies_tbl[companyid])
         click.echo('Proposed changes for id: %s, %s:' %
                    (companyid, company_record['CompanyName']))
         for key, value in changes.items():
             click.echo('  %s: "%s" to "%s"' % (key,
                                                company_record[key],
                                                value))
-        if validate_prompt('Modify company id %s' % companyid):
-            companies_tbl.update_fields(companyid, changes)
-        else:
-            click.echo('Operation aborted by user.')
+        if not validate_prompt('Validate delete this company?'):
+            click.echo('Aborted Operation')
             return
+
+    companies_tbl.update_fields(companyid, changes)
 
 
 def cmd_companies_add(context, options):
@@ -323,11 +319,11 @@ def cmd_companies_add(context, options):
 
     if validate_prompt('Validate adding this company?'):
         try:
-            companies_tbl.append(company_name)
+            companies_tbl.insert(company_name)
         except Exception as ex:  # pylint: disable=broad-except
-            click.ClickException('Append of company=%s, '
-                                 'into database failed. Exception %s' %
-                                 (company_name, ex))
+            raise click.ClickException('Insert of company=%s, '
+                                       'into database failed. Exception %s' %
+                                       (company_name, ex))
     else:
         click.echo('Operation aborted by user')
         return

@@ -45,6 +45,7 @@ class UsersTable(DBTableBase):
     This table contains a single entry, the last time a scan was executed.
     """
     key_field = 'UserID'
+    table_name = 'Users'
     fields = [key_field, 'FirstName', 'Lastname', 'Email', 'CompanyID',
               'Active', 'Notify']
 
@@ -56,7 +57,6 @@ class UsersTable(DBTableBase):
     # to False
     active_field = ['Active', 'Inactive']  # db field is enum with two choices
     notify_field = ['Enabled', 'Disabled']  # db field is enum with two choices
-    table_name = 'Users'
 
     def __init__(self, db_dict, db_type, verbose):
         super(UsersTable, self).__init__(db_dict, db_type, verbose)
@@ -137,10 +137,10 @@ class UsersTable(DBTableBase):
         specification in the format_dictionary and fold=True
         """
         # TODO can we make this a std cvt function.
+        # TODO we have too many ways to access the data_dict.
         user = self.data_dict[userid]
 
         line = []
-
         for field_name in fields:
             field_value = user[field_name]
             line.append('%s' % field_value)
@@ -246,7 +246,8 @@ class SQLUsersTable(UsersTable):
     """"
     Table representing the Users database table
     This table supports a single dictionary that contains the data
-    when the table is intialized.
+    when the table is intialized. It is a generalization for all database
+    accesses.
     """
 
     def __init__(self, db_dict, dbtype, verbose):
@@ -332,8 +333,8 @@ class MySQLUsersTable(UsersTable, MySQLDBMixin):
     def insert(self, firstname, lastname, email, company_id, active=True,
                notify=True):
         """
-        Write a new record to the database containing the target_id,
-        scan status and a timestamp
+        Write a new record to the database containing the fields defined in
+        the input.
 
         Parameters:
           firstname(:term:`string`):
@@ -470,13 +471,21 @@ class MySQLUsersTable(UsersTable, MySQLDBMixin):
         change_str = ""
         for key, value in changes.items():
             change_str += "%s:%s " % (key, value)
+
+        # Record the original data for the audit log.
+        user_record = self.data_dict[userid]
+        original_data = {change: user_record[change] for change in changes}
+        original_str = ""
+        for key, value in original_data.items():
+            original_str += "%s:%s " % (key, value)
         try:
             cursor.execute(sql, tuple(values))
             self.connection.commit()
             audit_logger = get_logger(AUDIT_LOGGER_NAME)
 
-            audit_logger.info('UserTable userId %s,update fields %s',
-                              userid, change_str)
+            audit_logger.info('UserTable userId %s, update fields: %s, '
+                              'original_fields: %s',
+                              userid, change_str, original_str)
         except mysqlerror as ex:
             audit_logger = get_logger(AUDIT_LOGGER_NAME)
             audit_logger.error('UserTable userid %s failed SQL update. SQL=%s '

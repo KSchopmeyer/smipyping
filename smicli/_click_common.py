@@ -90,8 +90,8 @@ def test_db_updates_allowed():
     """
     if DB_UPDATES_ALLOWED:
         return True
-    click.clickException('Subcommands that update the database are not '
-                         'allowed.')
+    raise click.ClickException('Subcommands that update the database are not '
+                               'allowed.')
 
 
 def pick_from_list(context, options, title):
@@ -502,7 +502,7 @@ def build_html_table(rows, headers, title):
     return HtmlTable(rows=n_rows, header_row=n_headers)
 
 
-def raise_click_exception(exc, error_format='sg'):
+def raise_click_exception(exc, error_format='msg'):
     """
     Raise a ClickException with the desired error message format.
     Parameters:

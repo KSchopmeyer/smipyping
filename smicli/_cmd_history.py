@@ -310,14 +310,15 @@ def cmd_history_weekly(context, options):
         cp['StartDate'],
         end_date=cp['EndDate'])
 
-    # Get last pings information from history
+    # Get last pings information from history (pings) table.
     # TODO the last scan uses current time so the postdated report is really
     # in error. Should be the report_date
     ping_rows = pings_tbl.get_last_timestamped()
     last_status = {ping[1]: ping[3] for ping in ping_rows}
     last_status_time = ping_rows[0][2]
 
-    headers = ['target\nid', 'Uri', 'Company', 'Product', "LastScan\nStatus",
+    headers = ['target\nid', 'Uri', 'Company', 'Product', 'SMIVersion',
+               'LastScan\nStatus',
                '%\nToday', '%\nWeek', '%\nPgm', 'Contacts']
 
     report_order = options['order']
@@ -338,6 +339,7 @@ def cmd_history_weekly(context, options):
             product = fold_cell(product, 15)
             url = context.targets_tbl.build_url(target_id)
             smi_version = target.get('SMIVersion', 'empty')
+            smi_version = smi_version.replace('/', ', ')
             smi_version = fold_cell(smi_version, 15)
             company_id = target.get('CompanyID', 'empty')
             # get users list
@@ -367,7 +369,7 @@ def cmd_history_weekly(context, options):
         else:
             last_scan_status = "Unknown"
 
-        row = [target_id, url, company, product,
+        row = [target_id, url, company, product, smi_version,
                fold_cell(last_scan_status, 16),
                today_percent, week_percent, value[0], emails]
         tbl_rows.append(row)

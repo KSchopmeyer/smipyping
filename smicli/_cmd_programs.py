@@ -226,7 +226,7 @@ def cmd_programs_current(context):
                    (cp['ProgramName'], cp['ProgramID'], cp['StartDate'],
                     cp['EndDate']))
     else:
-        click.ClickException('Error, no current program defined')
+        raise click.ClickException('Error, no current program defined')
 
 
 def cmd_programs_list(context):
@@ -280,9 +280,10 @@ def cmd_programs_add(context, options):
         try:
             programs_tbl.insert(program_name, start_date, end_date)
         except Exception as ex:  # pylint: disable=broad-except
-            click.ClickException('Insert of program=%s, start=%s, '
-                                 'end=%s into database failed. Exception %s' %
-                                 (program_name, start_date, end_date, ex))
+            raise click.ClickException('Insert of program=%s, start=%s, '
+                                       'end=%s into database failed. '
+                                       'Exception %s' %
+                                       (program_name, start_date, end_date, ex))
     else:
         click.echo('Operation aborted by user')
         return

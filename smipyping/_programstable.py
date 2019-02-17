@@ -46,9 +46,6 @@ class ProgramsTable(DBTableBase):
     fields = [key_field, 'ProgramName', 'StartDate', 'EndDate']
     table_name = 'Program'
 
-    def __init__(self, db_dict, db_type, verbose):
-        super(ProgramsTable, self).__init__(db_dict, db_type, verbose)
-
     @classmethod
     def factory(cls, db_dict, db_type, verbose):
         """Factory method to select subclass based on database type.
@@ -64,7 +61,6 @@ class ProgramsTable(DBTableBase):
         if db_type == 'csv':
             inst = CsvProgramsTable(db_dict, db_type, verbose)
         elif db_type == 'mysql':
-            # pylint: disable=redefined-variable-type
             inst = MySQLProgramsTable(db_dict, db_type, verbose)
         else:
             ValueError('Invalid programs table factory db_type %s' % db_type)
@@ -74,7 +70,7 @@ class ProgramsTable(DBTableBase):
 
         return inst
 
-    # TODO combine current and for_date into a single method
+    # TODO: future, combine current and for_date into a single method
     def current(self):
         """Return record for current program if one exists.
 

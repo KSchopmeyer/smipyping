@@ -21,10 +21,19 @@ REMOTE=0
 LOCAL_LIVE=0
 CMD=smicli
 
+VALID_TARGET_ID=115
+
 # Execute script and report if any errors occur
 function do_cmd {
-    echo CMD: $CMD$1
+    echo
+    echo CMD: $CMD $1
     $CMD $1
+    #if [ $# -lt 2 ]
+    #then
+    #    $CMD $1
+    #else
+    #    echo $2 | $CMD $1
+    #fi
     error=$?
     if ((error > 0)); then
         echo ERROR: %1 Error $error
@@ -34,7 +43,8 @@ function do_cmd {
 
 # Execute script expecting non-zero exit code response
 function do_cmd_er {
-    echo CMD: $CMD$1
+    echo
+    echo CMD: $CMD $1
     $CMD $1
     error=$?
     if ((error == 0)); then
@@ -51,15 +61,15 @@ case $i in
         USAGE
         exit 1
     ;;
-    
+
     -r|--remote)
         REMOTE=1
     ;;
-    
+
     -l|--locallive)
         LOCALLIVE=1
     ;;
-    
+
     -l=*|--lib=*)
     LIBPATH="${i#*=}"
     shift # past argument=value
@@ -77,8 +87,6 @@ esac
 done
 echo "REMOTE  = ${REMOTE}"
 
-exit 
-
 # top level
 do_cmd '--help'
 
@@ -90,31 +98,67 @@ do_cmd 'targets list'
 do_cmd 'targets list  -f CompanyName -f Credential -f Principal'
 do_cmd_er 'targets list  -f CompanyNamex'
 
+# programs
+
+do_cmd 'companies -h'
+do_cmd 'companies list -h'
+do_cmd 'companies add -h'
+do_cmd 'companies delete -h'
+do_cmd 'companies modify -h'
+do_cmd 'companies list'
+do_cmd 'companies add  -c BlahBlah'
+# This one needs a response. Our autoresponse fails. User answer n
+do_cmd 'companies list'
+do_cmd_er 'companies delete 900'
+# Cannot do modify or delete, we do not know the id of the company
+
+# users
+do_cmd 'users list'
+do_cmd 'users list --disabled'
+do_cmd 'users list --disabled'
+do_cmd 'users list -f FirstName -f Lastname'
+do_cmd 'users list -f FirstName -f Lastname -f CompanyName -o CompanyName'
+do_cmd_er 'users list -f blah'
+
+# history
+
+#companies
+
+# The following commands can be executed only if there is a set of valid
+# servers.
+
 if [[REMOTE == 0]]; then
     echo "Do not execute against remote system"
     exit
+fi
 #
 # cimping
 #
 # host id
-do_cmd_er 'cimping ids 4'
+do_cmd_er 'cimping ids 999'
 do_cmd 'cimping ids 89'
+# host name
 do_cmd 'cimping host http://localhost'
+# all
 do_cmd 'cimping all'
-
 
 #
 # Provider commands
 #
 # classes, info, interop, namespaces, ping profiles
-do_cmd 'provider interop -t 115'
-do_cmd 'provider namespaces -t 115'
-do_cmd 'provider profiles -t 115'
-do_cmd 'provider classes CIM_ManagedElement -t 115'
-do_cmd 'provider classes CIM_ManagedElement -t 115'
+do_cmd "provider interop "$VALID_TARGET_ID
+do_cmd "provider namespaces "$VALID_TARGET_ID
+do_cmd "provider profiles "$VALID_TARGET_ID
+do_cmd "provider profiles "$VALID_TARGET_ID" -o SNIA"
+do_cmd "provider profiles "$VALID_TARGET_ID" -n SMI-S"
+do_cmd "provider classes "$VALID_TARGET_ID" -c CIM_ManagedElement"
+do_cmd "provider classes "$VALID_TARGET_ID" -s"
+
 #
 #   Exercise explorer
 #
 
 do_cmd 'explorer all'
 do_cmd 'explorer ids 89'
+
+# sweep commands

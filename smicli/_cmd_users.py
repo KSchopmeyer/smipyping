@@ -706,29 +706,28 @@ def cmd_users_add(context, options):
         if companyid is None:
             return
 
-    # TODO sept 2017 expand to include active and notify
-    if companyid in companies_tbl:
-        company = companies_tbl[companyid]['CompanyName']
-
-        if not options['no_verify']:
-            context.spinner.stop()
-            click.echo('Adding %s %s in company=%s(%s), email=%s' %
-                       (first_name, last_name, company, companyid, email))
-            if validate_prompt('Validate add this user?'):
-                pass
-            else:
-                click.echo('Aborted Operation')
-                return
-        try:
-            users_tbl.insert(first_name, last_name, email, companyid,
-                             active=active,
-                             notify=notify)
-        except MySQLError as ex:
-            click.ClickException("INSERT Error %s: %s" % (ex.__class__.__name__,
-                                                          ex))
-    else:
+    if companyid not in companies_tbl:
         raise click.ClickException('The companyID %s is not a valid companyID '
                                    'in companies table' % companyid)
+
+    company = companies_tbl[companyid]['CompanyName']
+
+    if not options['no_verify']:
+        context.spinner.stop()
+        click.echo('Adding %s %s in company=%s(%s), email=%s' %
+                   (first_name, last_name, company, companyid, email))
+        if validate_prompt('Validate add this user?'):
+            pass
+        else:
+            click.echo('Aborted Operation')
+            return
+    try:
+        users_tbl.insert(first_name, last_name, email, companyid,
+                         active=active,
+                         notify=notify)
+    except MySQLError as ex:
+        raise click.ClickException("DB INSERT Error %s: %s" %
+                                   (ex.__class__.__name__, ex))
 
 
 def cmd_users_delete(context, userid, options):
