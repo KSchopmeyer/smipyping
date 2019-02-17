@@ -201,6 +201,10 @@ def history_delete(context, **options):  # pylint: disable=redefined-builtin
               help='Sort order of the columns for the report output.  This '
                    'can be any of the column headers (case independent). '
                    'Default: {}'.format(DEFAULT_WEEKLY_TBL_SORT))
+@click.option('-d', '--disabled', default=False, is_flag=True, required=False,
+              help='Show disabled targets. Otherwise only targets that are '
+                   'set Enabled in the database are shown.'
+                   '(Default:Do not show disabled targets).')
 @click.pass_obj
 def history_weekly(context, **options):  # pylint: disable=redefined-builtin
     """
@@ -297,6 +301,9 @@ def cmd_history_weekly(context, options):
     except ValueError as ve:
         raise click.ClickException('Error; no program defined %s ' % ve)
 
+    show_disabled = True if options['disabled']  else False
+    print('SHOW_DISABLED %s' % show_disabled)
+
     # set start date time to just after midnight for today
     report_date = report_date.replace(minute=0, hour=0, second=0)
 
@@ -368,6 +375,12 @@ def cmd_history_weekly(context, options):
                 last_scan_status = last_scan_status.split(':', 1)[0]
         else:
             last_scan_status = "Unknown"
+
+        print('TARGET %r' % target)
+        if show_disabled is False:
+            if context.targets_tbl.disabled_target_id(target_id):
+                print('DISABLED %s' % target_id)
+                continue
 
         row = [target_id, url, company, product, smi_version,
                fold_cell(last_scan_status, 16),
