@@ -43,22 +43,19 @@ wheel===0.29.0
 
 pywbem===0.12.0
 
-pbr===1.10.0
-six===1.10.0
-click===6.7
-click-spinner===0.1.8
-click-repl===0.1.5
-asciitree===0.3.3
-tabulate===0.8.2
-prompt-toolkit===1.0.9
+pbr>=1.10.0
+six>=1.10.0
+click>=6.7
+click-spinner>=0.1.8
+click-repl>=0.1.5
+click-configfile>=0.2.3
+click-datetime>=0.2
+asciitree>=0.3.3
+tabulate>=0.8.2
+wcwidth>=0.1.7
+prompt-toolkit>2.0.1
 
 
-# Indirect dependencies for runtime (must be consistent with requirements.txt)
-# None
-
-ply===3.10
-PyYAML===3.12
-M2Crypto===0.30.1
 
 # Direct dependencies for development (must be consistent with dev-requirements.txt)
 
