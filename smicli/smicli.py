@@ -243,6 +243,7 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
         # TODO: Why not glue db_type into db_info itself in context.
 
         # use db info to get target info.
+        # TODO move this so we do not need db for help.
         try:
             targets_tbl = smipyping.TargetsTable.factory(
                 db_info, db_type, verbose, output_format=output_format)
