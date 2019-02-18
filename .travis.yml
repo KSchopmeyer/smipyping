@@ -185,12 +185,16 @@ install:
   - make develop
   - pip list
 
-# setup mysql as a service in travis  and load SMIStatus Database
-#services:
-#  - mysql
+ setup mysql as a service in travis  and load SMIStatus Database
+services:
+  - mysql
 
-#before_install:
-#  - mysql -u root --password="" CREATE DATABASE SMIStatus'
+# Set up the database and create the smicli.ini file that corresponds to this
+# mysql setup
+before_install:
+  - cp tests/testsql/smiclitest.ini.txt smicli.ini
+  - mysql -u testuser --password="1234" CREATE DATABASE SMIStatusTest
+  - mysql -u testuser --password="1234" --default-character-set=utf8 SMIStatusTest < tests/testsql/smistatustest.sql
 
 # commands to run builds & tests
 script:
@@ -198,7 +202,7 @@ script:
   - make build
   - make builddoc
   - make check
-#  - make test
+  - make test
 
 after_success:
   - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_PYTHON_VERSION" == "2.7" && "$PACKAGE_LEVEL" == "latest" && -z $_MANUAL_CI_RUN ]]; then
