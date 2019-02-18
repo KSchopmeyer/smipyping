@@ -193,8 +193,14 @@ services:
 # mysql setup
 before_install:
   - cp tests/testsql/smiclitest.ini.txt smicli.ini
-  - mysql -e -u travis --password="" CREATE DATABASE IF NOT EXISTS SMIStatusTest;
-  - mysql -e -u travis --password="" --default-character-set=utf8 SMIStatusTest <tests/testsql/smistatustest.sql
+  - mysqld --version
+  - mysql -e '-u travis --password="" CREATE DATABASE IF NOT EXISTS SMIStatusTest;'
+  - mysql -e -u travis --password="" SMIStatusTest < tests/testsql/smistatustest.sql
+  # - mysql -e -u travis --password="" --default-character-set=utf8 SMIStatusTest < tests/testsql/smistatustest.sql
+
+  # - sudo mysql -e "use mysql; update user set authentication_string=PASSWORD('new_password') where User='root'; update user set plugin='mysql_native_password';FLUSH PRIVILEGES;"
+  # - sudo mysql_upgrade -u root -pnew_password
+  # - sudo service mysql restart
 
 # commands to run builds & tests
 script:
