@@ -838,6 +838,9 @@ The following defines the help output for the `smicli history weekly --help` sub
       -o, --order TEXT  Sort order of the columns for the report output.  This can
                         be any of the column headers (case independent). Default:
                         Company
+      -d, --disabled    Show disabled targets. Otherwise only targets that are set
+                        Enabled in the database are shown.(Default:Do not show
+                        disabled targets).
       -h, --help        Show this message and exit.
 
 
@@ -1471,12 +1474,45 @@ The following defines the help output for the `smicli targets --help` subcommand
       -h, --help  Show this message and exit.
 
     Commands:
+      delete   Delete a target record from the targets table.
       disable  Disable a provider from scanning.
       fields   Display field names in targets database.
       get      Display details of single database target.
       info     Show target database config information
       list     Display the entries in the targets database.
-      modify   Modify fields target database record.
+      modify   Modify fields in a target database record.
+      new      Add a new target data base record.
+
+
+.. _`smicli targets delete --help`:
+
+smicli targets delete --help
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli targets delete --help` subcommand
+
+
+::
+
+    Usage: smicli targets delete [COMMAND-OPTIONS] TargetID
+
+      Delete a target record from the targets table.
+
+      The selection of the target may be by specific targetid, by entering "?"
+      or use of the -i option which presents a select list of targets from which
+      one may be selected for deletion
+
+      The new target is permanently deleted from the target table in the
+      database.
+
+    Options:
+      -n, --no-verify    Disable verification prompt before the delete is
+                         executed.
+      -i, --interactive  If set, presents list of users from which one can be
+                         chosen.
+      -h, --help         Show this message and exit.
 
 
 .. _`smicli targets disable --help`:
@@ -1501,6 +1537,8 @@ The following defines the help output for the `smicli targets disable --help` su
     Options:
       -e, --enable       Enable the Target if it is disabled.
       -i, --interactive  If set, presents list of targets to chose.
+      -N, --no_verify    Disable verification prompt before the change is
+                         executed.
       -h, --help         Show this message and exit.
 
 
@@ -1615,36 +1653,92 @@ The following defines the help output for the `smicli targets modify --help` sub
 
     Usage: smicli targets modify [COMMAND-OPTIONS] TargetID
 
-      Modify fields target database record.
+      Modify fields in a target database record.
 
-      This subcommand changes the database permanently. It normally allows the
-      user to verify all changes before they are committed to the database. All
-      changes to the database are recorded in the audit log.
+      This subcommand changes the database permanently. It allows the user to
+      verify all changes before they are committed to the database. All changes
+      to the database are recorded in the audit log including both the original
+      and new values. Values to be changed are defined by command line options.
 
       Use the `interactive` option or "?" for Target ID to select the target
       from a list presented.
 
       Not all fields are defined for modification. Today the fields of
-      CompanyName, SMIVersion, CimomVersion, ScanEnabled, NotifyUsers Notify,
-      and enable cannot be modified with this subcommand.
+      SMIVersion, CimomVersion, NotifyUsers and Notify cannot be modified with
+      this subcommand.
 
-      TODO: Expand for other fields in the targets table.
+      Example:   smicli targets modify ? --ipaddress 10.2.3.4 --port 5988
+      --protocol https
 
     Options:
-      -e, --enable                 Enable the Target if it is disabled.
-      -i, --ipaddress TEXT         Modify the IP address if this option is
-                                   included.
-      -p, --port TEXT              Modify the port field. If 5988 or 5989, also
-                                   sets the protocol field to https if 5989 or
-                                   http if 5988
-      -P, --principal TEXT         Modify the Principal field.
-      -c, --credential TEXT        Modify the Credential field.
-      -R, --product TEXT           Modify the the Product field.
-      -I, --interopnamespace TEXT  Modify the InteropNamespace field.
-      -n, --namespace TEXT         Modify the namespace field.
-      -N, --no_verify              Disable verification prompt before the change
-                                   is executed.
-      -h, --help                   Show this message and exit.
+      -a, --all                       If set, presents each field with a prompt
+                                      and requests input. Hit enter to bypass or
+                                      enter new value for each field.
+      --ipaddress TEXT                Modify the IP address if this option is
+                                      included.
+      --protocol [http|https]         Modify the protocol string if this option is
+                                      included.
+      --port TEXT                     Modify the port field. This should be
+                                      consistent with the protocol field.
+                                      Normally port 5988 is http protocol and 5989
+                                      is https
+      --principal TEXT                Modify the Principal field.
+      --credential TEXT               Modify the Credential field.
+      --smiversion TEXT               Modify the the smiversion field.
+      --product TEXT                  Modify the the Product field.
+      --interopnamespace TEXT         Modify the InteropNamespace field with a new
+                                      interop namespace.
+      --namespace TEXT                Modify the namespace field with a new
+                                      namespace.
+      --cimonversion TEXT             Modify the cimomversion field with a new
+                                      namespace.
+      --companyid INTEGER             Modify the companyID field with the correct
+                                      ID from the Company Table. Entering "?" into
+                                      this field enables the interactive display
+                                      of companies for selection of the company id
+      --scanenabled [Enabled|Disabled]
+                                      Modify the ScanEnabled field if this option
+                                      is included.
+      --notifyusers [Enabled|Disabled]
+                                      Modify the ScanEnabled field if this option
+                                      is included.
+      -i, --interactive               If set, presents list of targets. Select
+                                      one. Alternatively setting the targetid to
+                                      "?" presents the list of targets for
+                                      selection.
+      -N, --no_verify                 Disable verification prompt before the
+                                      change is executed.
+      -h, --help                      Show this message and exit.
+
+
+.. _`smicli targets new --help`:
+
+smicli targets new --help
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+The following defines the help output for the `smicli targets new --help` subcommand
+
+
+::
+
+    Usage: smicli targets new [COMMAND-OPTIONS]
+
+      Add a new target data base record.
+
+      This allows the user to define all of the fields in a target to add a new
+      target to the table.
+
+      The syntax of the fields is generally validated but please be careful
+      since the validation is primitive.
+
+      The new target is permanently added to the target table
+
+    Options:
+      --template TEXT  Target record to use as input data for new target.
+                       [required]
+      -h, --help       Show this message and exit.
 
 
 .. _`smicli users --help`:
