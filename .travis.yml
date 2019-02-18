@@ -193,8 +193,8 @@ services:
 # mysql setup
 before_install:
   - cp tests/testsql/smiclitest.ini.txt smicli.ini
-  - mysql -u travis --password="" CREATE DATABASE SMIStatusTest
-  - mysql -u travis --password="" --default-character-set=utf8 SMIStatusTest < tests/testsql/smistatustest.sql
+  - mysql -e -u travis --password="" CREATE DATABASE IF NOT EXISTS SMIStatusTest;
+  - mysql -e -u travis --password="" --default-character-set=utf8 SMIStatusTest <tests/testsql/smistatustest.sql
 
 # commands to run builds & tests
 script:
