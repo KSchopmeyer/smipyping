@@ -185,7 +185,7 @@ install:
   - make develop
   - pip list
 
- setup mysql as a service in travis  and load SMIStatus Database
+# setup mysql as a service in travis  and load SMIStatus Database
 services:
   - mysql
 
