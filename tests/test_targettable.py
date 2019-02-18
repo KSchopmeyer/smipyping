@@ -36,6 +36,22 @@ SCRIPT_DIR = os.path.dirname(__file__)
 class TargetTableTests(unittest.TestCase):
     pass
 
+class SQLTableTests(TargetTableTests):
+    """
+    Initialize and remove SQL database
+    """
+        dbtype = 'mysql'
+        test_config_file = os.path.join(SCRIPT_DIR, TEST_CONFIG_FILE_NAME)
+        db_config = read_config(test_config_file, dbtype)
+        db_config['directory'] = os.path.dirname(test_config_file)
+        self.target_table = TargetsTable.factory(db_config, dbtype, False)
+
+    def test_list(self)
+        """
+        Test get entried from table
+        """
+        fields = self.target_table.get_field_list()
+        print('FIELDS %s' % fields)
 
 class CsvTableTests(TargetTableTests):
     def setUp(self):
@@ -45,6 +61,9 @@ class CsvTableTests(TargetTableTests):
         db_config = read_config(test_config_file, dbtype)
         db_config['directory'] = os.path.dirname(test_config_file)
         self.target_table = TargetsTable.factory(db_config, dbtype, False)
+
+
+
 
 
 class TargetsTableTest(CsvTableTests):
@@ -123,6 +142,8 @@ class TargetsTableTest(CsvTableTests):
         disabled = target_tbl.get_disabled_targetids()
         enabled = target_tbl.get_enabled_targetids()
         self.assertTrue(len(disabled) + len(enabled) == len(target_tbl.keys()))
+
+
 
 
 if __name__ == '__main__':
