@@ -246,6 +246,7 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
         try:
             targets_tbl = smipyping.TargetsTable.factory(
                 db_info, db_type, verbose, output_format=output_format)
+
         except ValueError as ve:
             raise click.ClickException("Invalid database. Targets table "
                                        "load fails. Exception %s" % ve)

@@ -58,18 +58,6 @@ class UsersTable(DBTableBase):
     active_field = ['Active', 'Inactive']  # db field is enum with two choices
     notify_field = ['Enabled', 'Disabled']  # db field is enum with two choices
 
-    def __init__(self, db_dict, db_type, verbose):
-        super(UsersTable, self).__init__(db_dict, db_type, verbose)
-
-    def __str__(self):
-        """String info on Userstable. TODO. Put more info her"""
-        return ('len %s' % len(self.data_dict))
-
-    def __repr__(self):
-        """Rep of Users data"""
-        return ('Users db_type %s db_dict len %s' %
-                (self.db_type, len(self.data_dict)))
-
     @classmethod
     def factory(cls, db_dict, db_type, verbose):
         """Factory method to select subclass based on database type.

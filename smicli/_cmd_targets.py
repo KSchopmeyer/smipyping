@@ -289,7 +289,7 @@ def prompt_for_fields(context, targetid, hints=None):
             if field == "CompanyID" and value == "?":
                 value = pick_companyid(context, companies_tbl)
         except KeyboardInterrupt:
-            raise click.Exception("Subcommand aborted.")
+            raise click.ClickException("Subcommand aborted.")
         if value != "":
             changes[field] = value
     return changes

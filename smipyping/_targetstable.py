@@ -238,7 +238,7 @@ class TargetsTable(DBTableBase):
 
         return return_list
 
-    def get_target(self, target_id):
+    def get_target(self, targetid):
         """
         Get the target data for the parameter target_id.
 
@@ -251,10 +251,10 @@ class TargetsTable(DBTableBase):
         Exceptions:
             KeyError if target not in targets dictionary
         """
-        if not isinstance(target_id, six.integer_types):
-            target_id = int(target_id)
+        if not isinstance(targetid, six.integer_types):
+            targetid = int(targetid)
 
-        return self.data_dict[target_id]
+        return self.data_dict[targetid]
 
     def filter_targets(self, ip_filter=None, company_name_filter=None):
         """
@@ -312,11 +312,15 @@ class TargetsTable(DBTableBase):
     def get_notifyusers(self, targetid):
         """
         Get list of entries in the notify users field and split into python
-        list.
+        list and return the list of integers representing the userids.
+        This list stored in db as string of integers separated by commas.
+
+        Returns None if there is no data in NotifyUsers.
         """
-        notify_users = self[targetid]
+        notify_users = self[targetid]['NotifyUsers']
         if notify_users:
-            notify_users_list = notify_users.split('/')
+            notify_users_list = notify_users.split(',')
+            notify_users_list = [int(userid) for userid in notify_users_list]
             return notify_users_list
         return None
 
@@ -359,7 +363,7 @@ class TargetsTable(DBTableBase):
             ValueError('ScanEnabled field must contain "Enabled" or "Disabled'
                        ' string. %s is invalid.' % val)
 
-    def disabled_target_id(self, target_id):
+    def disabled_target_id(self, targetid):
         """
         Return True if target recorded for this target_id marked
         disabled. Otherwise return True
@@ -375,7 +379,7 @@ class TargetsTable(DBTableBase):
         Exceptions:
             KeyError if target_id not in database
         """
-        return(self.disabled_target(self.data_dict[target_id]))
+        return(self.disabled_target(self.data_dict[targetid]))
 
     def get_output_width(self, col_list):
         """
@@ -471,9 +475,9 @@ class MySQLTargetsTable(SQLTargetsTable, MySQLDBMixin):
             raise ValueError('Error: putting Company Name in table %r error %s'
                              % (self.db_dict, ex))
 
-    def update_fields(self, target_id, changes):
+    def update_fields(self, targetid, changes):
         """
-        Update the database record defined by target_id with the dictionary
+        Update the database record defined by targetid with the dictionary
         of items defined by changes where each item is an entry in the
         target record. Update does NOT test if the new value is the same
         as the original value.
@@ -492,7 +496,7 @@ class MySQLTargetsTable(SQLTargetsTable, MySQLDBMixin):
             set_names = set_names + "{0} = %s".format(key)
             values.append(value)
 
-        values.append(target_id)
+        values.append(targetid)
         sql = "Update Targets " + set_names
 
         # append targetid component
@@ -500,7 +504,7 @@ class MySQLTargetsTable(SQLTargetsTable, MySQLDBMixin):
 
         # Record the original data for the audit log.
         original_data = {}
-        target_record = self.get_target(target_id)
+        target_record = self.get_target(targetid)
         for change in changes:
             original_data[change] = target_record[change]
         try:
@@ -510,13 +514,13 @@ class MySQLTargetsTable(SQLTargetsTable, MySQLDBMixin):
 
             audit_logger.info('TargetsTable TargetID: %s, update fields: %s, '
                               'original fields: %s',
-                              target_id, changes, original_data)
+                              targetid, changes, original_data)
         except Exception as ex:
             self.connection.rollback()
             audit_logger = get_logger(AUDIT_LOGGER_NAME)
             audit_logger.error('TargetsTable TargetID: %s failed SQL update. '
                                'SQL: %s Changes: %s Exception: %s',
-                               target_id, sql, changes, ex)
+                               targetid, sql, changes, ex)
             raise ex
         finally:
             self._load_table()

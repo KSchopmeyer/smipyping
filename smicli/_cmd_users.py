@@ -52,11 +52,12 @@ def build_userid_display(userid, user_item):
     """Build and return the string to display for selecting a user.
        Displays info from users table so user can pick the ids.
     """
-    return u'   id=%-3s %-20s %-16s %-16s %s' % (userid,
-                                                 user_item['CompanyName'],
-                                                 user_item['FirstName'],
-                                                 user_item['Lastname'],
-                                                 user_item['Email'],)
+    return u'   id=%-3s %-20s %-16s %-16s %s, %s' % (userid,
+                                                     user_item['CompanyName'],
+                                                     user_item['FirstName'],
+                                                     user_item['Lastname'],
+                                                     user_item['Email'],
+                                                     user_item['Active'])
 
 
 def pick_multiple_user_ids(context, users_tbl, active=None, companyid=None):
@@ -315,6 +316,14 @@ def users_add(context, **options):  # pylint: disable=redefined-builtin
     Verification that the operation is correct is requested before the change
     is executed unless the `--no-verify' parameter is set.
 
+    Examples:
+
+    smicli users add -f John -l Malia -e jm@blah.com -c ?
+
+       Defines a new user with name and email defined after using select list
+       to get companyID of the user. A prompt for verification is presented
+       before the database is changed.
+
     """
     context.execute_cmd(lambda: cmd_users_add(context, options))
 
@@ -383,12 +392,17 @@ def users_delete(context, userid, **options):
     """
     Delete a user from the database.
 
-    Delete the program user by the subcommand argument from the
+    Delete the user defined by the subcommand argument from the
     database.
 
     The user to be deleted may be specified by a) specific user id, b) the
     interactive mode option, or c) using '?' as the user id argument which also
     initiates the interactive mode options
+
+    Examples:
+
+      smicli delete 85
+      smicli delete ?
     """
     context.execute_cmd(lambda: cmd_users_delete(context, userid, options))
 
@@ -750,15 +764,19 @@ def cmd_users_delete(context, userid, options):
     targets_with_user = []
     for targetid in context.targets_tbl:
         notify_users = context.targets_tbl.get_notifyusers(targetid)
-        if userid in notify_users:
+        if notify_users and userid in notify_users:
             targets_with_user.append(context.targets_tbl[targetid])
     if targets_with_user:
         for target in targets_with_user:
-            click.echo("User referenced in targets table %s, %s" %
-                       (target['TargetID'], target))
-        targetids = [target['TargetID'] for target in targets_with_user]
-        raise click.ClickException('Cannot Delete User. Defined in Targets %s'
-                                   % targetids)
+            click.echo("User referenced in targets targetID: %s, company: "
+                       "%s IPAddress: %s" %
+                       (target['TargetID'], target['CompanyName'],
+                        target['IPAddress']))
+        targets = ['%s;%s' % (target['TargetID'], target['CompanyName'])
+                   for target in targets_with_user]
+        raise click.ClickException('Cannot delete UserID %s. It is used in '
+                                   'Targets.NotifyUsers %s' %
+                                   (userid, ", ".join(targets)))
     # TODO we really want to delete the entries if user wants to
 
     if not options['no_verify']:
