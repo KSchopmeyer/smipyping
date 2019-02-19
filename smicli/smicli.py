@@ -215,9 +215,8 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
         else:
             # NEED DEFAULT for dbinfo. For now raise exception
             db_info = {}
-            # TODO correct this by moving to were first used.
-            # raise click.ClickException('No Database info provided for '
-            #                           'database type %s' % db_type)
+            raise click.ClickException('No Database info provided for '
+                                       'database type %s' % db_type)
 
         config_file_dir = os.path.dirname(os.getcwd())
 

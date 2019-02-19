@@ -193,6 +193,7 @@ services:
 # mysql setup
 before_install:
   - cp tests/testsql/smiclitest.ini.txt smicli.ini
+  - echo smicli.ini
   - mysqld --version
   - mysql -u travis --password="" --execute="CREATE DATABASE IF NOT EXISTS SMIStatusTest"
   # - mysql -e -u travis --password="" SMIStatusTest < tests/testsql/smistatustest.sql
@@ -205,6 +206,7 @@ before_install:
 # commands to run builds & tests
 script:
 # make build is always run in order to verify the package version determination
+  -echo smicli.ini
   - make build
   - make builddoc
   - make check
