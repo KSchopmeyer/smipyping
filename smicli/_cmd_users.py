@@ -741,27 +741,40 @@ def cmd_users_delete(context, userid, options):
     if userid is None:
         return
 
-    if userid in users_tbl:
-        user = users_tbl[userid]
-
-        if not options['no_verify']:
-            context.spinner.stop()
-            click.echo('id=%s %s %s; %s' % (userid, user['FirstName'],
-                                            user['Lastname'], user['Email']))
-            if not validate_prompt('Validate delete this user?'):
-                click.echo('Aborted Operation')
-                return
-
-        context.spinner.stop()
-        try:
-            users_tbl.delete(userid)
-        except MySQLError as ex:
-            click.echo("Change failed, Database Error Exception: %s: %s"
-                       % (ex.__class__.__name__, ex))
-
-    else:
+    if userid not in users_tbl:
         raise click.ClickException('The UserID %s is not in the table' %
                                    userid)
+
+    user = users_tbl[userid]
+
+    targets_with_user = []
+    for targetid in context.targets_tbl:
+        notify_users = context.targets_tbl.get_notifyusers(targetid)
+        if userid in notify_users:
+            targets_with_user.append(context.targets_tbl[targetid])
+    if targets_with_user:
+        for target in targets_with_user:
+            click.echo("User referenced in targets table %s, %s" %
+                       (target['TargetID'], target))
+        targetids = [target['TargetID'] for target in targets_with_user]
+        raise click.ClickException('Cannot Delete User. Defined in Targets %s'
+                                   % targetids)
+    # TODO we really want to delete the entries if user wants to
+
+    if not options['no_verify']:
+        context.spinner.stop()
+        click.echo('id=%s %s %s; %s' % (userid, user['FirstName'],
+                                        user['Lastname'], user['Email']))
+        if not validate_prompt('Validate delete this user?'):
+            click.echo('Aborted Operation')
+            return
+
+    context.spinner.stop()
+    try:
+        users_tbl.delete(userid)
+    except MySQLError as ex:
+        click.echo("Change failed, Database Error Exception: %s: %s"
+                   % (ex.__class__.__name__, ex))
 
 
 def cmd_users_modify(context, userid, options):
