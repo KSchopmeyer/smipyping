@@ -301,7 +301,7 @@ def cmd_history_weekly(context, options):
     except ValueError as ve:
         raise click.ClickException('Error; no program defined %s ' % ve)
 
-    show_disabled = True if options['disabled']  else False
+    show_disabled = True if options['disabled'] else False
 
     # set start date time to just after midnight for today
     report_date = report_date.replace(minute=0, hour=0, second=0)

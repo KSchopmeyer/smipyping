@@ -309,6 +309,17 @@ class TargetsTable(DBTableBase):
             hdr.append(value[0])
         return hdr
 
+    def get_notifyusers(self, targetid):
+        """
+        Get list of entries in the notify users field and split into python
+        list.
+        """
+        notify_users = self[targetid]
+        if notify_users:
+            notify_users_list = notify_users.split('/')
+            return notify_users_list
+        return None
+
     def format_record(self, record_id, fields, fold=False):
         """Return the fields defined in field_list for the record_id in
         display format.
