@@ -21,20 +21,19 @@ dbtype = mysql
 [mysql]
 # Name  or ip address of the host to be accessed if the mysql database is
 # defined in dbtype, ex. localhost
-#host = localhost
-host = 10.2.119.20
+host = localhost
+
 #   Name of the database in the mysql database host.  This db must be
 #   compatible with the field requirements of smipyping. The default name
 #   we have used to date is SMIStatus
 #
-database = SMIStatus
+database = SMIStatusTest
 #
 # Logon credentials for the mysql database.
 #
-user = kschopmeyer
-#password = test8play
-password = Pa$$w0rd
+user = travis
 
+password = ""
 
 # parameters for a csv database
 [csv]
