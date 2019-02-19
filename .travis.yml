@@ -195,14 +195,14 @@ before_install:
   - cp tests/testsql/smiclitest.ini.txt smicli.ini
   - cat smicli.ini
   - mysqld --version
-  - mysql -u root --password="" --execute="GRANT ALL PRIVILEGES ON SMIStatusTest.* TO 'travis'@'%';FLUSH_PRIVILEGES;";
-  - mysql -u travis --password="" --execute="CREATE DATABASE IF NOT EXISTS SMIStatusTest;"
+  #- mysql -u root --execute="GRANT ALL PRIVILEGES ON SMIStatusTest.* TO 'travis'@'localhost';FLUSH_PRIVILEGES;";
+  - mysql -u root --execute="CREATE DATABASE IF NOT EXISTS SMIStatusTest;"
   # - mysql -e -u travis --password="" SMIStatusTest < tests/testsql/smistatustest.sql
-  - mysql -u travis --password="" --default-character-set=utf8 SMIStatusTest < tests/testsql/smistatustest.sql
-  - mysql -u travis --password="" --execute="SHOW DATABASES"
-  - mysql -u root --password="" --execute="SHOW GRANTS"
-  - mysql -u root --password="" --execute="SHOW GRANTS FOR travis@localhost"
-  - mysql -u travis --password="" --execute="SHOW GRANTS"
+  - mysql -u root --default-character-set=utf8 SMIStatusTest < tests/testsql/smistatustest.sql
+  - mysql -u root --execute="SHOW DATABASES"
+  - mysql -u root --execute="SHOW GRANTS"
+  - mysql -u root --execute="SHOW GRANTS FOR travis@localhost"
+  - mysql -u travis --execute="SHOW GRANTS"
 
 
 
