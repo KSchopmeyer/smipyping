@@ -31,7 +31,7 @@ database = SMIStatusTest
 #
 # Logon credentials for the mysql database.
 #
-user = travis
+user = root
 
 password = ""
 

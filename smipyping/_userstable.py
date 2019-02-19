@@ -233,10 +233,10 @@ class CsvUsersTable(UsersTable):
             # each set of entries
             result = {}
             for row in reader:
-                key = int(row['TargetID'])
+                key = int(row[key_field])
                 if key in result:
                     # duplicate row handling
-                    raise ValueError('Input Error. duplicate Id')
+                    raise ValueError('Input Error. duplicate Id %s ' % key)
                 else:
                     result[key] = row
         self.data_dict = result
