@@ -323,7 +323,6 @@ def cmd_target_new(context, options):
         click.echo('Aborted Operation')
         return
     try:
-        print('INSERT %s' % fields)
         context.targets_tbl.insert(fields)
     except Exception as er:
         raise click.ClickException('Insert failed with Exception %s' % er)
