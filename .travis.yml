@@ -203,6 +203,8 @@ before_install:
   - mysql -u root --execute="SHOW GRANTS"
   - mysql -u root --execute="SHOW GRANTS FOR travis@localhost"
   - mysql -u travis --execute="SHOW GRANTS"
+  - mysql -u root --execute"SELECT TABLE_NAME AS  "
+  - mysql -u root -e "SELECT table_schema SMIStatusTest, ROUND(SUM( data_length + index_length ) / 1024 / 1024, 2) AS 'Size MB' FROM information_schema.TABLES GROUP BY table_schema;"
 
   # - sudo mysql -e "use mysql; update user set authentication_string=PASSWORD('new_password') where User='root'; update user set plugin='mysql_native_password';FLUSH PRIVILEGES;"
   # - sudo mysql_upgrade -u root -pnew_password
