@@ -213,10 +213,10 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
         if ctx.default_map:
             db_info = ctx.default_map[db_type]
         else:
-            # NEED DEFAULT for dbinfo. For now raise exception
+            # TODO Future: NEED DEFAULT for dbinfo. For now raise exception
             db_info = {}
-            raise click.ClickException('No Database info provided for '
-                                       'database type %s' % db_type)
+            # raise click.ClickException('No Database info provided for '
+            #                           'database type %s' % db_type)
 
         config_file_dir = os.path.dirname(os.getcwd())
 
@@ -243,13 +243,13 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
 
         # use db info to get target info.
         # TODO move this so we do not need db for help.
-        try:
-            targets_tbl = smipyping.TargetsTable.factory(
-                db_info, db_type, verbose, output_format=output_format)
+        # try:
+        #    targets_tbl = smipyping.TargetsTable.factory(
+        #        db_info, db_type, verbose, output_format=output_format)
 
-        except ValueError as ve:
-            raise click.ClickException("Invalid database. Targets table "
-                                       "load fails. Exception %s" % ve)
+        # except ValueError as ve:
+        #    raise click.ClickException("Invalid database. Targets table "
+        #                               "load fails. Exception %s" % ve)
 
     else:
         # Processing an interactive command.
@@ -371,7 +371,7 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
     # its own command context different from the command context for the
     # command line.
     ctx.obj = ClickContext(ctx, config_file, db_type, db_info, log_level,
-                           log_file, log_component, targets_tbl, output_format,
+                           log_file, log_component, None, output_format,
                            verbose)
 
     # Invoke default command

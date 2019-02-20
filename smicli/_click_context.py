@@ -22,6 +22,7 @@ from __future__ import absolute_import, unicode_literals
 
 import click_spinner
 import click
+import smipyping
 
 
 def xstr(s):  # pylint: disable=invalid-name
@@ -120,9 +121,22 @@ class ClickContext(object):
     @property
     def targets_tbl(self):
         """
-        :term:`targets_tbl file`: Dictionary of provider data
+        :term:`targets_tbl file`: Handle of the Targets table.
+
+        This is initialized late to allow help commands to execute without
+        any database.
         """
-        return self._targets_tbl
+        if self._targets_tbl:
+            return self._targets_tbl
+        try:
+            targets_tbl = smipyping.TargetsTable.factory(
+                self.db_info, self.db_type, self.verbose,
+                output_format=self.output_format)
+            self._targets_tbl = targets_tbl
+            return self._targets_tbl
+        except ValueError as ve:
+            raise click.ClickException("Invalid database. Targets table "
+                                       "load fails. Exception %s" % ve)
 
     @property
     def spinner(self):
@@ -135,8 +149,6 @@ class ClickContext(object):
         """
         Call the cmd executor defined by cmd with the spinner
         """
-        if self._targets_tbl is None:
-            raise click.ClickException("No provider targets database defined")
         self.spinner.start()
         try:
             cmd()
