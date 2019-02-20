@@ -25,7 +25,7 @@ from dateutil.relativedelta import relativedelta
 import six
 from mysql.connector import Error as mysqlerror
 
-from smipyping import ProgramsTable
+from smipyping import ProgramsTable, PingsTable, datetime_display_str
 from .smicli import cli, CMD_OPTS_TXT
 from ._click_common import print_table, validate_prompt, pick_from_list
 
@@ -175,7 +175,7 @@ def programs_list(context):  # pylint: disable=redefined-builtin
 
 
 @programs_group.command('delete', options_metavar=CMD_OPTS_TXT)
-@click.argument('ProgramID', type=int, metavar='ProgramID', required=True,
+@click.argument('ProgramID', type=str, metavar='ProgramID', required=True,
                 nargs=1)
 @click.option('-n', '--no-verify', is_flag=True,
               help='Do not verify the deletion before deleting the program.')
@@ -226,7 +226,7 @@ def cmd_programs_current(context):
                    (cp['ProgramName'], cp['ProgramID'], cp['StartDate'],
                     cp['EndDate']))
     else:
-        click.ClickException('Error, no current program defined')
+        raise click.ClickException('Error, no current program defined')
 
 
 def cmd_programs_list(context):
@@ -238,12 +238,14 @@ def cmd_programs_list(context):
 
     headers = ProgramsTable.fields
     tbl_rows = []
+    # TODO I think I have a std struct function in common to do this
     for program, data in six.iteritems(programs_tbl):
         row = [data[field] for field in headers]
         tbl_rows.append(row)
 
     context.spinner.stop()
-    print_table(tbl_rows, headers, title=('Programs Table'),
+    title = 'Programs Table: %s' % datetime_display_str()
+    print_table(tbl_rows, headers, title=title,
                 table_format=context.output_format)
 
 
@@ -278,9 +280,10 @@ def cmd_programs_add(context, options):
         try:
             programs_tbl.insert(program_name, start_date, end_date)
         except Exception as ex:  # pylint: disable=broad-except
-            click.ClickException('Insert of program=%s, start=%s, '
-                                 'end=%s into database failed. Exception %s' %
-                                 (program_name, start_date, end_date, ex))
+            raise click.ClickException('Insert of program=%s, start=%s, '
+                                       'end=%s into database failed. '
+                                       'Exception %s' %
+                                       (program_name, start_date, end_date, ex))
     else:
         click.echo('Operation aborted by user')
         return
@@ -299,6 +302,20 @@ def cmd_programs_delete(context, programid, options):
     if programid not in programs_tbl:
         raise click.ClickException('The ProgramID %s is not in the table' %
                                    programid)
+    program = programs_tbl[programid]
+    start = program['StartDate']
+    end = program['EndDate']
+
+    tbl_inst = PingsTable.factory(context.db_info, context.db_type,
+                                  context.verbose)
+    pings = tbl_inst.count_by_daterange(start, end)
+    if pings:
+        click.echo("program programid: %s has %s pings in history table. "
+                   'Use ""smicli history overview"" to see pings count and use '
+                   '"smicli history delete to remove them' %
+                   (programid, pings))
+        # TODO actually ask and remove pings here. easier than forcing user
+        # to do it manually
 
     if not options['no_verify']:
         context.spinner.stop()

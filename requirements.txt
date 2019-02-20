@@ -1,4 +1,4 @@
-# Pip requirements file for smipypingruntime dependencies.
+# Pip requirements file for smipyping runtime dependencies.
 #
 # The order of packages is significant, because pip processes them in the order
 # of appearance. Changing the order has an impact on the overall integration
@@ -10,28 +10,25 @@
 # Direct dependencies (except pip, setuptools, wheel):
 
 pywbem>=0.12.0
-# git+https://github.com/pywbem/pywbem.git@master#egg=pywbem
+# git+https://github.com/KSchopmeyer/smipyping.git@master#egg=smipyping
 
 pbr>=1.10.0
 six>=1.10.0
-click>=6.6
-click-spinner>=0.1.6
-click-repl>=0.1.0
-click-configfile>=0.2.2
+click>=6.7
+click-spinner>=0.1.8
+click-repl>=0.1.5
+click-configfile>=0.2.3
 click-datetime>=0.2
 asciitree>=0.3.3
 tabulate>=0.8.2
 wcwidth>=0.1.7
-
-# Issue # 117 prompt_toolkit is available but is incompatible.
-#   The repl cmd fails
-prompt-toolkit>=1.0.15,<2.0.0
+prompt-toolkit>2.0.1
 
 terminaltables>=3.1.0
-scapy>-2.3.3
+scapy>-2.4.0
 # This fixed at 2.1.4 because of issues with both older and newer versions
 mysql_connector==2.1.4
 configparser>=3.5.0
 decorator>=4.0.10
 sqlalchemy>=1.1.13
-python-dateutil>=2.6.1
+python-dateutil>=2.7.3

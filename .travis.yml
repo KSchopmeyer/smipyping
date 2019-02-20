@@ -31,11 +31,11 @@ sudo: required
 # Note: pypy is excluded because M2Crypto does not install.
 matrix:
   include:
-#    - os: linux
-#      language: python
-#      python: "2.7"
-#      env:
-#        - PACKAGE_LEVEL=minimum
+    - os: linux
+      language: python
+      python: "2.7"
+      env:
+        - PACKAGE_LEVEL=minimum
     - os: linux
       language: python
       python: "2.7"
@@ -185,9 +185,34 @@ install:
   - make develop
   - pip list
 
+# setup mysql as a service in travis  and load SMIStatus Database
+services:
+  - mysql
+
+# Set up the database and create the smicli.ini file that corresponds to this
+# mysql setup
+before_install:
+  - cp tests/testsql/smiclitest.ini.txt smicli.ini
+  - cat smicli.ini
+  - mysqld --version
+  #- mysql -u root --execute="GRANT ALL PRIVILEGES ON SMIStatusTest.* TO 'travis'@'localhost';FLUSH_PRIVILEGES;";
+  - mysql -u root --execute="CREATE DATABASE IF NOT EXISTS SMIStatusTest;"
+  # - mysql -e -u travis --password="" SMIStatusTest < tests/testsql/smistatustest.sql
+  - mysql -u root --default-character-set=utf8 SMIStatusTest < tests/testsql/smistatustest.sql
+  - mysql -u root --execute="SHOW DATABASES"
+  - mysql -u root --execute="SHOW GRANTS"
+  - mysql -u root --execute="SHOW GRANTS FOR travis@localhost"
+  - mysql -u travis --execute="SHOW GRANTS"
+  - mysql -u root --execute="SELECT table_schema, ROUND(SUM( data_length + index_length ) / 1024 / 1024, 2) FROM information_schema.TABLES GROUP BY table_schema;"
+
+  # - sudo mysql -e "use mysql; update user set authentication_string=PASSWORD('new_password') where User='root'; update user set plugin='mysql_native_password';FLUSH PRIVILEGES;"
+  # - sudo mysql_upgrade -u root -pnew_password
+  # - sudo service mysql restart
+
 # commands to run builds & tests
 script:
 # make build is always run in order to verify the package version determination
+  - cat smicli.ini
   - make build
   - make builddoc
   - make check

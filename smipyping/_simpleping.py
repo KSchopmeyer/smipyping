@@ -215,7 +215,7 @@ class SimplePing(object):
     # Error code keys and corresponding exit codes
     error_code = {
         'OK': 0,
-        'WBEMException': 1,
+        'WBEMError': 1,
         'PyWBEMError': 2,
         'GeneralError': 3,
         'TimeoutError': 4,
@@ -336,7 +336,7 @@ class SimplePing(object):
                (self.url, self.namespace, self.ping, self.user, self.password,
                 self.debug, self.verbose)
 
-    def get_connection_info(self, conn):  # pylint: disable no-self-use
+    def get_connection_info(self, conn):  # pylint: disable=no-self-use
         """Return a string with the connection info."""
         info = 'Connection: %s,' % conn.url
 
@@ -513,7 +513,7 @@ class SimplePing(object):
 
         except CIMError as ce:
             # TODO make this a named tuple for clarity
-            rtn_tuple = ("WBEMException", ce)
+            rtn_tuple = ("WBEMError", ce)
         except ConnectionError as co:
             rtn_tuple = ("ConnectionError", co)
         except TimeoutError as to:
@@ -535,17 +535,6 @@ class SimplePing(object):
                          (rtn_tuple,))
         return rtn_tuple
 
-    # def set_param_from_targetdata(self, target_id, targets_tbl):
-    #    """
-    #    Set the required fields from data in the targets_tbl base
-
-    #    Get the connection information from the targets_tbl base and save in
-    #    the SimplePing instance
-    #    """
-
-    #    target_record = targets_tbl[target_id]
-    #    self. set_param_from_targetrecord(target_record, target_id)
-
     def set_connect_from_targetrecord(self, target_record, target_id):
         """
         Set the required fields from the provided target_record in the
@@ -555,8 +544,7 @@ class SimplePing(object):
         fields do not exist in the database
         """
 
-        self.url = '%s://%s' % (target_record['Protocol'],
-                                target_record['IPAddress'])
+        self.url = '%s://%s' % (target_id.get_url.str())
 
         if self.verbose:
             print(

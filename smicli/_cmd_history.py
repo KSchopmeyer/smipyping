@@ -201,6 +201,10 @@ def history_delete(context, **options):  # pylint: disable=redefined-builtin
               help='Sort order of the columns for the report output.  This '
                    'can be any of the column headers (case independent). '
                    'Default: {}'.format(DEFAULT_WEEKLY_TBL_SORT))
+@click.option('-d', '--disabled', default=False, is_flag=True, required=False,
+              help='Show disabled targets. Otherwise only targets that are '
+                   'set Enabled in the database are shown.'
+                   '(Default:Do not show disabled targets).')
 @click.pass_obj
 def history_weekly(context, **options):  # pylint: disable=redefined-builtin
     """
@@ -297,6 +301,8 @@ def cmd_history_weekly(context, options):
     except ValueError as ve:
         raise click.ClickException('Error; no program defined %s ' % ve)
 
+    show_disabled = True if options['disabled'] else False
+
     # set start date time to just after midnight for today
     report_date = report_date.replace(minute=0, hour=0, second=0)
 
@@ -310,14 +316,15 @@ def cmd_history_weekly(context, options):
         cp['StartDate'],
         end_date=cp['EndDate'])
 
-    # Get last pings information from history
+    # Get last pings information from history (pings) table.
     # TODO the last scan uses current time so the postdated report is really
     # in error. Should be the report_date
     ping_rows = pings_tbl.get_last_timestamped()
     last_status = {ping[1]: ping[3] for ping in ping_rows}
     last_status_time = ping_rows[0][2]
 
-    headers = ['target\nid', 'Uri', 'Company', 'Product', "LastScan\nStatus",
+    headers = ['target\nid', 'Uri', 'Company', 'Product', 'SMIVersion',
+               'LastScan\nStatus',
                '%\nToday', '%\nWeek', '%\nPgm', 'Contacts']
 
     report_order = options['order']
@@ -336,8 +343,9 @@ def cmd_history_weekly(context, options):
             company = fold_cell(company, 15)
             product = target.get('Product', 'empty')
             product = fold_cell(product, 15)
-            url = context.targets_tbl.get_url_str(target_id)
+            url = context.targets_tbl.build_url(target_id)
             smi_version = target.get('SMIVersion', 'empty')
+            smi_version = smi_version.replace('/', ', ')
             smi_version = fold_cell(smi_version, 15)
             company_id = target.get('CompanyID', 'empty')
             # get users list
@@ -367,7 +375,11 @@ def cmd_history_weekly(context, options):
         else:
             last_scan_status = "Unknown"
 
-        row = [target_id, url, company, product,
+        if show_disabled is False:
+            if context.targets_tbl.disabled_target_id(target_id):
+                continue
+
+        row = [target_id, url, company, product, smi_version,
                fold_cell(last_scan_status, 16),
                today_percent, week_percent, value[0], emails]
         tbl_rows.append(row)
@@ -467,7 +479,7 @@ def cmd_history_overview(context, options):
     newest = tbl_inst.get_newest_ping()
     context.spinner.stop()
     title = "General Information on History (Pings table))"
-    headers = ['Attribute', 'Date or Count']
+    headers = ['Attribute', 'Date or pings count']
     rows.append(['Total Records', count])
     rows.append(['Oldest Record', oldest[2]])
     rows.append(['Latest Record', newest[2]])
@@ -475,8 +487,8 @@ def cmd_history_overview(context, options):
     programs_tbl = ProgramsTable.factory(context.db_info, context.db_type,
                                          context.verbose)
 
-    for key in programs_tbl:
-        program = programs_tbl[key]
+    for programid in programs_tbl:
+        program = programs_tbl[programid]
         start = program['StartDate']
         end = program['EndDate']
 
@@ -545,7 +557,7 @@ def get_target_info(context, target_id, ping_record):
         company = target.get('CompanyName', 'empty')
         product = target.get('Product', 'empty')
         try:
-            url = context.targets_tbl.get_url_str(target_id)
+            url = context.targets_tbl.build_url(target_id)
         except KeyError:
             url = 'empty'
     else:

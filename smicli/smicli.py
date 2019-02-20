@@ -213,10 +213,11 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
         if ctx.default_map:
             db_info = ctx.default_map[db_type]
         else:
-            # NEED DEFAULT for dbinfo
+            # NEED DEFAULT for dbinfo. For now raise exception
             db_info = {}
-            click.ClickException('WARNING: No Database info provided for '
-                                 'database type %s' % db_type)
+            raise click.ClickException('No Database info provided for '
+                                       'database type %s' % db_type)
+
         config_file_dir = os.path.dirname(os.getcwd())
 
         # Enable the hidden loggers.
@@ -241,9 +242,11 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
         # TODO: Why not glue db_type into db_info itself in context.
 
         # use db info to get target info.
+        # TODO move this so we do not need db for help.
         try:
             targets_tbl = smipyping.TargetsTable.factory(
                 db_info, db_type, verbose, output_format=output_format)
+
         except ValueError as ve:
             raise click.ClickException("Invalid database. Targets table "
                                        "load fails. Exception %s" % ve)

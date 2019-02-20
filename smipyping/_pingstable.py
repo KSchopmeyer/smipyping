@@ -45,18 +45,6 @@ class PingsTable(DBTableBase):
     fields = [key_field, 'targetID', 'Timestamp', 'Status']
     table_name = 'Pings'
 
-    def __init__(self, db_dict, db_type, verbose):
-        super(PingsTable, self).__init__(db_dict, db_type, verbose)
-
-    def __str__(self):
-        """String info on pingtable. TODO. Put more info her"""
-        return ('count=%s' % len(self.data_dict))
-
-    def __repr__(self):
-        """Rep of pings data. This is really an empty dictionary"""
-        return ('Pingtable db_type %s, db_dict %s rep count=%s' %
-                (self.db_type, self.db_dict, len(self.data_dict)))
-
     @classmethod
     def factory(cls, db_dict, db_type, verbose):
         """Factory method to select subclass based on database type.
@@ -73,7 +61,6 @@ class PingsTable(DBTableBase):
             inst = CsvPingsTable(db_dict, db_type, verbose)
 
         elif db_type == ('mysql'):
-            # pylint: disable=redefined-variable-type
             inst = MySQLPingsTable(db_dict, db_type, verbose)
         else:
             ValueError('Invalid pingstable factory db_type %s' % db_type)

@@ -391,7 +391,7 @@ $(test_log_file): Makefile $(cli_package_name)/*.py $(package_name) tests/*.py c
 	@echo 'Done: Created test log file: $@'
 
 # update the smiclicmdshelp.rst if any file that defines click commands changes.
-$(doc_conf_dir)/smiclicmdshelp.rst: install.done tools/click_help_capture.py $(cli_package_name)/smicli.py $(cli_package_name)/_cmd*.py
+$(doc_conf_dir)/smiclicmdshelp.rst: install.done tools/click_help_capture.py $(cli_package_name)/$(cli_package_name).py $(cli_package_name)/_cmd*.py
 	tools/click_help_capture.py >$@.tmp
 	mv -f $@.tmp $@
 	@echo 'Done: Created help command info for cmds: $@'

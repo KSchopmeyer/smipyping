@@ -42,11 +42,13 @@ import re
 from collections import OrderedDict
 from textwrap import wrap
 import six
-from ._configfile import read_config
+from mysql.connector import Error as mysqlerror
+
 from ._dbtablebase import DBTableBase
 from ._mysqldbmixin import MySQLDBMixin
 from ._common import get_url_str
 from ._logging import AUDIT_LOGGER_NAME, get_logger
+from ._companiestable import CompaniesTable
 
 __all__ = ['TargetsTable']
 
@@ -61,22 +63,43 @@ class TargetsTable(DBTableBase):
     The factory method should be used to construct a new TargetsTable object
     since that creates the correct object for the defined database type.
     """
+    table_name = 'Targets'
 
     key_field = 'TargetID'
-    fields = [key_field, 'IPAddress', 'CompanyID', 'Namespace',
-              'SMIVersion', 'Product', 'Principal', 'Credential',
-              'CimomVersion', 'InteropNamespace', 'Notify', 'NotifyUsers',
-              'ScanEnabled', 'Protocol', 'Port']
+
+    # Fields that are required to create new records
+    required_fields = [
+        'IPAddress', 'CompanyID', 'Namespace',
+        'SMIVersion', 'Product', 'Principal', 'Credential',
+        'CimomVersion', 'InteropNamespace', 'Notify', 'NotifyUsers',
+        'ScanEnabled', 'Protocol', 'Port']
+
+    # All fields in each record.
+    fields = [key_field] + required_fields
 
     join_fields = ['CompanyName']
     all_fields = fields + join_fields
 
-    table_name = 'Targets'
+    hints = {
+        'IPAddress': "Host name or ip address",
+        'CompanyID': "DB id of company",
+        'Namespace': "User namespace",
+        'SMIVersion': "SMI version",
+        'Product': "Product name",
+        'Principal': "User Name to access target",
+        'Credential': "User password to access target",
+        'CimomVersion': "Version of CIMOM",
+        'InteropNamespace': "Interop Namespace name",
+        'Notify': "'Enabled' if users to be notified of issues, else "
+                  "'Disabled'",
+        'NotifyUsers': "List of UserIDs to notify",
+        'ScanEnabled': "Enabled if this  target to be scanned",
+        'Protocol': '"http" or "https"',
+        'Port': "Integer defining WBEM server port."}
 
     # # Defines each record for the data base and outputs.
     # # The Name is the database name for the property
     # # The value tuple is display name and max width for the record
-    # # TODO this should be class level.
     table_format_dict = OrderedDict([
         ('TargetID', ('ID', 2, int)),
         ('CompanyName', ('CompanyName', 12, str)),
@@ -161,9 +184,7 @@ class TargetsTable(DBTableBase):
         if db_type == ('csv'):
             inst = CsvTargetsTable(db_dict, db_type, verbose,
                                    output_format=output_format)
-
         elif db_type == ('mysql'):
-            # pylint: disable=redefined-variable-type
             inst = MySQLTargetsTable(db_dict, db_type, verbose,
                                      output_format=output_format)
         else:
@@ -217,7 +238,7 @@ class TargetsTable(DBTableBase):
 
         return return_list
 
-    def get_target(self, target_id):
+    def get_target(self, targetid):
         """
         Get the target data for the parameter target_id.
 
@@ -230,19 +251,18 @@ class TargetsTable(DBTableBase):
         Exceptions:
             KeyError if target not in targets dictionary
         """
-        if not isinstance(target_id, six.integer_types):
-            target_id = int(target_id)
+        if not isinstance(targetid, six.integer_types):
+            targetid = int(targetid)
 
-        return self.data_dict[target_id]
+        return self.data_dict[targetid]
 
     def filter_targets(self, ip_filter=None, company_name_filter=None):
         """
         Filter for match of ip_filter and companyname filter if they exist
-        and return list of any providers that match.
+        and return list of any targets that match.
 
-        the filters may be exact matches or regex string
+        The filters are regex strings.
         """
-        # TODO: ks fix this code. It is broken
         rtn = OrderedDict()
         for key, value in self.data_dict.items():
             if ip_filter and re.match(ip_filter, value['IPAddress']):
@@ -253,8 +273,8 @@ class TargetsTable(DBTableBase):
 
         return rtn
 
-    def get_url_str(self, targetid):
-        """Get the string representing the uri for targetid. Gets the
+    def build_url(self, targetid):
+        """Get the string representing the url for targetid. Gets the
         Protocol, IPaddress and port and uses the common get_url_str to
         create a string.  Port info is included only if it is not the
         WBEM CIM-XML standard definitions.
@@ -288,6 +308,21 @@ class TargetsTable(DBTableBase):
             value = self.get_format_dict(name)
             hdr.append(value[0])
         return hdr
+
+    def get_notifyusers(self, targetid):
+        """
+        Get list of entries in the notify users field and split into python
+        list and return the list of integers representing the userids.
+        This list stored in db as string of integers separated by commas.
+
+        Returns None if there is no data in NotifyUsers.
+        """
+        notify_users = self[targetid]['NotifyUsers']
+        if notify_users:
+            notify_users_list = notify_users.split(',')
+            notify_users_list = [int(userid) for userid in notify_users_list]
+            return notify_users_list
+        return None
 
     def format_record(self, record_id, fields, fold=False):
         """Return the fields defined in field_list for the record_id in
@@ -328,7 +363,7 @@ class TargetsTable(DBTableBase):
             ValueError('ScanEnabled field must contain "Enabled" or "Disabled'
                        ' string. %s is invalid.' % val)
 
-    def disabled_target_id(self, target_id):
+    def disabled_target_id(self, targetid):
         """
         Return True if target recorded for this target_id marked
         disabled. Otherwise return True
@@ -344,7 +379,7 @@ class TargetsTable(DBTableBase):
         Exceptions:
             KeyError if target_id not in database
         """
-        return(self.disabled_target(self.data_dict[target_id]))
+        return(self.disabled_target(self.data_dict[targetid]))
 
     def get_output_width(self, col_list):
         """
@@ -375,9 +410,9 @@ class TargetsTable(DBTableBase):
 
         return unique_creds
 
-    def db_info(self):
-        """get info on the database used"""
-        pass
+    # def db_info(self):
+        # """get info on the database used"""
+        # pass
 
 
 class SQLTargetsTable(TargetsTable):
@@ -392,19 +427,6 @@ class SQLTargetsTable(TargetsTable):
         super(SQLTargetsTable, self).__init__(db_dict, dbtype, verbose,
                                               output_format)
         self.connection = None
-
-    def db_info(self):
-        """
-        Display the db info and Return info on the database used as a
-        dictionary.
-        """
-        try:
-            print('database characteristics')
-            for key in self.db_dict:
-                print('%s: %s' % key, self.db_dict[key])
-        except ValueError as ve:
-            print('Invalid database configuration exception %s' % ve)
-        return self.db_dict
 
 
 class MySQLTargetsTable(SQLTargetsTable, MySQLDBMixin):
@@ -429,39 +451,22 @@ class MySQLTargetsTable(SQLTargetsTable, MySQLDBMixin):
     def _load_joins(self):
         """
         Load the tables that would normally be joins.  In this case it is the
-        companies table and move the companyName into the targets table
+        companies table. Move the companyName into the targets table
         TODO we should not be doing this in this manner but with a
         join.
         """
         # Get companies table and insert into targets table:
-
-        # companies_tbl = CompaniesTable.factory(self.db_info,
-        #                                       self.db_type,
-        #                                       self.verbose)
-        try:
-            # TODO this should simply use the CompanyTable class (above)
-            cursor = self.connection.cursor(dictionary=True)
-            # get the companies table
-            cursor.execute('SELECT CompanyID, CompanyName FROM Companies')
-            rows = cursor.fetchall()
-
-            companies_tbl = {}
-            for row in rows:
-                # required because the dictionary=True in cursor statement
-                # only works in v2 mysql-connector
-                assert isinstance(row, dict), "Issue with mysql-connection ver"
-                key = row['CompanyID']
-                companies_tbl[key] = row['CompanyName']
-        except Exception as ex:
-            raise ValueError('Could not create companies table. Exception: %s'
-                             % ex)
-
+        # TODO in smipyping name is db_dict. Elsewhere it is db_info
+        companies_tbl = CompaniesTable.factory(self.db_dict,
+                                               self.db_type,
+                                               self.verbose)
         try:
             # set the companyname into the targets table
             for target_key in self.data_dict:
                 target = self.data_dict[target_key]
                 if target['CompanyID'] in companies_tbl:
-                    target['CompanyName'] = companies_tbl[target['CompanyID']]
+                    company = companies_tbl[target['CompanyID']]
+                    target['CompanyName'] = company['CompanyName']
                 else:
                     target['CompanyName'] = "TableError CompanyID %s" % \
                         target['CompanyID']
@@ -470,14 +475,15 @@ class MySQLTargetsTable(SQLTargetsTable, MySQLDBMixin):
             raise ValueError('Error: putting Company Name in table %r error %s'
                              % (self.db_dict, ex))
 
-    def update_fields(self, target_id, changes):
+    def update_fields(self, targetid, changes):
         """
-        Update the database record defined by target_id with the dictionary
+        Update the database record defined by targetid with the dictionary
         of items defined by changes where each item is an entry in the
         target record. Update does NOT test if the new value is the same
         as the original value.
         """
         cursor = self.connection.cursor()
+
         # dynamically build the update sql based on the changes dictionary
         set_names = "SET "
         values = []
@@ -490,30 +496,142 @@ class MySQLTargetsTable(SQLTargetsTable, MySQLDBMixin):
             set_names = set_names + "{0} = %s".format(key)
             values.append(value)
 
-        values.append(target_id)
+        values.append(targetid)
         sql = "Update Targets " + set_names
 
         # append targetid component
         sql = sql + " WHERE TargetID=%s"
 
+        # Record the original data for the audit log.
+        original_data = {}
+        target_record = self.get_target(targetid)
+        for change in changes:
+            original_data[change] = target_record[change]
         try:
             cursor.execute(sql, tuple(values))
             self.connection.commit()
             audit_logger = get_logger(AUDIT_LOGGER_NAME)
 
-            audit_logger.info('TargetsTable userId %s,update fields %s',
-                              target_id, changes)
+            audit_logger.info('TargetsTable TargetID: %s, update fields: %s, '
+                              'original fields: %s',
+                              targetid, changes, original_data)
         except Exception as ex:
             self.connection.rollback()
             audit_logger = get_logger(AUDIT_LOGGER_NAME)
-            audit_logger.error('TargetsTable targetid %s failed SQL update. '
+            audit_logger.error('TargetsTable TargetID: %s failed SQL update. '
                                'SQL: %s Changes: %s Exception: %s',
-                               target_id, sql, changes, ex)
+                               targetid, sql, changes, ex)
             raise ex
         finally:
             self._load_table()
             self._load_joins()
             cursor.close()
+
+    def activate(self, targetid, activate_flag):
+        """
+        Activate or deactivate the table entry defined by the
+        targetid parameter to the value defined by the activate_flag
+
+        Parameters:
+
+          targetid (:term:`py:integer`):
+            The database key property for this table
+
+          activate_flag (:class:`py:bool`):
+            Next state that will be set into the database for this target.
+
+            Since the db field is an enum it actually sete Active or Inactive
+            strings into the field
+        """
+        cursor = self.connection.cursor()
+
+        enabled_kw = 'Enabled' if activate_flag else 'Disabled'
+        sql = 'UPDATE Targets SET ScanEnabled = %s WHERE TargetID = %s'
+
+        try:
+            cursor.execute(sql, (enabled_kw, targetid))  # noqa F841
+            self.connection.commit()
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+
+            audit_logger.info('TargetTable TargetId %s,set scanEnabled  to %s',
+                              targetid, enabled_kw)
+        except mysqlerror as ex:
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+            audit_logger.error('TargetTable userid %s failed SQL change '
+                               'ScanEnabled. SQL=%s '
+                               'Change to %s exception %s: %s',
+                               targetid, sql, enabled_kw, ex.__class__.__name__,
+                               ex)
+            self.connection.rollback()
+            raise ex
+        finally:
+            self._load_table()
+            self._load_joins()
+
+    def delete(self, targetid):
+        """
+        Delete the target in the targets table defined by the  targetid
+        """
+        cursor = self.connection.cursor()
+
+        sql = "DELETE FROM Targets WHERE TargetID=%s"
+        try:
+            # pylint: disable=unused-variable
+            mydata = cursor.execute(sql, (targetid,))  # noqa F841
+            self.connection.commit()
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+            audit_logger.info('TargetTable TargetId %s Deleted', targetid)
+        except mysqlerror as ex:
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+            audit_logger.error('TargetTable targetid %s failed SQL DELETE. '
+                               'SQL=%s exception %s: %s',
+                               targetid, sql, ex.__class__.__name__, ex)
+            self.connection.rollback()
+            raise ex
+        finally:
+            self._load_table()
+            self._load_joins()
+            self.connection.close()
+
+    def insert(self, fields):
+        """
+        Write a new record to the database containing the fields defined in
+        the input.
+
+        Parameters:
+          field_data ()
+            Dictionary of fields to be inserted into the table.  There is
+            one entry in the dictionary for each field to be inserted.
+
+        Exceptions:
+
+        """
+        cursor = self.connection.cursor()
+
+        placeholders = ', '.join(['%s'] * len(fields))
+        columns = ', '.join(fields.keys())
+        sql = "INSERT INTO %s ( %s ) VALUES ( %s )" % (self.table_name,
+                                                       columns,
+                                                       placeholders)
+
+        try:
+            cursor.execute(sql, fields.values())
+            self.connection.commit()
+            new_targetid = cursor.lastrowid
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+            audit_logger.info('TargetsTable TargetId %s added. %s',
+                              new_targetid, fields)
+        except mysqlerror as ex:
+            audit_logger = get_logger(AUDIT_LOGGER_NAME)
+            audit_logger.error('TargetTable INSERT failed SQL update. SQL=%s. '
+                               'data=%s. Exception %s: %s', sql, fields,
+                               ex.__class__.__name__, ex)
+            self.connection.rollback()
+            raise ex
+        finally:
+            self._load_table()
+            self._load_joins()
+            self.connection.close()
 
 
 class CsvTargetsTable(TargetsTable):
@@ -563,18 +681,6 @@ class CsvTargetsTable(TargetsTable):
                     result[key] = row
 
         self.data_dict = result
-
-    # TODO consolidate this to use predefined type.
-    # TODO this is completely broken because filename applies to the
-    # config file, not the data file.
-    def db_info(self):
-        try:
-            db_config = read_config(self.filename, self.db_type)
-        except ValueError as ve:
-            print('Section %s not in configfile %s %s' % (self.db_type,
-                                                          self.filename,
-                                                          ve))
-        return db_config
 
     def write_updated_record(self, record_id):
         """Backup the existing file and write the new one.

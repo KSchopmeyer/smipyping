@@ -40,18 +40,6 @@ class CompaniesTable(DBTableBase):
     fields = [key_field, 'CompanyName']
     table_name = 'Companies'
 
-    def __init__(self, db_dict, db_type, verbose):
-        super(CompaniesTable, self).__init__(db_dict, db_type, verbose)
-
-    def __str__(self):
-        """String info on Companiestable. TODO. Put more info her"""
-        return ('len %s' % len(self.data_dict))
-
-    def __repr__(self):
-        """Rep of Companies table data"""
-        return ('Companies db_type %s db len %s' %
-                (self.db_type, len(self.data_dict)))
-
     @classmethod
     def factory(cls, db_dict, db_type, verbose):
         """Factory method to select subclass based on database type.
@@ -66,7 +54,6 @@ class CompaniesTable(DBTableBase):
         if db_type == 'csv':
             inst = CsvCompaniesTable(db_dict, db_type, verbose)
         elif db_type == 'mysql':
-            # pylint: disable=redefined-variable-type
             inst = MySQLCompaniesTable(db_dict, db_type, verbose)
         else:
             ValueError('Invalid companiestable factory db_type %s' % db_type)
@@ -164,7 +151,7 @@ class MySQLCompaniesTable(CompaniesTable, MySQLDBMixin):
 
         self._load_table()
 
-    def append(self, company_name):
+    def insert(self, company_name):
         """
         Write a new record to the programs table of the database at the
         end of the database.
@@ -174,20 +161,18 @@ class MySQLCompaniesTable(CompaniesTable, MySQLDBMixin):
         """
         cursor = self.connection.cursor()
 
-        # TODO insert new company fails  and inserts %s rather than name
-        #      This is an issue only with single value table. Removing the
-        #      quotes resutls in failure with SQL syntax programming error
-        #      1064
         sql = ("INSERT INTO Companies "
                "(CompanyName) "
-               "VALUES ('%s')")
-        data = (company_name)
+               "VALUES (%s)")
+        data = company_name
 
         try:
-            cursor.execute(sql, data)
+            # NOTE that the data must be a tuple and it must have the
+            # comma if single piece of data
+            cursor.execute(sql, (data,))
             self.connection.commit()
             audit_logger = get_logger(AUDIT_LOGGER_NAME)
-            audit_logger.info('Companies Table append '
+            audit_logger.info('Companies Table insert '
                               'CompanyName %s', company_name)
         except Exception as ex:
             audit_logger = get_logger(AUDIT_LOGGER_NAME)

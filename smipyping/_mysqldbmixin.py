@@ -14,6 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+    This mixin implements common functions for all of the tables mysql
+    implementation as defined by their mysql subclass.
+"""
+
 from __future__ import print_function, absolute_import
 
 from mysql.connector import MySQLConnection

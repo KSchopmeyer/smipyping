@@ -40,21 +40,6 @@ class PreviousScansTable(DBTableBase):
     fields = [key_field, 'TimeStamp']
     table_name = 'PreviousScans'
 
-    def __init__(self, db_dict, db_type, verbose):
-        self.db_dict = db_dict
-        self.db_type = db_type
-        self.verbose = verbose
-        self.data_dict = {}
-
-    def __str__(self):
-        """String info on PreviousScanstable. TODO. Put more info her"""
-        return ('len %s' % len(self.data_dict))
-
-    def __repr__(self):
-        """Rep of lastscan data"""
-        return ('PreviousScans db_type %s db_dict %s' %
-                (self.db_type, self.data_dict))
-
     @classmethod
     def factory(cls, db_dict, db_type, verbose):
         """Factory method to select subclass based on database type.
@@ -73,9 +58,6 @@ class PreviousScansTable(DBTableBase):
             inst = MySQLPreviousScansTable(db_dict, db_type, verbose)
         else:
             ValueError('Invalid prevscan table factory db_type %s' % db_type)
-
-        if verbose:
-            print('PreviousScans table factory inst %r' % inst)
 
         return inst
 

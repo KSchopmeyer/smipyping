@@ -19,7 +19,6 @@ targets to find WBEM servers.
 from __future__ import print_function, absolute_import
 
 from collections import defaultdict
-import datetime
 import click
 import six
 
@@ -53,11 +52,12 @@ def build_userid_display(userid, user_item):
     """Build and return the string to display for selecting a user.
        Displays info from users table so user can pick the ids.
     """
-    return u'   id=%-3s %-20s %-16s %-16s %s' % (userid,
-                                                 user_item['CompanyName'],
-                                                 user_item['FirstName'],
-                                                 user_item['Lastname'],
-                                                 user_item['Email'],)
+    return u'   id=%-3s %-20s %-16s %-16s %s, %s' % (userid,
+                                                     user_item['CompanyName'],
+                                                     user_item['FirstName'],
+                                                     user_item['Lastname'],
+                                                     user_item['Email'],
+                                                     user_item['Active'])
 
 
 def pick_multiple_user_ids(context, users_tbl, active=None, companyid=None):
@@ -276,8 +276,8 @@ def users_group():
     """
     Command group to handle users table.
 
-    Includes subcommands to list entries in the users table in the
-    database and to create, modify, delete specific entries.
+    Includes subcommands to list entries in the database users table
+    and to create, modify, delete specific entries.
     """
     pass
 
@@ -316,6 +316,14 @@ def users_add(context, **options):  # pylint: disable=redefined-builtin
     Verification that the operation is correct is requested before the change
     is executed unless the `--no-verify' parameter is set.
 
+    Examples:
+
+    smicli users add -f John -l Malia -e jm@blah.com -c ?
+
+       Defines a new user with name and email defined after using select list
+       to get companyID of the user. A prompt for verification is presented
+       before the database is changed.
+
     """
     context.execute_cmd(lambda: cmd_users_add(context, options))
 
@@ -342,7 +350,31 @@ def users_add(context, **options):  # pylint: disable=redefined-builtin
 @click.pass_obj
 def users_list(context, **options):  # pylint: disable=redefined-builtin
     """
-    List users in the database.
+    List users in the database users table.
+
+    Lists the information on users in the users table  in a table format, one
+    user per row. Options allow selecting specific fields of the table (the
+    fields in the table can be viewed with the fields subcommand) and ordering
+    the ouput with a field name.  Unless the --disabled option is set, only
+    active users are shown in the output.
+
+    The --companyid option allows selecting only users for a particular company
+    for the list.
+
+    The default field list is:
+
+        UserID, FirstName, Lastname, Email, CompanyName, Active, Notify
+
+    Examples:
+
+      smicli users list    # default list of all users
+
+      smicli users list -c ?  # Presents a list of companies for user to
+                              # select a company and then lists users for
+                              # that company
+
+      smicli users list -f Email -o Email   # list with UserId and Email fields
+                                            # in output table.
     """
     context.execute_cmd(lambda: cmd_users_list(context, options))
 
@@ -360,12 +392,17 @@ def users_delete(context, userid, **options):
     """
     Delete a user from the database.
 
-    Delete the program user by the subcommand argument from the
+    Delete the user defined by the subcommand argument from the
     database.
 
     The user to be deleted may be specified by a) specific user id, b) the
     interactive mode option, or c) using '?' as the user id argument which also
     initiates the interactive mode options
+
+    Examples:
+
+      smicli delete 85
+      smicli delete ?
     """
     context.execute_cmd(lambda: cmd_users_delete(context, userid, options))
 
@@ -443,8 +480,14 @@ def users_activate(context, userids, **options):
     state are bypassed. If the --no-verify option is not set each user to be
     changed causes a verification request before the change.
 
-    Example:
-        smicli users ? --activate
+    Examples:
+        smicli users activate ? --inactive  # list all users for select and
+                                            # deactivate the selected users
+        smicli user activate ? --active -c ? # first creates selection list
+                                             # to select company. Then
+                                             # creates select list for that
+                                             # company and activates the
+                                             # selected users.
     """
     context.execute_cmd(lambda: cmd_users_activate(context, userids, options))
 
@@ -454,6 +497,10 @@ def users_activate(context, userids, **options):
 def users_fields(context):
     """
     Display field names in targets database.
+
+    Example:
+
+        smicli users list fields
     """
     context.execute_cmd(lambda: cmd_users_fields(context))
 
@@ -518,7 +565,7 @@ def display_cols(users_tbl, fields, show_disabled=True, companyid=None,
         rows.append(users_tbl.format_record(userid, fields))
 
     headers = users_tbl.tbl_hdr(fields)
-    title = 'User Overview: %s:' % datetime_display_str(datetime.datetime.now())
+    title = 'User Overview: %s:' % datetime_display_str()
     if show_disabled:
         title = '%s includes disabled users' % title
 
@@ -673,29 +720,28 @@ def cmd_users_add(context, options):
         if companyid is None:
             return
 
-    # TODO sept 2017 expand to include active and notify
-    if companyid in companies_tbl:
-        company = companies_tbl[companyid]['CompanyName']
-
-        if not options['no_verify']:
-            context.spinner.stop()
-            click.echo('Adding %s %s in company=%s(%s), email=%s' %
-                       (first_name, last_name, company, companyid, email))
-            if validate_prompt('Validate add this user?'):
-                pass
-            else:
-                click.echo('Aborted Operation')
-                return
-        try:
-            users_tbl.insert(first_name, last_name, email, companyid,
-                             active=active,
-                             notify=notify)
-        except MySQLError as ex:
-            click.ClickException("INSERT Error %s: %s" % (ex.__class__.__name__,
-                                                          ex))
-    else:
+    if companyid not in companies_tbl:
         raise click.ClickException('The companyID %s is not a valid companyID '
                                    'in companies table' % companyid)
+
+    company = companies_tbl[companyid]['CompanyName']
+
+    if not options['no_verify']:
+        context.spinner.stop()
+        click.echo('Adding %s %s in company=%s(%s), email=%s' %
+                   (first_name, last_name, company, companyid, email))
+        if validate_prompt('Validate add this user?'):
+            pass
+        else:
+            click.echo('Aborted Operation')
+            return
+    try:
+        users_tbl.insert(first_name, last_name, email, companyid,
+                         active=active,
+                         notify=notify)
+    except MySQLError as ex:
+        raise click.ClickException("DB INSERT Error %s: %s" %
+                                   (ex.__class__.__name__, ex))
 
 
 def cmd_users_delete(context, userid, options):
@@ -709,27 +755,44 @@ def cmd_users_delete(context, userid, options):
     if userid is None:
         return
 
-    if userid in users_tbl:
-        user = users_tbl[userid]
-
-        if not options['no_verify']:
-            context.spinner.stop()
-            click.echo('id=%s %s %s; %s' % (userid, user['FirstName'],
-                                            user['Lastname'], user['Email']))
-            if not validate_prompt('Validate delete this user?'):
-                click.echo('Aborted Operation')
-                return
-
-        context.spinner.stop()
-        try:
-            users_tbl.delete(userid)
-        except MySQLError as ex:
-            click.echo("Change failed, Database Error Exception: %s: %s"
-                       % (ex.__class__.__name__, ex))
-
-    else:
+    if userid not in users_tbl:
         raise click.ClickException('The UserID %s is not in the table' %
                                    userid)
+
+    user = users_tbl[userid]
+
+    targets_with_user = []
+    for targetid in context.targets_tbl:
+        notify_users = context.targets_tbl.get_notifyusers(targetid)
+        if notify_users and userid in notify_users:
+            targets_with_user.append(context.targets_tbl[targetid])
+    if targets_with_user:
+        for target in targets_with_user:
+            click.echo("User referenced in targets targetID: %s, company: "
+                       "%s IPAddress: %s" %
+                       (target['TargetID'], target['CompanyName'],
+                        target['IPAddress']))
+        targets = ['%s;%s' % (target['TargetID'], target['CompanyName'])
+                   for target in targets_with_user]
+        raise click.ClickException('Cannot delete UserID %s. It is used in '
+                                   'Targets.NotifyUsers %s' %
+                                   (userid, ", ".join(targets)))
+    # TODO we really want to delete the entries if user wants to
+
+    if not options['no_verify']:
+        context.spinner.stop()
+        click.echo('id=%s %s %s; %s' % (userid, user['FirstName'],
+                                        user['Lastname'], user['Email']))
+        if not validate_prompt('Validate delete this user?'):
+            click.echo('Aborted Operation')
+            return
+
+    context.spinner.stop()
+    try:
+        users_tbl.delete(userid)
+    except MySQLError as ex:
+        click.echo("Change failed, Database Error Exception: %s: %s"
+                   % (ex.__class__.__name__, ex))
 
 
 def cmd_users_modify(context, userid, options):

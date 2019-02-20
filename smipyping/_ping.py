@@ -21,7 +21,6 @@ import os
 import platform
 import subprocess
 import urlparse
-import shlex
 from .config import PING_TIMEOUT
 
 __all__ = ['ping_host', 'ping_uri']
@@ -77,12 +76,12 @@ def ping_host(hostname, timeout=None):
         command, shell=need_sh, stdout=FNULL, stderr=subprocess.STDOUT) == 0
 
     # execute the ping command and discard text response
-    try:
-        subprocess.check_call(shlex.split(command), shell=need_sh)
-        return True
+    # TODO we have two pieces of code. Drop one of them.
+    # TODO Should we log the exception
+    # try:
+    #    subprocess.check_call(shlex.split(command), shell=need_sh)
+    #    return True
 
-    except subprocess.CalledProcessError as e:
-        print('ping exception %s' % e)
-        return False
-
-    return
+    # except subprocess.CalledProcessError as e:
+    #    print('ping exception %s' % e)
+    #    return False
