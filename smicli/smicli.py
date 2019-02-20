@@ -263,6 +263,7 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
             db_info = ctx.obj.db_info
         if log_file is None:
             log_file = ctx.obj.log_file
+        targets_tbl = None
         # TODO we should be able to remove the log stuff from context
         # if we completely create the loggers here.
         if log is None:
@@ -371,7 +372,7 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
     # its own command context different from the command context for the
     # command line.
     ctx.obj = ClickContext(ctx, config_file, db_type, db_info, log_level,
-                           log_file, log_component, None, output_format,
+                           log_file, log_component, targets_tbl, output_format,
                            verbose)
 
     # Invoke default command
