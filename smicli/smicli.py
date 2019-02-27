@@ -27,10 +27,10 @@ from logging import StreamHandler, NullHandler
 from logging.handlers import SysLogHandler
 from logging.handlers import RotatingFileHandler
 import platform
-import click_repl
 import click
-
 from prompt_toolkit.history import FileHistory
+import click_repl
+
 
 import smipyping
 
@@ -280,7 +280,6 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
             verbose = ctx.obj.verbose
         if targets_tbl is None:
             targets_tbl = ctx.obj.targets_tbl
-
 
     # Now we have the effective values for the options as they should be used
     # by the current command, regardless of the mode.
