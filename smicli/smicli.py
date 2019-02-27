@@ -194,6 +194,8 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
         output_format = set_input_variable(ctx, output_format, 'output_format',
                                            DEFAULT_OUTPUT_FORMAT)
 
+        targets_tbl = None  # delay setup of targets table to cmd that needs it
+
         db_type = set_input_variable(ctx, db_type, 'dbtype',
                                      smipyping.DEFAULT_DBTYPE)
 
@@ -276,6 +278,9 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
             output_format = ctx.obj.output_format
         if verbose is None:
             verbose = ctx.obj.verbose
+        if targets_tbl is None:
+            targets_tbl = ctx.obj.targets_tbl
+
 
     # Now we have the effective values for the options as they should be used
     # by the current command, regardless of the mode.
