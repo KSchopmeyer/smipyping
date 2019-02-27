@@ -351,14 +351,14 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
         itemresult = '%s%s' % (test_result.type, changed)
 
         # format the exception column
+        exception_row = None
         if test_result.exception:
             if isinstance(test_result.exception, CIMError):
                 exception_row = test_result.exception.status_code_name
                 if exception_row.startswith("CIM_ERR_"):
                     exception_row = exception_row[8:]
-
-        else:
-            exception_row = '%s' % test_result.exception
+            else:
+                exception_row = '%s' % test_result.exception
 
         rows.append([target_id,
                      url,
