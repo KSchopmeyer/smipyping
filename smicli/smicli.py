@@ -31,7 +31,6 @@ import click
 from prompt_toolkit.history import FileHistory
 import click_repl
 
-
 import smipyping
 
 from smipyping._logging import AUDIT_LOGGER_NAME, ERROR_LOGGER_NAME
