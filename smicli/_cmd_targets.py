@@ -488,12 +488,18 @@ def cmd_target_modify(context, targetid, options):
         companies_tbl = CompaniesTable.factory(context.db_info,
                                                context.db_type,
                                                context.verbose)
-        if 'companyid' in options and options['companyid'] == "?":
-            companyid = pick_companyid(context, companies_tbl)
-            options['CompanyID'] = companyid
-        else:
-            if companyid not in companies_tbl:
-                raise click.ClickException("CompanyID %s invalid" % companyid)
+
+        # TODO. This should be a one line call since it is used in multiple
+        # places.
+        if 'companyid' in options and options['companyid'] is not None:
+            if options['companyid'] == "?":
+                companyid = pick_companyid(context, companies_tbl)
+                options['CompanyID'] = companyid
+            else:
+                companyid = options['companyid']
+                if companyid not in companies_tbl:
+                    raise click.ClickException("CompanyID %s invalid" %
+                                               companyid)
 
         # Create dictionary of changes requested from input parameters
         changes = {}

@@ -43,7 +43,6 @@ def pick_companyid(context, companies_tbl):
         company_id selected or None if user enter ctrl-C
     """
     company_keys = companies_tbl.keys()
-
     display_options = []
     for t in company_keys:
         company_item = companies_tbl[t]
