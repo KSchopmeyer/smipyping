@@ -20,8 +20,8 @@ from __future__ import print_function, absolute_import
 
 import datetime
 import click
-from click_datetime import Datetime
 import six
+from click_datetime import Datetime
 from smipyping import SimplePingList, PingsTable, ProgramsTable, UsersTable, \
     datetime_display_str, compute_startend_dates
 from smipyping._common import get_list_index, fold_cell
@@ -30,9 +30,43 @@ from smipyping._logging import AUDIT_LOGGER_NAME, get_logger
 from .smicli import cli, CMD_OPTS_TXT
 from ._click_common import print_table, validate_prompt, get_target_id, \
     get_multiple_target_ids
+from ._common_options import add_options
 
 # default sort order for weekly table is the company row
 DEFAULT_WEEKLY_TBL_SORT = 'Company'
+
+targetIds_option = [                            # pylint: disable=invalid-name
+    click.option('-t', '--targetIds', type=str, multiple=True,
+                 required=False,
+                 help='Get results only for the defined targetIDs. If the '
+                      'value is "?" a select list is provided to the console '
+                      'to select the  WBEM server targetids from the targets '
+                      'table.')]
+
+startdate_option = [                            # pylint: disable=invalid-name
+    click.option('-s', '--startdate', type=Datetime(format='%d/%m/%y'),
+                 default=None,
+                 required=False,
+                 help='Start date for ping records included. Format is '
+                      'dd/mm/yy where dd and mm are zero padded (ex. 01) '
+                      'and year is without century (ex. 17).'
+                      '\nDefault:oldest record')]
+
+enddate_option = [                            # pylint: disable=invalid-name
+    click.option('-e', '--enddate', type=Datetime(format='%d/%m/%y'),
+                 default=None,
+                 required=False,
+                 help='End date for ping records included. Format is dd/mm/yy'
+                      ' where dd and dm are zero padded (ex. 01) and year is'
+                      ' without century (ex. 17).\nDefault:current datetime')]
+
+# TODO make this test for positive int
+
+numberofdays_option = [                          # pylint: disable=invalid-name
+    click.option('-n', '--numberofdays', type=int,
+                 required=False,
+                 help='Alternative to enddate. Number of days to report from'
+                      ' startdate. "enddate" ignored if "numberofdays" set')]
 
 
 @cli.group('history', options_metavar=CMD_OPTS_TXT)
@@ -81,29 +115,14 @@ def history_group():
 #    """
 #    context.execute_cmd(lambda: cmd_history_create(context, options))
 
+# *********************************************************************
+#   Subcommand history list
+# *********************************************************************
 @history_group.command('list', options_metavar=CMD_OPTS_TXT)
-@click.option('-t', '--targetIds', type=str, multiple=True,
-              required=False,
-              help='Get results only for the defined targetIDs. If the value '
-                   'is "?" a select list is provided to the console to select '
-                   'the  WBEM server targetids from the targets table.')
-@click.option('-s', '--startdate', type=Datetime(format='%d/%m/%y'),
-              default=None,
-              required=False,
-              help='Start date for ping records included. Format is dd/mm/yy'
-                   ' where dd and mm are zero padded (ex. 01) and year is'
-                   ' without century (ex. 17).\nDefault:oldest record')
-@click.option('-e', '--enddate', type=Datetime(format='%d/%m/%y'),
-              default=None,
-              required=False,
-              help='End date for ping records included. Format is dd/mm/yy'
-                   ' where dd and dm are zero padded (ex. 01) and year is'
-                   ' without century (ex. 17).\nDefault:current datetime')
-# TODO make this test for positive int
-@click.option('-n', '--numberofdays', type=int,
-              required=False,
-              help='Alternative to enddate. Number of days to report from'
-                   ' startdate. "enddate" ignored if "numberofdays" set')
+@add_options(targetIds_option)
+@add_options(startdate_option)
+@add_options(enddate_option)
+@add_options(numberofdays_option)
 @click.option('-r', 'result', type=click.Choice(['full', 'changes', 'status',
                                                  '%ok', 'count']),
               default='status',
@@ -230,33 +249,15 @@ def history_weekly(context, **options):  # pylint: disable=redefined-builtin
 
 
 @history_group.command('timeline', options_metavar=CMD_OPTS_TXT)
-@click.option('-t', '--targetids', type=str, multiple=True,
-              required=False,
-              help='Get results only for the defined targetIDs. If the value '
-                   'is "?" a select list is provided to the console to select '
-                   'the  WBEM server targetids from the targets table.')
-@click.option('-s', '--startdate', type=Datetime(format='%d/%m/%y'),
-              default=None,
-              required=False,
-              help='Start date for ping records included. Format is dd/mm/yy '
-                   'where dd and mm are zero padded (ex. 01) and year is '
-                   'without century (ex. 17). Default: is oldest record')
-@click.option('-e', '--enddate', type=Datetime(format='%d/%m/%y'),
-              default=None,
-              required=False,
-              help='End date for ping records included. Format is dd/mm/yy '
-                   'where dd and dm are zero padded (ex. 01) and year is '
-                   'without century (ex. 17). Default: is current datetime')
-# TODO make this test for positive int
-@click.option('-n', '--numberofdays', type=int,
-              required=False,
-              help='Alternative to enddate. Number of days to report from'
-                   ' startdate. "enddate" ignored if "numberofdays" set')
-@click.option('-r', '--result', type=click.Choice(['full', 'status', '%ok']),
-              default='status',
-              help='"full" displays all records, "status" displays '
-                   'status summary by id. "%ok" reports percentage '
-                   'pings OK by Id and total count. Default="status". ')
+@add_options(targetIds_option)
+@add_options(startdate_option)
+@add_options(enddate_option)
+@add_options(numberofdays_option)
+# @click.option('-r', '--result', type=click.Choice(['full', 'status', '%ok']),
+#              # default='status',
+#              # help='"full" displays all records, "status" displays '
+#                   # 'status summary by id. "%ok" reports percentage '
+#                   # 'pings OK by Id and total count. Default="status". ')
 # TODO this is worthless right now
 # @click.option('-S', '--summary', is_flag=True, required=False, default=False,
 #              help='If set only a summary is generated.')
@@ -304,7 +305,7 @@ def cmd_history_weekly(context, options):
     except ValueError as ve:
         raise click.ClickException('Error; no program defined %s ' % ve)
 
-    show_disabled = True if options['disabled'] else False
+    show_disabled = bool(options['disabled'])
 
     # set start date time to just after midnight for today
     report_date = report_date.replace(minute=0, hour=0, second=0)
@@ -469,7 +470,7 @@ def cmd_history_delete(context, options):
                                    (ex.__class__.__name__, ex))
 
 
-def cmd_history_overview(context, options):
+def cmd_history_overview(context, options):  # pylint: diable=unused-argument
     """
     Get overall information on the pings table.
     """
