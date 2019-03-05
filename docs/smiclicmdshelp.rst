@@ -656,8 +656,8 @@ The following defines the help output for the `smicli history delete --help` sub
       ex. smicli history delete --startdate 09/09/17 --endate 09/10/17
 
       Because this could accidently delete all history records, this command
-      specifically requires that the user provide both the start date and either
-      the enddate or number of days. It makes no assumptions about dates.
+      requires that the user provide both the start date and either the enddate
+      or number of days. It makes no assumptions about dates.
 
       It also requires verification before deleting any records.
 
@@ -665,14 +665,14 @@ The following defines the help output for the `smicli history delete --help` sub
       -s, --startdate DATE        Start date for pings to be deleted. Format is
                                   dd/mm/yy  [required]
       -e, --enddate DATE          End date for pings to be deleted. Format is
-                                  dd/mm/yy  [required]
+                                  dd/mm/yy
       -n, --numberofdays INTEGER  Alternative to enddate. Number of days to report
                                   from startdate. "enddate" ignored if
                                   "numberofdays" set
       -t, --TargetID INTEGER      Optional targetID. If included, delete ping
-                                  records only for the defined targetID. Otherwise
-                                  all ping records in the defined time period are
-                                  deleted.
+                                  records only for the defined targetID and
+                                  defined time period. Otherwise all ping records
+                                  in the defined time period are deleted.
       -h, --help                  Show this message and exit.
 
 
@@ -710,21 +710,23 @@ The following defines the help output for the `smicli history list --help` subco
         * `count` - count of records within the defined date/time range
 
     Options:
+      -t, --targetIds TEXT            Get results only for the defined targetIDs.
+                                      If the value is "?" a select list is
+                                      provided to the console to select the  WBEM
+                                      server targetids from the targets table.
       -s, --startdate DATE            Start date for ping records included. Format
                                       is dd/mm/yy where dd and mm are zero padded
                                       (ex. 01) and year is without century (ex.
-                                      17). Default is oldest record
+                                      17).
+                                      Default:oldest record
       -e, --enddate DATE              End date for ping records included. Format
                                       is dd/mm/yy where dd and dm are zero padded
                                       (ex. 01) and year is without century (ex.
-                                      17). Default is current datetime
+                                      17).
+                                      Default:current datetime
       -n, --numberofdays INTEGER      Alternative to enddate. Number of days to
                                       report from startdate. "enddate" ignored if
                                       "numberofdays" set
-      -t, --targetId TEXT             Get results only for the defined targetID.
-                                      If the value is "?" a select list is
-                                      provided to the console to select the target
-                                      WBEM server from the targets table.
       -r [full|changes|status|%ok|count]
                                       Display history records or status info on
                                       records. "full" displays all records,
@@ -770,28 +772,29 @@ The following defines the help output for the `smicli history timeline --help` s
 
 ::
 
-    Usage: smicli history timeline [COMMAND-OPTIONS] TargetIDs
+    Usage: smicli history timeline [COMMAND-OPTIONS]
 
       Show history of status changes for IDs.
 
       Generates a report for the defined target IDs and the time period defined
-      by the options of the historical status of the defined target ID. The
-      --result option defines the report generated with options for 1) "full"
-      full list of history records 2) summary status by target ID, or 3) "%OK"
-      percentage of records that report OK and total records for the period by
-      target ID.
+      by the options of the historical status of the defined target ID showing
+      just the status  changes.
+
+      Each line in the report is a status change.
 
     Options:
+      -t, --targetids TEXT            Get results only for the defined targetIDs.
+                                      If the value is "?" a select list is
+                                      provided to the console to select the  WBEM
+                                      server targetids from the targets table.
       -s, --startdate DATE            Start date for ping records included. Format
                                       is dd/mm/yy where dd and mm are zero padded
                                       (ex. 01) and year is without century (ex.
-                                      17). Default is oldest record
+                                      17). Default: is oldest record
       -e, --enddate DATE              End date for ping records included. Format
                                       is dd/mm/yy where dd and dm are zero padded
                                       (ex. 01) and year is without century (ex.
-                                      17). Default  if neither `enddate` or
-                                      `numberofdays` are defined is current
-                                      datetime
+                                      17). Default: is current datetime
       -n, --numberofdays INTEGER      Alternative to enddate. Number of days to
                                       report from startdate. "enddate" ignored if
                                       "numberofdays" set
@@ -1767,7 +1770,7 @@ The following defines the help output for the `smicli users --help` subcommand
       activate  Activate or deactivate multiple users.
       add       Add a new user in the user table.
       delete    Delete a user from the database.
-      fields    Display field names in targets database.
+      fields    Display field names in users database.
       list      List users in the database users table.
       modify    Modify fields of a user in the user database.
 
@@ -1843,6 +1846,14 @@ The following defines the help output for the `smicli users add --help` subcomma
       Verification that the operation is correct is requested before the change
       is executed unless the `--no-verify' parameter is set.
 
+      Examples:
+
+      smicli users add -f John -l Malia -e jm@blah.com -c ?
+
+         Defines a new user with name and email defined after using select list
+         to get companyID of the user. A prompt for verification is presented
+         before the database is changed.
+
     Options:
       -f, --firstname TEXT  User first name.  [required]
       -l, --lastname TEXT   User last name  [required]
@@ -1874,11 +1885,15 @@ The following defines the help output for the `smicli users delete --help` subco
 
       Delete a user from the database.
 
-      Delete the program user by the subcommand argument from the database.
+      Delete the user defined by the subcommand argument from the database.
 
       The user to be deleted may be specified by a) specific user id, b) the
       interactive mode option, or c) using '?' as the user id argument which
       also initiates the interactive mode options
+
+      Examples:
+
+        smicli delete 85   smicli delete ?
 
     Options:
       -n, --no-verify    Disable verification prompt before the delete is
@@ -1902,7 +1917,7 @@ The following defines the help output for the `smicli users fields --help` subco
 
     Usage: smicli users fields [COMMAND-OPTIONS]
 
-      Display field names in targets database.
+      Display field names in users database.
 
       Example:
 
