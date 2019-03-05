@@ -28,7 +28,8 @@ from smipyping._common import get_list_index, fold_cell
 from smipyping._logging import AUDIT_LOGGER_NAME, get_logger
 
 from .smicli import cli, CMD_OPTS_TXT
-from ._click_common import print_table, validate_prompt, get_target_id
+from ._click_common import print_table, validate_prompt, get_target_id, \
+    get_multiple_target_ids
 
 # default sort order for weekly table is the company row
 DEFAULT_WEEKLY_TBL_SORT = 'Company'
@@ -80,30 +81,30 @@ def history_group():
 #    """
 #    context.execute_cmd(lambda: cmd_history_create(context, options))
 
-
 @history_group.command('list', options_metavar=CMD_OPTS_TXT)
+@click.option('-t', '--targetIds', type=str, multiple=True,
+              required=False,
+              help='Get results only for the defined targetIDs. If the value '
+                   'is "?" a select list is provided to the console to select '
+                   'the  WBEM server targetids from the targets table.')
 @click.option('-s', '--startdate', type=Datetime(format='%d/%m/%y'),
               default=None,
               required=False,
               help='Start date for ping records included. Format is dd/mm/yy'
                    ' where dd and mm are zero padded (ex. 01) and year is'
-                   ' without century (ex. 17). Default is oldest record')
+                   ' without century (ex. 17).\nDefault:oldest record')
 @click.option('-e', '--enddate', type=Datetime(format='%d/%m/%y'),
               default=None,
               required=False,
               help='End date for ping records included. Format is dd/mm/yy'
                    ' where dd and dm are zero padded (ex. 01) and year is'
-                   ' without century (ex. 17). Default is current datetime')
+                   ' without century (ex. 17).\nDefault:current datetime')
 # TODO make this test for positive int
 @click.option('-n', '--numberofdays', type=int,
               required=False,
               help='Alternative to enddate. Number of days to report from'
                    ' startdate. "enddate" ignored if "numberofdays" set')
-@click.option('-t', '--targetId', type=str,
-              required=False,
-              help='Get results only for the defined targetID. If the value '
-                   'is "?" a select list is provided to the console to select '
-                   'the target WBEM server from the targets table.')
+
 @click.option('-r', 'result', type=click.Choice(['full', 'changes', 'status',
                                                  '%ok', 'count']),
               default='status',
@@ -158,7 +159,7 @@ def history_overview(context, **options):  # pylint: disable=redefined-builtin
               required=True,
               help='Start date for pings to be deleted. Format is dd/mm/yy')
 @click.option('-e', '--enddate', type=Datetime(format='%d/%m/%y'),
-              required=True,
+              required=False,
               help='End date for pings to be deleted. Format is dd/mm/yy')
 @click.option('-n', '--numberofdays', type=int,
               required=False,
@@ -167,8 +168,9 @@ def history_overview(context, **options):  # pylint: disable=redefined-builtin
 @click.option('-t', '--TargetID', type=int,
               required=False,
               help='Optional targetID. If included, delete ping records only '
-                   'for the defined targetID. Otherwise all ping records in '
-                   'the defined time period are deleted.')
+                   'for the defined targetID and defined time period. '
+                   'Otherwise all ping records in the defined time period '
+                   'are deleted.')
 @click.pass_obj
 def history_delete(context, **options):  # pylint: disable=redefined-builtin
     """
@@ -180,7 +182,7 @@ def history_delete(context, **options):  # pylint: disable=redefined-builtin
     ex. smicli history delete --startdate 09/09/17 --endate 09/10/17
 
     Because this could accidently delete all history records, this command
-    specifically requires that the user provide both the start date and either
+    requires that the user provide both the start date and either
     the enddate or number of days. It makes no assumptions about dates.
 
     It also requires verification before deleting any records.
@@ -229,20 +231,23 @@ def history_weekly(context, **options):  # pylint: disable=redefined-builtin
 
 
 @history_group.command('timeline', options_metavar=CMD_OPTS_TXT)
-@click.argument('IDs', type=int, metavar='TargetIDs', required=True, nargs=-1)
+@click.option('-t', '--targetids', type=str, multiple=True,
+              required=False,
+              help='Get results only for the defined targetIDs. If the value '
+                   'is "?" a select list is provided to the console to select '
+                   'the  WBEM server targetids from the targets table.')
 @click.option('-s', '--startdate', type=Datetime(format='%d/%m/%y'),
               default=None,
               required=False,
               help='Start date for ping records included. Format is dd/mm/yy '
                    'where dd and mm are zero padded (ex. 01) and year is '
-                   'without century (ex. 17). Default is oldest record')
+                   'without century (ex. 17). Default: is oldest record')
 @click.option('-e', '--enddate', type=Datetime(format='%d/%m/%y'),
               default=None,
               required=False,
               help='End date for ping records included. Format is dd/mm/yy '
                    'where dd and dm are zero padded (ex. 01) and year is '
-                   'without century (ex. 17). Default  if neither `enddate` or '
-                   '`numberofdays` are defined is current datetime')
+                   'without century (ex. 17). Default: is current datetime')
 # TODO make this test for positive int
 @click.option('-n', '--numberofdays', type=int,
               required=False,
@@ -257,7 +262,7 @@ def history_weekly(context, **options):  # pylint: disable=redefined-builtin
 # @click.option('-S', '--summary', is_flag=True, required=False, default=False,
 #              help='If set only a summary is generated.')
 @click.pass_obj
-def history_timeline(context, ids, **options):
+def history_timeline(context, **options):
     # pylint: disable=redefined-builtin
     """
     Show history of status changes for IDs.
@@ -270,7 +275,7 @@ def history_timeline(context, ids, **options):
     report OK and total records for the period by target ID.
 
     """
-    context.execute_cmd(lambda: cmd_history_timeline(context, ids, options))
+    context.execute_cmd(lambda: cmd_history_timeline(context, options))
 
 
 ######################################################################
@@ -417,15 +422,16 @@ def cmd_history_delete(context, options):
     pings_tbl = PingsTable.factory(context.db_info, context.db_type,
                                    context.verbose)
 
+
     before_record_count = pings_tbl.record_count()
     number_of_days = options['numberofdays']
     start_date = options['startdate']
     end_date = options['enddate']
 
     if number_of_days and end_date:
-        raise ValueError('Simultaneous enddate %s and number of days %s '
-                         'parameters not allowed' %
-                         (end_date, number_of_days))
+        raise click.ClickException('Simultaneous enddate %s and number of '
+                                   'days %s parameters not allowed' %
+                                   (end_date, number_of_days))
 
     if end_date is None and number_of_days is None:
         raise click.ClickException("Either explicit end-date or "
@@ -445,7 +451,7 @@ def cmd_history_delete(context, options):
     # rmv_count = pings_tbl.count_by_daterange(start_date, end_date,
     #                                          target_id=targetid)
     rows = pings_tbl.select_by_daterange(start_date, end_date,
-                                         target_id=targetid)
+                                         targetids=targetid)
     count = len(rows)
     context.spinner.stop()
     target_display = targetid if targetid else "All Targets"
@@ -588,7 +594,7 @@ def cmd_history_list(context, options):
             options['startdate'],
             end_date=options['enddate'],
             number_of_days=options['numberofdays'],
-            target_id=target_id)
+            targetids=target_id)
         previous_status = None
         for ping in pings:
             target_id = ping[1]
@@ -646,7 +652,7 @@ def cmd_history_list(context, options):
             options['startdate'],
             end_date=options['enddate'],
             number_of_days=options['numberofdays'],
-            target_id=target_id)
+            targetids=target_id)
         count_tbl = {}
         for ping in pings:
             target_id = ping[1]
@@ -674,42 +680,39 @@ def cmd_history_list(context, options):
                 table_format=context.output_format)
 
 
-def cmd_history_timeline(context, ids, options):
+def cmd_history_timeline(context, options):
     """
     Output a table that shows just the history records that represent changes
     in status for the ids defined
     """
-
-    for id_ in ids:
-        try:
-            context.targets_tbl.get_target(id_)  # noqa: F841
-        except KeyError:
-            raise click.ClickException('Invalid Target: target_id=%s not in '
-                                       'database %s.' %
-                                       (id_, context.targets_tbl))
+    print('OPTIONS' % options )
+    ids = get_multiple_target_ids(context, options['targetids'])
+    if ids is None:
+        return
+    print('IDS %s' % ids)
 
     pings_tbl = PingsTable.factory(context.db_info, context.db_type,
                                    context.verbose)
-    headers = ['Pingid', 'Id', 'Ip', 'Company', 'Timestamp',
-               'Status', 'time_diff']
+
     tbl_rows = []
     for target_id in ids:
         rows = pings_tbl.select_by_daterange(
             options['startdate'],
             end_date=options['enddate'],
             number_of_days=options['numberofdays'],
-            target_id=target_id)
+            targetids=target_id)
 
         prev_status = None
         prev_pingtime = None
         timediff = None
         for row in rows:
-            target_id = row[1]
             ping_id = row[0]
+            target_id = row[1]
             ping_time = row[2]
             timestamp = datetime.datetime.strftime(ping_time,
                                                    '%d/%m/%y:%H:%M:%S')
             status = row[3]
+
             if not status == prev_status:
                 prev_status = status
                 if prev_pingtime:
@@ -735,6 +738,9 @@ def cmd_history_timeline(context, ids, options):
 
     title = ('Ping status timeline for %s to %s; ids %s' %
              (start_date, end_date, ','.join(map(str, ids))))
+
+    headers = ['Pingid', 'Id', 'Ip', 'Company', 'Timestamp',
+               'Status', 'time_diff']
 
     print_table(tbl_rows, headers, title,
                 table_format=context.output_format)

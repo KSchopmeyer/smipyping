@@ -84,7 +84,7 @@ def pick_multiple_user_ids(context, users_tbl, active=None, companyid=None):
                    for userid in userids]
     try:
         indexes = pick_multiple_from_list(context, display_txt,
-                                          "Pick TargetIDs:")
+                                          "Pick UserIDs:")
     except ValueError:
         pass
     if indexes is None:

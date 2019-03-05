@@ -305,7 +305,7 @@ def pick_multiple_target_ids(context):
          The click_context which contains target data information.
 
       Returns:
-        target_id selected or None if user enter ctrl-C
+        target_ids selected or None if user enter ctrl-C
     """
     targets_list = context.targets_tbl.keys()
     display_options = []
@@ -370,6 +370,9 @@ def get_multiple_target_ids(context, targetids, options=None, allow_none=False):
     context.spinner.stop()
 
     if options and 'interactive' in options and options['interactive']:
+        context.spinner.stop()
+        int_target_ids = pick_multiple_target_ids(context)
+    elif len(targetids) == 1 and targetids[0] == '?':
         context.spinner.stop()
         int_target_ids = pick_multiple_target_ids(context)
     elif isinstance(targetids, (list, tuple)):
