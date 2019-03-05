@@ -496,7 +496,7 @@ def users_activate(context, userids, **options):
 @click.pass_obj
 def users_fields(context):
     """
-    Display field names in targets database.
+    Display field names in users database.
 
     Example:
 

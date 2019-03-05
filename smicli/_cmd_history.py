@@ -104,7 +104,6 @@ def history_group():
               required=False,
               help='Alternative to enddate. Number of days to report from'
                    ' startdate. "enddate" ignored if "numberofdays" set')
-
 @click.option('-r', 'result', type=click.Choice(['full', 'changes', 'status',
                                                  '%ok', 'count']),
               default='status',
@@ -269,10 +268,9 @@ def history_timeline(context, **options):
 
     Generates a report for the defined target IDs and the time period
     defined by the options of the historical status of the defined
-    target ID. The --result option defines the report generated with
-    options for 1) "full" full list of history records 2) summary
-    status by target ID, or 3) "%OK" percentage of records that
-    report OK and total records for the period by target ID.
+    target ID showing just the status  changes.
+
+    Each line in the report is a status change.
 
     """
     context.execute_cmd(lambda: cmd_history_timeline(context, options))
@@ -421,7 +419,6 @@ def cmd_history_delete(context, options):
 
     pings_tbl = PingsTable.factory(context.db_info, context.db_type,
                                    context.verbose)
-
 
     before_record_count = pings_tbl.record_count()
     number_of_days = options['numberofdays']
@@ -580,100 +577,105 @@ def cmd_history_list(context, options):
     """
     Show history for the defined start and end dates
     """
-    target_id = get_target_id(context, options['targetid'], options,
-                              allow_none=True)
+    targetids = get_multiple_target_ids(context, options['targetids'])
+    if not targetids:
+        targetids = context.targets_tbl.get_enabled_targetids()
 
     pings_tbl = PingsTable.factory(context.db_info, context.db_type,
                                    context.verbose)
     output_tbl_rows = []
-    # if full, show all records in base that match options
-    if options['result'] == 'full' or options['result'] == 'changes':
-        headers = ['Pingid', 'Id', 'Ip', 'Company', 'Timestamp', 'Status']
+    for targetid in targetids:
+        # if full, show all records in base that match options
+        if options['result'] == 'full' or options['result'] == 'changes':
+            headers = ['Pingid', 'Id', 'Ip', 'Company', 'Timestamp', 'Status']
 
-        pings = pings_tbl.select_by_daterange(
-            options['startdate'],
-            end_date=options['enddate'],
-            number_of_days=options['numberofdays'],
-            targetids=target_id)
-        previous_status = None
-        for ping in pings:
-            target_id = ping[1]
-            ping_id = ping[0]
-            company, ip, product = get_target_info(context, target_id, ping)
+            pings = pings_tbl.select_by_daterange(
+                options['startdate'],
+                end_date=options['enddate'],
+                number_of_days=options['numberofdays'],
+                targetids=targetid)
+            previous_status = None
+            for ping in pings:
+                target_id = ping[1]
+                ping_id = ping[0]
+                company, ip, product = get_target_info(context, target_id, ping)
 
-            timestamp = datetime.datetime.strftime(ping[2], '%d/%m/%y:%H:%M:%S')
-            status = ping[3]
-            if options['result'] == 'changes' and previous_status == status:
-                continue
-            tbl_row = [ping_id, target_id, ip, company, timestamp, status]
-            output_tbl_rows.append(tbl_row)
-            previous_status = status
+                timestamp = datetime.datetime.strftime(ping[2],
+                                                       '%d/%m/%y:%H:%M:%S')
+                status = ping[3]
+                if options['result'] == 'changes' and previous_status == status:
+                    continue
+                tbl_row = [ping_id, target_id, ip, company, timestamp, status]
+                output_tbl_rows.append(tbl_row)
+                previous_status = status
 
-    # if result == status show counts of ping records by status by target
-    elif options['result'] == 'status':
-        headers = ['id', 'Url', 'company', 'status', 'count']
+        # if result == status show counts of ping records by status by target
+        elif options['result'] == 'status':
+            headers = ['id', 'Url', 'company', 'status', 'count']
 
-        results = pings_tbl.get_status_by_id(
-            options['startdate'],
-            end_date=options['enddate'],
-            number_of_days=options['numberofdays'],
-            target_id=target_id)
-        # find all status and convert to report format
-        for target_id, result in six.iteritems(results):
-            company, url, product = get_target_info(context, target_id, result)
+            results = pings_tbl.get_status_by_id(
+                options['startdate'],
+                end_date=options['enddate'],
+                number_of_days=options['numberofdays'],
+                target_id=targetid)
+            # find all status and convert to report format
+            for target_id, result in six.iteritems(results):
+                company, url, product = get_target_info(context, target_id,
+                                                        result)
 
-            for key in result:
-                # restrict status output to 20 char.
-                status = (key[:20] + '..') if len(key) > 20 else key
-                row = [target_id, url, company, status, result[key]]
+                for key in result:
+                    # restrict status output to 20 char.
+                    status = (key[:20] + '..') if len(key) > 20 else key
+                    row = [target_id, url, company, status, result[key]]
+                    output_tbl_rows.append(row)
+
+        # Shows summary records indicating % ok for the period defined
+        elif options['result'] == '%ok':
+            headers = ['TargetId', 'Url', 'Company', 'Product', '%OK', 'Total']
+
+            percentok_dict = pings_tbl.get_percentok_by_id(
+                options['startdate'],
+                end_date=options['enddate'],
+                number_of_days=options['numberofdays'],
+                target_id=target_id)
+            # create report of id,  company, product and %ok / total counts
+            for target_id, value in six.iteritems(percentok_dict):
+                company, ip, product = get_target_info(context, target_id,
+                                                       value)
+
+                row = [target_id, ip, company, product, value[0], value[2]]
                 output_tbl_rows.append(row)
 
-    # Shows summary records indicating % ok for the period defined
-    elif options['result'] == '%ok':
-        headers = ['TargetId', 'Url', 'Company', 'Product', '%OK', 'Total']
+        # show count of records for date range
+        elif options['result'] == 'count':
+            headers = ['TargetID', 'Records', 'Company', 'Url']
 
-        percentok_dict = pings_tbl.get_percentok_by_id(
-            options['startdate'],
-            end_date=options['enddate'],
-            number_of_days=options['numberofdays'],
-            target_id=target_id)
-        # create report of id,  company, product and %ok / total counts
-        for target_id, value in six.iteritems(percentok_dict):
-            company, ip, product = get_target_info(context, target_id, value)
+            pings = pings_tbl.select_by_daterange(
+                options['startdate'],
+                end_date=options['enddate'],
+                number_of_days=options['numberofdays'],
+                targetids=target_id)
+            count_tbl = {}
+            for ping in pings:
+                target_id = ping[1]
+                company, ip, product = get_target_info(context, target_id, ping)
+                if target_id in count_tbl:
+                    x = count_tbl[target_id]
+                    count_tbl[target_id] = (x[0] + 1, x[1], x[2])
+                else:
+                    count_tbl[target_id] = (1, company, ip)
 
-            row = [target_id, ip, company, product, value[0], value[2]]
-            output_tbl_rows.append(row)
+            for target_id, value in six.iteritems(count_tbl):
+                row = [target_id, value[0], value[1], value[2]]
+                output_tbl_rows.append(row)
 
-    # show count of records for date range
-    elif options['result'] == 'count':
-        headers = ['TargetID', 'Records', 'Company', 'Url']
-
-        pings = pings_tbl.select_by_daterange(
-            options['startdate'],
-            end_date=options['enddate'],
-            number_of_days=options['numberofdays'],
-            targetids=target_id)
-        count_tbl = {}
-        for ping in pings:
-            target_id = ping[1]
-            company, ip, product = get_target_info(context, target_id, ping)
-            if target_id in count_tbl:
-                x = count_tbl[target_id]
-                count_tbl[target_id] = (x[0] + 1, x[1], x[2])
-            else:
-                count_tbl[target_id] = (1, company, ip)
-
-        for target_id, value in six.iteritems(count_tbl):
-            row = [target_id, value[0], value[1], value[2]]
-            output_tbl_rows.append(row)
-
-    else:
-        raise click.ClickException('Invalid result: %s'
-                                   % (options['result']))
+        else:
+            raise click.ClickException('Invalid result: %s'
+                                       % (options['result']))
 
     context.spinner.stop()
     print_table(output_tbl_rows, headers,
-                title=('Ping Status for %s to %s, table_type: %s' %
+                title=('Ping Status for %s to %s, result_type: %s' %
                        (options['startdate'],
                         options['enddate'],
                         options['result'])),
@@ -685,17 +687,19 @@ def cmd_history_timeline(context, options):
     Output a table that shows just the history records that represent changes
     in status for the ids defined
     """
-    print('OPTIONS' % options )
-    ids = get_multiple_target_ids(context, options['targetids'])
-    if ids is None:
-        return
-    print('IDS %s' % ids)
+    targetids = get_multiple_target_ids(context, options['targetids'])
+
+    ids_str = ",".join(str(x) for x in targetids)
+
+    if not targetids:
+        targetids = context.targets_tbl.get_enabled_targetids()
+        ids_str = 'All enabled'
 
     pings_tbl = PingsTable.factory(context.db_info, context.db_type,
                                    context.verbose)
 
     tbl_rows = []
-    for target_id in ids:
+    for target_id in targetids:
         rows = pings_tbl.select_by_daterange(
             options['startdate'],
             end_date=options['enddate'],
@@ -736,8 +740,8 @@ def cmd_history_timeline(context, options):
         options['startdate'], options['enddate'],
         options['numberofdays'])
 
-    title = ('Ping status timeline for %s to %s; ids %s' %
-             (start_date, end_date, ','.join(map(str, ids))))
+    title = ('Ping status timeline: from: %s to: %s; ids: %s' %
+             (start_date, end_date, ids_str))
 
     headers = ['Pingid', 'Id', 'Ip', 'Company', 'Timestamp',
                'Status', 'time_diff']
