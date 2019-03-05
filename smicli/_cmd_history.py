@@ -91,7 +91,9 @@ def history_group():
     reports to view the table for:
 
       - changes to status for particular targets.
+
       - Consolidated history over time periods
+
       - Snapshots of the full set of entries over periods of time.
     """
     pass
@@ -115,9 +117,11 @@ def history_group():
 #    """
 #    context.execute_cmd(lambda: cmd_history_create(context, options))
 
-# *********************************************************************
+#######################################################################
+#
 #   Subcommand history list
-# *********************************************************************
+#
+#######################################################################
 @history_group.command('list', options_metavar=CMD_OPTS_TXT)
 @add_options(targetIds_option)
 @add_options(startdate_option)
@@ -137,33 +141,51 @@ def history_group():
 @click.pass_obj
 def history_list(context, **options):  # pylint: disable=redefined-builtin
     """
-    List history of pings in database.
+    Display history of pings in database.
+
+    It outputs a table data from the database pings table which may be
+    filtered by targets and dates.
 
     The listing may be filtered a date range with the --startdate, --enddate,
-    and --numberofdays options.  It may also be filtered to only show a single
-    target WBEM server from the targets table with the `--targetid` option
+    and --numberofdays options.
+
+    It may also be filtered to only show a selected target WBEM server from
+    the targets table with the `--targetid` option
 
     The output of this subcommand is determined by the `--result` option which
     provides for:
 
-      * `full` - all records defined by the input parameters
+      * `full` - all records defined by the input parameters.
 
       * `status` - listing records by status (i.e. OK, etc.) and
-        count of records for that status
+        count of records for that status.
 
       * `%ok` - listing the percentage of records that have 'OK' status and
-        the total number of ping records
+        the total number of ping records.
 
-      * `count` - count of records within the defined date/time range
+      * `count` - count of records within the defined date/time range.
+
+    ex. smicli history list --startdate 09/09/17 --enddate 09/10/17\n
+        smicli history list --startdate 09/09/17 --numberofdays 9 -t 88 -t 91\n
+        smicli history list --startdate 09/09/17 --numberofdays 9 - *\n
+            # list pings for 9 days starting 9 sept 17 for targets\n
+            # selected by user (-t *)
+
+
     """
     context.execute_cmd(lambda: cmd_history_list(context, options))
 
 
+#######################################################################
+#
+#   Subcommand history overview
+#
+#######################################################################
 @history_group.command('overview', options_metavar=CMD_OPTS_TXT)
 @click.pass_obj
 def history_overview(context, **options):  # pylint: disable=redefined-builtin
     """
-    Get overview of pings in database.
+    Display overview of pingstable in database.
 
     This subcommand only shows the count of records and the oldest and
     newest record in the pings database, and the number of pings by
@@ -172,6 +194,11 @@ def history_overview(context, **options):  # pylint: disable=redefined-builtin
     context.execute_cmd(lambda: cmd_history_overview(context, options))
 
 
+#######################################################################
+#
+#   Subcommand history delete
+#
+#######################################################################
 @history_group.command('delete', options_metavar=CMD_OPTS_TXT)
 @click.option('-s', '--startdate', type=Datetime(format='%d/%m/%y'),
               required=True,
@@ -192,10 +219,10 @@ def history_overview(context, **options):  # pylint: disable=redefined-builtin
 @click.pass_obj
 def history_delete(context, **options):  # pylint: disable=redefined-builtin
     """
-    Delete records from history file.
+    Delete records from pings table.
 
-    Delete records from the history file based on start date and end date
-    options and the optional list of target ids provided.
+    Delete records from the history(pings) database based on start date and end
+    date options and the optional list of targetids provided.
 
     ex. smicli history delete --startdate 09/09/17 --endate 09/10/17
 
@@ -209,6 +236,11 @@ def history_delete(context, **options):  # pylint: disable=redefined-builtin
     context.execute_cmd(lambda: cmd_history_delete(context, options))
 
 
+#######################################################################
+#
+#   Subcommand history weekly
+#
+#######################################################################
 @history_group.command('weekly', options_metavar=CMD_OPTS_TXT)
 @click.option('-d', '--date', type=Datetime(format='%d/%m/%y'),
               default=datetime.datetime.today(),
@@ -248,6 +280,11 @@ def history_weekly(context, **options):  # pylint: disable=redefined-builtin
     context.execute_cmd(lambda: cmd_history_weekly(context, options))
 
 
+#######################################################################
+#
+#   Subcommand history timeline
+#
+#######################################################################
 @history_group.command('timeline', options_metavar=CMD_OPTS_TXT)
 @add_options(targetIds_option)
 @add_options(startdate_option)
