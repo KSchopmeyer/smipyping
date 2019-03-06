@@ -290,8 +290,7 @@ def cmd_programs_add(context, options):
 
 
 def cmd_programs_delete(context, programid, options):
-    """Delete a user from the programs database."""
-
+    """Delete a program from the programs database."""
     programs_tbl = ProgramsTable.factory(context.db_info, context.db_type,
                                          context.verbose)
 
@@ -305,24 +304,33 @@ def cmd_programs_delete(context, programid, options):
     program = programs_tbl[programid]
     start = program['StartDate']
     end = program['EndDate']
+    pname = program['ProgramName']
 
-    tbl_inst = PingsTable.factory(context.db_info, context.db_type,
-                                  context.verbose)
-    pings = tbl_inst.count_by_daterange(start, end)
-    if pings:
-        click.echo("program programid: %s has %s pings in history table. "
-                   'Use ""smicli history overview"" to see pings count and use '
-                   '"smicli history delete to remove them' %
-                   (programid, pings))
-        # TODO actually ask and remove pings here. easier than forcing user
-        # to do it manually
+    pings_tbl = PingsTable.factory(context.db_info, context.db_type,
+                                   context.verbose)
+
+    pings = pings_tbl.select_by_daterange(start, end)
 
     if not options['no_verify']:
         context.spinner.stop()
-        click.echo(programs_tbl[programid])
-        if not validate_prompt('Delete program id %s' % programid):
+        if len(pings) > 0:
+            click.echo("Programid: %s  name: %s has %s pings in history table. "
+                       'They will be removed before deleting the program' %
+                       (programid, pname, len(pings)))
+
+        if not validate_prompt('Delete programid: %s name: %s. starts: %s, '
+                               'ends: %s and %s pings' % (programid, pname,
+                                                          start, end,
+                                                          len(pings))):
             click.echo('Operation aborted by user')
             return
+
+    if pings:
+        try:
+            pings_tbl.delete_by_daterange(start, end)
+        except mysqlerror as ex:
+            click.echo("Pings delete failed failed, Database Error "
+                       "Exception: %s: %s" % (ex.__class__.__name__, ex))
 
     try:
         programs_tbl.delete(programid)

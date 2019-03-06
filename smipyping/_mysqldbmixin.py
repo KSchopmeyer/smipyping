@@ -28,9 +28,16 @@ class MySQLDBMixin(object):
     """
         Provides some common methods to mixin in with the MySQL...Tables
         classes
+        Returns
+
+        Raises: ValueError if defintion not valid or database cannot be
+        opened.
     """
     def connectdb(self, db_dict, verbose):
         """Connect the db"""
+        if not db_dict:
+            ValueError("Database definition required to  open database "
+                       "is empty. Data base may not be defined in config file.")
         try:
             connection = MySQLConnection(host=db_dict['host'],
                                          database=db_dict['database'],

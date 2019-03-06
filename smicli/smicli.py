@@ -27,10 +27,9 @@ from logging import StreamHandler, NullHandler
 from logging.handlers import SysLogHandler
 from logging.handlers import RotatingFileHandler
 import platform
-import click_repl
 import click
-
 from prompt_toolkit.history import FileHistory
+import click_repl
 
 import smipyping
 
@@ -194,6 +193,8 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
         output_format = set_input_variable(ctx, output_format, 'output_format',
                                            DEFAULT_OUTPUT_FORMAT)
 
+        targets_tbl = None  # delay setup of targets table to cmd that needs it
+
         db_type = set_input_variable(ctx, db_type, 'dbtype',
                                      smipyping.DEFAULT_DBTYPE)
 
@@ -213,10 +214,10 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
         if ctx.default_map:
             db_info = ctx.default_map[db_type]
         else:
-            # NEED DEFAULT for dbinfo. For now raise exception
+            # TODO Future: NEED DEFAULT for dbinfo. For now raise exception
             db_info = {}
-            raise click.ClickException('No Database info provided for '
-                                       'database type %s' % db_type)
+            # raise click.ClickException('No Database info provided for '
+            #                           'database type %s' % db_type)
 
         config_file_dir = os.path.dirname(os.getcwd())
 
@@ -243,13 +244,13 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
 
         # use db info to get target info.
         # TODO move this so we do not need db for help.
-        try:
-            targets_tbl = smipyping.TargetsTable.factory(
-                db_info, db_type, verbose, output_format=output_format)
+        # try:
+        #    targets_tbl = smipyping.TargetsTable.factory(
+        #        db_info, db_type, verbose, output_format=output_format)
 
-        except ValueError as ve:
-            raise click.ClickException("Invalid database. Targets table "
-                                       "load fails. Exception %s" % ve)
+        # except ValueError as ve:
+        #    raise click.ClickException("Invalid database. Targets table "
+        #                               "load fails. Exception %s" % ve)
 
     else:
         # Processing an interactive command.
@@ -263,6 +264,7 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
             db_info = ctx.obj.db_info
         if log_file is None:
             log_file = ctx.obj.log_file
+        targets_tbl = None
         # TODO we should be able to remove the log stuff from context
         # if we completely create the loggers here.
         if log is None:
@@ -275,6 +277,8 @@ def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
             output_format = ctx.obj.output_format
         if verbose is None:
             verbose = ctx.obj.verbose
+        if targets_tbl is None:
+            targets_tbl = ctx.obj.targets_tbl
 
     # Now we have the effective values for the options as they should be used
     # by the current command, regardless of the mode.

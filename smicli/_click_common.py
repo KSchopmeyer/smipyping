@@ -305,7 +305,7 @@ def pick_multiple_target_ids(context):
          The click_context which contains target data information.
 
       Returns:
-        target_id selected or None if user enter ctrl-C
+        target_ids selected or None if user enter ctrl-C
     """
     targets_list = context.targets_tbl.keys()
     display_options = []
@@ -372,6 +372,9 @@ def get_multiple_target_ids(context, targetids, options=None, allow_none=False):
     if options and 'interactive' in options and options['interactive']:
         context.spinner.stop()
         int_target_ids = pick_multiple_target_ids(context)
+    elif len(targetids) == 1 and targetids[0] == '?':
+        context.spinner.stop()
+        int_target_ids = pick_multiple_target_ids(context)
     elif isinstance(targetids, (list, tuple)):
         int_target_ids = []
         if len(targetids) == 1 and \
@@ -399,7 +402,11 @@ def get_multiple_target_ids(context, targetids, options=None, allow_none=False):
                                                'Exception: %s: %s' %
                                                (targetid,
                                                 ke.__class__.__name__, ke))
-                int_target_ids.append(targetid)
+
+                # Account for duplicates in input list.  Note that this is
+                # an issue with Click and options/arguments with multiples.
+                if targetid not in int_target_ids:
+                    int_target_ids.append(targetid)
 
             context.spinner.start()
             return int_target_ids

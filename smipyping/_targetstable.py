@@ -205,8 +205,7 @@ class TargetsTable(DBTableBase):
 
     def get_enabled_targetids(self):
         """Get list of target ids that are marked enabled."""
-        return [x for x in self.data_dict
-                if not self.disabled_target_id(x)]
+        return [x for x in self.data_dict if not self.disabled_target_id(x)]
 
     def get_disabled_targetids(self):
         """Get list of target ids that are marked disabled"""

@@ -92,7 +92,7 @@ def compute_startend_dates(start_date, end_date=None, number_of_days=None,
 
     Parameters:
       start_date(:class:`py:datetime.datetime` or `None`):
-        Datetime for start of activity or if None, oldes timestamp in
+        Datetime for start of activity or if None, oldest timestamp in
         the pings table
 
       end_date(:class:`py:datetime.datetime` or `None`):

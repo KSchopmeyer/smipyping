@@ -244,6 +244,12 @@ class MySQLProgramsTable(ProgramsTable, MySQLDBMixin):
         """
         cursor = self.connection.cursor()
 
+        # Test of there are pings in the pings table.
+        # We will not delete the program with pings existing.
+        pings_tbl = PingsTable.factory(self.db_info, self.db_type,
+                                       False)
+        # TODO confirm no pings before delete of prora
+
         sql = "DELETE FROM Program WHERE ProgramID=%s"
         try:
             cursor.execute(sql, (programid,))  # noqa F841

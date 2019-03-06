@@ -16,6 +16,14 @@ the details of the WBEM Servers in that environment.
 It includes several command line tools and a database of the WBEM Servers
 in the environment.
 
+.. _`Supported environments`:
+
+Supported environments
+------------
+
+Currently smipyping is supported on Python 2.7 environments and tested on Linux
+operating systems
+
 
 .. _`Installation`:
 

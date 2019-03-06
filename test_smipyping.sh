@@ -5,6 +5,7 @@
 #   commands.
 #   This is just a quick test and does not replace detailed unit tests
 #
+#  It runs against the configuration defned in the CONFIGFILE varaible
 
 function USAGE {
 cat << EOF
@@ -22,6 +23,7 @@ LOCAL_LIVE=0
 CMD=smicli
 
 VALID_TARGET_ID=115
+CONFIGFILE='smicli.ini'
 
 # Execute script and report if any errors occur
 function do_cmd {
@@ -121,6 +123,21 @@ do_cmd 'users list -f FirstName -f Lastname -f CompanyName -o CompanyName'
 do_cmd_er 'users list -f blah'
 
 # history
+
+do_cmd "history -h"
+do_cmd "history timeline -h"
+do_cmd "history timeline -t 89  -s 01/02/19 -n 20"
+do_cmd "history timeline -t 89 -t 81  -s 01/02/19 -n 20"
+do_cmd "history timeline  -s 01/02/19 -n 2"
+
+
+do_cmd "history list -h"
+do_cmd "history list -t 89  -s 01/02/19 -n 20"
+do_cmd "history list -t 89 -t 81  -s 01/02/19 -n 20"
+do_cmd "history list  -s 01/02/19 -n 20"
+
+do_cmd "history overview -h"
+do_cmd "history overview"
 
 #companies
 

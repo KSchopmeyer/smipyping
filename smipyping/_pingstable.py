@@ -246,7 +246,7 @@ class MySQLPingsTable(SQLPingsTable, MySQLDBMixin):
             self.connection.close()
 
     def select_by_daterange(self, start_date, end_date=None,
-                            number_of_days=None, target_id=None):
+                            number_of_days=None, targetids=None):
         """
         Select records between two timestamps and return the set of
         records selected
@@ -265,10 +265,12 @@ class MySQLPingsTable(SQLPingsTable, MySQLDBMixin):
             Number of days from startdate to gather. If end_date is set also
             this is invalid.
 
-          target_id(:term:`integer`):
-            Optional Integer defining a target id in the target table. The
-            result if filtered by this target id against the TargetID field
-            in the Pings record if the value is not `None`.
+          targetids(:term:`integer`): Optional integer or list of integers
+          defining targetids in the target table. The result is filtered by
+          these target ids against the TargetID field in the Pings record if
+          the value is not `None`.
+
+          If the value is None the result is not filtered by targetid
 
         Returns:
             List of tuples representing rows in the Pings table. Each entry in
@@ -285,15 +287,34 @@ class MySQLPingsTable(SQLPingsTable, MySQLDBMixin):
 
         cursor = self.connection.cursor()
         try:
-            if target_id is None:
+            if targetids is None:
                 sql = 'SELECT * ' \
                       'FROM Pings WHERE Timestamp BETWEEN %s AND %s'
                 data = (start_date, end_date)
-            else:
+
+            elif isinstance(targetids, (list, tuple)):
+                for i in targetids:
+                    if not isinstance(i, int):
+                        raise ValueError("TargetTable:select_by_daterange "
+                                         "targetid must be integer or "
+                                         "iterable of integer. %s not "
+                                         "allowed" % targetids)
+                # create string of %s,%s ...
+                ids = ",".join(['%s'] * len(targetids))
+                sql = 'SELECT * ' \
+                      'FROM Pings WHERE TargetID in (%s)' % ids
+                sql += ' AND Timestamp BETWEEN %s AND %s'
+                data = (targetids, start_date, end_date)
+
+            elif isinstance(targetids, int):
                 sql = 'SELECT * ' \
                       'FROM Pings WHERE TargetID = %s AND ' \
                       'Timestamp BETWEEN %s AND %s'
-                data = (target_id, start_date, end_date)
+                data = (targetids, start_date, end_date)
+            else:
+                raise ValueError("TargetTable:select_by_daterange targetid "
+                                 "must be integer or iterable of integer. "
+                                 "%s not allowed" % targetids)
 
             cursor.execute(sql, data)
             rows = cursor.fetchall()
@@ -321,7 +342,7 @@ class MySQLPingsTable(SQLPingsTable, MySQLDBMixin):
         """
         rows = self.select_by_daterange(start_date, end_date=end_date,
                                         number_of_days=number_of_days,
-                                        target_id=target_id)
+                                        targetids=target_id)
 
         # dictionary by id with subdictionary by status
         status_dict = {}
