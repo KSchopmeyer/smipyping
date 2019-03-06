@@ -525,8 +525,15 @@ def cmd_history_overview(context, options):  # pylint: diable=unused-argument
     rows.append(['Oldest Record', oldest[2]])
     rows.append(['Latest Record', newest[2]])
 
+    print_table(rows, headers,
+                title=title,
+                table_format=context.output_format)
+
     programs_tbl = ProgramsTable.factory(context.db_info, context.db_type,
                                          context.verbose)
+
+    title = "Pings by year (Pings table))"
+    headers = ['Program', 'StartDate', 'EndDate', 'pings count']
 
     for programid in programs_tbl:
         program = programs_tbl[programid]
@@ -534,7 +541,7 @@ def cmd_history_overview(context, options):  # pylint: diable=unused-argument
         end = program['EndDate']
 
         pings = tbl_inst.count_by_daterange(start, end)
-        rows.append(["Records %s" % program['ProgramName'], pings])
+        rows.append(["Records %s" % program['ProgramName'], start, end, pings])
 
     print_table(rows, headers,
                 title=title,
@@ -559,7 +566,7 @@ def cmd_history_create(context, options):
                                    context.verbose)
     timestamp = options['datetime']
     for result in results:
-        print('ping data %s %s %s' % (result[0], result[1], timestamp))
+        click.echo('ping data %s %s %s' % (result[0], result[1], timestamp))
         pings_tbl.append(result[0], result[1], timestamp)
 
     # displayresults of the scan.
