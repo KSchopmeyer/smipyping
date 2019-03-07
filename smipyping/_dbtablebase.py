@@ -56,12 +56,13 @@ class DBTableBase(object):
 
     def __str__(self):
         """String info on table. TODO. Put more info here"""
-        return ('% len %s' % (self.table_name, len(self.data_dict)))
+        return ('%s len %s' % (self.table_name, len(self.data_dict)))
 
     def __repr__(self):
         """Rep of table data info. displays table name, length, etc."""
-        return ('%s db_type %s db len %s' %
-                (self.table_name, self.db_type, len(self.data_dict)))
+        return ('%s(dbtype: %s, dbinfo: %s) len: %s' %
+                (self.table_name, self.db_type, self.db_dict,
+                 len(self.data_dict)))
 
     def __contains__(self, record_id):
         """Determine if record_id is in data dictionary."""

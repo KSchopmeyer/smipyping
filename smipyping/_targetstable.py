@@ -147,16 +147,16 @@ class TargetsTable(DBTableBase):
 
         self.output_format = output_format
 
-    def __str__(self):
-        # TODO this and __repr__ do not really match.
-        """String info on targetdata. TODO. Put more info here"""
-        return ('type=%s db=%s, len=%s' % (self.db_type, self.get_dbdict(),
-                                           len(self.data_dict)))
+    # def __str__(self):
+        # # TODO this and __repr__ do not really match.
+        # """String info on targetdata. TODO. Put more info here"""
+        # return ('type=%s db=%s, len=%s' % (self.db_type, self.get_dbdict(),
+                                           # len(self.data_dict)))
 
-    def __repr__(self):
-        """Rep of target data"""
-        return ('Targetdata db_type %s, rep count=%s' %
-                (self.db_type, len(self.data_dict)))
+    # def __repr__(self):
+        # """Rep of target data"""
+        # return ('Targetdata db_type %s, rep count=%s' %
+                # (self.db_type, len(self.data_dict)))
 
     def test_fieldnames(self, fields):
         """Test a list of field names. This test generates an exception,
