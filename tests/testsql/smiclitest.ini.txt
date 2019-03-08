@@ -26,8 +26,11 @@ host = localhost
 #   Name of the database in the mysql database host.  This db must be
 #   compatible with the field requirements of smipyping. The default name
 #   we have used to date is SMIStatus
+#   This creates a database that is specifically for unittesting.
+#   It has a unique name so that it can actually be added and removed from
+#   the local SQL database during unittests.
 #
-database = SMIStatusTest
+database = SMIStatusFunctionTest
 #
 # Logon credentials for the mysql database.
 #
