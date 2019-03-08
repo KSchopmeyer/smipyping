@@ -198,12 +198,15 @@ before_install:
   - mysql -u root --execute="CREATE DATABASE IF NOT EXISTS SMIStatusFunctionTest;"
 #  - mysql -u root --execute="GRANT ALL PRIVILEGES ON SMIStatusFunctionTest.* TO 'travis'@'localhost';FLUSH_PRIVILEGES;";
 #  - mysql -e -u travis --password="" SMIStatusTest < tests/testsql/smistatustest.sql
+# Test install the sql. TODO: Remove this  step in the future.
   - mysql -u root --default-character-set=utf8 SMIStatusFunctionTest < tests/testsql/smistatustest.sql
   - mysql -u root --execute="SHOW DATABASES"
   - mysql -u root --execute="SHOW GRANTS"
   - mysql -u root --execute="SHOW GRANTS FOR travis@localhost"
   - mysql -u travis --execute="SHOW GRANTS"
   - mysql -u root --execute="SELECT table_schema, ROUND(SUM( data_length + index_length ) / 1024 / 1024, 2) AS \"SIZE MB\" FROM information_schema.TABLES GROUP BY table_schema;"
+  - mysql -u root --execute="CREATE USER 'readonlyuser'@'%' IDENTFIED by '':""
+  - mysql -u root --execute="GRANT SELECT on *.* to 'readonlyuser'@'%';FLUSH_PRIVILEGES"
 
   # - sudo mysql -e "use mysql; update user set authentication_string=PASSWORD('new_password') where User='root'; update user set plugin='mysql_native_password';FLUSH PRIVILEGES;"
   # - sudo mysql_upgrade -u root -pnew_password
@@ -216,7 +219,7 @@ script:
   - make build
   - make builddoc
   - make check
-#  - make test
+  - make test
 
 after_success:
   - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_PYTHON_VERSION" == "2.7" && "$PACKAGE_LEVEL" == "latest" && -z $_MANUAL_CI_RUN ]]; then
