@@ -162,7 +162,7 @@ def targets_disable(context, targetid, enable, **options):
 @click.option('--cimonversion', type=str,
               required=False,
               help='Modify the cimomversion field with a new namespace.')
-@click.option('--companyid', type=int,
+@click.option('--companyid', type=str,
               required=False,
               help='Modify the companyID field with the correct ID from the '
                    'Company Table. Entering "?" into this field enables the '
@@ -494,7 +494,7 @@ def cmd_target_modify(context, targetid, options):
         if 'companyid' in options and options['companyid'] is not None:
             if options['companyid'] == "?":
                 companyid = pick_companyid(context, companies_tbl)
-                options['CompanyID'] = companyid
+                options['companyid'] = companyid
             else:
                 companyid = options['companyid']
                 if companyid not in companies_tbl:

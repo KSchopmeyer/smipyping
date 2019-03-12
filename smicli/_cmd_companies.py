@@ -296,7 +296,7 @@ def cmd_companies_modify(context, companyid, options):
             click.echo('  %s: "%s" to "%s"' % (key,
                                                company_record[key],
                                                value))
-        if not validate_prompt('Validate delete this company?'):
+        if not validate_prompt('Validate modify this company?'):
             click.echo('Aborted Operation')
             return
 
