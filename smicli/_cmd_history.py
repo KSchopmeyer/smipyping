@@ -386,8 +386,9 @@ def cmd_history_weekly(context, options):
             product = fold_cell(product, 15)
             url = context.targets_tbl.build_url(target_id)
             smi_version = target.get('SMIVersion', 'empty')
-            smi_version = smi_version.replace('/', ', ')
-            smi_version = fold_cell(smi_version, 15)
+            if smi_version:
+                smi_version = smi_version.replace('/', ', ')
+                smi_version = fold_cell(smi_version, 15)
             company_id = target.get('CompanyID', 'empty')
             # get users list
             email_list = users_tbl.get_emails_for_company(company_id)
