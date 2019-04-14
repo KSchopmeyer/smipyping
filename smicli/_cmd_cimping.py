@@ -40,20 +40,32 @@ from ._click_common import print_table, get_target_id, get_multiple_target_ids
 timeout_option = [            # pylint: disable=invalid-name
     click.option('-t', '--timeout', type=int,
                  default=DEFAULT_OPERATION_TIMEOUT,
-                 help='Timeout in sec for the operation.'
+                 help='Timeout in sec for the pywbem operations to test the '
+                      'server.'
                       ' ' + '(Default: %s).' % DEFAULT_OPERATION_TIMEOUT)]
 
 no_ping_option = [            # pylint: disable=invalid-name
     click.option('--no-ping', default=False, is_flag=True, required=False,
-                 help='Disable network ping of the wbem server before '
-                      'executing the cim request.'
-                      ' ' + '(Default: %s).' % True)]
+                 help='If set this option disables network level ping of the '
+                      'wbem server before executing the cim request. Since '
+                      'executing the ping does not cause significant time '
+                      'delay and helps define servers that are not responding'
+                      'at all, normally it should not be set. The ping uses '
+                      'available ping program to execute the ping.')]
 
 debug_option = [            # pylint: disable=invalid-name
     click.option('-d', '--debug', default=False, is_flag=True, required=False,
-                 help='Set the debug parameter for the pywbem call. Displays '
-                      'detailed information on the call and response.'
-                      ' ' + '(Default: %s).' % False)]
+                 help='If set this options sets the debug parameter for the '
+                      'pywbem call. Displays detailed information on the call '
+                      'and response.')]
+
+thread_option = [            # pylint: disable=invalid-name
+    click.option('--no-thread', default=False, is_flag=True, required=False,
+                 help='If set run test single-threaded if no-thread set. '
+                      'This option exists to aid debugging if issues occur '
+                      'with multithreading or the servers responses in '
+                      'general. If not set, the requests to each server are '
+                      'issued in parallel using multi-threading.')]
 
 
 @cli.group('cimping', options_metavar=CMD_OPTS_TXT)
@@ -179,6 +191,7 @@ def cimping_ids(context, ids, **options):  # pylint: disable=redefined-builtin
               help='If set, presents list of targets to chose.')
 @add_options(no_ping_option)
 @add_options(debug_option)
+@add_options(thread_option)
 @click.pass_obj
 def cimping_id(context, id, **options):
     # pylint: disable=redefined-builtin
@@ -214,6 +227,7 @@ def cimping_id(context, id, **options):
               help='If set include disabled targets in the cimping scan.'
               ' ' + '(Default: %s).' % False)
 @add_options(debug_option)
+@add_options(thread_option)
 @click.pass_obj
 def cimping_all(context, **options):  # pylint: disable=redefined-builtin
     """
@@ -290,6 +304,7 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
                                       logfile=context.log_file,
                                       log_level=context.log_level,
                                       verbose=context.verbose,
+                                      threaded=options['no_thread'],
                                       include_disabled=include_disabled)
     results = simple_ping_list.ping_servers()
 

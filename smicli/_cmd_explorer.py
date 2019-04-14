@@ -55,7 +55,8 @@ def explorer_group():
               help='Ping the the provider as initial step in test. '
                    'Default: ping')
 @click.option('--thread/--no-thread', default=True,
-              help='Run test multithreaded.  Much faster. '
+              help='Run test multithreaded.  Much faster. This option is only'
+                   'here to aid debugging if issues occur with multithread.'
                    'Default: thread')
 @click.option('-i', '--include-disabled', is_flag=True, default=False,
               help='Include hosts marked disabled in the targets table.')

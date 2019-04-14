@@ -74,7 +74,7 @@ class SimplePingList(object):
 
     """
     def __init__(self, targets_tbl, target_ids=None, verbose=None, logfile=None,
-                 log_level=None, include_disabled=False):
+                 log_level=None, threaded=True, include_disabled=False):
         """
         Saves the input parameters and sets up local variables for the
         execution of the scan.
@@ -92,6 +92,10 @@ class SimplePingList(object):
             verbose(:class:`py:bool`):
                 Optional flag that when enabled outputs additional diagnostic
                 information to the console.
+
+            threaded(:class: `py:bool`):
+                Optional flag that allows running this operation single
+                threaded rather than the default multi-thread.
 
             logfile(:term:`string`):
                 Optional string defining a file name for a log file
@@ -119,6 +123,7 @@ class SimplePingList(object):
         self.logfile = logfile
         self.log_level = log_level
         self.kill_threads = False
+        self.threaded = threaded
 
     def process_queue(self, queue, results):
         """This is a thread function that processes a queue to do check_port.
@@ -141,10 +146,9 @@ class SimplePingList(object):
 
     def ping_servers(self):
         """
-        Threaded cimping of servers.
-
         Execute SimplePing on the servers defined. Returns a list of
-        results
+        results. If self.threaded is True, call the threaded executor.
+        Otherwise call the single-thread method
 
         return:
             list of TestResult named tuples with results of test.
@@ -153,7 +157,24 @@ class SimplePingList(object):
             KeyboardInterrupt:
 
         """
+        if self.threaded:
+            return self.ping_servers_threaded()
 
+        return self.ping_servers_not_threaded()
+
+    def ping_servers_threaded(self):
+        """
+        Execute SimplePing on the servers defined. Returns a list of
+        results. If self.threaded is True, call the threaded executor.
+        Otherwise call the single-thread method
+
+        return:
+            list of TestResult named tuples with results of test.
+
+        Exceptions:
+            KeyboardInterrupt:
+
+        """
         # set up queue to hold all call info
         queue = Queue.Queue(maxsize=0)
         num_threads = MAX_THREADS
@@ -179,6 +200,33 @@ class SimplePingList(object):
             self.kill_threads = True
             for t in threads:
                 t.kill_received = True
+
+        # returns list of ip addresses that were were found
+        return results
+
+    def ping_servers_not_thread(self):
+        """
+        Threaded cimping of servers.
+
+        Execute SimplePing on the servers defined without multithreading.
+        Executes each test in a single thread.  NOTE: THis is probably
+        most useful  for debugging.
+        Returns a list of results
+
+        return:
+            list of TestResult named tuples with results of test.
+
+        Exceptions:
+            KeyboardInterrupt:
+
+        """
+        results = []
+        for targetid in self.target_ids:
+            simpleping = SimplePing(target_id=targetid,
+                                    targets_tbl=self.targets_tbl)
+            test_result = simpleping.test_server()
+            # append target_id and results to results list.
+            results.append((targetid, test_result))
 
         # returns list of ip addresses that were were found
         return results
