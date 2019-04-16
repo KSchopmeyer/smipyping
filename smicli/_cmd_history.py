@@ -262,6 +262,8 @@ def history_weekly(context, **options):  # pylint: disable=redefined-builtin
     """
     Generate weekly report from ping history.
 
+    Generates the report normally emailed for the smi lab status.
+
     This subcommand generates a report on the status of each target id
     in the targets table filtered by the --date parameter. It generates
     a summary of the status for the current day, for the previous week and
@@ -271,11 +273,11 @@ def history_weekly(context, **options):  # pylint: disable=redefined-builtin
     ending at the time the report is generated but the --date pararameter
     allows the report to be generated for previous dates.
 
+    This report includes percentage OK for each target for today, this week,
+    and the program and overall information on the target (company, product,
+    SMIversion, contacts.)
 
-    This report includes percentage OK for each
-    target for today, this week, and the program and overall information on
-    the target (company, product, SMIversion, contacts.)
-
+    The error codes are documented in the online documentation.
     """
     context.execute_cmd(lambda: cmd_history_weekly(context, options))
 
@@ -431,15 +433,20 @@ def cmd_history_weekly(context, options):
 
     context.spinner.stop()
 
+    report_info = "  PingFail(WBEMServer fails 'ping'), "  \
+                  "WBEMError(CIMError exception), "  \
+                  "PyWBEMError/ConnectionError/TimeOutError" \
+                  "(Pywbem exception generated)"
     print_table(tbl_rows, headers,
-                title=('Server Status: Report-date=%s '
+                title=('Server status: date=%s '
                        'program=%s start: %s end: '
-                       '%s, LastScan: %s' %
+                       '%s, LastScan: %s\n%s' %
                        (datetime_display_str(report_date),
                         cp['ProgramName'],
                         cp['StartDate'],
                         cp['EndDate'],
-                        last_status_time)),
+                        last_status_time,
+                        report_info)),
                 table_format=context.output_format)
 
 
@@ -508,7 +515,7 @@ def cmd_history_delete(context, options):
                                    (ex.__class__.__name__, ex))
 
 
-def cmd_history_overview(context, options):  # pylint: diable=unused-argument
+def cmd_history_overview(context, options):  # pylint: disable=unused-argument
     """
     Get overall information on the pings table.
     """

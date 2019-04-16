@@ -161,8 +161,6 @@ class SimplePingList(object):
             KeyboardInterrupt:
 
         """
-        print("SELF %s" % self)
-
         if self.threaded:
             return self.ping_servers_threaded()
 

@@ -142,18 +142,28 @@ The following defines the help output for the `smicli cimping all --help` subcom
       ex. smicli cimping all
 
     Options:
-      -t, --timeout INTEGER  Timeout in sec for the operation. (Default: 10).
-      --no-ping              Disable network ping of the wbem server before
-                             executing the cim request. (Default: True).
       -s, --saveresult       Save the result of each cimping test of a wbem server
                              to the database Pings table for future analysis.
                              Saving the results creates an audit log record.
                              (Default: False).
       -d, --disabled         If set include disabled targets in the cimping scan.
                              (Default: False).
-      -d, --debug            Set the debug parameter for the pywbem call. Displays
-                             detailed information on the call and response.
-                             (Default: False).
+      -t, --timeout INTEGER  Timeout in sec for the pywbem operations to test the
+                             server. (Default: 10).
+      --no-ping              If set this option disables network level ping of the
+                             wbem server before executing the cim request. Since
+                             executing the ping does not cause significant time
+                             delay and helps define servers that are not
+                             respondingat all, normally it should not be set. The
+                             ping uses available ping program to execute the ping.
+      -d, --debug            If set this options sets the debug parameter for the
+                             pywbem call. Displays detailed information on the
+                             call and response.
+      --no-thread            If set run test single-threaded if no-thread set.
+                             This option exists to aid debugging if issues occur
+                             with multithreading or the servers responses in
+                             general. If not set, the requests to each server are
+                             issued in parallel using multi-threading.
       -h, --help             Show this message and exit.
 
 
@@ -260,13 +270,25 @@ The following defines the help output for the `smicli cimping id --help` subcomm
       ex. smicli cimping 5
 
     Options:
-      -t, --timeout INTEGER  Timeout in sec for the operation. (Default: 10).
+      -t, --timeout INTEGER  Timeout in sec for the pywbem operations to test the
+                             server. (Default: 10).
       -i, --interactive      If set, presents list of targets to chose.
-      --no-ping              Disable network ping of the wbem server before
-                             executing the cim request. (Default: True).
-      -d, --debug            Set the debug parameter for the pywbem call. Displays
-                             detailed information on the call and response.
-                             (Default: False).
+      --no-ping              If set this option disables network level ping of the
+                             wbem server before executing the cim request. Since
+                             executing the ping does not cause significant time
+                             delay and helps define servers that are not
+                             respondingat all, normally it should not be set. The
+                             ping uses available ping program to execute the ping.
+      -d, --debug            If set this options sets the debug parameter for the
+                             pywbem call. Displays detailed information on the
+                             call and response.
+      --no-thread            If set run test single-threaded if no-thread set.
+                             This option exists to aid debugging if issues occur
+                             with multithreading or the servers responses in
+                             general. If not set, the requests to each server are
+                             issued in parallel using multi-threading.
+      -t, --timeout INTEGER  Timeout in sec for the pywbem operations to test the
+                             server. (Default: 10).
       -h, --help             Show this message and exit.
 
 
@@ -293,13 +315,18 @@ The following defines the help output for the `smicli cimping ids --help` subcom
       ex. smicli cimping ids 5 8 9
 
     Options:
-      -t, --timeout INTEGER  Timeout in sec for the operation. (Default: 10).
-      --no-ping              Disable network ping of the wbem server before
-                             executing the cim request. (Default: True).
+      -t, --timeout INTEGER  Timeout in sec for the pywbem operations to test the
+                             server. (Default: 10).
+      --no-ping              If set this option disables network level ping of the
+                             wbem server before executing the cim request. Since
+                             executing the ping does not cause significant time
+                             delay and helps define servers that are not
+                             respondingat all, normally it should not be set. The
+                             ping uses available ping program to execute the ping.
       -i, --interactive      If set, presents list of targets to chose.
-      -d, --debug            Set the debug parameter for the pywbem call. Displays
-                             detailed information on the call and response.
-                             (Default: False).
+      -d, --debug            If set this options sets the debug parameter for the
+                             pywbem call. Displays detailed information on the
+                             call and response.
       -h, --help             Show this message and exit.
 
 
@@ -525,8 +552,9 @@ The following defines the help output for the `smicli explorer all --help` subco
     Options:
       --ping / --no-ping             Ping the the provider as initial step in
                                      test. Default: ping
-      --thread / --no-thread         Run test multithreaded.  Much faster.
-                                     Default: thread
+      --thread / --no-thread         Run test multithreaded.  Much faster. This
+                                     option is onlyhere to aid debugging if issues
+                                     occur with multithread.Default: thread
       -i, --include-disabled         Include hosts marked disabled in the targets
                                      table.
       -d, --detail [full|brief|all]  Generate full or brief (fewer columns)
@@ -619,17 +647,19 @@ The following defines the help output for the `smicli history --help` subcommand
       Rather than a simple list subcommand this subcommand includes a number of
       reports to view the table for:
 
-        - changes to status for particular targets.   - Consolidated history
-        over time periods   - Snapshots of the full set of entries over periods
-        of time.
+        - changes to status for particular targets.
+
+        - Consolidated history over time periods
+
+        - Snapshots of the full set of entries over periods of time.
 
     Options:
       -h, --help  Show this message and exit.
 
     Commands:
-      delete    Delete records from history file.
-      list      List history of pings in database.
-      overview  Get overview of pings in database.
+      delete    Delete records from pings table.
+      list      Display history of pings in database.
+      overview  Display overview of pingstable in database.
       timeline  Show history of status changes for IDs.
       weekly    Generate weekly report from ping history.
 
@@ -648,10 +678,10 @@ The following defines the help output for the `smicli history delete --help` sub
 
     Usage: smicli history delete [COMMAND-OPTIONS]
 
-      Delete records from history file.
+      Delete records from pings table.
 
-      Delete records from the history file based on start date and end date
-      options and the optional list of target ids provided.
+      Delete records from the history(pings) database based on start date and
+      end date options and the optional list of targetids provided.
 
       ex. smicli history delete --startdate 09/09/17 --endate 09/10/17
 
@@ -690,24 +720,39 @@ The following defines the help output for the `smicli history list --help` subco
 
     Usage: smicli history list [COMMAND-OPTIONS]
 
-      List history of pings in database.
+      Display history of pings in database.
+
+      It outputs a table data from the database pings table which may be
+      filtered by targets and dates.
 
       The listing may be filtered a date range with the --startdate, --enddate,
-      and --numberofdays options.  It may also be filtered to only show a single
-      target WBEM server from the targets table with the `--targetid` option
+      and --numberofdays options.
+
+      It may also be filtered to only show a selected target WBEM server from
+      the targets table with the `--targetid` option
 
       The output of this subcommand is determined by the `--result` option which
       provides for:
 
-        * `full` - all records defined by the input parameters
+        * `full` - all records defined by the input parameters.
 
         * `status` - listing records by status (i.e. OK, etc.) and     count of
-        records for that status
+        records for that status.
 
         * `%ok` - listing the percentage of records that have 'OK' status and
-        the total number of ping records
+        the total number of ping records.
 
-        * `count` - count of records within the defined date/time range
+        * `count` - count of records within the defined date/time range.
+
+      ex. smicli history list --startdate 09/09/17 --enddate 09/10/17
+
+          smicli history list --startdate 09/09/17 --numberofdays 9 -t 88 -t 91
+
+          smicli history list --startdate 09/09/17 --numberofdays 9 - *
+
+              # list pings for 9 days starting 9 sept 17 for targets
+
+              # selected by user (-t *)
 
     Options:
       -t, --targetIds TEXT            Get results only for the defined targetIDs.
@@ -751,7 +796,7 @@ The following defines the help output for the `smicli history overview --help` s
 
     Usage: smicli history overview [COMMAND-OPTIONS]
 
-      Get overview of pings in database.
+      Display overview of pingstable in database.
 
       This subcommand only shows the count of records and the oldest and newest
       record in the pings database, and the number of pings by program.
@@ -783,26 +828,22 @@ The following defines the help output for the `smicli history timeline --help` s
       Each line in the report is a status change.
 
     Options:
-      -t, --targetids TEXT            Get results only for the defined targetIDs.
-                                      If the value is "?" a select list is
-                                      provided to the console to select the  WBEM
-                                      server targetids from the targets table.
-      -s, --startdate DATE            Start date for ping records included. Format
-                                      is dd/mm/yy where dd and mm are zero padded
-                                      (ex. 01) and year is without century (ex.
-                                      17). Default: is oldest record
-      -e, --enddate DATE              End date for ping records included. Format
-                                      is dd/mm/yy where dd and dm are zero padded
-                                      (ex. 01) and year is without century (ex.
-                                      17). Default: is current datetime
-      -n, --numberofdays INTEGER      Alternative to enddate. Number of days to
-                                      report from startdate. "enddate" ignored if
-                                      "numberofdays" set
-      -r, --result [full|status|%ok]  "full" displays all records, "status"
-                                      displays status summary by id. "%ok" reports
-                                      percentage pings OK by Id and total count.
-                                      Default="status".
-      -h, --help                      Show this message and exit.
+      -t, --targetIds TEXT        Get results only for the defined targetIDs. If
+                                  the value is "?" a select list is provided to
+                                  the console to select the  WBEM server targetids
+                                  from the targets table.
+      -s, --startdate DATE        Start date for ping records included. Format is
+                                  dd/mm/yy where dd and mm are zero padded (ex.
+                                  01) and year is without century (ex. 17).
+                                  Default:oldest record
+      -e, --enddate DATE          End date for ping records included. Format is
+                                  dd/mm/yy where dd and dm are zero padded (ex.
+                                  01) and year is without century (ex. 17).
+                                  Default:current datetime
+      -n, --numberofdays INTEGER  Alternative to enddate. Number of days to report
+                                  from startdate. "enddate" ignored if
+                                  "numberofdays" set
+      -h, --help                  Show this message and exit.
 
 
 .. _`smicli history weekly --help`:
@@ -821,6 +862,8 @@ The following defines the help output for the `smicli history weekly --help` sub
 
       Generate weekly report from ping history.
 
+      Generates the report normally emailed for the smi lab status.
+
       This subcommand generates a report on the status of each target id in the
       targets table filtered by the --date parameter. It generates a summary of
       the status for the current day, for the previous week and for the total
@@ -833,6 +876,8 @@ The following defines the help output for the `smicli history weekly --help` sub
       This report includes percentage OK for each target for today, this week,
       and the program and overall information on the target (company, product,
       SMIversion, contacts.)
+
+      The error codes are documented in the online documentation.
 
     Options:
       -d, --date DATE   Optional date to be used as basis for report in form
@@ -1695,7 +1740,7 @@ The following defines the help output for the `smicli targets modify --help` sub
                                       namespace.
       --cimonversion TEXT             Modify the cimomversion field with a new
                                       namespace.
-      --companyid INTEGER             Modify the companyID field with the correct
+      --companyid TEXT                Modify the companyID field with the correct
                                       ID from the Company Table. Entering "?" into
                                       this field enables the interactive display
                                       of companies for selection of the company id

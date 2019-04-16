@@ -54,20 +54,25 @@ information and execute the repl mode.
 
 The command groups available for smicli are:
 
-1. **cimping:**  -  Command group to do simpleping on providers to determine general
-   status of the provider.  This command group executes an optional ping and
-   if that is successful a single request for a now entity on the WBEM Server
-   to determine status. Generally it establishes that the smicli can
-   connect to the server and that the expected namespace and class exist.
+1. **cimping:** - Command group to do simpleping on providers to determine general
+   status of the provider.  This command group executes an optional ping using
+   the OS level ping and if that is successful a single request for a known
+   entity (ex. CIMClass) on the WBEM Server to determine status. Generally it
+   establishes that the smicli can connect to the server and that the expected
+   namespace and class exist.
 
-2. **explorer:** -  Command group to explore providers. This group provides commands
+   This command returns a number of possible errors for exception  responses
+   indicating the type of error received. See WBEM server
+   :ref:`WBEM server error codes` for details of the error codes.
+
+2. **explorer:** - Command group to explore providers. This group provides commands
    to explore status and state of providers including profiles, namespaces,
    general size of tables, etc.
 
-3. **provider:** -  Command group for detailed provider operations. This allows
+3. **provider:** - Command group for detailed provider operations. This allows
    users to explore providers (targets) in detail.
 
-4. **sweep:** -     Command group to sweep for servers. Allows testing all
+4. **sweep:** - Command group to sweep for servers. Allows testing all
    addresses in a range of ip address for possible WBEM Servers and determining
    if these are already in the targets table. Typically a search would be
    executed for all IP addresses in a known subnet and for selected ports.
@@ -80,16 +85,17 @@ The command groups available for smicli are:
    Credentials (taken from the target table) and possible namespaces to
    determine if a WBEM Server exists and reports what it finds.
 
-5. **history:** -   Command group to manage the history (pings) table. This includes
+5. **history:** - Command group to manage the history (pings) table. This includes
    a number of reports to summarize history of individual and all provider
-   status over time periods.
+   status over time periods. It also include a subcommand specifically to
+   execute the smilab weekly report `smicli history weekly`.
 
-6. **programs:**   Command group to view and manage the
+6. **programs:** - Command group to view and manage the
    programs table. This table is the definition of a single SMI program and
    defines the program name, start date and end date.
    Provides the capability to list and modify entries.
 
-6. **targets:** -   Command group for managing targets data.  This is the table of
+6. **targets:** - Command group for managing targets data.  This is the table of
    providers currently defined and includes information on the address, security,
    etc on each entry.  Normally it includes information that cannot be
    retrievied from the providers themselves.  This subcommand allows listing
@@ -101,7 +107,7 @@ The command groups available for smicli are:
    in these tables can be linked to a company
    This group provides viewing and managing entries in the table.
 
-8. **users:**  - Command group to process the users table. The users table
+8. **users:** - Command group to process the users table. The users table
    defines users associated with a company including email addresses so that
    notifications, reports, etc. can be forwarded to users concerning status
    and status changes of the targets. This group provides
