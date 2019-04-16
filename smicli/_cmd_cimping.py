@@ -40,20 +40,32 @@ from ._click_common import print_table, get_target_id, get_multiple_target_ids
 timeout_option = [            # pylint: disable=invalid-name
     click.option('-t', '--timeout', type=int,
                  default=DEFAULT_OPERATION_TIMEOUT,
-                 help='Timeout in sec for the operation.'
+                 help='Timeout in sec for the pywbem operations to test the '
+                      'server.'
                       ' ' + '(Default: %s).' % DEFAULT_OPERATION_TIMEOUT)]
 
 no_ping_option = [            # pylint: disable=invalid-name
     click.option('--no-ping', default=False, is_flag=True, required=False,
-                 help='Disable network ping of the wbem server before '
-                      'executing the cim request.'
-                      ' ' + '(Default: %s).' % True)]
+                 help='If set this option disables network level ping of the '
+                      'wbem server before executing the cim request. Since '
+                      'executing the ping does not cause significant time '
+                      'delay and helps define servers that are not responding'
+                      'at all, normally it should not be set. The ping uses '
+                      'available ping program to execute the ping.')]
 
 debug_option = [            # pylint: disable=invalid-name
     click.option('-d', '--debug', default=False, is_flag=True, required=False,
-                 help='Set the debug parameter for the pywbem call. Displays '
-                      'detailed information on the call and response.'
-                      ' ' + '(Default: %s).' % False)]
+                 help='If set this options sets the debug parameter for the '
+                      'pywbem call. Displays detailed information on the call '
+                      'and response.')]
+
+thread_option = [            # pylint: disable=invalid-name
+    click.option('--no-thread', default=False, is_flag=True, required=False,
+                 help='If set run test single-threaded if no-thread set. '
+                      'This option exists to aid debugging if issues occur '
+                      'with multithreading or the servers responses in '
+                      'general. If not set, the requests to each server are '
+                      'issued in parallel using multi-threading.')]
 
 
 @cli.group('cimping', options_metavar=CMD_OPTS_TXT)
@@ -179,6 +191,8 @@ def cimping_ids(context, ids, **options):  # pylint: disable=redefined-builtin
               help='If set, presents list of targets to chose.')
 @add_options(no_ping_option)
 @add_options(debug_option)
+@add_options(thread_option)
+@add_options(timeout_option)
 @click.pass_obj
 def cimping_id(context, id, **options):
     # pylint: disable=redefined-builtin
@@ -201,8 +215,6 @@ def cimping_id(context, id, **options):
 
 
 @cimping_group.command('all', options_metavar=CMD_OPTS_TXT)
-@add_options(timeout_option)
-@add_options(no_ping_option)
 @click.option('-s', '--saveresult', default=False, is_flag=True,
               required=False,
               help='Save the result of each cimping test of a wbem server'
@@ -213,7 +225,10 @@ def cimping_id(context, id, **options):
               required=False,
               help='If set include disabled targets in the cimping scan.'
               ' ' + '(Default: %s).' % False)
+@add_options(timeout_option)
+@add_options(no_ping_option)
 @add_options(debug_option)
+@add_options(thread_option)
 @click.pass_obj
 def cimping_all(context, **options):  # pylint: disable=redefined-builtin
     """
@@ -285,12 +300,18 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
     # cimping the complete set of targets
     include_disabled = options['disabled']
 
-    simple_ping_list = SimplePingList(context.targets_tbl, None,
+    print('Start ping options %s' % options)
+
+    simple_ping_list = SimplePingList(context.targets_tbl,
+                                      timeout=options['timeout'],
                                       logfile=context.log_file,
                                       log_level=context.log_level,
                                       verbose=context.verbose,
+                                      threaded=not options['no_thread'],
                                       include_disabled=include_disabled)
     results = simple_ping_list.ping_servers()
+
+    print('ping test ended')
 
     # get last pings information from history
     pings_tbl = PingsTable.factory(context.db_info, context.db_type,
@@ -299,6 +320,8 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
     ping_rows = pings_tbl.get_last_timestamped()
     last_status = {ping[1]: ping[3] for ping in ping_rows}
     last_status_time = ping_rows[0][2]
+
+    print("got results from history")
 
     # if saveresult set, update pings table with results.
     save_result = options['saveresult']
@@ -321,6 +344,8 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
     headers = ['Id', 'Addr', 'Result', 'Exception', 'Time', 'Company',
                'Product']
     rows = []
+    if not results:
+        raise click.ClickException("No response returned")
     for result in results:
         target_id = result[0]
         target = context.targets_tbl[target_id]
@@ -328,9 +353,6 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
 
         url = context.targets_tbl.build_url(target_id)
 
-        # print('test_result %r\n%r' % (test_result, test_result))
-        # print('EXCEPTION %s %r' % (test_result.exception,
-        #                           test_result.exception))
         if test_result.exception:
             test_status = "%s %s" % (test_result.type, test_result.exception)
         else:
@@ -405,6 +427,7 @@ def cmd_cimping_ids(context, ids, options):  # pylint: disable=redefined-builtin
                                 targets_tbl=context.targets_tbl,
                                 ping=not options['no_ping'],
                                 logfile=context.log_file,
+                                threaded=not options['no_thread'],
                                 log_level=context.log_level)
 
         # TODO: Move the requirement for all target data up and

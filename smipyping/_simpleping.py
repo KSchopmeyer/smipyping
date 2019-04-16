@@ -74,7 +74,8 @@ class SimplePingList(object):
 
     """
     def __init__(self, targets_tbl, target_ids=None, verbose=None, logfile=None,
-                 log_level=None, include_disabled=False):
+                 timeout=None, log_level=None, threaded=True,
+                 include_disabled=False):
         """
         Saves the input parameters and sets up local variables for the
         execution of the scan.
@@ -93,12 +94,20 @@ class SimplePingList(object):
                 Optional flag that when enabled outputs additional diagnostic
                 information to the console.
 
+            threaded(:class: `py:bool`):
+                Optional flag that allows running this operation single
+                threaded rather than the default multi-thread.
+
             logfile(:term:`string`):
                 Optional string defining a file name for a log file
                 TODO change this
 
             log_level(:term:`string`)
                 TODO clean this up
+
+            timeout(:term: `integer` or None)
+                If this is an integer it is the timeout in seconds that will
+                be passed on to  the test connection
 
             include_disabled(:class:`py:bool`):
                 If true, include disabled targets.
@@ -107,6 +116,7 @@ class SimplePingList(object):
             KeyError if a target_id is not in the database.
         """
         self.targets_tbl = targets_tbl
+        self.include_disabled = include_disabled
 
         if include_disabled:
             self.target_ids = target_ids if target_ids else \
@@ -119,6 +129,44 @@ class SimplePingList(object):
         self.logfile = logfile
         self.log_level = log_level
         self.kill_threads = False
+        self.threaded = threaded
+        self.timeout = timeout
+
+    def __repr__(self):
+        """
+        Return string with class status
+        """
+        return "SimplePingList(" \
+               "target_ids={}, " \
+               "include_disabled={}, " \
+               "verbose = {}, "  \
+               "threaded={}, " \
+               "timeout={}" \
+               "log_level={})".format(self.target_ids,
+                                      self.include_disabled,
+                                      self.verbose, self.threaded,
+                                      self.timeout,
+                                      self.log_level)
+
+    def ping_servers(self):
+        """
+        Execute SimplePing on the servers defined. Returns a list of
+        results. If self.threaded is True, call the threaded executor.
+        Otherwise call the single-thread method
+
+        return:
+            list of TestResult named tuples with results of test.
+
+        Exceptions:
+            KeyboardInterrupt:
+
+        """
+        print("SELF %s" % self)
+
+        if self.threaded:
+            return self.ping_servers_threaded()
+
+        return self.ping_servers_not_threaded()
 
     def process_queue(self, queue, results):
         """This is a thread function that processes a queue to do check_port.
@@ -132,19 +180,19 @@ class SimplePingList(object):
             results = work[1]   # get results list from work
             # check_result, error = self.check_port(work[0])
             simpleping = SimplePing(target_id=work[0],
-                                    targets_tbl=self.targets_tbl)
+                                    targets_tbl=self.targets_tbl,
+                                    timeout=self.timeout)
             test_result = simpleping.test_server()
             # append target_id and results to results list.
             results.append((work[0], test_result))
             queue.task_done()
         return
 
-    def ping_servers(self):
+    def ping_servers_threaded(self):
         """
-        Threaded cimping of servers.
-
         Execute SimplePing on the servers defined. Returns a list of
-        results
+        results. If self.threaded is True, call the threaded executor.
+        Otherwise call the single-thread method
 
         return:
             list of TestResult named tuples with results of test.
@@ -153,7 +201,6 @@ class SimplePingList(object):
             KeyboardInterrupt:
 
         """
-
         # set up queue to hold all call info
         queue = Queue.Queue(maxsize=0)
         num_threads = MAX_THREADS
@@ -179,6 +226,34 @@ class SimplePingList(object):
             self.kill_threads = True
             for t in threads:
                 t.kill_received = True
+
+        # returns list of ip addresses that were were found
+        return results
+
+    def ping_servers_not_threaded(self):
+        """
+        Threaded cimping of servers.
+
+        Execute SimplePing on the servers defined without multithreading.
+        Executes each test in a single thread.  NOTE: THis is probably
+        most useful  for debugging.
+        Returns a list of results
+
+        return:
+            list of TestResult named tuples with results of test.
+
+        Exceptions:
+            KeyboardInterrupt:
+
+        """
+        results = []
+        for targetid in self.target_ids:
+            simpleping = SimplePing(target_id=targetid,
+                                    targets_tbl=self.targets_tbl,
+                                    timeout=self.timeout)
+            test_result = simpleping.test_server()
+            # append target_id and results to results list.
+            results.append((targetid, test_result))
 
         # returns list of ip addresses that were were found
         return results
@@ -380,7 +455,7 @@ class SimplePing(object):
 
         elif re.match(r"^[a-zA-Z0-9]+://", server) is not None:
             raise ValueError('SimplePing: Invalid scheme on server argument %s.'
-                             ' Use "http" or "https"', server)
+                             ' Use "http" or "https"' % server)
         else:
             url = '%s://%s' % ('https', server)
         self.url = url

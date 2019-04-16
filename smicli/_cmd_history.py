@@ -642,16 +642,17 @@ def cmd_history_list(context, options):
                 targetids=targetid)
             previous_status = None
             for ping in pings:
-                target_id = ping[1]
+                this_targetid = ping[1]
                 ping_id = ping[0]
-                company, ip, product = get_target_info(context, target_id, ping)
+                company, ip, product = get_target_info(context, this_targetid,
+                                                       ping)
 
                 timestamp = datetime.datetime.strftime(ping[2],
                                                        '%d/%m/%y:%H:%M:%S')
                 status = ping[3]
                 if options['result'] == 'changes' and previous_status == status:
                     continue
-                tbl_row = [ping_id, target_id, ip, company, timestamp, status]
+                tbl_row = [ping_id, targetid, ip, company, timestamp, status]
                 output_tbl_rows.append(tbl_row)
                 previous_status = status
 
@@ -683,13 +684,13 @@ def cmd_history_list(context, options):
                 options['startdate'],
                 end_date=options['enddate'],
                 number_of_days=options['numberofdays'],
-                target_id=target_id)
+                target_id=targetid)
             # create report of id,  company, product and %ok / total counts
-            for target_id, value in six.iteritems(percentok_dict):
-                company, ip, product = get_target_info(context, target_id,
+            for this_targetid, value in six.iteritems(percentok_dict):
+                company, ip, product = get_target_info(context, this_targetid,
                                                        value)
 
-                row = [target_id, ip, company, product, value[0], value[2]]
+                row = [this_targetid, ip, company, product, value[0], value[2]]
                 output_tbl_rows.append(row)
 
         # show count of records for date range
@@ -700,19 +701,20 @@ def cmd_history_list(context, options):
                 options['startdate'],
                 end_date=options['enddate'],
                 number_of_days=options['numberofdays'],
-                targetids=target_id)
+                targetids=targetid)
             count_tbl = {}
             for ping in pings:
-                target_id = ping[1]
-                company, ip, product = get_target_info(context, target_id, ping)
-                if target_id in count_tbl:
-                    x = count_tbl[target_id]
-                    count_tbl[target_id] = (x[0] + 1, x[1], x[2])
+                this_targetid = ping[1]
+                company, ip, product = get_target_info(context,
+                                                       this_targetid, ping)
+                if this_targetid in count_tbl:
+                    x = count_tbl[this_targetid]
+                    count_tbl[targetid] = (x[0] + 1, x[1], x[2])
                 else:
-                    count_tbl[target_id] = (1, company, ip)
+                    count_tbl[targetid] = (1, company, ip)
 
-            for target_id, value in six.iteritems(count_tbl):
-                row = [target_id, value[0], value[1], value[2]]
+            for this_targetid, value in six.iteritems(count_tbl):
+                row = [this_targetid, value[0], value[1], value[2]]
                 output_tbl_rows.append(row)
 
         else:
