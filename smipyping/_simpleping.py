@@ -74,7 +74,8 @@ class SimplePingList(object):
 
     """
     def __init__(self, targets_tbl, target_ids=None, verbose=None, logfile=None,
-                 log_level=None, threaded=True, include_disabled=False):
+                 timeout=None, log_level=None, threaded=True,
+                 include_disabled=False):
         """
         Saves the input parameters and sets up local variables for the
         execution of the scan.
@@ -104,6 +105,10 @@ class SimplePingList(object):
             log_level(:term:`string`)
                 TODO clean this up
 
+            timeout(:term: `integer` or None)
+                If this is an integer it is the timeout in seconds that will
+                be passed on to  the test connection
+
             include_disabled(:class:`py:bool`):
                 If true, include disabled targets.
 
@@ -111,6 +116,7 @@ class SimplePingList(object):
             KeyError if a target_id is not in the database.
         """
         self.targets_tbl = targets_tbl
+        self.include_disabled = include_disabled
 
         if include_disabled:
             self.target_ids = target_ids if target_ids else \
@@ -124,25 +130,23 @@ class SimplePingList(object):
         self.log_level = log_level
         self.kill_threads = False
         self.threaded = threaded
+        self.timeout = timeout
 
-    def process_queue(self, queue, results):
-        """This is a thread function that processes a queue to do check_port.
-        Each queue entry is a tuple of ip_address(with port) and results
-        list where the results are appended for each succseful scan.
+    def __repr__(self):
         """
-        while not queue.empty():
-            if self.kill_threads:
-                return
-            work = queue.get()
-            results = work[1]   # get results list from work
-            # check_result, error = self.check_port(work[0])
-            simpleping = SimplePing(target_id=work[0],
-                                    targets_tbl=self.targets_tbl)
-            test_result = simpleping.test_server()
-            # append target_id and results to results list.
-            results.append((work[0], test_result))
-            queue.task_done()
-        return
+        Return string with class status
+        """
+        return "SimplePingList(" \
+               "target_ids={}, " \
+               "include_disabled={}, " \
+               "verbose = {}, "  \
+               "threaded={}, " \
+               "timeout={}" \
+               "log_level={})".format(self.target_ids,
+                                      self.include_disabled,
+                                      self.verbose, self.threaded,
+                                      self.timeout,
+                                      self.log_level)
 
     def ping_servers(self):
         """
@@ -157,10 +161,32 @@ class SimplePingList(object):
             KeyboardInterrupt:
 
         """
+        print("SELF %s" % self)
+
         if self.threaded:
             return self.ping_servers_threaded()
 
         return self.ping_servers_not_threaded()
+
+    def process_queue(self, queue, results):
+        """This is a thread function that processes a queue to do check_port.
+        Each queue entry is a tuple of ip_address(with port) and results
+        list where the results are appended for each succseful scan.
+        """
+        while not queue.empty():
+            if self.kill_threads:
+                return
+            work = queue.get()
+            results = work[1]   # get results list from work
+            # check_result, error = self.check_port(work[0])
+            simpleping = SimplePing(target_id=work[0],
+                                    targets_tbl=self.targets_tbl,
+                                    timeout=self.timeout)
+            test_result = simpleping.test_server()
+            # append target_id and results to results list.
+            results.append((work[0], test_result))
+            queue.task_done()
+        return
 
     def ping_servers_threaded(self):
         """
@@ -204,7 +230,7 @@ class SimplePingList(object):
         # returns list of ip addresses that were were found
         return results
 
-    def ping_servers_not_thread(self):
+    def ping_servers_not_threaded(self):
         """
         Threaded cimping of servers.
 
@@ -223,7 +249,8 @@ class SimplePingList(object):
         results = []
         for targetid in self.target_ids:
             simpleping = SimplePing(target_id=targetid,
-                                    targets_tbl=self.targets_tbl)
+                                    targets_tbl=self.targets_tbl,
+                                    timeout=self.timeout)
             test_result = simpleping.test_server()
             # append target_id and results to results list.
             results.append((targetid, test_result))
@@ -457,6 +484,7 @@ class SimplePing(object):
           Returns:
              tuple of
         """
+        print("test server %s s" % self )
         start_time = datetime.datetime.now()
         # execute the ping test if required
         ping_result = True
@@ -467,6 +495,7 @@ class SimplePing(object):
             if ping_result is False:
                 result_code = self.get_result_code(result)
                 exception = None
+        print("Ping done")
         if ping_result:
             # connect to the server and execute the cim operation test
             conn = self.connect_server(verify_cert=verify_cert)
@@ -526,6 +555,7 @@ class SimplePing(object):
         conn = WBEMConnection(self.url, creds, default_namespace=self.namespace,
                               no_verification=not verify_cert,
                               timeout=self.timeout)
+        print('CONNECT_SERVER %r' % conn)
         conn.debug = self.debug
         if self.verbose:
             print(self.get_connection_info(conn))
