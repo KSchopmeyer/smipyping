@@ -259,18 +259,17 @@ def print_ping_result(simpleping, test_result, verbose):
     Display the ping results for a single ping
     """
     if test_result.code != 0:
-        print('%s Error Response, Exit code %s %s %s' % (simpleping.url,
-                                                         test_result.code,
-                                                         test_result.type,
-                                                         test_result.exception))
+        click.echo('%s Error Response, Exit code %s %s %s' %
+                   (simpleping.url, test_result.code, test_result.type,
+                    test_result.exception))
     else:
         if verbose:
-            print('%s Return code = %s:%s in %s sec' %
-                  (simpleping.url,
-                   test_result.type,
-                   test_result.code,
-                   test_result.execution_time))
-        print('Running')     # print the word 'Running' to match javaping
+            click.echo('%s Return code = %s:%s in %s sec' %
+                       (simpleping.url,
+                        test_result.type,
+                        test_result.code,
+                        test_result.execution_time))
+        click.echo('Running')     # print the word 'Running' to match javaping
 
 
 def cmd_cimping_host(context, host, options):
@@ -366,8 +365,8 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
                               target_id, last_status[target_id], test_status)
 
             if context.verbose:
-                print('Changed %r LAST_STATUS %r' % (last_status[target_id],
-                                                     test_status))
+                click.echo('Changed %r LAST_STATUS %r' %
+                           (last_status[target_id], test_status))
 
         itemresult = '%s%s' % (test_result.type, changed)
 
