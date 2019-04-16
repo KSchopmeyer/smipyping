@@ -95,6 +95,8 @@ save history.
 Database schema
 ---------------
 
+The database schema defines the various tables in the database.
+
 MySQL Database
 ^^^^^^^^^^^^^^
 

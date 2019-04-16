@@ -300,8 +300,6 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
     # cimping the complete set of targets
     include_disabled = options['disabled']
 
-    print('Start ping options %s' % options)
-
     simple_ping_list = SimplePingList(context.targets_tbl,
                                       timeout=options['timeout'],
                                       logfile=context.log_file,
@@ -311,8 +309,6 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
                                       include_disabled=include_disabled)
     results = simple_ping_list.ping_servers()
 
-    print('ping test ended')
-
     # get last pings information from history
     pings_tbl = PingsTable.factory(context.db_info, context.db_type,
                                    context.verbose)
@@ -320,8 +316,6 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
     ping_rows = pings_tbl.get_last_timestamped()
     last_status = {ping[1]: ping[3] for ping in ping_rows}
     last_status_time = ping_rows[0][2]
-
-    print("got results from history")
 
     # if saveresult set, update pings table with results.
     save_result = options['saveresult']

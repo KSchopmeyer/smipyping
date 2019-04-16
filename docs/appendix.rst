@@ -7,6 +7,43 @@ Appendix
 This section contains information that is referenced from other sections,
 and that does not really need to be read in sequence.
 
+.. _'WBEM server error codes`:
+
+WBEM server error codes
+-----------------------
+
+when tests like `smicli cimping` are executed, smicli collects any errors
+returned from the servers. If the tests requests that the data update the
+database, (-s option) these error  codes are set into the entries of the
+history database.
+
+The possible errors are:
+
+1. OK - Server response good, no error.
+
+2. WBEMError(1) - WBEM Server returned a DMTF define CIMError code.
+
+3. PyWBEMError(2) - pywbem generated an exception for the request. Since
+   pywbem generates a number of different error exceptions (XML errors, etc)
+   the specific error text is included with this error
+
+4. GeneralError(3) - pywbem generated a general error (obsolete)
+
+5. TimeoutError(4) - pywbem generated a timeout error waiting for the
+   request response.  The timeout is defined as part of the connection
+   setup and most in smicli defaults to 10 seconds
+
+6. ConnectionError(5) - pywbem generated a connection exception, typically
+   this is a failure to connect to the server or an ssl error.
+
+7. PingFail(6) - If smicli was requested to do a ping (os level ping program)
+   and that failed, this error is generated. It means that the ping of the
+   ip address failed and usually means that the defined server does not exist.
+
+8. Disabled(7) - If the command options specified that disable target servers
+   be included, those servers are marked with this error code.
+
+
 
 .. _'Special type names`:
 
@@ -65,48 +102,7 @@ This documentation uses a few special terms to refer to Python types:
 Troubleshooting
 ---------------
 
-Here are some trouble shooting hints for the installation of pywbem.
-
-AttributeError for NullHandler during mkvirtualenv on Python 2.6
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-If the `mkvirtualenv` command fails on Python 2.6 with this error::
-
-    File "/usr/lib/python2.6/site-packages/stevedore/__init__.py", line 23,
-      in <module> LOG.addHandler(logging.NullHandler())
-    AttributeError: 'module' object has no attribute 'NullHandler'
-
-then the `stevedore` PyPI package is too recent(!) The owners of that
-package spent effort to remove the previously existing Python 2.6 support in
-some steps, starting with stevedore v1.10.
-
-The solution is to use stevedore v1.9. Note that for virtualenvwrapper to use
-it, it must be installed into the system Python:
-
-    $ sudo pip install stevedore==1.9
-
-TypeError about StreamHandler argument 'stream' during mkvirtualenv on Python 2.6
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-If the `mkvirtualenv` command fails on Python 2.6 with this error::
-
-    File "/usr/lib/python2.6/site-packages/virtualenvwrapper/hook_loader.py",
-      line 101, in main
-    console = logging.StreamHandler(stream=sys.stderr)
-    TypeError: __init__() got an unexpected keyword argument 'stream'
-
-then the `virtualenvwrapper` PyPI package is too old. As of its released
-version v4.7.1, a fix for that is in the master branch of its repository and
-has not been released yet.
-
-While a new version of `virtualenvwrapper` with the fix is not yet released,
-a solution is to clone the `virtualenvwrapper` repository and to install it
-from its working directory. Note that it must be installed into the system
-Python::
-
-    $ git clone https://bitbucket.org/dhellmann/virtualenvwrapper.git virtualenvwrapper
-    $ cd virtualenvwrapper
-    $ sudo python setup.py install
+Here are some trouble shooting hints for the installation of smipyping and pywbem.
 
 Swig error 'Unrecognized option -builtin' during M2Crypto install
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -162,7 +158,7 @@ Glossary
       cycle cannot be managed by a client.
       See :term:`DSP1054` for an authoritative definition and for details.
 
-   
+
 .. _`References`:
 
 References
