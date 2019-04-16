@@ -215,7 +215,6 @@ def cimping_id(context, id, **options):
 
 
 @cimping_group.command('all', options_metavar=CMD_OPTS_TXT)
-
 @click.option('-s', '--saveresult', default=False, is_flag=True,
               required=False,
               help='Save the result of each cimping test of a wbem server'
@@ -355,14 +354,10 @@ def cmd_cimping_all(context, options):  # pylint: disable=redefined-builtin
 
         url = context.targets_tbl.build_url(target_id)
 
-        #print('test_result %r\n%r' % (test_result, test_result))
-        #print('EXCEPTION %s %r' % (test_result.exception,
-        #                           test_result.exception))
         if test_result.exception:
             test_status = "%s %s" % (test_result.type, test_result.exception)
         else:
             test_status = test_result.type
-        #print('TEST_STATUS %s' % test_status)
         changed = "" if test_status == last_status[target_id] else "*"
 
         if changed:
