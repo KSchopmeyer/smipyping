@@ -455,7 +455,7 @@ class SimplePing(object):
 
         elif re.match(r"^[a-zA-Z0-9]+://", server) is not None:
             raise ValueError('SimplePing: Invalid scheme on server argument %s.'
-                             ' Use "http" or "https"', server)
+                             ' Use "http" or "https"' % server)
         else:
             url = '%s://%s' % ('https', server)
         self.url = url
@@ -484,7 +484,6 @@ class SimplePing(object):
           Returns:
              tuple of
         """
-        print("test server %s s" % self )
         start_time = datetime.datetime.now()
         # execute the ping test if required
         ping_result = True
@@ -495,7 +494,6 @@ class SimplePing(object):
             if ping_result is False:
                 result_code = self.get_result_code(result)
                 exception = None
-        print("Ping done")
         if ping_result:
             # connect to the server and execute the cim operation test
             conn = self.connect_server(verify_cert=verify_cert)
@@ -555,7 +553,6 @@ class SimplePing(object):
         conn = WBEMConnection(self.url, creds, default_namespace=self.namespace,
                               no_verification=not verify_cert,
                               timeout=self.timeout)
-        print('CONNECT_SERVER %r' % conn)
         conn.debug = self.debug
         if self.verbose:
             print(self.get_connection_info(conn))

@@ -428,7 +428,7 @@ def cmd_cimping_ids(context, ids, options):  # pylint: disable=redefined-builtin
                                 targets_tbl=context.targets_tbl,
                                 ping=not options['no_ping'],
                                 logfile=context.log_file,
-                                threaded= not options['no_thread'],
+                                threaded=not options['no_thread'],
                                 log_level=context.log_level)
 
         # TODO: Move the requirement for all target data up and
