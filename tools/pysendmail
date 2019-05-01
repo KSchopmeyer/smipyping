@@ -22,15 +22,21 @@ import os
 import sys
 import email.message
 import smtplib
+import re
 import argparse as _argparse
 import ConfigParser
 
 from smipyping import __version__
 
 DEFAULTFROMADDR = None
+
+# Set from config file on startup
 USR = None
 PW = None
+# Default is string here.  This is set from config file each time
+# pysendmail is started
 SMTP_SERVER = 'smtp.gmail.com:587'
+SMTP_PORT = None
 
 
 def send_msg(message, to_addrs, from_addr, verbosity):
@@ -39,7 +45,7 @@ def send_msg(message, to_addrs, from_addr, verbosity):
     tls.
     """
     try:
-        server = smtplib.SMTP(SMTP_SERVER)
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=30)
         if verbosity:
             server.set_debuglevel(1)
         server.ehlo()
@@ -73,10 +79,12 @@ if __name__ == '__main__':
     usage = '%(prog)s [options] server'
     desc = """
 
-Send mail message based on the input parameters.  This mail sender bypasses
-any system level email and uses specifically gmail and a gmail account defined
-in the software.  It requires a configfile that defines the email user
-information, SMTP server and a default from user.
+CLI program to send mail message based on the input parameters. The email to
+be sent is defined by the input parameters for the command. The configuration
+of the SMTP server to be used and some default parameters for the command
+line input are defined by a required configuration file. The configuration
+file default is email.ini. The location in the directory for this file is
+determined by the method of installing smipyping.
 """
     epilog = """
 Examples:
@@ -148,20 +156,28 @@ Examples:
     PW = config.get('email', 'password')
     DEFAULTFROMADDR = config.get('email', 'DefaultFromAddress')
     SMTP_SERVER = config.get('email', 'SmtpServer')
+    print("SMTP_SERVER %s" % SMTP_SERVER)
+    if re.match('.*:[0-9]{3}$', SMTP_SERVER):
+        print('MATCH %s' % SMTP_SERVER)
+        SMTP_PORT = SMTP_SERVER[-3:]
+        SMTP_SERVER = SMTP_SERVER[-4:]
+    else:
+        SMTP_PORT = config.get('email', 'port')
+    print('SMI SV %s prot %s' % (SMTP_SERVER, SMTP_PORT))
 
     if args.message and args.message_file:
         argparser.error('Message and message-file options together not allowed')
 
     if not args.toaddrs:
-        argparse.error('To address parameter required')
+        argparser.error('To address parameter required')
 
     if not args.fromaddr:
         if DEFAULTFROMADDR:
             fromaddr = DEFAULTFROMADDR
         else:
-            argparse.error("To address parameter or DefaultFromAddress in "
-                           "configuration file required. No From adddress for"
-                           "this message")
+            argparser.error("To address parameter or DefaultFromAddress in "
+                            "configuration file required. No From adddress for"
+                            "this message")
     else:
         fromaddr = args.fromaddr
 
@@ -185,7 +201,7 @@ Examples:
 
     mail_msg['To'] = ', '.join(args.toaddrs)
 
-    #if args.CC:
+    # if args.CC:
     #    mail_msg['CC'] = args.CC
     if args.subject:
         mail_msg['Subject'] = args.subject
