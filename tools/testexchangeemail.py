@@ -8,13 +8,25 @@ TEXT = 'Here is a message from python.'
 
 # exchange Sign In
 exchange_sender = 'smipyping@snia.org'
+exchange_user = 'EXCHPROD\\01074002'
 exchange_passwd = 'Pa$$w0rd'
+SMTP_SERVER = 'exchange.postoffice.net'
+USE_TLS = True
 
-server = smtplib.SMTP('smtp.exchange.postoffice.net', 587)
+if USE_TLS:
+    SMTP_PORT = 587
+else:
+    SMTP_PORT = 25
+
+
+server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=30)
 server.set_debuglevel(1)
 server.ehlo()
-server.starttls()
-server.login(exchange_sender, exchange_passwd)
+if USE_TLS:
+    server.starttls()
+    server.ehlo()
+
+server.login(exchange_user, exchange_passwd)
 
 BODY = '\r\n'.join(['To: %s' % TO,
                     'From: %s' % exchange_sender,

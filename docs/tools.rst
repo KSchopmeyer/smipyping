@@ -57,7 +57,7 @@ for the required fields.  The following is an example of this file::
     # Configuration file for pysendmail tool of smipyping.  This keeps all of
     # issues concerning email security out of the software release.  This file
     # should NOT be part of the collection in github to avoid making the
-    # password public.
+    # email password public.
     [email]
     #
     #  A default email user name that is used if the from address is not

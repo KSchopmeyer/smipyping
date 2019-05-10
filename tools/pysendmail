@@ -36,6 +36,7 @@ PW = None
 # Default is string here.  This is set from config file each time
 # pysendmail is started
 SMTP_SERVER = 'smtp.gmail.com:587'
+# SMTP_PORT set dynamically from cmd line
 SMTP_PORT = None
 
 
@@ -111,7 +112,7 @@ Examples:
              'config file')
 
     email_arggroup.add_argument(
-        '-c', '--CC', metavar='CC', dest='fromaddr',
+        '-c', '--CC', metavar='CC', dest='cc',
         help='None or more email addresses separated by spaces. Optional')
 
     email_arggroup.add_argument(
@@ -163,8 +164,7 @@ Examples:
         SMTP_SERVER = SMTP_SERVER[-4:]
     else:
         SMTP_PORT = config.get('email', 'port')
-    print('SMI SV %s prot %s' % (SMTP_SERVER, SMTP_PORT))
-
+ 
     if args.message and args.message_file:
         argparser.error('Message and message-file options together not allowed')
 
@@ -201,8 +201,8 @@ Examples:
 
     mail_msg['To'] = ', '.join(args.toaddrs)
 
-    # if args.CC:
-    #    mail_msg['CC'] = args.CC
+    if args.cc:
+        mail_msg['CC'] = args.cc
     if args.subject:
         mail_msg['Subject'] = args.subject
     if payload:
