@@ -13,19 +13,40 @@ Usage: `basename $0` <parameters> ;
 
 Execute smicli script with parameters:
     -h --help      Output the help information on this script and exit
-    -r --remote     Execute tests that depend on being in smi environment
+    -r --remote    Execute tests that depend on being in smi environment
     -l --locallive Execute tests that depend on local server running
+    -t --testmods  Execute tests that modify db
 EOF
 }
 
 REMOTE=0
 LOCAL_LIVE=0
 CMD=smicli
+MOD_DB=False
 
 VALID_TARGET_ID=115
+NOT_VALID_TARGETID=900
 CONFIGFILE='smicli.ini'
 
+# TODO test that remote exists
+ping 10.2.119.20 -c 3
+PING_ERR=$?
+if ((PING_ERR > 0)); then
+    echo ERROR: %1 Error $PING_ERR
+    exit
+fi
+
+# find all servers that return OK and create single line list of target ids
+OKS="$(smicli cimping all | grep OK | cut -c-5 | tr '\n' ' ' | paste -sd' ')"
+#echo "${OKS}"
+IFS=', ' read -r -a OKS_ARRAY <<< "$OKS"
+echo "${OKS_ARRAY[0]}"
+VALID_TARGET_ID = "${OKS_ARRAY[0]}"
+
+
 # Execute script and report if any errors occur
+# Parameter 1 is the command with all options.
+# Parameter 2 data for comparison of return TODO
 function do_cmd {
     echo
     echo CMD: $CMD $1
@@ -42,6 +63,21 @@ function do_cmd {
         exit
     fi
 }
+
+function do_expect {
+    echo
+    expect <<EOF
+    $CMD $1
+    expect $2
+    send $3
+EOF
+    error=$?
+    if ((error > 0)); then
+        echo ERROR: %1 Error $error
+        exit
+    fi
+}
+
 
 # Execute script expecting non-zero exit code response
 function do_cmd_er {
@@ -72,6 +108,10 @@ case $i in
         LOCALLIVE=1
     ;;
 
+    -t|--testmods)
+        TEST_MODS=1
+    ;;
+
     -l=*|--lib=*)
     LIBPATH="${i#*=}"
     shift # past argument=value
@@ -89,18 +129,24 @@ esac
 done
 echo "REMOTE  = ${REMOTE}"
 
+# Place to test single call
+#exit
+
 # top level
 do_cmd '--help'
 
 # targets
+do_cmd 'targets -h'
 do_cmd 'targets fields'
 do_cmd 'targets info'
-do_cmd 'targets get 89'
+do_cmd "targets get ${VALID_TARGET_ID}"
 do_cmd 'targets list'
 do_cmd 'targets list  -f CompanyName -f Credential -f Principal'
 do_cmd_er 'targets list  -f CompanyNamex'
+do_cmd_er 'targets delete 900'
+# delete, disable, modify, new
 
-# programs
+# companies
 
 do_cmd 'companies -h'
 do_cmd 'companies list -h'
@@ -121,6 +167,7 @@ do_cmd 'users list --disabled'
 do_cmd 'users list -f FirstName -f Lastname'
 do_cmd 'users list -f FirstName -f Lastname -f CompanyName -o CompanyName'
 do_cmd_er 'users list -f blah'
+do_cmd_er 'users delete 900'
 
 # history
 

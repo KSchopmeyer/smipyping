@@ -24,7 +24,8 @@ from smipyping._explore import Explorer
 from smipyping._common import StrList, fold_cell
 from smipyping._logging import AUDIT_LOGGER_NAME, get_logger
 from .smicli import cli, CMD_OPTS_TXT
-from ._click_common import print_table, get_multiple_target_ids
+from ._click_common import print_table, get_multiple_target_ids, \
+    validate_target_ids
 
 
 @cli.group('explorer', options_metavar=CMD_OPTS_TXT)
@@ -47,7 +48,7 @@ def explorer_group():
 
       * SMIVersion
     """
-    pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 @explorer_group.command('all', options_metavar=CMD_OPTS_TXT)
@@ -61,10 +62,10 @@ def explorer_group():
 @click.option('-i', '--include-disabled', is_flag=True, default=False,
               help='Include hosts marked disabled in the targets table.')
 @click.option('-d', '--detail', type=click.Choice(['full', 'brief', 'all']),
-              default='brief',
+              default='full',
               help='Generate full or brief (fewer columns) report. Full '
                    'report includes namespaces, SMI_profiles, etc. '
-                   '(Default: full')
+                   '(Default: full).')
 @click.pass_obj
 def explore_all(context, **options):
     """
@@ -108,21 +109,20 @@ def explore_all(context, **options):
 
 
 @explorer_group.command('ids', options_metavar=CMD_OPTS_TXT)
-@click.argument('IDs', type=str, metavar='TargetIDs', required=False, nargs=-1)
+@click.argument('target-ids', type=str, metavar='TargetIDs', required=True,
+                nargs=-1)
 @click.option('--ping/--no-ping', default=True,
               help='Ping the the provider as initial step in test. '
                    'Default: ping')
 @click.option('--thread/--no-thread', default=True,
               help='Run test multithreaded.  Much faster. '
                    'Default: thread')
-@click.option('-i', '--interactive', is_flag=True, default=False,
-              help='If set, presents list of targets to chose. Entering "?"'
-                   'for id is equivalent')
 @click.option('-d', '--detail', type=click.Choice(['full', 'brief', 'all']),
               default='full',
-              help='Generate full or brief (fewer columns) report')
+              help='Generate all or brief (fewer columns) report'
+                   '(Default: full).')
 @click.pass_obj
-def explore_ids(context, ids, **options):
+def explore_ids(context, target_ids, **options):
     """
     Explore a list of target IDs.
 
@@ -130,9 +130,16 @@ def explore_ids(context, ids, **options):
     ids may be supplied (ex. id 5 6 7)
 
     ex: smicli explorer ids 6 7 8
+        smicli explorer ids ?
 
     """
-    context.execute_cmd(lambda: cmd_explore_ids(context, ids, **options))
+    context.execute_cmd(lambda: cmd_explore_ids(context, target_ids, **options))
+
+######################################################################
+#
+# Common functions for this group
+#
+######################################################################
 
 
 ######################################################################
@@ -170,21 +177,15 @@ def cmd_explore_all(context, **options):
                        report=options['detail'])
 
 
-def cmd_explore_ids(context, ids, **options):
+def cmd_explore_ids(context, target_ids, **options):
     """
     Explore the wbem server defined by the Id provided
     """
-    ids = get_multiple_target_ids(context, ids, options)
-    if ids is None:
+    target_ids = get_multiple_target_ids(context, target_ids, options)
+    if target_ids is None:
         return
 
-    for id_ in ids:
-        try:
-            targ_rec = context.targets_tbl.get_target(id_)  # noqa: F841
-        except Exception as ex:
-            raise click.ClickException('Invalid TargetID=%s. Not in database. '
-                                       '%s: %s' % (id,
-                                                   ex.__class__.__name__, ex))
+    validate_target_ids(context, target_ids)
 
     explorer = Explorer('smicli', context.targets_tbl,
                         verbose=context.verbose,
@@ -194,7 +195,7 @@ def cmd_explore_ids(context, ids, **options):
                         log_level=context.log_level,
                         output_format=context.output_format)
 
-    servers = explorer.explore_servers(ids)
+    servers = explorer.explore_servers(target_ids)
 
     validate_servers(servers, context.targets_tbl)
 

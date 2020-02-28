@@ -53,8 +53,6 @@ def provider_group():
 
 @provider_group.command('ping', options_metavar=CMD_OPTS_TXT)
 @click.argument('TargetID', type=str, metavar='TargetID', required=False)
-@click.option('-i', '--interactive', is_flag=True, default=False,
-              help='If set, presents list of targets to chose.')
 @click.option('--timeout', type=int, required=False, default=PING_TIMEOUT,
               help='Timeout for the ping in seconds.'
                    ' ' + '(Default %s).' % PING_TIMEOUT)
@@ -64,7 +62,8 @@ def provider_ping(context, targetid, **options):
     Ping the provider defined by targetid.
 
     The TargetID defines a single provider (See targets table). It may
-    be picked from a list by entering ? or the --interactive option.
+    be entered as an argument or picked from a list by entering "?" as the
+    TargetID argument.
 
     The company options allows searching by company name in the provider
     base.
@@ -74,15 +73,13 @@ def provider_ping(context, targetid, **options):
 
 @provider_group.command('info', options_metavar=CMD_OPTS_TXT)
 @click.argument('TargetID', type=str, metavar='TargetID', required=False)
-@click.option('-i', '--interactive', is_flag=True, default=False,
-              help='If set, presents list of targets to chose.')
 @click.pass_obj
 def provider_info(context, targetid, **options):
     """
     Display general info for the provider.
 
     The TargetID defines a single provider (See targets table). It may
-    be picked from a list by entering ? or the --interactive option.
+    be picked from a list or by entering "?".
 
     The company options allows searching by company name in the provider
     base.
@@ -92,15 +89,13 @@ def provider_info(context, targetid, **options):
 
 @provider_group.command('interop', options_metavar=CMD_OPTS_TXT)
 @click.argument('TargetID', type=str, metavar='TargetID', required=False)
-@click.option('-i', '--interactive', is_flag=True, default=False,
-              help='If set, presents list of targets to chose.')
 @click.pass_obj
 def provider_interop(context, targetid, **options):
     """
     Display interop namespace for the provider.
 
     The TargetID defines a single provider (See targets table). It may
-    be picked from a list by entering ? or the --interactive option.
+    be picked from a list by entering "?".
 
     The company options allows searching by company name in the provider
     base.
@@ -111,16 +106,14 @@ def provider_interop(context, targetid, **options):
 
 @provider_group.command('namespaces', options_metavar=CMD_OPTS_TXT)
 @click.argument('TargetID', type=str, metavar='TargetID', required=False)
-@click.option('-i', '--interactive', is_flag=True, default=False,
-              help='If set, presents list of targets to chose.')
 @click.pass_obj
 def provider_namespaces(context, targetid, **options):
     """
     Display public namespaces for the provider.
 
-    The targetID for the provider can be entered directly or by using the
-    interactive feature (entering "?" for the targetid or the --interactive
-    option) to pick the provider from a list.
+    The TargetID for the provider can be entered directly or by using the
+    interactive feature (entering "?" for the targetid  to pick the TargetID
+    from a list.
 
     ex. smicli provider namespaces ?
     """
@@ -130,8 +123,6 @@ def provider_namespaces(context, targetid, **options):
 
 @provider_group.command('profiles', options_metavar=CMD_OPTS_TXT)
 @click.argument('TargetID', type=str, metavar='TargetID', required=False)
-@click.option('-i', '--interactive', is_flag=True, default=False,
-              help='If set, presents list of targets to chose.')
 @click.option('-o', '--organization', type=str, required=False,
               help='Optionally specify organization for the profiles')
 @click.option('-n', '--name', type=str, required=False,
@@ -144,7 +135,7 @@ def provider_profiles(context, targetid, **options):
     Display registered profiles for provider.
 
     The TargetID defines a single provider (See targets table). It may
-    be picked from a list by entering ? or the --interactive option.
+    be picked from a list by entering "?".
 
     The other options allow the selection of a subset of the profiles
     from the server by organization name, profile name, or profile version.
@@ -157,8 +148,6 @@ def provider_profiles(context, targetid, **options):
 
 @provider_group.command('classes', options_metavar=CMD_OPTS_TXT)
 @click.argument('TargetID', type=str, metavar='TargetID', required=False)
-@click.option('-i', '--interactive', is_flag=True, default=False,
-              help='If set, presents list of targets to chose from.')
 @click.option('-c', '--classname', type=str, metavar='CLASSNAME regex',
               required=False,
               help='Regex that filters the classnames to return only those '
@@ -179,6 +168,9 @@ def provider_classes(context, targetid, **options):
     The CLASSNAME argument may be either a complete classname or a regular
     expression that can be matched to one or more classnames. To limit the
     filter to a single classname, terminate the classname with $.
+
+    The TargetID defines a single provider (See targets table). It may
+    be picked from a list by entering "?".
 
     The regular expression is anchored to the beginning of CLASSNAME and
     is case insensitive. Thus pywbem_ returns all classes that begin with

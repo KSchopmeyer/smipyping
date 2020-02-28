@@ -148,15 +148,15 @@ class TargetsTable(DBTableBase):
         self.output_format = output_format
 
     # def __str__(self):
-        # # TODO this and __repr__ do not really match.
-        # """String info on targetdata. TODO. Put more info here"""
-        # return ('type=%s db=%s, len=%s' % (self.db_type, self.get_dbdict(),
-                                           # len(self.data_dict)))
+    #    # # TODO this and __repr__ do not really match.
+    #    # """String info on targetdata. TODO. Put more info here"""
+    #    # return ('type=%s db=%s, len=%s' % (self.db_type, self.get_dbdict(),
+    #    #                                     # len(self.data_dict)))
 
     # def __repr__(self):
-        # """Rep of target data"""
-        # return ('Targetdata db_type %s, rep count=%s' %
-                # (self.db_type, len(self.data_dict)))
+    #    # """Rep of target data"""
+    #    # return ('Targetdata db_type %s, rep count=%s' %
+    #    #        # (self.db_type, len(self.data_dict)))
 
     def test_fieldnames(self, fields):
         """Test a list of field names. This test generates an exception,
@@ -229,7 +229,7 @@ class TargetsTable(DBTableBase):
         """
         # TODO clean up for PY 3
         return_list = []
-        for key, value in self.data_dict.iteritems():
+        for key, value in self.data_dict.items():
             port = value["Port"]
             # TODO port from database is a string. Should be int internal.
             if value["IPAddress"] == host_data[0] and int(port) == host_data[1]:
@@ -356,11 +356,11 @@ class TargetsTable(DBTableBase):
         val = target_record['ScanEnabled'].lower()
         if val == 'enabled':
             return False
-        elif val == 'disabled':
+        if val == 'disabled':
             return True
-        else:
-            ValueError('ScanEnabled field must contain "Enabled" or "Disabled'
-                       ' string. %s is invalid.' % val)
+
+        ValueError('ScanEnabled field must contain "Enabled" or "Disabled'
+                   ' string. %s is invalid.' % val)
 
     def disabled_target_id(self, targetid):
         """
@@ -400,7 +400,7 @@ class TargetsTable(DBTableBase):
         Credential
         """
         creds = {k: '%s%s' % (v['Principal'], v['Credential'])
-                 for k, v in self.data_dict.iteritems()}
+                 for k, v in self.data_dict.items()}
         ucreds = dict([[v, k] for k, v in creds.items()])
         unique_keys = dict([[v, k] for k, v in ucreds.items()])
 
@@ -408,10 +408,6 @@ class TargetsTable(DBTableBase):
                          self.data_dict[k]['Credential']) for k in unique_keys]
 
         return unique_creds
-
-    # def db_info(self):
-        # """get info on the database used"""
-        # pass
 
 
 class SQLTargetsTable(TargetsTable):
@@ -697,5 +693,5 @@ class CsvTargetsTable(TargetsTable):
         with open(file_name, 'wb') as f:
             writer = csv.DictWriter(f, fieldnames=self.get_field_list())
             writer.writeheader()
-            for key, value in sorted(self.data_dict.iteritems()):
+            for key, value in sorted(self.data_dict.items()):
                 writer.writerow(value)
