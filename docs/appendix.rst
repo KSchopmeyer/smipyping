@@ -7,7 +7,7 @@ Appendix
 This section contains information that is referenced from other sections,
 and that does not really need to be read in sequence.
 
-.. _'WBEM server error codes`:
+.. _`WBEM server error codes`:
 
 WBEM server error codes
 -----------------------
@@ -45,7 +45,7 @@ The possible errors are:
 
 
 
-.. _'Special type names`:
+.. _`Special type names`:
 
 Special type names
 ------------------
@@ -81,8 +81,6 @@ This documentation uses a few special terms to refer to Python types:
 
    DeprecationWarning
       a standard Python warning that indicates a deprecated functionality.
-      See section :ref:`Deprecation policy` and the standard Python module
-      :mod:`py:warnings` for details.
 
    Element
       class ``xml.dom.minidom.Element``. Its methods are described in section
@@ -139,7 +137,7 @@ installs the necessary Python SDK package for C/C++ (or displays its package
 name). On RHEL, the missing package is `python-dev`.
 
 
-.. _'Glossary`:
+.. _`Glossary`:
 
 Glossary
 --------

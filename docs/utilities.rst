@@ -4,24 +4,21 @@
 smipyping utility commands
 ==========================
 
-.. _`smicli script`:
+.. _`smicli`:
 
-smicli script
--------------
+smicli
+------
 
-The ``smicli`` command is the common interface that will be used for a
-single command line utility  All of the
-other individual scripts are being obsoleted as their functionality is
-integrated into `smicli'.
+``smicli`` is the common command line tool for smipyping It  is a
+single command line utility with command groups and commands.
 
-``smicli`` replace all of the separate utilities and uses a single integrated
-configuration file  It includes a number of subcommand
-groups each of which includes one or more subcommands (ie. in the manner of many
-newer cmd line tools).
+``smicli`` uses a single integrated configuration file  It includes a number of
+command groups each of which includes one or more commands (ie. in the
+manner of many newer cmd line tools).
 
 ``smicli`` is more completely defined in subsequent sections of this documentation.
 
-Thus, the subcommand groups include:
+The subcommand groups include:
 
 * cimping   Command group to do simpleping.
 * explorer  Command group for general provider explore.
@@ -36,9 +33,4 @@ NOTE: There may be more subcommand groups an any specific release.
 Details on the use of ``smicli`` are in the following sections
 
 In addition, smipyping includes utilities to aid in defining and working
-with the databases as follows:
-
-TODO
-
-
-
+with the databases documented in section :ref:`Database tools`:

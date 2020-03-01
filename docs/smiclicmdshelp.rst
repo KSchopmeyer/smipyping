@@ -110,7 +110,7 @@ The following defines the help output for the `smicli cimping --help` subcommand
       all   CIMPing all enabled targets in database.
       host  cimping wbem server defined by hostname.
       id    Cimping one target from database.
-      ids   Cimping a list of targets from database.
+      ids   Cim ping a list of targets from database.
 
 
 .. _`smicli cimping all --help`:
@@ -264,10 +264,10 @@ The following defines the help output for the `smicli cimping id --help` subcomm
       This test sets a cmd line exit code corresponding to the status of a given
       target WBEM Server.
 
-      This subcommand will interactively let user select the TargetID  or "?" is
-      entered for the TargetID.
+      This subcommand will interactively let user select the TargetID  or use
+      the wildcard "?" to request a selection list of target ids.
 
-      ex. smicli cimping 5
+      ex. smicli cimping 5     smicli cimping ?
 
     Options:
       -t, --timeout INTEGER  Timeout in sec for the pywbem operations to test the
@@ -298,14 +298,14 @@ The following defines the help output for the `smicli cimping ids --help` subcom
 
     Usage: smicli cimping ids [COMMAND-OPTIONS] TargetIDs
 
-      Cimping a list of targets from database.
+      Cim ping a list of targets from database.
 
-      Execute simple cim ping against the list of ids provided for target
+      Execute simple cim ping against the list of target ids provided for target
       servers in the database defined by each id in the list of ids creates a
-      table showing result. The ids can be entered as arguments or by ehntering
-      "?" as the command argument which will produce a selection list of all
-      target ids on the console from which the user can select one or more
-      target ids.
+      table showing result. The ids can be entered as arguments or by entering
+      the wild card "?" as the command argument which will produce a selection
+      list of all target ids on the console from which the user can select one
+      or more target ids.
 
       ex. smicli cimping ids 5 8 9     smicli cimping ids ?
 
