@@ -172,7 +172,7 @@ def cimping_host(context, host, **options):
 @click.pass_obj
 def cimping_ids(context, target_ids, **options):
     """
-    Cim ping a list of targets from database.
+    cimping a list of targets from database.
 
     Execute simple cim ping against the list of target ids provided for target
     servers in the database defined by each id in the list of ids creates a

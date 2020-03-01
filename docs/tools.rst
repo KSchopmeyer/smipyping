@@ -92,3 +92,12 @@ To set it up for gmail with an installed smipyping:
 
 This will try to create the email and send it.  the -v option will show the
 interaction between pysendmail and the SMTP server.
+
+.. _`Database tools`:
+
+
+Database tools
+--------------
+
+We are providing a number of command line tools to support viewing, dumping and
+installing the database.

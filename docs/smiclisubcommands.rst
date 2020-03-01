@@ -61,8 +61,8 @@ The command groups available for smicli are:
    establishes that the smicli can connect to the server and that the expected
    namespace and class exist.
 
-   This command returns a number of possible errors for exception  responses
-   indicating the type of error received. See WBEM server
+   This command returns a number of possible errors for exception responses
+   indicating the type of error received. See
    :ref:`WBEM server error codes` for details of the error codes.
 
 2. **explorer:** - Command group to explore providers. This group provides commands
