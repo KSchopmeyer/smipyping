@@ -25,7 +25,8 @@ import prompt_toolkit
 from smipyping import datetime_display_str, CompaniesTable
 from .smicli import cli, CMD_OPTS_TXT
 from ._click_common import print_table, validate_prompt, get_target_id, \
-    pick_multiple_from_list, pick_from_list, test_db_updates_allowed
+    pick_multiple_from_list, pick_from_list, test_db_updates_allowed, \
+    validate_target_ids
 from ._common_options import add_options, no_verify_option
 from ._cmd_companies import pick_companyid
 
@@ -91,15 +92,17 @@ def targets_fields(context):
 
 @targets_group.command('get', options_metavar=CMD_OPTS_TXT)
 @click.argument('TargetID', type=str, metavar='TargetID', required=False)
-@click.option('-i', '--interactive', is_flag=True, default=False,
-              help='If set, presents list of targets to chose.')
 @click.pass_obj
 def targets_get(context, targetid, **options):
     """
     Display details of single database target.
 
-    Use the `interactive` option or "?" for Target ID to select the target from
+    The TargetID is a required argument and defines the database id for
+    the target wbem server. This argument may be entered as a single integer
+    or by entering the character "?" for Target ID to select the target from
     a list presented.
+
+    ex. smicli target get  ?
     """
     context.execute_cmd(lambda: cmd_targets_get(context, targetid, options))
 
@@ -108,16 +111,17 @@ def targets_get(context, targetid, **options):
 @click.argument('TargetID', type=str, metavar='TargetID', required=False)
 @click.option('-e', '--enable', is_flag=True, default=False,
               help='Enable the Target if it is disabled.')
-@click.option('-i', '--interactive', is_flag=True, default=False,
-              help='If set, presents list of targets to chose.')
 @add_options(no_verify_option)
 @click.pass_obj
 def targets_disable(context, targetid, enable, **options):
     """
     Disable a provider from scanning. This changes the database.
 
-    Use the `interactive` option  or "?" for target id to select the target
-    from a list presented.
+    The TargetID is a required argument and defines the database id for
+    the target wbem server. This argument may be entered as a single integer
+    or by entering the character "?" for Target ID to select the target from
+    a list presented.
+
     """
     context.execute_cmd(lambda: cmd_targets_disable(context, targetid,
                                                     enable, options))
@@ -174,10 +178,6 @@ def targets_disable(context, targetid, enable, **options):
 @click.option('--notifyusers', type=click.Choice(['Enabled', 'Disabled']),
               required=False,
               help='Modify the ScanEnabled field if this option is included.')
-@click.option('-i', '--interactive', is_flag=True, default=False,
-              help='If set, presents list of targets. Select one. '
-                   'Alternatively setting the targetid to "?" presents the '
-                   'list of targets for selection.')
 @add_options(no_verify_option)
 @click.pass_obj
 def target_modify(context, targetid, **options):
@@ -190,7 +190,9 @@ def target_modify(context, targetid, **options):
     original and new values. Values to be changed are defined by command
     line options.
 
-    Use the `interactive` option or "?" for Target ID to select the target from
+    The TargetID is a required argument and defines the database id for
+    the target wbem server. This argument may be entered as a single integer
+    or by entering the character "?" for Target ID to select the target from
     a list presented.
 
     Not all fields are defined for modification. Today the fields of
@@ -234,17 +236,15 @@ def target_new(context, **options):
 @click.option('-n', '--no-verify', is_flag=True, default=False,
               help='Disable verification prompt before the delete is '
                    'executed.')
-@click.option('-i', '--interactive', is_flag=True, default=False,
-              help='If set, presents list of users from which one can be '
-                   'chosen.')
 @click.pass_obj
 def target_delete(context, targetid, **options):
     """
     Delete a target record from the targets table.
 
-    The selection of the target may be by specific targetid, by entering
-    "?" or use of the -i option which presents a select list of targets from
-    which one may be selected for deletion
+    The TargetID is a required argument and defines the database id for
+    the target wbem server. This argument may be entered as a single integer
+    or by entering the character "?" for Target ID to select the target from
+    a list presented.
 
     The new target is permanently deleted from the target table in the
     database.
@@ -558,10 +558,13 @@ def cmd_targets_disable(context, targetid, enable, options):
 
     next_state = 'Enabled' if enable else 'Disabled'
     context.spinner.stop()
-    click.echo('Current ScanEnabled Status=%s proposed change=%s'
-               % (target_record['ScanEnabled'], next_state))
+    click.echo('Current ScanEnabled Status={} proposed change={}'
+               .format(target_record['ScanEnabled'], next_state))
     if target_record['ScanEnabled'] == next_state:
-        click.echo('State already same as proposed change')
+        click.echo('TargetID: {} company: {}, product: {}: state already {}'
+                   .format(targetid, target_record['CompanyName'],
+                           target_record['Product'],
+                           target_record['ScanEnabled']))
         return
 
     changes = {}

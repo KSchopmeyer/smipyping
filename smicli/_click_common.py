@@ -79,8 +79,8 @@ def validate_prompt(text=""):
     Issue prompt and get y/n response. Input parameter text is prepended to
     the prompt output.
     """
-    rslt = local_prompt(unicode('%s valid (y/n): ' % text))
-    return True if rslt == 'y' else False
+    rslt = local_prompt(u'%s valid (y/n): ' % text)
+    return bool(rslt.lower() == 'y')
 
 
 def test_db_updates_allowed():
@@ -124,10 +124,11 @@ def pick_from_list(context, options, title):
         index += 1
         click.echo('%s: %s' % (index, str_))
     selection = None
-    msg = 'Input integer between 0 and %s or Enter to abort selection: ' % index
+    msg = u'Input integer between 0 and %s or Enter to abort selection: ' %  \
+        index
     while True:
         try:
-            selection = local_prompt(unicode(msg))
+            selection = local_prompt(msg)
             if not selection:
                 return None
             selection = int(selection)
@@ -369,6 +370,7 @@ def get_multiple_target_ids(context, targetids, options=None, allow_none=False):
         return targetids
     context.spinner.stop()
 
+    # TODO: Future remove this first option
     if options and 'interactive' in options and options['interactive']:
         context.spinner.stop()
         int_target_ids = pick_multiple_target_ids(context)
@@ -415,6 +417,28 @@ def get_multiple_target_ids(context, targetids, options=None, allow_none=False):
         click.echo("Operation aborted by user.")
     context.spinner.start()
     return int_target_ids
+
+
+def validate_target_ids(context, target_ids):
+    """
+    Validate that target_ids in list are valid in targets table. Raises
+    exception if any are invalid.
+
+    Raises:
+        click.ClickException if target_id invalid
+    """
+    # if single target id make into list
+    if isinstance(target_ids, six.integer_types):
+        target_ids = [target_ids]
+
+    for target_id in target_ids:
+        try:
+            context.targets_tbl.get_target(target_id)  # noqa: F841
+        except Exception as ex:
+            raise click.ClickException('Invalid TargetID=%s. Not in '
+                                       'database target table. '
+                                       '%s: %s' % (target_id,
+                                                   ex.__class__.__name__, ex))
 
 
 def set_input_variable(ctx, var_, config_file_name, default_value):

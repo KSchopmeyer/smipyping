@@ -148,6 +148,7 @@ def get_multiple_user_ids(context, userids, users_tbl, options=None,
         return userids
     context.spinner.stop()
     int_user_ids = []
+    # TODO: Future remove this option
     if options and 'interactive' in options and options['interactive']:
         context.spinner.stop()
         int_user_ids = pick_multiple_user_ids(context, users_tbl)
@@ -263,8 +264,7 @@ def get_userid(context, users_tbl, userid, options=None):
                                            "table: exception %s" %
                                            (userid, ke))
     else:
-        raise click.ClickException('UserID %s. Requires UserID, ? or '
-                                   '--interactive option' % userid)
+        raise click.ClickException('UserID %s. Requires UserID, ?' % userid)
     if userid is None:
         click.echo("Operation aborted by user.")
     context.spinner.start()
@@ -384,9 +384,6 @@ def users_list(context, **options):  # pylint: disable=redefined-builtin
 @click.option('-n', '--no-verify', is_flag=True, default=False,
               help='Disable verification prompt before the delete is '
                    'executed.')
-@click.option('-i', '--interactive', is_flag=True, default=False,
-              help='If set, presents list of users from which one can be '
-                   'chosen.')
 @click.pass_obj
 def users_delete(context, userid, **options):
     """
@@ -395,9 +392,9 @@ def users_delete(context, userid, **options):
     Delete the user defined by the subcommand argument from the
     database.
 
-    The user to be deleted may be specified by a) specific user id, b) the
-    interactive mode option, or c) using '?' as the user id argument which also
-    initiates the interactive mode options
+    The user to be deleted may be specified by a) specific user id, b) using
+    '?' as the user id argument which also initiates the interactive mode
+    options
 
     Examples:
 
@@ -427,9 +424,6 @@ def users_delete(context, userid, **options):
 @click.option('-n', '--no-verify', is_flag=True, default=False,
               help='Disable verification prompt before the change is '
                    'executed.')
-@click.option('-i', '--interactive', is_flag=True, default=False,
-              help='If set, presents list of users from which one can be '
-                   'chosen.')
 @click.pass_obj
 def users_modify(context, userid, **options):
     """
@@ -450,13 +444,11 @@ def users_modify(context, userid, **options):
 
 
 @users_group.command('activate', options_metavar=CMD_OPTS_TXT)
-@click.argument('UserIDs', type=str, metavar='UserID', required=False, nargs=-1)
+@click.argument('UserIDs', type=str, metavar='UserIDs',
+                required=False, nargs=-1)
 @click.option('--active/--inactive', default=False, required=False,
               help='Set the active/inactive state in the database for this '
                    'user. Default is to attempt set user to inactive.')
-@click.option('-i', '--interactive', is_flag=True, default=False,
-              help='If set, presents list of users from which one can be '
-                   'chosen.')
 @click.option('-n', '--no-verify', is_flag=True, default=False,
               help='Disable verification prompt before the operation is '
                    'executed.')

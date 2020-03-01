@@ -80,6 +80,7 @@ def get_companyid(context, companies_tbl, companyid, options=None):
           KeyError if user_id not in table
     """
     context.spinner.stop()
+    # TODO: remove this option
     if options and 'interactive' in options and options['interactive']:
         context.spinner.stop()
         companyid = pick_companyid(context, companies_tbl)
@@ -110,8 +111,8 @@ def get_companyid(context, companies_tbl, companyid, options=None):
                                            "table: exception %s" %
                                            (companyid, ke))
     else:
-        raise click.ClickException('CompanyID %s. Requires CompanyID, ? or '
-                                   '--interactive option' % companyid)
+        raise click.ClickException('CompanyID %s. Requires CompanyID, ?' %
+                                   companyid)
     if companyid is None:
         click.echo("Operation aborted by user.")
     context.spinner.start()
@@ -158,9 +159,6 @@ def companies_add(context, **options):  # pylint: disable=redefined-builtin
 @companies_group.command('delete', options_metavar=CMD_OPTS_TXT)
 @click.argument('CompanyID', type=str, metavar='CompanyID', required=False,
                 nargs=1)
-@click.option('-i', '--interactive', is_flag=True, default=False,
-              help='If set, presents list of users from which one can be '
-                   'chosen.')
 @click.option('-n', '--no-verify', is_flag=True, default=False,
               help='Verify the deletion before deleting the user.')
 @click.pass_obj
@@ -169,8 +167,9 @@ def companies_delete(context, companyid, **options):
     """
     Delete a company from the database.
 
-    Delete the company defined by the subcommand argument from the
-    database.
+    Delete the company defined by the command argument from the
+    database. The command argument may be either a specific company ID
+    or "?" to generate a selection list on the console.
 
     smicli companies delete ?      # does select list to select company
                                      to delete from companies table
@@ -184,10 +183,7 @@ def companies_delete(context, companyid, **options):
                 nargs=1)
 @click.option('-c', '--companyname', type=str,
               required=True,
-              help='New company name(required).')
-@click.option('-i', '--interactive', is_flag=True, default=False,
-              help='If set, presents list of users from which one can be '
-                   'chosen.')
+              help='New company name.')
 @click.option('-n', '--no-verify', is_flag=True, default=False,
               help='Disable verification prompt before the modify is executed.')
 @click.pass_obj
@@ -198,7 +194,12 @@ def companies_modify(context, companyid, **options):
 
     Modifies the company name in the company table of the database.
 
+    The required CompanyID argument can be found by the "company list" command
+    or by using "?" as the argument which generates a selection list on
+    the console.
+
     ex. smicli companies modify 13 -c "NewCompany Name"
+        smicli companies modify ? -c " NewCompanyName"
 
     """
     context.execute_cmd(lambda: cmd_companies_modify(context, companyid,
@@ -231,7 +232,7 @@ def cmd_companies_list(context, options):
 
 
 def cmd_companies_delete(context, companyid, options):
-    """Delete a user from the database."""
+    """Delete a company from the database."""
     test_db_updates_allowed()
 
     companies_tbl = CompaniesTable.factory(context.db_info, context.db_type,

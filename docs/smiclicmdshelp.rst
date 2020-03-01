@@ -264,15 +264,14 @@ The following defines the help output for the `smicli cimping id --help` subcomm
       This test sets a cmd line exit code corresponding to the status of a given
       target WBEM Server.
 
-      This subcommand will interactively let user select the TargetID if the
-      --interactive mode is selected or "?" is entered for the TargetID.
+      This subcommand will interactively let user select the TargetID  or "?" is
+      entered for the TargetID.
 
       ex. smicli cimping 5
 
     Options:
       -t, --timeout INTEGER  Timeout in sec for the pywbem operations to test the
                              server. (Default: 10).
-      -i, --interactive      If set, presents list of targets to chose.
       --no-ping              If set this option disables network level ping of the
                              wbem server before executing the cim request. Since
                              executing the ping does not cause significant time
@@ -282,13 +281,6 @@ The following defines the help output for the `smicli cimping id --help` subcomm
       -d, --debug            If set this options sets the debug parameter for the
                              pywbem call. Displays detailed information on the
                              call and response.
-      --no-thread            If set run test single-threaded if no-thread set.
-                             This option exists to aid debugging if issues occur
-                             with multithreading or the servers responses in
-                             general. If not set, the requests to each server are
-                             issued in parallel using multi-threading.
-      -t, --timeout INTEGER  Timeout in sec for the pywbem operations to test the
-                             server. (Default: 10).
       -h, --help             Show this message and exit.
 
 
@@ -310,9 +302,12 @@ The following defines the help output for the `smicli cimping ids --help` subcom
 
       Execute simple cim ping against the list of ids provided for target
       servers in the database defined by each id in the list of ids creates a
-      table showing result.
+      table showing result. The ids can be entered as arguments or by ehntering
+      "?" as the command argument which will produce a selection list of all
+      target ids on the console from which the user can select one or more
+      target ids.
 
-      ex. smicli cimping ids 5 8 9
+      ex. smicli cimping ids 5 8 9     smicli cimping ids ?
 
     Options:
       -t, --timeout INTEGER  Timeout in sec for the pywbem operations to test the
@@ -323,7 +318,6 @@ The following defines the help output for the `smicli cimping ids --help` subcom
                              delay and helps define servers that are not
                              respondingat all, normally it should not be set. The
                              ping uses available ping program to execute the ping.
-      -i, --interactive      If set, presents list of targets to chose.
       -d, --debug            If set this options sets the debug parameter for the
                              pywbem call. Displays detailed information on the
                              call and response.
@@ -397,16 +391,16 @@ The following defines the help output for the `smicli companies delete --help` s
 
       Delete a company from the database.
 
-      Delete the company defined by the subcommand argument from the database.
+      Delete the company defined by the command argument from the database. The
+      command argument may be either a specific company ID or "?" to generate a
+      selection list on the console.
 
       smicli companies delete ?      # does select list to select company
       to delete from companies table
 
     Options:
-      -i, --interactive  If set, presents list of users from which one can be
-                         chosen.
-      -n, --no-verify    Verify the deletion before deleting the user.
-      -h, --help         Show this message and exit.
+      -n, --no-verify  Verify the deletion before deleting the user.
+      -h, --help       Show this message and exit.
 
 
 .. _`smicli companies list --help`:
@@ -450,12 +444,15 @@ The following defines the help output for the `smicli companies modify --help` s
 
       Modifies the company name in the company table of the database.
 
-      ex. smicli companies modify 13 -c "NewCompany Name"
+      The required CompanyID argument can be found by the "company list" command
+      or by using "?" as the argument which generates a selection list on the
+      console.
+
+      ex. smicli companies modify 13 -c "NewCompany Name"     smicli companies
+      modify ? -c " NewCompanyName"
 
     Options:
-      -c, --companyname TEXT  New company name(required).  [required]
-      -i, --interactive       If set, presents list of users from which one can be
-                              chosen.
+      -c, --companyname TEXT  New company name.  [required]
       -n, --no-verify         Disable verification prompt before the modify is
                               executed.
       -h, --help              Show this message and exit.
@@ -559,7 +556,7 @@ The following defines the help output for the `smicli explorer all --help` subco
                                      table.
       -d, --detail [full|brief|all]  Generate full or brief (fewer columns)
                                      report. Full report includes namespaces,
-                                     SMI_profiles, etc. (Default: full
+                                     SMI_profiles, etc. (Default: full).
       -h, --help                     Show this message and exit.
 
 
@@ -582,16 +579,15 @@ The following defines the help output for the `smicli explorer ids --help` subco
       Execute the explorer on the providers defined by id.  Multiple ids may be
       supplied (ex. id 5 6 7)
 
-      ex: smicli explorer ids 6 7 8
+      ex: smicli explorer ids 6 7 8     smicli explorer ids ?
 
     Options:
       --ping / --no-ping             Ping the the provider as initial step in
                                      test. Default: ping
       --thread / --no-thread         Run test multithreaded.  Much faster.
                                      Default: thread
-      -i, --interactive              If set, presents list of targets to chose.
-                                     Entering "?"for id is equivalent
-      -d, --detail [full|brief|all]  Generate full or brief (fewer columns) report
+      -d, --detail [full|brief|all]  Generate all or brief (fewer columns)
+                                     report(Default: full).
       -h, --help                     Show this message and exit.
 
 
@@ -1130,16 +1126,17 @@ The following defines the help output for the `smicli programs delete --help` su
 
       Delete a program from the database.
 
-      Delete the program defined by the subcommand argument from the database.
-      The program to delete can be input directly, or selected from a list of
-      programs by entering the character "?" as program ID or including the
-      --interactive option.
+      Delete the program defined by the command argument from the database. The
+      ProgramID is the database id field that is displayed with the "programs
+      list" command.  The programId to delete can be input directly, or selected
+      from a list of programs by entering the character "?" generates a
+      selection list.
+
+      Example:    smicli programs delete ?
 
     Options:
-      -n, --no-verify    Do not verify the deletion before deleting the program.
-      -i, --interactive  If set, presents list of programs from which one can be
-                         chosen.
-      -h, --help         Show this message and exit.
+      -n, --no-verify  Do not verify the deletion before deleting the program.
+      -h, --help       Show this message and exit.
 
 
 .. _`smicli programs list --help`:
@@ -1222,6 +1219,9 @@ The following defines the help output for the `smicli provider classes --help` s
       regular expression that can be matched to one or more classnames. To limit
       the filter to a single classname, terminate the classname with $.
 
+      The TargetID defines a single provider (See targets table). It may be
+      picked from a list by entering "?".
+
       The regular expression is anchored to the beginning of CLASSNAME and is
       case insensitive. Thus pywbem_ returns all classes that begin with
       PyWBEM_, pywbem_, etc.
@@ -1229,8 +1229,6 @@ The following defines the help output for the `smicli provider classes --help` s
       TODO: Add option to limit to single namespace
 
     Options:
-      -i, --interactive               If set, presents list of targets to chose
-                                      from.
       -c, --classname CLASSNAME regex
                                       Regex that filters the classnames to return
                                       only those that match the regex. This is a
@@ -1262,13 +1260,12 @@ The following defines the help output for the `smicli provider info --help` subc
       Display general info for the provider.
 
       The TargetID defines a single provider (See targets table). It may be
-      picked from a list by entering ? or the --interactive option.
+      picked from a list or by entering "?".
 
       The company options allows searching by company name in the provider base.
 
     Options:
-      -i, --interactive  If set, presents list of targets to chose.
-      -h, --help         Show this message and exit.
+      -h, --help  Show this message and exit.
 
 
 .. _`smicli provider interop --help`:
@@ -1288,13 +1285,12 @@ The following defines the help output for the `smicli provider interop --help` s
       Display interop namespace for the provider.
 
       The TargetID defines a single provider (See targets table). It may be
-      picked from a list by entering ? or the --interactive option.
+      picked from a list by entering "?".
 
       The company options allows searching by company name in the provider base.
 
     Options:
-      -i, --interactive  If set, presents list of targets to chose.
-      -h, --help         Show this message and exit.
+      -h, --help  Show this message and exit.
 
 
 .. _`smicli provider namespaces --help`:
@@ -1313,15 +1309,14 @@ The following defines the help output for the `smicli provider namespaces --help
 
       Display public namespaces for the provider.
 
-      The targetID for the provider can be entered directly or by using the
-      interactive feature (entering "?" for the targetid or the --interactive
-      option) to pick the provider from a list.
+      The TargetID for the provider can be entered directly or by using the
+      interactive feature (entering "?" for the targetid  to pick the TargetID
+      from a list.
 
       ex. smicli provider namespaces ?
 
     Options:
-      -i, --interactive  If set, presents list of targets to chose.
-      -h, --help         Show this message and exit.
+      -h, --help  Show this message and exit.
 
 
 .. _`smicli provider ping --help`:
@@ -1341,12 +1336,12 @@ The following defines the help output for the `smicli provider ping --help` subc
       Ping the provider defined by targetid.
 
       The TargetID defines a single provider (See targets table). It may be
-      picked from a list by entering ? or the --interactive option.
+      entered as an argument or picked from a list by entering "?" as the
+      TargetID argument.
 
       The company options allows searching by company name in the provider base.
 
     Options:
-      -i, --interactive  If set, presents list of targets to chose.
       --timeout INTEGER  Timeout for the ping in seconds. (Default 2).
       -h, --help         Show this message and exit.
 
@@ -1368,7 +1363,7 @@ The following defines the help output for the `smicli provider profiles --help` 
       Display registered profiles for provider.
 
       The TargetID defines a single provider (See targets table). It may be
-      picked from a list by entering ? or the --interactive option.
+      picked from a list by entering "?".
 
       The other options allow the selection of a subset of the profiles from the
       server by organization name, profile name, or profile version.
@@ -1376,7 +1371,6 @@ The following defines the help output for the `smicli provider profiles --help` 
       ex. smicli provider profiles 4 -o SNIA
 
     Options:
-      -i, --interactive        If set, presents list of targets to chose.
       -o, --organization TEXT  Optionally specify organization for the profiles
       -n, --name TEXT          Optionally specify name for the profiles
       -v, --version TEXT       Optionally specify versionfor the profiles
@@ -1548,19 +1542,17 @@ The following defines the help output for the `smicli targets delete --help` sub
 
       Delete a target record from the targets table.
 
-      The selection of the target may be by specific targetid, by entering "?"
-      or use of the -i option which presents a select list of targets from which
-      one may be selected for deletion
+      The TargetID is a required argument and defines the database id for the
+      target wbem server. This argument may be entered as a single integer or by
+      entering the character "?" for Target ID to select the target from a list
+      presented.
 
       The new target is permanently deleted from the target table in the
       database.
 
     Options:
-      -n, --no-verify    Disable verification prompt before the delete is
-                         executed.
-      -i, --interactive  If set, presents list of users from which one can be
-                         chosen.
-      -h, --help         Show this message and exit.
+      -n, --no-verify  Disable verification prompt before the delete is executed.
+      -h, --help       Show this message and exit.
 
 
 .. _`smicli targets disable --help`:
@@ -1579,15 +1571,15 @@ The following defines the help output for the `smicli targets disable --help` su
 
       Disable a provider from scanning. This changes the database.
 
-      Use the `interactive` option  or "?" for target id to select the target
-      from a list presented.
+      The TargetID is a required argument and defines the database id for the
+      target wbem server. This argument may be entered as a single integer or by
+      entering the character "?" for Target ID to select the target from a list
+      presented.
 
     Options:
-      -e, --enable       Enable the Target if it is disabled.
-      -i, --interactive  If set, presents list of targets to chose.
-      -N, --no_verify    Disable verification prompt before the change is
-                         executed.
-      -h, --help         Show this message and exit.
+      -e, --enable     Enable the Target if it is disabled.
+      -N, --no_verify  Disable verification prompt before the change is executed.
+      -h, --help       Show this message and exit.
 
 
 .. _`smicli targets fields --help`:
@@ -1626,12 +1618,15 @@ The following defines the help output for the `smicli targets get --help` subcom
 
       Display details of single database target.
 
-      Use the `interactive` option or "?" for Target ID to select the target
-      from a list presented.
+      The TargetID is a required argument and defines the database id for the
+      target wbem server. This argument may be entered as a single integer or by
+      entering the character "?" for Target ID to select the target from a list
+      presented.
+
+      ex. smicli target get  ?
 
     Options:
-      -i, --interactive  If set, presents list of targets to chose.
-      -h, --help         Show this message and exit.
+      -h, --help  Show this message and exit.
 
 
 .. _`smicli targets info --help`:
@@ -1708,8 +1703,10 @@ The following defines the help output for the `smicli targets modify --help` sub
       to the database are recorded in the audit log including both the original
       and new values. Values to be changed are defined by command line options.
 
-      Use the `interactive` option or "?" for Target ID to select the target
-      from a list presented.
+      The TargetID is a required argument and defines the database id for the
+      target wbem server. This argument may be entered as a single integer or by
+      entering the character "?" for Target ID to select the target from a list
+      presented.
 
       Not all fields are defined for modification. Today the fields of
       SMIVersion, CimomVersion, NotifyUsers and Notify cannot be modified with
@@ -1750,10 +1747,6 @@ The following defines the help output for the `smicli targets modify --help` sub
       --notifyusers [Enabled|Disabled]
                                       Modify the ScanEnabled field if this option
                                       is included.
-      -i, --interactive               If set, presents list of targets. Select
-                                      one. Alternatively setting the targetid to
-                                      "?" presents the list of targets for
-                                      selection.
       -N, --no_verify                 Disable verification prompt before the
                                       change is executed.
       -h, --help                      Show this message and exit.
@@ -1832,7 +1825,7 @@ The following defines the help output for the `smicli users activate --help` sub
 
 ::
 
-    Usage: smicli users activate [COMMAND-OPTIONS] UserID
+    Usage: smicli users activate [COMMAND-OPTIONS] UserIDs
 
       Activate or deactivate multiple users.
 
@@ -1860,8 +1853,6 @@ The following defines the help output for the `smicli users activate --help` sub
       --active / --inactive      Set the active/inactive state in the database for
                                  this user. Default is to attempt set user to
                                  inactive.
-      -i, --interactive          If set, presents list of users from which one can
-                                 be chosen.
       -n, --no-verify            Disable verification prompt before the operation
                                  is executed.
       -c, --companyid COMPANYID  Limit the list of users from which to select by
@@ -1932,20 +1923,17 @@ The following defines the help output for the `smicli users delete --help` subco
 
       Delete the user defined by the subcommand argument from the database.
 
-      The user to be deleted may be specified by a) specific user id, b) the
-      interactive mode option, or c) using '?' as the user id argument which
-      also initiates the interactive mode options
+      The user to be deleted may be specified by a) specific user id, b) using
+      '?' as the user id argument which also initiates the interactive mode
+      options
 
       Examples:
 
         smicli delete 85   smicli delete ?
 
     Options:
-      -n, --no-verify    Disable verification prompt before the delete is
-                         executed.
-      -i, --interactive  If set, presents list of users from which one can be
-                         chosen.
-      -h, --help         Show this message and exit.
+      -n, --no-verify  Disable verification prompt before the delete is executed.
+      -h, --help       Show this message and exit.
 
 
 .. _`smicli users fields --help`:
@@ -2068,7 +2056,5 @@ The following defines the help output for the `smicli users modify --help` subco
                                user if this flag set.
       -n, --no-verify          Disable verification prompt before the change is
                                executed.
-      -i, --interactive        If set, presents list of users from which one can
-                               be chosen.
       -h, --help               Show this message and exit.
 

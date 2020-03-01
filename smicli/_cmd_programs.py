@@ -111,8 +111,8 @@ def get_programid(context, db_tbl, programid, options=None):
                                            "table: exception %s" %
                                            (programid, ke))
     else:
-        raise click.ClickException('ProgramID %s. Requires ProgramID, ? or '
-                                   '--interactive option' % programid)
+        raise click.ClickException('ProgramID %s. Requires ProgramID, ?' %
+                                   programid)
     if programid is None:
         click.echo("Operation aborted by user.")
     context.spinner.start()
@@ -179,19 +179,20 @@ def programs_list(context):  # pylint: disable=redefined-builtin
                 nargs=1)
 @click.option('-n', '--no-verify', is_flag=True,
               help='Do not verify the deletion before deleting the program.')
-@click.option('-i', '--interactive', is_flag=True, default=False,
-              help='If set, presents list of programs from which one can be '
-                   'chosen.')
 @click.pass_obj
 def programs_delete(context, programid, **options):
     # pylint: disable=redefined-builtin
     """
     Delete a program from the database.
 
-    Delete the program defined by the subcommand argument from the
-    database.  The program to delete can be input directly, or selected
-    from a list of programs by entering the character "?" as program ID
-    or including the --interactive option.
+    Delete the program defined by the command argument from the database. The
+    ProgramID is the database id field that is displayed with the "programs
+    list" command.  The programId to delete can be input directly, or selected
+    from a list of programs by entering the character "?" generates a selection
+    list.
+
+    Example:
+       smicli programs delete ?
     """
     context.execute_cmd(lambda: cmd_programs_delete(context, programid,
                                                     options))

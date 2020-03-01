@@ -249,6 +249,8 @@ class StrList(object):
         TODO test if only chars in chars are in string.
         """
         self._items = None
+        if not inputs:
+            return
         if isinstance(inputs, six.string_types):
             if '/' in inputs:
                 self._items = set(inputs.split("/"))
@@ -263,7 +265,7 @@ class StrList(object):
         elif isinstance(inputs, tuple):
             self._items = set(list(input))
         else:
-            raise ValueError("Versions Strlist %s not valid type" % input)
+            raise ValueError("Strlist %s not valid type" % inputs)
 
         self._items = [item.strip() for item in self._items]
         for item in self._items:
