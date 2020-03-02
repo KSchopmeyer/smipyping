@@ -11,12 +11,12 @@
 #   These commands are used on all supported OS platforms:
 #     make (GNU make)
 #     bash
-#     echo, rm, mv, find, xargs, tee, touch, chmod, wget
+#     echo, rm, mv, find, xargs, tee,  wget
 #     python (This Makefile uses the active Python environment, virtual Python
 #        environments are supported)
 #     pip (in the active Python environment)
 #     twine (in the active Python environment)
-#   These additional commands are used on Linux, OS-X and Windows with UNIX env:
+#   These commands on Linux and OS-X:
 #     uname
 #   These additional commands are used on native Windows:
 #     cmd
@@ -91,14 +91,14 @@ dist_dir := dist
 
 # Distribution archives (as built by setup.py)
 # These variables are set with "=" for the same reason as package_version.
-bdist_file = $(dist_dir)/$(package_name)-$(package_version)-py2.py3-none-any.whl
-sdist_file = $(dist_dir)/$(package_name)-$(package_version).tar.gz
+bdist_file := $(dist_dir)/$(package_name)-$(package_version)-py2.py3-none-any.whl
+sdist_file := $(dist_dir)/$(package_name)-$(package_version).tar.gz
 
 # Windows installable (as built by setup.py)
-win64_dist_file = $(dist_dir)/$(package_name)-$(package_version).win-amd64.exe
+win64_dist_file := $(dist_dir)/$(package_name)-$(package_version).win-amd64.exe
 
-# dist_files = $(bdist_file) $(sdist_file) $(win64_dist_file)
-dist_files = $(bdist_file) $(sdist_file)
+# dist_files := $(bdist_file) $(sdist_file) $(win64_dist_file)
+dist_files := $(bdist_file) $(sdist_file)
 
 # Directory for generated API documentation
 doc_build_dir := build_doc
@@ -106,9 +106,13 @@ doc_build_dir := build_doc
 # Directory where Sphinx conf.py is located
 doc_conf_dir := docs
 
+# Paper format for the Sphinx LaTex/PDF builder.
+# Valid values: a4, letter
+doc_paper_format := letter
+
 # Documentation generator command
 doc_cmd := sphinx-build
-doc_opts := -v -d $(doc_build_dir)/doctrees -c $(doc_conf_dir) .
+doc_opts := -v -d $(doc_build_dir)/doctrees -c $(doc_conf_dir) -D latex_paper_size=$(doc_paper_format) .
 
 # Dependents for Sphinx documentation build
 doc_dependent_files := \
@@ -361,7 +365,7 @@ ifeq ($(PLATFORM),Windows)
 	$(PYTHON_CMD) setup.py bdist_wininst -d $(dist_dir) -o -t "$(package_name) v$(package_version)"
 	@echo 'Done: Created Windows installable: $@'
 else
-	@echo 'Error: Creating Windows installable requires Windows'
+	@echo 'Error: Creating Windows installable requires Windows platform'
 	@false
 endif
 
