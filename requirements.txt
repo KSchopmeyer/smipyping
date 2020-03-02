@@ -9,7 +9,8 @@
 
 # Direct dependencies (except pip, setuptools, wheel):
 
-pywbem>=0.12.0
+# Do not allow version 1+ of pywbem
+pywbem>=0.12.0,<1.0.0
 # git+https://github.com/KSchopmeyer/smipyping.git@master#egg=smipyping
 
 pbr>=1.10.0
