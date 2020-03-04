@@ -30,8 +30,8 @@ import platform
 import click
 from prompt_toolkit.history import FileHistory
 import click_repl
-
 import smipyping
+import pywbem
 
 from smipyping._logging import AUDIT_LOGGER_NAME, ERROR_LOGGER_NAME
 
@@ -40,6 +40,8 @@ from ._click_common import SMICLI_PROMPT, SMICLI_HISTORY_FILE
 from ._click_configfile import CONTEXT_SETTINGS
 from ._click_common import DEFAULT_OUTPUT_FORMAT, set_input_variable
 from ._tableoutput import TABLE_FORMATS
+
+PYWBEM_VERSION = "pywbem, version {}".format(pywbem.__version__)
 
 DEFAULT_LOG = 'all=error'
 DEFAULT_LOG_DESTINATION = 'file'
@@ -159,7 +161,9 @@ def setup_logger(log_comp, handler, level):
               .format(of=DEFAULT_OUTPUT_FORMAT))
 @click.option('-v', '--verbose', is_flag=True, default=False,
               help='Display extra information about the processing.')
-@click.version_option(help="Show the version of this command and exit.")
+@click.version_option(
+    message='%(prog)s, version %(version)s\n' + PYWBEM_VERSION,
+    help='Show the version of this command and the pywbem package and exit.')
 @click.pass_context
 def cli(ctx, config_file, db_type, log, log_dest, output_format, verbose,
         provider_data=None, db_info=None, log_file=None):
